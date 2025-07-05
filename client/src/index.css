@@ -109,19 +109,19 @@
 
 @keyframes travelPath {
   0% {
-    transform: translateX(0px) translateY(0px);
+    transform: translateX(0px) translateY(-2px);
   }
   25% {
-    transform: translateX(calc(100% + 8px)) translateY(0px);
+    transform: translateX(calc(100% - 20px)) translateY(-2px);
   }
   50% {
-    transform: translateX(calc(100% + 8px)) translateY(calc(100% + 8px));
+    transform: translateX(calc(100% - 20px)) translateY(calc(100% - 1px));
   }
   75% {
-    transform: translateX(0px) translateY(calc(100% + 8px));
+    transform: translateX(0px) translateY(calc(100% - 1px));
   }
   100% {
-    transform: translateX(0px) translateY(0px);
+    transform: translateX(0px) translateY(-2px);
   }
 }
 
@@ -129,13 +129,13 @@
   position: absolute;
   width: 20px;
   height: 3px;
-  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.8), transparent);
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.9), transparent);
   border-radius: 2px;
-  top: -1px;
-  left: -1px;
+  top: 0;
+  left: 0;
   animation: travelPath 3s linear infinite;
   pointer-events: none;
-  z-index: 5;
+  z-index: 15;
 }
 
 .border-3 {
