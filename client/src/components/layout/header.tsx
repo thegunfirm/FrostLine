@@ -107,7 +107,7 @@ export function Header() {
                     key={category}
                     onClick={() => handleCategoryClick(category)}
                     className={cn(
-                      "py-3 px-4 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase min-w-0",
+                      "py-2 px-4 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase min-w-0",
                       index < categories.length - 1 && "border-r border-gun-black"
                     )}
                   >
