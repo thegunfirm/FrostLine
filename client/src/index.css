@@ -107,12 +107,12 @@
   }
 }
 
-@keyframes borderSweep {
+@keyframes glintMove {
   0% {
-    background: conic-gradient(from 0deg, transparent 0deg, rgba(212, 175, 55, 0.9) 20deg, transparent 60deg, transparent 360deg);
+    transform: rotate(0deg);
   }
   100% {
-    background: conic-gradient(from 360deg, transparent 0deg, rgba(212, 175, 55, 0.9) 20deg, transparent 60deg, transparent 360deg);
+    transform: rotate(360deg);
   }
 }
 
@@ -120,16 +120,10 @@
   position: absolute;
   inset: 0;
   border-radius: 0.5rem;
-  background: conic-gradient(from 0deg, transparent 0deg, rgba(212, 175, 55, 0.9) 20deg, transparent 60deg);
-  animation: borderSweep 2.5s linear infinite;
+  background: conic-gradient(from 0deg, transparent 80%, rgba(212, 175, 55, 0.8) 90%, transparent 100%);
+  animation: glintMove 2s linear infinite;
   pointer-events: none;
   z-index: 5;
-  mask: 
-    linear-gradient(white 0 0) content-box,
-    linear-gradient(white 0 0);
-  mask-composite: xor;
-  -webkit-mask-composite: xor;
-  padding: 3px;
 }
 
 .border-3 {
