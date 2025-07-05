@@ -1,0 +1,130 @@
+# Rest Express - Firearms E-commerce Platform
+
+## Overview
+
+This is a full-stack e-commerce platform specifically designed for firearms and related accessories. The application features a React frontend with a Node.js Express backend, PostgreSQL database, and a comprehensive tier-based membership system. The platform handles FFL (Federal Firearms License) requirements, specialized shipping policies, and offers tiered pricing benefits.
+
+## System Architecture
+
+### Frontend Architecture
+- **Framework**: React 18 with TypeScript
+- **Routing**: Wouter for lightweight client-side routing
+- **State Management**: TanStack Query for server state, React Context for authentication
+- **UI Components**: Shadcn/ui component library with Radix UI primitives
+- **Styling**: Tailwind CSS with custom brand colors and design system
+- **Build Tool**: Vite for development and production builds
+
+### Backend Architecture
+- **Runtime**: Node.js with Express framework
+- **Language**: TypeScript with ES modules
+- **Database**: PostgreSQL with Drizzle ORM
+- **Database Provider**: Neon serverless PostgreSQL
+- **Authentication**: Session-based with bcrypt password hashing
+- **API Design**: RESTful endpoints with consistent error handling
+
+### Key Design Decisions
+
+1. **Tier-based Membership System**: Bronze, Gold, and Platinum tiers with different pricing and benefits
+2. **FFL Integration**: Built-in handling for firearms that require Federal Firearms License transfers
+3. **Specialized Commerce Features**: Gun-specific categories, manufacturer filtering, and compliance features
+4. **Responsive Design**: Mobile-first approach with custom breakpoints
+5. **Brand-focused UI**: Custom color scheme and typography reflecting firearms industry aesthetics
+
+## Key Components
+
+### Database Schema
+- **Users**: Customer accounts with tier-based membership, shipping preferences, and FFL associations
+- **Products**: Firearms and accessories with tier-specific pricing, FFL requirements, and inventory management
+- **Orders**: Purchase history with FFL routing and compliance tracking
+- **FFLs**: Federal Firearms License dealer directory
+- **State Shipping Policies**: Compliance rules for different states
+- **Tier Pricing Rules**: Dynamic pricing based on membership levels
+
+### Authentication System
+- Session-based authentication with secure password hashing
+- Role-based access control (user, admin, support, dealer)
+- Persistent login state with localStorage backup
+- Protected routes and API endpoints
+
+### Product Management
+- Multi-tier pricing structure (Bronze, Gold, Platinum)
+- FFL requirement tracking and routing
+- Inventory management with stock tracking
+- Category-based organization with manufacturer filtering
+- Advanced search functionality with multiple filters
+
+### Membership System
+- Three-tier structure with progressive benefits
+- Real-time savings calculations and tier upgrade recommendations
+- Personalized pricing display based on current membership
+- Upgrade path visualization and benefit comparison
+
+## Data Flow
+
+1. **User Authentication**: Login/register → Session creation → User context update → Protected route access
+2. **Product Discovery**: Search/browse → Filter application → Tier-based pricing calculation → Display results
+3. **Order Processing**: Cart management → FFL verification → Compliance checking → Order creation → Fulfillment routing
+4. **Membership Management**: Tier evaluation → Savings calculation → Upgrade recommendations → Benefit application
+
+## External Dependencies
+
+### Database & Infrastructure
+- **Neon Database**: Serverless PostgreSQL hosting
+- **Drizzle ORM**: Type-safe database operations with PostgreSQL dialect
+
+### Frontend Libraries
+- **React Ecosystem**: React 18, React Query, React Hook Form
+- **UI Components**: Radix UI primitives, Shadcn/ui components
+- **Styling**: Tailwind CSS, class-variance-authority for component variants
+- **Icons**: Lucide React icon library
+
+### Backend Dependencies
+- **Express**: Web framework with middleware support
+- **bcrypt**: Password hashing for secure authentication
+- **connect-pg-simple**: PostgreSQL session store
+- **WebSocket**: Real-time communication support via ws library
+
+### Development Tools
+- **Vite**: Build tool with HMR and optimized bundling
+- **TypeScript**: Type safety across full stack
+- **ESLint/Prettier**: Code quality and formatting
+- **Replit Integration**: Development environment optimization
+
+## Deployment Strategy
+
+### Development Environment
+- Vite dev server for frontend hot reloading
+- Express server with nodemon for backend development
+- Environment-based configuration with DATABASE_URL
+- Replit-specific optimizations and error overlay
+
+### Production Build
+- Vite production build with optimized assets
+- esbuild for server-side bundling
+- Static file serving from Express
+- Environment variable configuration for database and external services
+
+### Database Management
+- Drizzle migrations for schema changes
+- Connection pooling with Neon serverless
+- Environment-specific database URLs
+- Backup and recovery considerations for production
+
+## Changelog
+
+```
+Changelog:
+- July 05, 2025. Initial setup
+- July 05, 2025. Updated logo to use white PNG image with integrated text
+- July 05, 2025. Replaced Stripe payment system with Authorize.Net
+- July 05, 2025. Improved category ribbon design similar to Lipsey's layout
+- July 05, 2025. Removed FFL references from product cards (FFL only during checkout)
+- July 05, 2025. Removed all "wholesale" references from the site
+- July 05, 2025. Updated tier cards to remove large checkmarks
+```
+
+## User Preferences
+
+```
+Preferred communication style: Simple, everyday language.
+```

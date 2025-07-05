@@ -1,0 +1,80 @@
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { User, InsertUser } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<void>;
+  register: (userData: InsertUser) => Promise<void>;
+  logout: () => void;
+  isLoading: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const initAuth = async () => {
+      try {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initAuth();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await apiRequest("POST", "/api/login", { email, password });
+      const userData = await response.json();
+      
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
+    } catch (error: any) {
+      throw new Error(error.message || "Login failed");
+    }
+  };
+
+  const register = async (userData: InsertUser) => {
+    try {
+      const response = await apiRequest("POST", "/api/register", userData);
+      const newUser = await response.json();
+      
+      // Auto-login after registration
+      setUser(newUser);
+      localStorage.setItem("user", JSON.stringify(newUser));
+    } catch (error: any) {
+      throw new Error(error.message || "Registration failed");
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("user");
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+}

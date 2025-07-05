@@ -1,0 +1,52 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
+
+export function SearchHero() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [, setLocation] = useLocation();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      setLocation(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  return (
+    <section className="gradient-gun-hero py-16">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 className="text-4xl md:text-5xl font-oswald font-bold text-white mb-4">
+          PREMIUM FIREARMS & ACCESSORIES
+        </h1>
+        <p className="text-xl text-gun-gray-light mb-8 font-roboto-condensed">
+          Professional-grade equipment for serious shooters
+        </p>
+        
+        {/* Large Search Box */}
+        <div className="relative max-w-2xl mx-auto">
+          <form onSubmit={handleSearch} className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gun-gray-light" />
+            </div>
+            <Input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-24 py-4 text-lg border-2 border-gun-gold rounded-lg focus:outline-none focus:ring-2 focus:ring-gun-gold focus:border-transparent bg-white text-gun-black placeholder-gun-gray-light"
+              placeholder="Search firearms, accessories, ammunition..."
+            />
+            <Button
+              type="submit"
+              className="absolute right-2 top-2 bottom-2 bg-gun-gold hover:bg-gun-gold-bright text-gun-black px-6 rounded-md font-medium transition-colors duration-200"
+            >
+              Search
+            </Button>
+          </form>
+        </div>
+      </div>
+    </section>
+  );
+}
