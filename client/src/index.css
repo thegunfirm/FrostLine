@@ -138,7 +138,7 @@
   border-radius: 2px;
   animation: glintMove 3s linear infinite;
   pointer-events: none;
-  z-index: 15;
+  z-index: 25;
 }
 
 .border-3 {

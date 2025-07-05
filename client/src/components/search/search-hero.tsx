@@ -30,7 +30,7 @@ export function SearchHero() {
           <form onSubmit={handleSearch} className="flex gap-2">
             <div className="relative flex-1">
               {/* Glint animation */}
-              <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-lg">
+              <div className="absolute -inset-0.5 pointer-events-none overflow-hidden rounded-lg">
                 <div className="glint-animation"></div>
               </div>
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-20">
@@ -40,7 +40,7 @@ export function SearchHero() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 py-4 text-lg border-2 border-gun-gold rounded-lg focus:outline-none focus:ring-2 focus:ring-gun-gold bg-white text-gun-black placeholder-gun-gray-light relative z-10 shadow-lg"
+                className="w-full pl-12 py-4 text-lg border-2 border-gun-gold rounded-lg focus:outline-none focus:ring-2 focus:ring-gun-gold bg-white text-gun-black placeholder-gun-gray-light relative z-10 shadow-lg box-border"
                 placeholder="Search firearms, accessories, ammunition..."
               />
             </div>
