@@ -110,23 +110,23 @@
 @keyframes glintMove {
   0% {
     left: -20px;
-    top: 0;
+    top: -2px;
   }
   25% {
-    left: 100%;
-    top: 0;
+    left: calc(100% + 2px);
+    top: -2px;
   }
   50% {
-    left: 100%;
-    top: 100%;
+    left: calc(100% + 2px);
+    top: calc(100% + 2px);
   }
   75% {
     left: -20px;
-    top: 100%;
+    top: calc(100% + 2px);
   }
   100% {
     left: -20px;
-    top: 0;
+    top: -2px;
   }
 }
 
@@ -134,7 +134,7 @@
   position: absolute;
   width: 20px;
   height: 3px;
-  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.9), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
   border-radius: 2px;
   animation: glintMove 3s linear infinite;
   pointer-events: none;
