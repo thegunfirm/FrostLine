@@ -22,7 +22,7 @@ export function SearchHero() {
           PREMIUM FIREARMS & ACCESSORIES
         </h1>
         <p className="text-xl text-gun-gray-light mb-8 font-roboto-condensed">
-          Professional-grade equipment for serious shooters
+          {/* CMS Content Placeholder - Hero Subtitle */}
         </p>
         
         {/* Large Search Box */}
