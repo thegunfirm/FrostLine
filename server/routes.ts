@@ -4,8 +4,8 @@ import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema } from "@shared/schema";
 import { z } from "zod";
-import ApiContracts from "authorizenet";
 // Temporarily disabled while fixing import issues
+// import ApiContracts from "authorizenet";
 // import { hybridSearch } from "./services/hybrid-search";
 // import { rsrAPI } from "./services/rsr-api";
 
@@ -86,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         offset = "0"
       } = req.query;
 
-      const userId = req.user?.id;
+      // const userId = req.user?.id;
 
       const searchOptions = {
         query: search as string,
@@ -495,6 +495,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("No result queries error:", error);
       res.status(500).json({ message: "Failed to fetch no result queries" });
+    }
+  });
+
+  // Create sample products for testing
+  app.post("/api/admin/create-sample-products", async (req, res) => {
+    try {
+      console.log("Creating sample products...");
+      
+      const sampleProducts = [
+        {
+          name: "Glock 19 Gen 5 9mm Pistol",
+          description: "The Glock 19 Gen 5 represents the pinnacle of Glock engineering excellence. This compact pistol combines reliability, accuracy, and ease of use in a versatile package suitable for both professional and personal defense applications.",
+          category: "Handguns",
+          manufacturer: "Glock",
+          sku: "GLK-G19G5-9MM",
+          priceWholesale: "499.99",
+          priceBronze: "549.99",
+          priceGold: "529.99",
+          pricePlatinum: "509.99",
+          inStock: true,
+          stockQuantity: 15,
+          distributor: "Sample",
+          requiresFFL: true,
+          tags: ["Handguns", "Glock", "9mm", "Striker-Fired"],
+          images: ["https://via.placeholder.com/600x400/2C3E50/FFFFFF?text=Glock+19+Gen+5"],
+          isActive: true
+        },
+        {
+          name: "Smith & Wesson M&P Shield Plus 9mm",
+          description: "The M&P Shield Plus delivers maximum capacity in a micro-compact design. Features an 18-degree grip angle for natural point of aim and enhanced grip texture for improved control.",
+          category: "Handguns",
+          manufacturer: "Smith & Wesson",
+          sku: "SW-SHIELDPLUS-9MM",
+          priceWholesale: "399.99",
+          priceBronze: "449.99",
+          priceGold: "429.99",
+          pricePlatinum: "409.99",
+          inStock: true,
+          stockQuantity: 8,
+          distributor: "Sample",
+          requiresFFL: true,
+          tags: ["Handguns", "Smith & Wesson", "9mm", "Concealed Carry"],
+          images: ["https://via.placeholder.com/600x400/8B4513/FFFFFF?text=SW+Shield+Plus"],
+          isActive: true
+        },
+        {
+          name: "Ruger 10/22 Takedown .22 LR Rifle",
+          description: "Americas favorite .22 rifle in a convenient takedown configuration. Features easy breakdown with simple push of a recessed button. Perfect for training, plinking, and small game hunting.",
+          category: "Rifles",
+          manufacturer: "Ruger",
+          sku: "RGR-1022TD-22LR",
+          priceWholesale: "279.99",
+          priceBronze: "329.99",
+          priceGold: "309.99",
+          pricePlatinum: "289.99",
+          inStock: true,
+          stockQuantity: 12,
+          distributor: "Sample",
+          requiresFFL: true,
+          tags: ["Rifles", "Ruger", ".22 LR", "Takedown"],
+          images: ["https://via.placeholder.com/600x400/654321/FFFFFF?text=Ruger+10/22"],
+          isActive: true
+        },
+        {
+          name: "Federal Premium 9mm 124gr HST JHP",
+          description: "Federal Premium Personal Defense HST ammunition delivers consistent expansion and optimum penetration for personal protection. Law enforcement proven.",
+          category: "Ammunition",
+          manufacturer: "Federal",
+          sku: "FED-9HST124-50",
+          priceWholesale: "24.99",
+          priceBronze: "29.99",
+          priceGold: "27.99",
+          pricePlatinum: "25.99",
+          inStock: true,
+          stockQuantity: 50,
+          distributor: "Sample",
+          requiresFFL: false,
+          tags: ["Ammunition", "Federal", "9mm", "HST", "Self Defense"],
+          images: ["https://via.placeholder.com/600x400/FF6B35/FFFFFF?text=Federal+HST+9mm"],
+          isActive: true
+        },
+        {
+          name: "Vortex Crossfire Red Dot Sight",
+          description: "The Crossfire red dot delivers maximum versatility in a compact package. Features unlimited eye relief, 1x magnification, and a 2 MOA red dot reticle.",
+          category: "Optics",
+          manufacturer: "Vortex",
+          sku: "VTX-CF-RD2",
+          priceWholesale: "129.99",
+          priceBronze: "179.99",
+          priceGold: "159.99",
+          pricePlatinum: "139.99",
+          inStock: true,
+          stockQuantity: 25,
+          distributor: "Sample",
+          requiresFFL: false,
+          tags: ["Optics", "Vortex", "Red Dot", "1x"],
+          images: ["https://via.placeholder.com/600x400/FF0000/FFFFFF?text=Vortex+Crossfire"],
+          isActive: true
+        }
+      ];
+      
+      let insertedCount = 0;
+      for (const productData of sampleProducts) {
+        try {
+          await storage.createProduct(productData);
+          insertedCount++;
+        } catch (error) {
+          console.error(`Error inserting product ${productData.sku}:`, error);
+        }
+      }
+      
+      console.log(`Successfully created ${insertedCount} sample products`);
+      res.json({ 
+        message: `Successfully created ${insertedCount} sample products`,
+        inserted: insertedCount
+      });
+    } catch (error: any) {
+      console.error("Sample product creation error:", error);
+      res.status(500).json({ error: error.message });
     }
   });
 

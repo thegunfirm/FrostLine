@@ -1,4 +1,4 @@
-const algoliasearch = require('algoliasearch');
+import * as algoliasearch from 'algoliasearch';
 import { RSRProduct } from './rsr-api';
 
 export interface AlgoliaProduct {
