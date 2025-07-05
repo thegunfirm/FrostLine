@@ -109,48 +109,48 @@
 
 @keyframes glintMove {
   0% {
-    left: -10px;
-    top: -2px;
+    left: -17px;
+    top: 2px;
     transform: rotate(0deg);
   }
   24% {
-    left: calc(100% - 10px);
-    top: -2px;
+    left: calc(100% - 17px);
+    top: 2px;
     transform: rotate(0deg);
   }
   25% {
-    left: calc(100% + 2px);
-    top: -10px;
+    left: calc(100% - 5px);
+    top: -7px;
     transform: rotate(90deg);
   }
   49% {
-    left: calc(100% + 2px);
-    top: calc(100% - 10px);
+    left: calc(100% - 5px);
+    top: calc(100% - 17px);
     transform: rotate(90deg);
   }
   50% {
-    left: calc(100% + 10px);
-    top: calc(100% + 2px);
+    left: calc(100% - 5px);
+    top: calc(100% - 5px);
     transform: rotate(180deg);
   }
   74% {
-    left: 10px;
-    top: calc(100% + 2px);
+    left: 3px;
+    top: calc(100% - 5px);
     transform: rotate(180deg);
   }
   75% {
-    left: -2px;
-    top: calc(100% + 10px);
+    left: -5px;
+    top: calc(100% + 3px);
     transform: rotate(270deg);
   }
   99% {
-    left: -2px;
-    top: 10px;
+    left: -5px;
+    top: 3px;
     transform: rotate(270deg);
   }
   100% {
-    left: -10px;
-    top: -2px;
+    left: -17px;
+    top: 2px;
     transform: rotate(360deg);
   }
 }
