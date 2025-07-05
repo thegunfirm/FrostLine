@@ -100,14 +100,14 @@ export function Header() {
               {/* Spacer for logo */}
               <div className="w-48"></div>
               
-              {/* Category buttons - shifted right but still distributed evenly */}
-              <div className="flex flex-1 justify-between">
+              {/* Category buttons - evenly distributed */}
+              <div className="flex flex-1 justify-evenly">
                 {categories.map((category, index) => (
                   <button
                     key={category}
                     onClick={() => handleCategoryClick(category)}
                     className={cn(
-                      "flex-1 py-3 px-2 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-sm tracking-wide uppercase",
+                      "py-3 px-4 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-base tracking-widest uppercase min-w-0",
                       index < categories.length - 1 && "border-r border-gun-black"
                     )}
                   >
