@@ -28,7 +28,8 @@ export function SearchHero() {
         {/* Large Search Box */}
         <div className="relative max-w-2xl mx-auto">
           <form onSubmit={handleSearch} className="flex gap-2">
-            <div className="relative flex-1 search-border-animation">
+            <div className="relative flex-1">
+              <div className="search-border-animation absolute inset-0 pointer-events-none"></div>
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
                 <Search className="h-5 w-5 text-gun-gray-light" />
               </div>
