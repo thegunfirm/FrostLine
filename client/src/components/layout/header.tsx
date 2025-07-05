@@ -37,18 +37,18 @@ export function Header() {
   };
 
   return (
-    <header className="bg-gun-black text-white shadow-lg sticky top-0 z-50">
+    <header className="bg-gun-black text-white shadow-lg sticky top-0 z-50 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 absolute left-4 top-2 z-20">
             <Link href="/">
               <Logo className="hover:opacity-80 transition-opacity cursor-pointer" />
             </Link>
           </div>
 
           {/* Desktop Search */}
-          <div className="hidden md:flex flex-1 max-w-lg mx-8">
+          <div className="hidden md:flex flex-1 max-w-lg mx-8 ml-48">
             <form onSubmit={handleSearch} className="relative w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-gun-gray-light" />
@@ -95,7 +95,7 @@ export function Header() {
 
         {/* Desktop Category Ribbon */}
         <div className="hidden md:block border-t border-gun-gray bg-gun-gray">
-          <div className="flex justify-between items-center px-0">
+          <div className="flex justify-between items-center px-0 ml-40">
             {categories.map((category, index) => (
               <button
                 key={category}
