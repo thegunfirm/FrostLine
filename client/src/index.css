@@ -107,36 +107,24 @@
   }
 }
 
-@keyframes searchBorder {
+@keyframes borderSpin {
   0% {
-    background: linear-gradient(90deg, transparent 0%, transparent 48%, rgba(212, 175, 55, 1) 50%, rgba(212, 175, 55, 1) 52%, transparent 54%, transparent 100%);
-    background-size: 400% 100%;
-    background-position: 0% 0%;
-  }
-  25% {
-    background: linear-gradient(180deg, transparent 0%, transparent 48%, rgba(212, 175, 55, 1) 50%, rgba(212, 175, 55, 1) 52%, transparent 54%, transparent 100%);
-    background-size: 100% 400%;
-    background-position: 0% 0%;
-  }
-  50% {
-    background: linear-gradient(270deg, transparent 0%, transparent 48%, rgba(212, 175, 55, 1) 50%, rgba(212, 175, 55, 1) 52%, transparent 54%, transparent 100%);
-    background-size: 400% 100%;
-    background-position: 100% 0%;
-  }
-  75% {
-    background: linear-gradient(0deg, transparent 0%, transparent 48%, rgba(212, 175, 55, 1) 50%, rgba(212, 175, 55, 1) 52%, transparent 54%, transparent 100%);
-    background-size: 100% 400%;
-    background-position: 0% 100%;
+    background: conic-gradient(from 0deg, transparent 0deg, rgba(212, 175, 55, 1) 40deg, transparent 80deg, transparent 360deg);
   }
   100% {
-    background: linear-gradient(90deg, transparent 0%, transparent 48%, rgba(212, 175, 55, 1) 50%, rgba(212, 175, 55, 1) 52%, transparent 54%, transparent 100%);
-    background-size: 400% 100%;
-    background-position: 0% 0%;
+    background: conic-gradient(from 360deg, transparent 0deg, rgba(212, 175, 55, 1) 40deg, transparent 80deg, transparent 360deg);
   }
 }
 
 .search-border-animation {
-  animation: searchBorder 3s linear infinite;
+  background: rgba(212, 175, 55, 1);
+  animation: borderSpin 2s linear infinite;
+  border-radius: 0.5rem;
+}
+
+.search-border-animation > div {
+  margin: 2px;
+  border-radius: calc(0.5rem - 2px);
 }
 
 .platinum-glint {
