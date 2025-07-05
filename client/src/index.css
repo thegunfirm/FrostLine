@@ -109,16 +109,16 @@
 
 @keyframes glintMove {
   0% {
-    left: -23px;
+    left: -21px;
     top: 0px;
     transform: rotate(0deg);
   }
   25% {
-    left: calc(100% - 23px);
+    left: calc(100% - 21px);
     top: 0px;
     transform: rotate(0deg);
   }
-  25.1% {
+  25% {
     left: calc(100% - 12px);
     top: -7px;
     transform: rotate(90deg);
@@ -128,17 +128,17 @@
     top: calc(100% - 17px);
     transform: rotate(90deg);
   }
-  50.1% {
+  50% {
     left: calc(100% - 12px);
-    top: calc(100% - 1px);
+    top: calc(100% + 2px);
     transform: rotate(180deg);
   }
   75% {
     left: -2px;
-    top: calc(100% - 1px);
+    top: calc(100% + 2px);
     transform: rotate(180deg);
   }
-  75.1% {
+  75% {
     left: -10px;
     top: calc(100% + 3px);
     transform: rotate(270deg);
@@ -156,7 +156,7 @@
   height: 3px;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
   border-radius: 2px;
-  animation: glintMove 3s linear infinite;
+  animation: glintMove 5s linear infinite;
   pointer-events: none;
   z-index: 25;
 }
