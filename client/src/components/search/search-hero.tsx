@@ -30,7 +30,7 @@ export function SearchHero() {
           <form onSubmit={handleSearch} className="flex gap-2">
             <div className="relative flex-1">
               {/* Glint animation */}
-              <div className="absolute -inset-0.5 pointer-events-none overflow-hidden rounded-lg">
+              <div className="absolute -inset-0.5 pointer-events-none overflow-hidden rounded-lg z-30">
                 <div className="glint-animation"></div>
               </div>
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-20">
