@@ -107,20 +107,22 @@
   }
 }
 
-@keyframes borderRotate {
+@keyframes borderSweep {
   0% {
-    transform: rotate(0deg);
+    background: conic-gradient(from 0deg, transparent 0deg, rgba(212, 175, 55, 0.8) 10deg, transparent 20deg);
   }
   100% {
-    transform: rotate(360deg);
+    background: conic-gradient(from 360deg, transparent 0deg, rgba(212, 175, 55, 0.8) 10deg, transparent 20deg);
   }
 }
 
 .search-border-animation {
   border-radius: 0.5rem;
-  background: conic-gradient(from 0deg, transparent 70%, rgba(212, 175, 55, 1) 85%, transparent 100%);
-  animation: borderRotate 2s linear infinite;
-  opacity: 0.8;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  padding: 2px;
+  animation: borderSweep 3s linear infinite;
+  pointer-events: none;
 }
 
 .platinum-glint {
