@@ -41,7 +41,7 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex-shrink-0 absolute left-4 top-0 z-20 bg-black px-6 pt-4 pb-2 rounded-b-lg" style={{height: 'calc(4rem + 3rem)'}}>
+          <div className="flex-shrink-0 absolute left-0 top-0 z-20 bg-black px-8 pt-3 pb-1 rounded-br-lg" style={{height: 'calc(4rem + 3rem + 2px)'}}>
             <Link href="/">
               <Logo className="hover:opacity-80 transition-opacity cursor-pointer scale-150" />
             </Link>
