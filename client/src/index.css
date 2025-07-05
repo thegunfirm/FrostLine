@@ -107,42 +107,36 @@
   }
 }
 
-@keyframes searchPulse {
+@keyframes searchBorder {
   0% {
-    border-color: rgba(212, 175, 55, 0.3);
-    box-shadow: 
-      0 0 0 1px rgba(212, 175, 55, 0.1),
-      2px 0 8px rgba(212, 175, 55, 0.4),
-      0 0 0 0 rgba(212, 175, 55, 0);
+    background: linear-gradient(90deg, transparent 0%, transparent 48%, rgba(212, 175, 55, 1) 50%, rgba(212, 175, 55, 1) 52%, transparent 54%, transparent 100%);
+    background-size: 400% 100%;
+    background-position: 0% 0%;
   }
   25% {
-    border-color: rgba(212, 175, 55, 0.3);
-    box-shadow: 
-      0 0 0 1px rgba(212, 175, 55, 0.1),
-      0 2px 8px rgba(212, 175, 55, 0.4),
-      0 0 0 0 rgba(212, 175, 55, 0);
+    background: linear-gradient(180deg, transparent 0%, transparent 48%, rgba(212, 175, 55, 1) 50%, rgba(212, 175, 55, 1) 52%, transparent 54%, transparent 100%);
+    background-size: 100% 400%;
+    background-position: 0% 0%;
   }
   50% {
-    border-color: rgba(212, 175, 55, 0.3);
-    box-shadow: 
-      0 0 0 1px rgba(212, 175, 55, 0.1),
-      -2px 0 8px rgba(212, 175, 55, 0.4),
-      0 0 0 0 rgba(212, 175, 55, 0);
+    background: linear-gradient(270deg, transparent 0%, transparent 48%, rgba(212, 175, 55, 1) 50%, rgba(212, 175, 55, 1) 52%, transparent 54%, transparent 100%);
+    background-size: 400% 100%;
+    background-position: 100% 0%;
   }
   75% {
-    border-color: rgba(212, 175, 55, 0.3);
-    box-shadow: 
-      0 0 0 1px rgba(212, 175, 55, 0.1),
-      0 -2px 8px rgba(212, 175, 55, 0.4),
-      0 0 0 0 rgba(212, 175, 55, 0);
+    background: linear-gradient(0deg, transparent 0%, transparent 48%, rgba(212, 175, 55, 1) 50%, rgba(212, 175, 55, 1) 52%, transparent 54%, transparent 100%);
+    background-size: 100% 400%;
+    background-position: 0% 100%;
   }
   100% {
-    border-color: rgba(212, 175, 55, 0.3);
-    box-shadow: 
-      0 0 0 1px rgba(212, 175, 55, 0.1),
-      2px 0 8px rgba(212, 175, 55, 0.4),
-      0 0 0 0 rgba(212, 175, 55, 0);
+    background: linear-gradient(90deg, transparent 0%, transparent 48%, rgba(212, 175, 55, 1) 50%, rgba(212, 175, 55, 1) 52%, transparent 54%, transparent 100%);
+    background-size: 400% 100%;
+    background-position: 0% 0%;
   }
+}
+
+.search-border-animation {
+  animation: searchBorder 3s linear infinite;
 }
 
 .platinum-glint {
