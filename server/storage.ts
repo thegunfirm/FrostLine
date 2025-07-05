@@ -117,48 +117,39 @@ export class DatabaseStorage implements IStorage {
     limit?: number;
     offset?: number;
   }): Promise<Product[]> {
-    let query = db.select().from(products);
+    // For now, use the same pattern as getFeaturedProducts but apply filters after
+    const allProducts = await db.select().from(products)
+      .where(eq(products.isActive, true))
+      .orderBy(desc(products.createdAt));
     
-    const conditions = [];
+    // Apply client-side filtering for now to test functionality
+    let filteredProducts = allProducts;
     
     if (filters?.category) {
-      conditions.push(eq(products.category, filters.category));
+      filteredProducts = filteredProducts.filter(p => p.category === filters.category);
     }
     
     if (filters?.manufacturer) {
-      conditions.push(eq(products.manufacturer, filters.manufacturer));
+      filteredProducts = filteredProducts.filter(p => p.manufacturer === filters.manufacturer);
     }
     
     if (filters?.search) {
-      conditions.push(
-        or(
-          like(products.name, `%${filters.search}%`),
-          like(products.description, `%${filters.search}%`)
-        )
+      const searchTerm = filters.search.toLowerCase();
+      filteredProducts = filteredProducts.filter(p => 
+        p.name.toLowerCase().includes(searchTerm) || 
+        (p.description && p.description.toLowerCase().includes(searchTerm))
       );
     }
     
     if (filters?.inStock !== undefined) {
-      conditions.push(eq(products.inStock, filters.inStock));
+      filteredProducts = filteredProducts.filter(p => p.inStock === filters.inStock);
     }
     
-    conditions.push(eq(products.isActive, true));
+    // Apply pagination
+    const offset = filters?.offset || 0;
+    const limit = filters?.limit || 20;
     
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-    
-    query = query.orderBy(desc(products.createdAt));
-    
-    if (filters?.limit) {
-      query = query.limit(filters.limit);
-    }
-    
-    if (filters?.offset) {
-      query = query.offset(filters.offset);
-    }
-    
-    return await query;
+    return filteredProducts.slice(offset, offset + limit);
   }
 
   async getProduct(id: number): Promise<Product | undefined> {

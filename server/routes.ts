@@ -88,17 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // const userId = req.user?.id;
 
-      const searchOptions = {
-        query: search as string,
-        category: category as string,
-        manufacturer: manufacturer as string,
-        inStock: inStock === 'true' ? true : undefined,
-        priceMin: priceMin ? parseFloat(priceMin as string) : undefined,
-        priceMax: priceMax ? parseFloat(priceMax as string) : undefined,
-        limit: parseInt(limit as string),
-        offset: parseInt(offset as string),
-        userId
-      };
+      // Search options temporarily disabled
 
       // Hybrid search temporarily disabled - using database fallback
       // const searchResult = await hybridSearch.searchProducts(searchOptions);
@@ -106,31 +96,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Fallback to database search for now
       const products = await storage.getProducts({
-        category: category as string,
-        manufacturer: manufacturer as string,
-        search: search as string,
-        inStock: inStock === "true",
-        limit: parseInt(limit as string),
-        offset: parseInt(offset as string),
+        category: category ? category as string : undefined,
+        manufacturer: manufacturer ? manufacturer as string : undefined,
+        search: search ? search as string : undefined,
+        inStock: inStock === "true" ? true : inStock === "false" ? false : undefined,
+        limit: limit ? parseInt(limit as string) : 20,
+        offset: offset ? parseInt(offset as string) : 0,
       });
       
       res.json(products);
     } catch (error) {
-      console.error("Hybrid search error:", error);
-      // Fallback to database search
-      try {
-        const products = await storage.getProducts({
-          category: category as string,
-          manufacturer: manufacturer as string,
-          search: search as string,
-          inStock: inStock === "true",
-          limit: parseInt(limit as string),
-          offset: parseInt(offset as string),
-        });
-        res.json(products);
-      } catch (fallbackError) {
-        res.status(500).json({ message: "Search temporarily unavailable" });
-      }
+      console.error("Product search error:", error);
+      res.status(500).json({ message: "Search temporarily unavailable" });
     }
   });
 
