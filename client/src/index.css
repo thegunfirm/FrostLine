@@ -107,22 +107,17 @@
   }
 }
 
-@keyframes borderSweep {
-  0% {
-    background: conic-gradient(from 0deg, transparent 0deg, rgba(212, 175, 55, 0.8) 10deg, transparent 20deg);
+@keyframes borderGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.3);
   }
-  100% {
-    background: conic-gradient(from 360deg, transparent 0deg, rgba(212, 175, 55, 0.8) 10deg, transparent 20deg);
+  50% {
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.7), 0 0 8px rgba(212, 175, 55, 0.4);
   }
 }
 
-.search-border-animation {
-  border-radius: 0.5rem;
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: xor;
-  padding: 2px;
-  animation: borderSweep 3s linear infinite;
-  pointer-events: none;
+.search-input-glow {
+  animation: borderGlow 2s ease-in-out infinite;
 }
 
 .platinum-glint {
