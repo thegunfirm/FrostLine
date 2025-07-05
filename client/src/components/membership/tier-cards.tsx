@@ -71,7 +71,7 @@ function TierCard({ tier, price, features, isPopular, onSelect }: TierCardProps)
           <CardDescription className="text-gray-200">FREE MEMBERSHIP</CardDescription>
         )}
         {tier === "Gold" && (
-          <CardDescription className="text-gun-black">BEST VALUE</CardDescription>
+          <CardDescription className="text-gun-black">EXCLUSIVE MEMBERSHIP</CardDescription>
         )}
         {tier === "Platinum" && (
           <CardDescription className="text-gray-200">MAXIMUM SAVINGS</CardDescription>
@@ -118,7 +118,12 @@ export function TierCards() {
     // TODO: Implement tier selection logic
   };
 
-  const tiers = [
+  const tiers: Array<{
+    tier: "Bronze" | "Gold" | "Platinum";
+    price: number;
+    features: string[];
+    isPopular?: boolean;
+  }> = [
     {
       tier: "Bronze" as const,
       price: 0,
@@ -138,8 +143,7 @@ export function TierCards() {
         "Priority customer support",
         "Free shipping on orders $200+",
         "Access to exclusive deals"
-      ],
-      isPopular: true
+      ]
     },
     {
       tier: "Platinum" as const,

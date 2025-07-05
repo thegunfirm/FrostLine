@@ -107,6 +107,17 @@
   }
 }
 
+@keyframes searchPulse {
+  0%, 100% {
+    border-color: rgba(212, 175, 55, 0.6);
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0);
+  }
+  50% {
+    border-color: rgba(212, 175, 55, 1);
+    box-shadow: 0 0 0 6px rgba(212, 175, 55, 0.15);
+  }
+}
+
 .platinum-glint {
   position: relative;
   overflow: hidden;
@@ -122,6 +133,10 @@
   height: 100%;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
   animation: goldShimmer 3s ease-in-out infinite;
+}
+
+.search-pulse {
+  animation: searchPulse 3s ease-in-out infinite;
 }
 
 /* Category ribbon styles removed - handled directly in component */
