@@ -107,21 +107,33 @@
   }
 }
 
-@keyframes glintMove {
+@keyframes travelPath {
   0% {
-    transform: rotate(0deg);
+    transform: translateX(0px) translateY(0px);
+  }
+  25% {
+    transform: translateX(calc(100% + 8px)) translateY(0px);
+  }
+  50% {
+    transform: translateX(calc(100% + 8px)) translateY(calc(100% + 8px));
+  }
+  75% {
+    transform: translateX(0px) translateY(calc(100% + 8px));
   }
   100% {
-    transform: rotate(360deg);
+    transform: translateX(0px) translateY(0px);
   }
 }
 
-.border-glint-animation {
+.traveling-glint {
   position: absolute;
-  inset: 0;
-  border-radius: 0.5rem;
-  background: conic-gradient(from 0deg, transparent 80%, rgba(212, 175, 55, 0.8) 90%, transparent 100%);
-  animation: glintMove 2s linear infinite;
+  width: 20px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.8), transparent);
+  border-radius: 2px;
+  top: -1px;
+  left: -1px;
+  animation: travelPath 3s linear infinite;
   pointer-events: none;
   z-index: 5;
 }

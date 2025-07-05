@@ -29,8 +29,8 @@ export function SearchHero() {
         <div className="relative max-w-2xl mx-auto">
           <form onSubmit={handleSearch} className="flex gap-2">
             <div className="relative flex-1">
-              <div className="absolute -inset-1 pointer-events-none">
-                <div className="border-glint-animation"></div>
+              <div className="absolute -inset-2 pointer-events-none">
+                <div className="traveling-glint"></div>
               </div>
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-20">
                 <Search className="h-5 w-5 text-gun-gray-light" />
