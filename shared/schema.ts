@@ -90,6 +90,19 @@ export const tierPricingRules = pgTable("tier_pricing_rules", {
   isActive: boolean("is_active").default(true),
 });
 
+export const heroCarouselSlides = pgTable("hero_carousel_slides", {
+  id: serial("id").primaryKey(),
+  title: text("title"),
+  subtitle: text("subtitle"),
+  imageUrl: text("image_url").notNull(),
+  buttonText: text("button_text"),
+  buttonLink: text("button_link"),
+  displayOrder: integer("display_order").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many, one }) => ({
   orders: many(orders),
@@ -158,6 +171,16 @@ export const insertFflSchema = createInsertSchema(ffls).pick({
   zip: true,
 });
 
+export const insertHeroCarouselSlideSchema = createInsertSchema(heroCarouselSlides).pick({
+  title: true,
+  subtitle: true,
+  imageUrl: true,
+  buttonText: true,
+  buttonLink: true,
+  displayOrder: true,
+  isActive: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -169,3 +192,5 @@ export type FFL = typeof ffls.$inferSelect;
 export type InsertFFL = z.infer<typeof insertFflSchema>;
 export type StateShippingPolicy = typeof stateShippingPolicies.$inferSelect;
 export type TierPricingRule = typeof tierPricingRules.$inferSelect;
+export type HeroCarouselSlide = typeof heroCarouselSlides.$inferSelect;
+export type InsertHeroCarouselSlide = z.infer<typeof insertHeroCarouselSlideSchema>;

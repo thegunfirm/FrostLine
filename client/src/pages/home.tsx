@@ -1,11 +1,14 @@
 import { SearchHero } from "@/components/search/search-hero";
+import { HeroCarousel } from "@/components/hero/hero-carousel";
 import { TierCards } from "@/components/membership/tier-cards";
 import { ProductGrid } from "@/components/product/product-grid";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProducts } from "@/hooks/use-products";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Home() {
   const { data: featuredProducts, isLoading: productsLoading } = useProducts({
@@ -13,6 +16,15 @@ export default function Home() {
     limit: 8
   });
   const { user } = useAuth();
+
+  // Fetch carousel slides for content managers
+  const { data: carouselSlides } = useQuery({
+    queryKey: ["/api/carousel/slides"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/carousel/slides");
+      return response.json();
+    },
+  });
 
   const handleAddToCart = (product: any) => {
     console.log("Add to cart:", product);
@@ -26,6 +38,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
+      {/* Hero Carousel */}
+      {carouselSlides && carouselSlides.length > 0 && (
+        <HeroCarousel slides={carouselSlides} />
+      )}
+      
       {/* Hero Search Section */}
       <SearchHero />
 

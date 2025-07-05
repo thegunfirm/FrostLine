@@ -41,15 +41,15 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex-shrink-0 absolute left-4 top-2 z-20">
+          <div className="flex-shrink-0 absolute left-4 top-2 z-20 bg-black px-4 py-2 rounded-b-lg">
             <Link href="/">
               <Logo className="hover:opacity-80 transition-opacity cursor-pointer" />
             </Link>
           </div>
 
-          {/* Desktop Search */}
-          <div className="hidden md:flex flex-1 max-w-lg mx-8 ml-48">
-            <form onSubmit={handleSearch} className="relative w-full">
+          {/* Desktop Search - Centered */}
+          <div className="hidden md:flex flex-1 justify-center">
+            <form onSubmit={handleSearch} className="relative max-w-lg w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-gun-gray-light" />
               </div>
@@ -95,19 +95,27 @@ export function Header() {
 
         {/* Desktop Category Ribbon */}
         <div className="hidden md:block border-t border-gun-gray bg-gun-gray">
-          <div className="flex justify-between items-center px-0 ml-40">
-            {categories.map((category, index) => (
-              <button
-                key={category}
-                onClick={() => handleCategoryClick(category)}
-                className={cn(
-                  "flex-1 py-3 px-2 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-sm tracking-wide uppercase",
-                  index < categories.length - 1 && "border-r border-gun-black"
-                )}
-              >
-                {category}
-              </button>
-            ))}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div className="flex justify-between items-center">
+              {/* Spacer for logo */}
+              <div className="w-48"></div>
+              
+              {/* Category buttons - shifted right but still distributed evenly */}
+              <div className="flex flex-1 justify-between">
+                {categories.map((category, index) => (
+                  <button
+                    key={category}
+                    onClick={() => handleCategoryClick(category)}
+                    className={cn(
+                      "flex-1 py-3 px-2 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-sm tracking-wide uppercase",
+                      index < categories.length - 1 && "border-r border-gun-black"
+                    )}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 

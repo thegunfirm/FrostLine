@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
-import { insertUserSchema, insertProductSchema, insertOrderSchema } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema } from "@shared/schema";
 import { z } from "zod";
 import ApiContracts from "authorizenet";
 
@@ -343,6 +343,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Membership payment error:", error);
       res.status(500).json({ message: "Membership payment processing failed" });
+    }
+  });
+
+  // Hero Carousel Slides Management
+  app.get("/api/carousel/slides", async (req, res) => {
+    try {
+      const slides = await storage.getActiveHeroCarouselSlides();
+      res.json(slides);
+    } catch (error) {
+      console.error("Error fetching carousel slides:", error);
+      res.status(500).json({ message: "Failed to fetch carousel slides" });
+    }
+  });
+
+  app.get("/api/carousel/slides/all", async (req, res) => {
+    try {
+      const slides = await storage.getHeroCarouselSlides();
+      res.json(slides);
+    } catch (error) {
+      console.error("Error fetching all carousel slides:", error);
+      res.status(500).json({ message: "Failed to fetch carousel slides" });
+    }
+  });
+
+  app.post("/api/carousel/slides", async (req, res) => {
+    try {
+      const slideData = insertHeroCarouselSlideSchema.parse(req.body);
+      const slide = await storage.createHeroCarouselSlide(slideData);
+      res.status(201).json(slide);
+    } catch (error) {
+      console.error("Error creating carousel slide:", error);
+      res.status(500).json({ message: "Failed to create carousel slide" });
+    }
+  });
+
+  app.put("/api/carousel/slides/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const slide = await storage.updateHeroCarouselSlide(id, updates);
+      res.json(slide);
+    } catch (error) {
+      console.error("Error updating carousel slide:", error);
+      res.status(500).json({ message: "Failed to update carousel slide" });
+    }
+  });
+
+  app.delete("/api/carousel/slides/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteHeroCarouselSlide(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting carousel slide:", error);
+      res.status(500).json({ message: "Failed to delete carousel slide" });
     }
   });
 

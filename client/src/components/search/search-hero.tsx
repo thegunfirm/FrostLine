@@ -27,20 +27,22 @@ export function SearchHero() {
         
         {/* Large Search Box */}
         <div className="relative max-w-2xl mx-auto">
-          <form onSubmit={handleSearch} className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gun-gray-light" />
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gun-gray-light" />
+              </div>
+              <Input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 py-4 text-lg border-2 border-gun-gold rounded-lg focus:outline-none focus:ring-2 focus:ring-gun-gold focus:border-transparent bg-white text-gun-black placeholder-gun-gray-light"
+                placeholder="Search firearms, accessories, ammunition..."
+              />
             </div>
-            <Input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-24 py-4 text-lg border-2 border-gun-gold rounded-lg focus:outline-none focus:ring-2 focus:ring-gun-gold focus:border-transparent bg-white text-gun-black placeholder-gun-gray-light"
-              placeholder="Search firearms, accessories, ammunition..."
-            />
             <Button
               type="submit"
-              className="absolute right-2 top-2 bottom-2 bg-gun-gold hover:bg-gun-gold-bright text-gun-black px-6 rounded-md font-medium transition-colors duration-200"
+              className="bg-gun-gold hover:bg-gun-gold-bright text-gun-black px-8 py-4 rounded-lg font-medium transition-colors duration-200 text-lg"
             >
               Search
             </Button>

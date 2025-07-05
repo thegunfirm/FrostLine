@@ -5,6 +5,7 @@ import {
   ffls, 
   stateShippingPolicies,
   tierPricingRules,
+  heroCarouselSlides,
   type User, 
   type InsertUser,
   type Product,
@@ -14,7 +15,9 @@ import {
   type FFL,
   type InsertFFL,
   type StateShippingPolicy,
-  type TierPricingRule
+  type TierPricingRule,
+  type HeroCarouselSlide,
+  type InsertHeroCarouselSlide
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, like, and, or, desc, asc } from "drizzle-orm";
@@ -65,6 +68,14 @@ export interface IStorage {
   // Tier pricing rules
   getTierPricingRules(): Promise<TierPricingRule[]>;
   getActiveTierPricingRules(): Promise<TierPricingRule[]>;
+  
+  // Hero carousel slides
+  getHeroCarouselSlides(): Promise<HeroCarouselSlide[]>;
+  getHeroCarouselSlide(id: number): Promise<HeroCarouselSlide | undefined>;
+  createHeroCarouselSlide(slide: InsertHeroCarouselSlide): Promise<HeroCarouselSlide>;
+  updateHeroCarouselSlide(id: number, updates: Partial<HeroCarouselSlide>): Promise<HeroCarouselSlide>;
+  deleteHeroCarouselSlide(id: number): Promise<void>;
+  getActiveHeroCarouselSlides(): Promise<HeroCarouselSlide[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -297,6 +308,44 @@ export class DatabaseStorage implements IStorage {
   async getActiveTierPricingRules(): Promise<TierPricingRule[]> {
     return await db.select().from(tierPricingRules)
       .where(eq(tierPricingRules.isActive, true));
+  }
+
+  // Hero carousel slides
+  async getHeroCarouselSlides(): Promise<HeroCarouselSlide[]> {
+    return await db.select().from(heroCarouselSlides)
+      .orderBy(asc(heroCarouselSlides.displayOrder));
+  }
+
+  async getHeroCarouselSlide(id: number): Promise<HeroCarouselSlide | undefined> {
+    const [slide] = await db.select().from(heroCarouselSlides)
+      .where(eq(heroCarouselSlides.id, id));
+    return slide || undefined;
+  }
+
+  async createHeroCarouselSlide(insertSlide: InsertHeroCarouselSlide): Promise<HeroCarouselSlide> {
+    const [slide] = await db.insert(heroCarouselSlides)
+      .values(insertSlide)
+      .returning();
+    return slide;
+  }
+
+  async updateHeroCarouselSlide(id: number, updates: Partial<HeroCarouselSlide>): Promise<HeroCarouselSlide> {
+    const [slide] = await db.update(heroCarouselSlides)
+      .set(updates)
+      .where(eq(heroCarouselSlides.id, id))
+      .returning();
+    return slide;
+  }
+
+  async deleteHeroCarouselSlide(id: number): Promise<void> {
+    await db.delete(heroCarouselSlides)
+      .where(eq(heroCarouselSlides.id, id));
+  }
+
+  async getActiveHeroCarouselSlides(): Promise<HeroCarouselSlide[]> {
+    return await db.select().from(heroCarouselSlides)
+      .where(eq(heroCarouselSlides.isActive, true))
+      .orderBy(asc(heroCarouselSlides.displayOrder));
   }
 }
 
