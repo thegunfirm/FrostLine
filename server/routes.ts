@@ -8,6 +8,7 @@ import { z } from "zod";
 // import ApiContracts from "authorizenet";
 // import { hybridSearch } from "./services/hybrid-search";
 import { rsrAPI, type RSRProduct } from "./services/rsr-api";
+import { inventorySync } from "./services/inventory-sync";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -898,6 +899,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("RSR sample sync error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // CMS Admin Routes for Inventory Sync Management
+  app.get("/api/admin/sync-configurations", async (req, res) => {
+    try {
+      const configurations = inventorySync.getSyncConfigurations();
+      res.json(configurations);
+    } catch (error: any) {
+      console.error("Error fetching sync configurations:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/admin/sync-results", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 20;
+      const results = inventorySync.getSyncResults(limit);
+      res.json(results);
+    } catch (error: any) {
+      console.error("Error fetching sync results:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/admin/sync-configurations/:id", async (req, res) => {
+    try {
+      const configId = parseInt(req.params.id);
+      const updates = req.body;
+      
+      const updatedConfig = await inventorySync.updateSyncConfiguration(configId, updates);
+      res.json(updatedConfig);
+    } catch (error: any) {
+      console.error("Error updating sync configuration:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/admin/sync-configurations/:id/run", async (req, res) => {
+    try {
+      const configId = parseInt(req.params.id);
+      
+      const result = await inventorySync.triggerManualSync(configId);
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error running manual sync:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/admin/sync-status", async (req, res) => {
+    try {
+      const runningJobs = inventorySync.getRunningJobs();
+      const configurations = inventorySync.getSyncConfigurations();
+      const recentResults = inventorySync.getSyncResults(5);
+      
+      res.json({
+        runningJobs,
+        configurations: configurations.map(c => ({
+          id: c.id,
+          name: c.name,
+          enabled: c.enabled,
+          nextSync: c.nextSync,
+          lastSync: c.lastSync,
+          isRunning: c.isRunning
+        })),
+        recentResults: recentResults.map(r => ({
+          id: r.id,
+          configId: r.configId,
+          startTime: r.startTime,
+          endTime: r.endTime,
+          status: r.status,
+          productsCreated: r.productsCreated,
+          productsUpdated: r.productsUpdated,
+          errors: r.errors.length
+        }))
+      });
+    } catch (error: any) {
+      console.error("Error fetching sync status:", error);
       res.status(500).json({ error: error.message });
     }
   });
