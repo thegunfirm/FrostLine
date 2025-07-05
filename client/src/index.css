@@ -110,23 +110,23 @@
 @keyframes glintMove {
   0% {
     left: -20px;
-    top: -2px;
+    top: -4px;
   }
   25% {
-    left: calc(100% + 2px);
-    top: -2px;
+    left: calc(100% + 4px);
+    top: -4px;
   }
   50% {
-    left: calc(100% + 2px);
-    top: calc(100% + 2px);
+    left: calc(100% + 4px);
+    top: calc(100% + 4px);
   }
   75% {
     left: -20px;
-    top: calc(100% + 2px);
+    top: calc(100% + 4px);
   }
   100% {
     left: -20px;
-    top: -2px;
+    top: -4px;
   }
 }
 

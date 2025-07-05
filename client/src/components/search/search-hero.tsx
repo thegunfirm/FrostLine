@@ -40,7 +40,7 @@ export function SearchHero() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 py-4 text-lg border-2 border-gun-gold rounded-lg focus:outline-none focus:ring-2 focus:ring-gun-gold bg-white text-gun-black placeholder-gun-gray-light relative z-10 shadow-lg box-border"
+                className="w-full pl-12 py-4 text-lg border-4 border-gun-gold rounded-lg focus:outline-none focus:ring-2 focus:ring-gun-gold bg-white text-gun-black placeholder-gun-gray-light relative z-10 shadow-lg box-border"
                 placeholder="Search firearms, accessories, ammunition..."
               />
             </div>
