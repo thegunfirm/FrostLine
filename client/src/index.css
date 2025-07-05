@@ -107,39 +107,38 @@
   }
 }
 
-@keyframes glintTravel {
+@keyframes glintMove {
   0% {
-    left: 0;
-    top: -2px;
+    left: -20px;
+    top: 0;
   }
   25% {
-    left: calc(100% - 20px);
-    top: -2px;
+    left: 100%;
+    top: 0;
   }
   50% {
-    left: calc(100% - 20px);
-    top: calc(100% + 2px);
+    left: 100%;
+    top: 100%;
   }
   75% {
-    left: 0;
-    top: calc(100% + 2px);
+    left: -20px;
+    top: 100%;
   }
   100% {
-    left: 0;
-    top: -2px;
+    left: -20px;
+    top: 0;
   }
 }
 
-.search-with-glint::before {
-  content: '';
+.glint-animation {
   position: absolute;
   width: 20px;
   height: 3px;
   background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.9), transparent);
   border-radius: 2px;
-  animation: glintTravel 3s linear infinite;
+  animation: glintMove 3s linear infinite;
   pointer-events: none;
-  z-index: 20;
+  z-index: 15;
 }
 
 .border-3 {
