@@ -5,6 +5,9 @@ import bcrypt from "bcrypt";
 import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema } from "@shared/schema";
 import { z } from "zod";
 import ApiContracts from "authorizenet";
+// Temporarily disabled while fixing import issues
+// import { hybridSearch } from "./services/hybrid-search";
+// import { rsrAPI } from "./services/rsr-api";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -69,18 +72,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Product routes
+  // Product routes - Hybrid Search Integration
   app.get("/api/products", async (req, res) => {
     try {
       const {
         category,
         manufacturer,
-        search,
+        search = "",
         inStock,
+        priceMin,
+        priceMax,
         limit = "20",
         offset = "0"
       } = req.query;
+
+      const userId = req.user?.id;
+
+      const searchOptions = {
+        query: search as string,
+        category: category as string,
+        manufacturer: manufacturer as string,
+        inStock: inStock === 'true' ? true : undefined,
+        priceMin: priceMin ? parseFloat(priceMin as string) : undefined,
+        priceMax: priceMax ? parseFloat(priceMax as string) : undefined,
+        limit: parseInt(limit as string),
+        offset: parseInt(offset as string),
+        userId
+      };
+
+      // Hybrid search temporarily disabled - using database fallback
+      // const searchResult = await hybridSearch.searchProducts(searchOptions);
+      // res.json(searchResult.results);
       
+      // Fallback to database search for now
       const products = await storage.getProducts({
         category: category as string,
         manufacturer: manufacturer as string,
@@ -92,8 +116,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(products);
     } catch (error) {
-      console.error("Get products error:", error);
-      res.status(500).json({ message: "Failed to fetch products" });
+      console.error("Hybrid search error:", error);
+      // Fallback to database search
+      try {
+        const products = await storage.getProducts({
+          category: category as string,
+          manufacturer: manufacturer as string,
+          search: search as string,
+          inStock: inStock === "true",
+          limit: parseInt(limit as string),
+          offset: parseInt(offset as string),
+        });
+        res.json(products);
+      } catch (fallbackError) {
+        res.status(500).json({ message: "Search temporarily unavailable" });
+      }
     }
   });
 
@@ -398,6 +435,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting carousel slide:", error);
       res.status(500).json({ message: "Failed to delete carousel slide" });
+    }
+  });
+
+  // RSR API Integration and Hybrid Search Endpoints (Temporarily Disabled)
+  app.post("/api/admin/sync-rsr-catalog", async (req, res) => {
+    try {
+      // await hybridSearch.syncCatalogToAlgolia();
+      res.json({ 
+        success: false, 
+        message: "RSR catalog sync temporarily disabled - infrastructure being set up" 
+      });
+    } catch (error) {
+      console.error("RSR catalog sync error:", error);
+      res.status(500).json({ message: "Catalog sync failed" });
+    }
+  });
+
+  app.post("/api/admin/update-inventory", async (req, res) => {
+    try {
+      // await hybridSearch.updateInventory();
+      res.json({ 
+        success: false, 
+        message: "Inventory update temporarily disabled - infrastructure being set up" 
+      });
+    } catch (error) {
+      console.error("Inventory update error:", error);
+      res.status(500).json({ message: "Inventory update failed" });
+    }
+  });
+
+  app.post("/api/analytics/search-click", async (req, res) => {
+    try {
+      const { searchQuery, clickedStockNo } = req.body;
+      // const userId = req.user?.id;
+      // await hybridSearch.recordClickThrough(searchQuery, clickedStockNo, userId);
+      res.json({ success: true, message: "Click tracking temporarily disabled" });
+    } catch (error) {
+      console.error("Click tracking error:", error);
+      res.status(500).json({ message: "Click tracking failed" });
+    }
+  });
+
+  app.get("/api/analytics/popular-searches", async (req, res) => {
+    try {
+      const { limit = "10" } = req.query;
+      // const popularTerms = hybridSearch.getPopularSearchTerms(parseInt(limit as string));
+      res.json([]); // Return empty array for now
+    } catch (error) {
+      console.error("Popular searches error:", error);
+      res.status(500).json({ message: "Failed to fetch popular searches" });
+    }
+  });
+
+  app.get("/api/analytics/no-result-queries", async (req, res) => {
+    try {
+      // const noResultQueries = hybridSearch.getNoResultQueries();
+      res.json([]); // Return empty array for now
+    } catch (error) {
+      console.error("No result queries error:", error);
+      res.status(500).json({ message: "Failed to fetch no result queries" });
     }
   });
 

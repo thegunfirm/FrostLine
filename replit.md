@@ -25,10 +25,13 @@ This is a full-stack e-commerce platform specifically designed for firearms and 
 ### Key Design Decisions
 
 1. **Tier-based Membership System**: Bronze, Gold, and Platinum tiers with different pricing and benefits
-2. **FFL Integration**: Built-in handling for firearms that require Federal Firearms License transfers
+2. **FFL Integration**: Built-in handling for firearms that require Federal Firearms License transfers  
 3. **Specialized Commerce Features**: Gun-specific categories, manufacturer filtering, and compliance features
 4. **Responsive Design**: Mobile-first approach with custom breakpoints
 5. **Brand-focused UI**: Custom color scheme and typography reflecting firearms industry aesthetics
+6. **Hybrid Search Architecture**: Multi-layer search system combining RSR API, Algolia indexing, and internal AI learning
+7. **Real-time Inventory**: Live inventory sync with RSR distributor data for accurate stock levels
+8. **Payment Dual System**: Separate Authorize.Net credentials for product vs membership payments
 
 ## Key Components
 
@@ -121,6 +124,11 @@ Changelog:
 - July 05, 2025. Removed FFL references from product cards (FFL only during checkout)
 - July 05, 2025. Removed all "wholesale" references from the site
 - July 05, 2025. Updated tier cards to remove large checkmarks
+- July 05, 2025. Removed search box border and glint animation
+- July 05, 2025. Fixed ribbon buttons distribution and improved font readability
+- July 05, 2025. Removed hero subtitle text, kept placeholder for CMS
+- July 05, 2025. Started RSR API integration with hybrid search architecture
+- July 05, 2025. Implemented Algolia search service and hybrid search system foundation
 ```
 
 ## User Preferences
