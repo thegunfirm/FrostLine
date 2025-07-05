@@ -10,6 +10,7 @@ import Home from "@/pages/home";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Products from "@/pages/products";
+import ProductDetail from "@/pages/product-detail";
 import Membership from "@/pages/membership";
 import NotFound from "@/pages/not-found";
 
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/products" component={Products} />
+      <Route path="/product/:id" component={ProductDetail} />
       <Route path="/membership" component={Membership} />
       <Route component={NotFound} />
     </Switch>

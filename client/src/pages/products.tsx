@@ -75,10 +75,7 @@ export default function Products() {
     // TODO: Implement cart functionality
   };
 
-  const handleViewDetails = (product: any) => {
-    console.log("View product:", product);
-    // TODO: Navigate to product details
-  };
+  // Product details navigation handled by ProductCard link
 
   const activeFiltersCount = [searchQuery, category, manufacturer].filter(Boolean).length;
 
@@ -228,7 +225,6 @@ export default function Products() {
           products={products || []}
           loading={isLoading}
           onAddToCart={handleAddToCart}
-          onViewDetails={handleViewDetails}
         />
       </div>
     </div>

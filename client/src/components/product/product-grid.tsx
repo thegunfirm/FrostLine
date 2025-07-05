@@ -6,10 +6,9 @@ interface ProductGridProps {
   products: Product[];
   loading?: boolean;
   onAddToCart?: (product: Product) => void;
-  onViewDetails?: (product: Product) => void;
 }
 
-export function ProductGrid({ products, loading, onAddToCart, onViewDetails }: ProductGridProps) {
+export function ProductGrid({ products, loading, onAddToCart }: ProductGridProps) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -45,7 +44,6 @@ export function ProductGrid({ products, loading, onAddToCart, onViewDetails }: P
           key={product.id}
           product={product}
           onAddToCart={onAddToCart}
-          onViewDetails={onViewDetails}
         />
       ))}
     </div>

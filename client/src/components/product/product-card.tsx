@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { Product } from "@shared/schema";
 import { cn } from "@/lib/utils";
+import { Link } from "wouter";
 
 interface ProductCardProps {
   product: Product;
@@ -100,14 +101,15 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
         </div>
         
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onViewDetails?.(product)}
-            className="flex-1"
-          >
-            View Details
-          </Button>
+          <Link href={`/product/${product.id}`} className="flex-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+            >
+              View Details
+            </Button>
+          </Link>
           
           {user && product.inStock && (
             <Button
