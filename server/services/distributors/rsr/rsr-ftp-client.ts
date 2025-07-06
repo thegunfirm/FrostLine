@@ -43,11 +43,11 @@ class RSRFTPClient {
   constructor() {
     // Use existing RSR credentials from environment if available
     this.config = {
-      host: process.env.RSR_FTP_HOST || 'ftp.rsrgroup.com',
+      host: process.env.RSR_FTP_HOST || 'ftps.rsrgroup.com',
       username: process.env.RSR_USERNAME || '63824',
-      password: process.env.RSR_PASSWORD || 'RunTheGunZ623!',
-      port: 21,
-      secure: false,
+      password: process.env.RSR_PASSWORD || '2SSinQ58',
+      port: 2222,
+      secure: true,
       syncSchedule: '2hours', // RSR updates every 2 hours
       autoProcessFiles: true,
       downloadImages: false,
@@ -130,12 +130,19 @@ class RSRFTPClient {
     client.ftp.verbose = false;
     
     try {
+      console.log('Attempting RSR FTP connection with config:', {
+        host: this.config.host,
+        port: this.config.port,
+        secure: this.config.secure,
+        username: this.config.username
+      });
+      
       await client.access({
         host: this.config.host,
         user: this.config.username,
         password: this.config.password,
         port: this.config.port,
-        secure: this.config.secure
+        secure: this.config.secure ? 'explicit' : false
       });
 
       const list = await client.list();
@@ -240,7 +247,7 @@ class RSRFTPClient {
         user: this.config.username,
         password: this.config.password,
         port: this.config.port,
-        secure: this.config.secure
+        secure: this.config.secure ? 'explicit' : false
       });
 
       // Download RSR inventory files
