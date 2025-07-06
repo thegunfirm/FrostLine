@@ -6,12 +6,15 @@ export default function Products() {
   const [location] = useLocation();
 
   // Parse URL params for initial state
-  const params = new URLSearchParams(location.split('?')[1] || '');
+  const urlParts = location.split('?');
+  const queryString = urlParts.length > 1 ? urlParts[1] : '';
+  const params = new URLSearchParams(queryString);
   const initialQuery = params.get('search') || "";
   const initialCategory = params.get('category') || "";
   const initialManufacturer = params.get('manufacturer') || "";
   
   console.log("Products page URL:", location);
+  console.log("Query string:", queryString);
   console.log("Parsed URL params:", { initialQuery, initialCategory, initialManufacturer });
 
   return (
