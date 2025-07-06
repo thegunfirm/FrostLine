@@ -21,26 +21,28 @@ class ImageService {
   /**
    * Generate multiple image variants from RSR image name
    * RSR follows these patterns:
-   * - Standard: /images/inventory/[name].jpg
-   * - Large: /images/inventory/large/[name].jpg
-   * - Thumbnail: /images/inventory/thumb/[name].jpg
+   * - Thumbnails: https://img.rsrgroup.com/pimages/{STOCK}_1_thumb.jpg, {STOCK}_2_thumb.jpg, etc.
+   * - Product: https://img.rsrgroup.com/pimages/{STOCK}_1.jpg, {STOCK}_2.jpg, etc.
+   * - High-res: https://img.rsrgroup.com/highres-pimages/{STOCK}_1_HR.jpg, etc.
    */
   generateRSRImageVariants(imageName: string, productName: string): ProductImage {
     const cleanImageName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
     const imageId = `rsr-${cleanImageName}`;
     
-    // Use working RSR image endpoint with successful authentication method
+    // Multiple image variants for each product (RSR typically has 1-3 images per product)
     const variants: ImageVariant[] = [
+      // Thumbnail variants
       {
-        url: `/api/rsr-image/${cleanImageName}?size=thumb`,
+        url: `/api/rsr-image/${cleanImageName}?size=thumb&view=1`,
         width: 150,
         height: 150,
         size: 'thumbnail',
         quality: 'medium',
         loadPriority: 'high'
       },
+      // Standard product image variants
       {
-        url: `/api/rsr-image/${cleanImageName}?size=standard`,
+        url: `/api/rsr-image/${cleanImageName}?size=standard&view=1`,
         width: 400,
         height: 400,
         size: 'standard',
@@ -48,7 +50,16 @@ class ImageService {
         loadPriority: 'high'
       },
       {
-        url: `/api/rsr-image/${cleanImageName}?size=large`,
+        url: `/api/rsr-image/${cleanImageName}?size=standard&view=2`,
+        width: 400,
+        height: 400,
+        size: 'standard',
+        quality: 'medium',
+        loadPriority: 'medium'
+      },
+      // High-resolution variants
+      {
+        url: `/api/rsr-image/${cleanImageName}?size=highres&view=1`,
         width: 800,
         height: 800,
         size: 'large',
