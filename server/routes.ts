@@ -1,5 +1,7 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
+import { join } from "path";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema, type InsertProduct } from "@shared/schema";
@@ -1021,11 +1023,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // RSR Image Proxy - Now with sophisticated age verification bypass
+  // RSR Image Proxy - With caching and sophisticated age verification bypass
   app.get("/api/images/rsr-proxy/:stockNo/:size", async (req, res) => {
     try {
       const { stockNo, size } = req.params;
       
+      if (!['thumb', 'standard', 'large'].includes(size)) {
+        return res.status(400).json({ error: "Invalid size parameter" });
+      }
+
+      // Import cache service
+      const { rsrImageCache } = await import('./services/rsr-image-cache');
+      
+      // Check if image is already cached
+      const cachedImagePath = rsrImageCache.getCachedImagePath(stockNo, size as any);
+      if (cachedImagePath) {
+        console.log(`Serving cached RSR image: ${stockNo}_${size}`);
+        return res.sendFile(cachedImagePath);
+      }
+
+      // Check if we should attempt to fetch
+      if (!rsrImageCache.shouldAttemptFetch(stockNo, size as any)) {
+        console.log(`Skipping RSR image fetch (too recent): ${stockNo}_${size}`);
+        return res.status(404).json({ 
+          error: "Image not available",
+          message: "RSR image access blocked by age verification" 
+        });
+      }
+
       // Map size to RSR URL structure
       let rsrImageUrl = '';
       switch (size) {
@@ -1038,9 +1063,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         case 'large':
           rsrImageUrl = `https://www.rsrgroup.com/images/inventory/large/${stockNo}.jpg`;
           break;
-        default:
-          return res.status(400).json({ error: "Invalid size parameter" });
       }
+
+      console.log(`Attempting to fetch RSR image: ${rsrImageUrl}`);
 
       // Use sophisticated RSR session manager with age verification bypass
       const { rsrSessionManager } = await import('./services/rsr-session');
@@ -1058,10 +1083,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
+      console.log(`RSR image response: ${imageResponse.status} ${imageResponse.statusText}`);
+      
       if (imageResponse.ok) {
-        // Proxy the image response
         const imageBuffer = await imageResponse.arrayBuffer();
         const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+        
+        // Check if we actually got an image (not HTML)
+        const bufferStart = Buffer.from(imageBuffer).toString('utf8', 0, 100);
+        if (bufferStart.includes('<!DOCTYPE') || bufferStart.includes('<html')) {
+          console.log(`RSR returned HTML instead of image for ${stockNo}_${size} - age verification still blocking`);
+          rsrImageCache.markAttempted(stockNo, size as any, false);
+          return res.status(404).json({ 
+            error: "Age verification required",
+            message: "RSR is still requiring age verification for this image" 
+          });
+        }
+        
+        // Successfully got an image - cache it and serve it
+        const imageBufferNode = Buffer.from(imageBuffer);
+        rsrImageCache.markAttempted(stockNo, size as any, true, imageBufferNode);
         
         res.set({
           'Content-Type': contentType,
@@ -1069,9 +1110,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Access-Control-Allow-Origin': '*'
         });
         
-        res.send(Buffer.from(imageBuffer));
+        console.log(`Successfully served and cached RSR image: ${stockNo}_${size}`);
+        res.send(imageBufferNode);
       } else {
-        console.log(`RSR image not found: ${rsrImageUrl} - Status: ${imageResponse.status}`);
+        console.log(`RSR image request failed: ${rsrImageUrl} - Status: ${imageResponse.status}`);
+        rsrImageCache.markAttempted(stockNo, size as any, false);
         res.status(404).json({ 
           error: "Image not found",
           message: "RSR image not available" 
@@ -1079,6 +1122,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error: any) {
       console.error("Error fetching RSR image:", error);
+      const { rsrImageCache } = await import('./services/rsr-image-cache');
+      rsrImageCache.markAttempted(req.params.stockNo, req.params.size as any, false);
       res.status(404).json({ error: "Image not available", details: error.message });
     }
   });
@@ -1130,6 +1175,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       message: 'RSR images require age verification on their website',
       note: 'RSR session testing is disabled due to age verification requirements'
     });
+  });
+
+  // Add static file serving for cached RSR images
+  app.use('/cache', express.static(join(process.cwd(), 'public', 'cache')));
+
+  // Add RSR session management endpoint for testing
+  app.post("/api/rsr/clear-session", async (req, res) => {
+    try {
+      const { rsrSessionManager } = await import('./services/rsr-session');
+      const { rsrImageCache } = await import('./services/rsr-image-cache');
+      
+      rsrSessionManager.clearSession();
+      rsrImageCache.clearAttemptHistory();
+      
+      res.json({ message: "RSR session and attempt history cleared successfully" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Add RSR session test endpoint
+  app.get("/api/rsr/test-session", async (req, res) => {
+    try {
+      const { rsrSessionManager } = await import('./services/rsr-session');
+      const session = await rsrSessionManager.getAuthenticatedSession();
+      const isWorking = await rsrSessionManager.testSession();
+      
+      res.json({ 
+        session: {
+          authenticated: session.authenticated,
+          ageVerified: session.ageVerified,
+          expiresAt: session.expiresAt
+        },
+        isWorking 
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   const httpServer = createServer(app);

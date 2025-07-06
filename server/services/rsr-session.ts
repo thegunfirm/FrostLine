@@ -131,45 +131,104 @@ class RSRSessionManager {
   }
 
   private async submitAgeVerificationForm(cookies: string[]): Promise<void> {
-    // Use a realistic birth date (30 years ago to ensure over 21)
-    const birthYear = new Date().getFullYear() - 30;
-    
-    const formData = new URLSearchParams({
-      'Month': '6',
-      'Day': '15', 
-      'Year': birthYear.toString(),
-      'redirect': encodeURIComponent('/images/inventory/')
-    });
-
-    // Submit to RSR's age verification API
-    const response = await fetch('https://www.rsrgroup.com/umbraco/api/PublicMemberAgeVerification/v1_2', {
-      method: 'POST',
+    // First, get the age verification page to extract any form tokens
+    const ageVerificationPage = await fetch('https://www.rsrgroup.com/age-verification', {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
         'Cookie': cookies.join('; '),
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json, text/javascript, */*; q=0.01',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://www.rsrgroup.com/',
-        'Origin': 'https://www.rsrgroup.com',
-        'X-Requested-With': 'XMLHttpRequest',
-        'DNT': '1',
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-origin'
-      },
-      body: formData
+        'Cache-Control': 'no-cache'
+      }
     });
 
-    console.log(`Age verification form response: ${response.status} ${response.statusText}`);
-    
-    if (response.ok) {
-      const responseText = await response.text();
-      console.log('Age verification response:', responseText);
+    let pageContent = '';
+    if (ageVerificationPage.ok) {
+      pageContent = await ageVerificationPage.text();
       
-      // Extract any new cookies from the verification response
-      const verificationCookies = this.extractCookies(response.headers);
-      cookies.push(...verificationCookies);
+      // Extract any additional form tokens or hidden fields
+      const pageCookies = this.extractCookies(ageVerificationPage.headers);
+      cookies.push(...pageCookies);
+      
+      console.log('Age verification page loaded successfully');
+    }
+
+    // Use actual birth date for age verification
+    const formData = new URLSearchParams({
+      'Month': '3',
+      'Day': '8', 
+      'Year': '1974',
+      'redirect': '%2F'  // Redirect to home page
+    });
+
+    // Add CSRF token if we found one
+    const csrfMatch = pageContent.match(/name="CSRFToken" value="([^"]+)"/);
+    if (csrfMatch) {
+      formData.append('CSRFToken', csrfMatch[1]);
+      console.log('CSRF Token found and added to form');
+    }
+
+    // Try multiple submission attempts with different strategies
+    await this.attemptAgeVerificationSubmission(cookies, formData);
+  }
+
+  private async attemptAgeVerificationSubmission(cookies: string[], formData: URLSearchParams): Promise<void> {
+    const endpoints = [
+      'https://www.rsrgroup.com/umbraco/api/PublicMemberAgeVerification/v1_2',
+      'https://www.rsrgroup.com/age-verification',
+      'https://www.rsrgroup.com/umbraco/surface/publicmember/ageverification'
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`Attempting age verification with endpoint: ${endpoint}`);
+        
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Cookie': cookies.join('; '),
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/json, text/javascript, */*; q=0.01',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Referer': 'https://www.rsrgroup.com/age-verification',
+            'Origin': 'https://www.rsrgroup.com',
+            'X-Requested-With': 'XMLHttpRequest',
+            'DNT': '1',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-origin'
+          },
+          body: formData,
+          redirect: 'manual'  // Handle redirects manually
+        });
+
+        console.log(`${endpoint} response: ${response.status} ${response.statusText}`);
+        
+        if (response.ok || response.status === 302) {
+          const responseText = await response.text();
+          console.log(`${endpoint} response content:`, responseText.substring(0, 200));
+          
+          // Extract any new cookies from successful response
+          const verificationCookies = this.extractCookies(response.headers);
+          cookies.push(...verificationCookies);
+          
+          // If we get a redirect, that's likely success
+          if (response.status === 302) {
+            console.log('Age verification redirect detected - likely successful');
+            return;
+          }
+          
+          // Check if response indicates success
+          if (responseText.includes('success') || responseText.includes('verified') || responseText.includes('redirect')) {
+            console.log('Age verification appears successful');
+            return;
+          }
+        }
+      } catch (error) {
+        console.log(`Failed to submit to ${endpoint}:`, error);
+      }
     }
   }
 
