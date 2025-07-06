@@ -32,7 +32,10 @@ export function Header() {
   };
 
   const handleCategoryClick = (category: string) => {
-    setLocation(`/products?category=${encodeURIComponent(category)}`);
+    console.log("Header category click:", category);
+    const newUrl = `/products?category=${encodeURIComponent(category)}`;
+    console.log("Navigating to:", newUrl);
+    setLocation(newUrl);
     setIsMobileMenuOpen(false);
   };
 
