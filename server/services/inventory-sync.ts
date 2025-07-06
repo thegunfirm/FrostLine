@@ -1,5 +1,6 @@
 import { rsrAPI, type RSRProduct } from './rsr-api';
 import { storage } from '../storage';
+import { pricingService, type RSRPricing } from './pricing-service';
 import type { InsertProduct } from '@shared/schema';
 
 export interface SyncConfiguration {
@@ -192,7 +193,7 @@ class InventorySyncService {
       // Process each product
       for (const rsrProduct of allProducts) {
         try {
-          const productData = this.transformRSRToProduct(rsrProduct);
+          const productData = await this.transformRSRToProduct(rsrProduct);
           
           // Check if product already exists by SKU
           const existingProduct = await storage.getProductBySku(productData.sku || '');
@@ -458,12 +459,16 @@ class InventorySyncService {
     ];
   }
 
-  private transformRSRToProduct(rsrProduct: RSRProduct): InsertProduct {
-    // Calculate tier pricing based on wholesale price
-    const wholesale = rsrProduct.rsrPrice;
-    const bronzePrice = (wholesale * 1.20).toFixed(2); // 20% markup
-    const goldPrice = (wholesale * 1.15).toFixed(2);   // 15% markup  
-    const platinumPrice = (wholesale * 1.10).toFixed(2); // 10% markup
+  private async transformRSRToProduct(rsrProduct: RSRProduct): Promise<InsertProduct> {
+    // Create RSR pricing object
+    const rsrPricing: RSRPricing = {
+      dealerPrice: rsrProduct.rsrPrice,
+      mapPrice: rsrProduct.retailPrice ? rsrProduct.retailPrice * 0.85 : undefined, // Estimated MAP
+      msrpPrice: rsrProduct.retailPrice
+    };
+
+    // Calculate tier pricing using the pricing service
+    const tierPricing = await pricingService.calculateTierPricing(rsrPricing);
 
     return {
       name: rsrProduct.description,
@@ -471,10 +476,12 @@ class InventorySyncService {
       category: rsrProduct.categoryDesc,
       manufacturer: rsrProduct.manufacturer,
       sku: rsrProduct.stockNo,
-      priceWholesale: wholesale.toString(),
-      priceBronze: bronzePrice,
-      priceGold: goldPrice,
-      pricePlatinum: platinumPrice,
+      priceWholesale: rsrProduct.rsrPrice.toString(),
+      priceMAP: rsrPricing.mapPrice?.toString() || null,
+      priceMSRP: rsrPricing.msrpPrice?.toString() || null,
+      priceBronze: tierPricing.bronze.toString(),
+      priceGold: tierPricing.gold.toString(),
+      pricePlatinum: tierPricing.platinum.toString(),
       inStock: rsrProduct.quantity > 0,
       stockQuantity: rsrProduct.quantity,
       distributor: "RSR",

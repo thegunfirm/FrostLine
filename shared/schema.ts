@@ -27,10 +27,12 @@ export const products = pgTable("products", {
   category: text("category").notNull(),
   manufacturer: text("manufacturer"),
   sku: text("sku").unique(),
-  priceWholesale: decimal("price_wholesale", { precision: 10, scale: 2 }).notNull(),
-  priceBronze: decimal("price_bronze", { precision: 10, scale: 2 }),
-  priceGold: decimal("price_gold", { precision: 10, scale: 2 }),
-  pricePlatinum: decimal("price_platinum", { precision: 10, scale: 2 }),
+  priceWholesale: decimal("price_wholesale", { precision: 10, scale: 2 }).notNull(), // RSR Dealer Price (Platinum base)
+  priceMAP: decimal("price_map", { precision: 10, scale: 2 }), // RSR MAP price (Gold base)
+  priceMSRP: decimal("price_msrp", { precision: 10, scale: 2 }), // RSR MSRP price (Bronze base)
+  priceBronze: decimal("price_bronze", { precision: 10, scale: 2 }), // Calculated Bronze price
+  priceGold: decimal("price_gold", { precision: 10, scale: 2 }), // Calculated Gold price
+  pricePlatinum: decimal("price_platinum", { precision: 10, scale: 2 }), // Calculated Platinum price
   inStock: boolean("in_stock").default(true),
   stockQuantity: integer("stock_quantity").default(0),
   distributor: text("distributor").default("RSR"),
@@ -88,6 +90,24 @@ export const tierPricingRules = pgTable("tier_pricing_rules", {
   markupValue: decimal("markup_value", { precision: 10, scale: 2 }).notNull(),
   appliedToTiers: json("applied_to_tiers").notNull(), // ["Bronze", "Gold", "Platinum"]
   isActive: boolean("is_active").default(true),
+});
+
+// Pricing configuration for flexible tier pricing
+export const pricingConfiguration = pgTable("pricing_configuration", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(), // "Default Pricing Rules"
+  bronzeMarkupType: text("bronze_markup_type").notNull().default("flat"), // "flat" or "percentage"
+  bronzeMarkupValue: decimal("bronze_markup_value", { precision: 10, scale: 2 }).notNull().default("20.00"),
+  goldMarkupType: text("gold_markup_type").notNull().default("flat"), // "flat" or "percentage"
+  goldMarkupValue: decimal("gold_markup_value", { precision: 10, scale: 2 }).notNull().default("20.00"),
+  platinumMarkupType: text("platinum_markup_type").notNull().default("flat"), // "flat" or "percentage"
+  platinumMarkupValue: decimal("platinum_markup_value", { precision: 10, scale: 2 }).notNull().default("20.00"),
+  priceThreshold: decimal("price_threshold", { precision: 10, scale: 2 }).notNull().default("10.00"), // Switch to percentage below this
+  lowPriceBronzePercentage: decimal("low_price_bronze_percentage", { precision: 5, scale: 2 }).notNull().default("25.00"),
+  lowPriceGoldPercentage: decimal("low_price_gold_percentage", { precision: 5, scale: 2 }).notNull().default("15.00"),
+  lowPricePlatinumPercentage: decimal("low_price_platinum_percentage", { precision: 5, scale: 2 }).notNull().default("5.00"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const heroCarouselSlides = pgTable("hero_carousel_slides", {
