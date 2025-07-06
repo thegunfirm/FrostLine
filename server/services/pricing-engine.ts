@@ -34,51 +34,76 @@ export class PricingEngine {
   }
 
   /**
-   * Calculate tier pricing based on RSR wholesale price and MAP
+   * Calculate tier pricing based on RSR wholesale, MSRP, and MAP prices
    */
   async calculateTierPricing(
     wholesalePrice: number,
-    mapPrice: number | null
+    mapPrice: number | null,
+    msrpPrice: number | null = null
   ): Promise<PricingCalculation> {
+    
+    // Bronze = MSRP (if available and valid), otherwise apply markup rules
+    const bronze = (msrpPrice !== null && msrpPrice !== undefined && msrpPrice > 0) ? 
+      msrpPrice : 
+      await this.calculateMarkupPrice(wholesalePrice, 'bronze');
+    
+    // Gold = MAP (if available and valid), otherwise apply markup rules  
+    const gold = (mapPrice !== null && mapPrice !== undefined && mapPrice > 0) ? 
+      mapPrice : 
+      await this.calculateMarkupPrice(wholesalePrice, 'gold');
+    
+    // Platinum = Apply markup rules (dealer pricing)
+    const platinum = await this.calculateMarkupPrice(wholesalePrice, 'platinum');
+
+    return { bronze, gold, platinum };
+  }
+
+  /**
+   * Calculate pricing using markup rules for a specific tier
+   */
+  private async calculateMarkupPrice(wholesalePrice: number, tier: 'bronze' | 'gold' | 'platinum'): Promise<number> {
     const rules = await this.getActivePricingRules();
     
     if (!rules) {
       // Default rules if no pricing rules configured
-      return {
-        bronze: this.applyMarkup(wholesalePrice, "percentage", 25, 200, 50), // 25% or $50 flat
-        gold: mapPrice ? this.applyMarkup(wholesalePrice, "percentage", 15, 200, 30) : null, // 15% or $30 flat
-        platinum: this.applyMarkup(wholesalePrice, "percentage", 5, 200, 10) // 5% or $10 flat
+      const defaultMarkups = {
+        bronze: { percentage: 25, threshold: 200, flat: 50 },
+        gold: { percentage: 15, threshold: 200, flat: 30 },
+        platinum: { percentage: 5, threshold: 200, flat: 10 }
       };
+      const markup = defaultMarkups[tier];
+      return this.applyMarkup(wholesalePrice, "percentage", markup.percentage, markup.threshold, markup.flat);
     }
 
-    // Calculate Bronze pricing
-    const bronze = this.applyMarkup(
-      wholesalePrice,
-      rules.bronzeMarkupType,
-      parseFloat(rules.bronzeMarkupValue),
-      parseFloat(rules.bronzeThreshold),
-      parseFloat(rules.bronzeFlatMarkup)
-    );
-
-    // Calculate Gold pricing - always calculate based on markup rules
-    const gold = this.applyMarkup(
-      wholesalePrice,
-      rules.goldMarkupType,
-      parseFloat(rules.goldMarkupValue),
-      parseFloat(rules.goldThreshold),
-      parseFloat(rules.goldFlatMarkup)
-    );
-
-    // Calculate Platinum pricing
-    const platinum = this.applyMarkup(
-      wholesalePrice,
-      rules.platinumMarkupType,
-      parseFloat(rules.platinumMarkupValue),
-      parseFloat(rules.platinumThreshold),
-      parseFloat(rules.platinumFlatMarkup)
-    );
-
-    return { bronze, gold, platinum };
+    // Apply tier-specific markup rules
+    switch (tier) {
+      case 'bronze':
+        return this.applyMarkup(
+          wholesalePrice,
+          rules.bronzeMarkupType,
+          parseFloat(rules.bronzeMarkupValue),
+          parseFloat(rules.bronzeThreshold),
+          parseFloat(rules.bronzeFlatMarkup)
+        );
+      case 'gold':
+        return this.applyMarkup(
+          wholesalePrice,
+          rules.goldMarkupType,
+          parseFloat(rules.goldMarkupValue),
+          parseFloat(rules.goldThreshold),
+          parseFloat(rules.goldFlatMarkup)
+        );
+      case 'platinum':
+        return this.applyMarkup(
+          wholesalePrice,
+          rules.platinumMarkupType,
+          parseFloat(rules.platinumMarkupValue),
+          parseFloat(rules.platinumThreshold),
+          parseFloat(rules.platinumFlatMarkup)
+        );
+      default:
+        return wholesalePrice;
+    }
   }
 
   /**
@@ -119,7 +144,7 @@ export class PricingEngine {
   }
 
   /**
-   * Recalculate all product pricing
+   * Recalculate all product pricing using MSRP and MAP data
    */
   async recalculateAllProductPricing() {
     console.log("🔄 Recalculating all product pricing...");
@@ -128,7 +153,8 @@ export class PricingEngine {
       .select({
         id: products.id,
         priceWholesale: products.priceWholesale,
-        priceMAP: products.priceMAP
+        priceMAP: products.priceMAP,
+        priceMSRP: products.priceMSRP
       })
       .from(products);
 
@@ -137,7 +163,8 @@ export class PricingEngine {
     for (const product of allProducts) {
       const pricing = await this.calculateTierPricing(
         parseFloat(product.priceWholesale),
-        product.priceMAP ? parseFloat(product.priceMAP) : null
+        product.priceMAP ? parseFloat(product.priceMAP) : null,
+        product.priceMSRP ? parseFloat(product.priceMSRP) : null
       );
       
       await this.updateProductPricing(product.id, pricing);
