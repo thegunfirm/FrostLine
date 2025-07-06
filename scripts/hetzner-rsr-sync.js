@@ -20,6 +20,13 @@ const RSR_CONFIG = {
   baseUrl: 'https://api.rsrgroup.com/RSRWebServices/rsrwebservice.asmx'
 };
 
+// Alternative RSR endpoints to try
+const RSR_ENDPOINTS = [
+  'https://api.rsrgroup.com/RSRWebServices/rsrwebservice.asmx',
+  'https://www.rsrgroup.com/RSRWebServices/rsrwebservice.asmx',
+  'https://rsrgroup.com/RSRWebServices/rsrwebservice.asmx'
+];
+
 class RSRInventorySync {
   async connect() {
     await client.connect();
@@ -39,32 +46,48 @@ class RSRInventorySync {
 
     console.log('Calling RSR API for full inventory...');
     
-    const response = await axios.post(RSR_CONFIG.baseUrl, soapEnvelope, {
-      headers: {
-        'Content-Type': 'application/soap+xml; charset=utf-8',
-        'SOAPAction': 'http://www.rsrgroup.com/webservices/GetRSRInventory',
-        'User-Agent': 'Mozilla/5.0 (compatible; TheGunFirm/1.0)'
-      },
-      httpsAgent: httpsAgent,
-      timeout: 120000 // 2 minute timeout
-    });
+    // Try multiple endpoints due to DNS issues
+    let lastError = null;
+    for (const endpoint of RSR_ENDPOINTS) {
+      try {
+        console.log(`Trying endpoint: ${endpoint}`);
+        const response = await axios.post(endpoint, soapEnvelope, {
+          headers: {
+            'Content-Type': 'application/soap+xml; charset=utf-8',
+            'SOAPAction': 'http://www.rsrgroup.com/webservices/GetRSRInventory',
+            'User-Agent': 'Mozilla/5.0 (compatible; TheGunFirm/1.0)'
+          },
+          httpsAgent: httpsAgent,
+          timeout: 120000, // 2 minute timeout
+          maxRedirects: 0 // Don't follow redirects
+        });
 
-    // Parse XML response
-    const parser = new xml2js.Parser({ explicitArray: false });
-    const result = await parser.parseStringPromise(response.data);
-    
-    const inventoryData = result['soap:Envelope']['soap:Body']['GetRSRInventoryResponse']['GetRSRInventoryResult'];
-    
-    if (!inventoryData) {
-      throw new Error('No inventory data received from RSR');
+        // Parse XML response
+        const parser = new xml2js.Parser({ explicitArray: false });
+        const result = await parser.parseStringPromise(response.data);
+        
+        const inventoryData = result['soap:Envelope']['soap:Body']['GetRSRInventoryResponse']['GetRSRInventoryResult'];
+        
+        if (!inventoryData) {
+          throw new Error('No inventory data received from RSR');
+        }
+
+        // Parse the actual inventory XML
+        const inventoryResult = await parser.parseStringPromise(inventoryData);
+        const products = inventoryResult.RSRInventory?.Product || [];
+        
+        console.log(`✅ Success! Received ${Array.isArray(products) ? products.length : 1} products from RSR via ${endpoint}`);
+        return Array.isArray(products) ? products : [products];
+        
+      } catch (error) {
+        console.log(`❌ Failed with ${endpoint}: ${error.message}`);
+        lastError = error;
+        continue;
+      }
     }
-
-    // Parse the actual inventory XML
-    const inventoryResult = await parser.parseStringPromise(inventoryData);
-    const products = inventoryResult.RSRInventory?.Product || [];
     
-    console.log(`Received ${Array.isArray(products) ? products.length : 1} products from RSR`);
-    return Array.isArray(products) ? products : [products];
+    // If all endpoints failed, throw the last error
+    throw new Error(`All RSR endpoints failed. Last error: ${lastError.message}`);
   }
 
   async clearExistingProducts() {
