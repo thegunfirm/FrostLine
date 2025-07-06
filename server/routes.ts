@@ -2179,7 +2179,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== CATEGORY RIBBON MANAGEMENT (CMS) =====
   
-  // Get category ribbons
+  // Get active category ribbons for frontend display
+  app.get("/api/category-ribbons/active", async (req, res) => {
+    try {
+      const { categoryRibbons } = await import("../shared/schema");
+      const ribbons = await db.select()
+        .from(categoryRibbons)
+        .where(eq(categoryRibbons.isActive, true))
+        .orderBy(categoryRibbons.displayOrder);
+      res.json(ribbons);
+    } catch (error) {
+      console.error('Active category ribbons error:', error);
+      res.status(500).json({ error: 'Failed to load active category ribbons' });
+    }
+  });
+  
+  // Get category ribbons (admin)
   app.get("/api/admin/category-ribbons", async (req, res) => {
     try {
       const { categoryRibbons } = await import("../shared/schema");

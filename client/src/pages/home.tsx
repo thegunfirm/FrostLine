@@ -1,5 +1,6 @@
 import { SearchHero } from "@/components/search/search-hero";
 import { HeroCarousel } from "@/components/hero/hero-carousel";
+import { CategoryRibbon } from "@/components/category-ribbon";
 import { TierCards } from "@/components/membership/tier-cards";
 import { ProductGrid } from "@/components/product/product-grid";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,9 @@ export default function Home() {
       
       {/* Hero Search Section */}
       <SearchHero />
+
+      {/* Category Ribbons */}
+      <CategoryRibbon />
 
       {/* Membership Tiers Section */}
       <section className="py-16 bg-gray-50">
