@@ -6,15 +6,17 @@ export default function Products() {
   const [location] = useLocation();
   const [key, setKey] = useState(0); // Force re-render key
 
-  // Parse URL params for initial state
-  const urlParts = location.split('?');
+  // Parse URL params for initial state using window.location for accuracy
+  const currentURL = window.location.pathname + window.location.search;
+  const urlParts = currentURL.split('?');
   const queryString = urlParts.length > 1 ? urlParts[1] : '';
   const params = new URLSearchParams(queryString);
   const initialQuery = params.get('search') || "";
   const initialCategory = params.get('category') || "";
   const initialManufacturer = params.get('manufacturer') || "";
   
-  console.log("Products page URL:", location);
+  console.log("Products page URL (wouter):", location);
+  console.log("Products page URL (window):", currentURL);
   console.log("Query string:", queryString);
   console.log("Parsed URL params:", { initialQuery, initialCategory, initialManufacturer });
 
@@ -22,6 +24,15 @@ export default function Products() {
   useEffect(() => {
     setKey(prev => prev + 1);
   }, [location]);
+
+  // Listen for popstate events to detect URL changes
+  useEffect(() => {
+    const handlePopState = () => {
+      setKey(prev => prev + 1);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">

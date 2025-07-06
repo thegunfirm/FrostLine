@@ -35,7 +35,8 @@ export function Header() {
     console.log("Header category click:", category);
     const newUrl = `/products?category=${encodeURIComponent(category)}`;
     console.log("Navigating to:", newUrl);
-    setLocation(newUrl);
+    window.history.pushState({}, '', newUrl);
+    window.dispatchEvent(new PopStateEvent('popstate'));
     setIsMobileMenuOpen(false);
   };
 
