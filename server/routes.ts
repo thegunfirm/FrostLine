@@ -1317,57 +1317,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test RSR image access with user's exact approach
+  // Test RSR image access with multiple URL patterns
   app.get("/api/test-user-method/:imageName", async (req, res) => {
     try {
       const imageName = req.params.imageName;
       const size = req.query.size as 'thumb' | 'standard' | 'large' || 'standard';
       
-      console.log(`Testing user's method for RSR image: ${imageName} (${size})`);
+      console.log(`Testing multiple RSR image patterns for: ${imageName} (${size})`);
       
-      // Use the exact approach suggested by user
-      const baseUrl = 'https://imgtest.rsrgroup.com/images/inventory';
       const cleanImgName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
-      const imageUrl = size === 'thumb' ? `${baseUrl}/thumb/${cleanImgName}.jpg` : 
-                     size === 'large' ? `${baseUrl}/large/${cleanImgName}.jpg` : 
-                     `${baseUrl}/${cleanImgName}.jpg`;
       
-      const response = await axios.get(imageUrl, {
-        responseType: "arraybuffer",
-        headers: {
-          Referer: "https://www.rsrgroup.com/",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
-          // Optional: Cookie: 'ageVerified=true; ASP.NET_SessionId=...'
-        },
-        timeout: 10000,
-        validateStatus: () => true // Accept any status code
-      });
-
-      const contentType = response.headers['content-type'] || '';
-      const isImage = contentType.startsWith('image/');
+      // Try multiple RSR image URL patterns to find actual product photos
+      const urlPatterns = [
+        // Original pattern that works for placeholders
+        `https://imgtest.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
+        // Try main RSR domain patterns
+        `https://www.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
+        `https://www.rsrgroup.com/Custom/Assets/ProductImages/${cleanImgName}.jpg`,
+        `https://www.rsrgroup.com/images/products/${cleanImgName}.jpg`,
+        `https://www.rsrgroup.com/productimages/${cleanImgName}.jpg`,
+        // Try with different file extensions
+        `https://imgtest.rsrgroup.com/images/inventory/${cleanImgName}.png`,
+        `https://www.rsrgroup.com/images/inventory/${cleanImgName}.png`,
+        // Try with size variations
+        `https://imgtest.rsrgroup.com/images/inventory/${size}/${cleanImgName}.jpg`,
+        `https://www.rsrgroup.com/images/inventory/${size}/${cleanImgName}.jpg`,
+      ];
       
-      if (isImage) {
-        return res.json({
-          success: true,
-          strategy: 'User Suggested Method',
-          contentType,
-          size: response.data.length,
-          url: imageUrl,
-          message: 'Successfully accessed RSR image with browser headers!'
-        });
-      } else {
-        // Convert arraybuffer to string for analysis
-        const textContent = Buffer.from(response.data).toString('utf8');
-        return res.json({
-          error: 'Received HTML instead of image',
-          imageName,
-          size: size,
-          contentPreview: textContent.substring(0, 200),
-          message: 'RSR age verification still blocking access',
-          contentType: contentType,
-          statusCode: response.status
-        });
+      const results = [];
+      
+      for (const imageUrl of urlPatterns) {
+        try {
+          const response = await axios.get(imageUrl, {
+            responseType: "arraybuffer",
+            headers: {
+              Referer: "https://www.rsrgroup.com/",
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
+            },
+            timeout: 5000,
+            validateStatus: () => true
+          });
+          
+          const contentType = response.headers['content-type'] || '';
+          const imageSize = response.data.length;
+          const isImage = contentType.startsWith('image/');
+          
+          results.push({
+            url: imageUrl,
+            status: response.status,
+            contentType,
+            size: imageSize,
+            isImage,
+            isPlaceholder: imageSize === 4226
+          });
+          
+          // If we found a real image (not the 4,226 byte placeholder), return it
+          if (isImage && imageSize !== 4226 && response.status === 200) {
+            return res.json({
+              success: true,
+              strategy: 'Multi-Pattern Search',
+              contentType,
+              size: imageSize,
+              url: imageUrl,
+              message: `Found actual product image at ${imageUrl}!`,
+              allResults: results
+            });
+          }
+        } catch (error) {
+          results.push({
+            url: imageUrl,
+            error: error.message,
+            status: 'error'
+          });
+        }
       }
+      
+      // If we get here, only placeholders or errors were found
+      const placeholderResult = results.find(r => r.isPlaceholder);
+      return res.json({
+        success: placeholderResult ? true : false,
+        strategy: 'Multi-Pattern Search',
+        message: placeholderResult 
+          ? `Only placeholder images found for ${imageName}. RSR may not have actual product photos available.`
+          : `No accessible images found for ${imageName}.`,
+        bestResult: placeholderResult || results[0],
+        allResults: results
+      });
     } catch (error: any) {
       console.error(`RSR image test failed:`, error);
       res.status(500).json({ 
