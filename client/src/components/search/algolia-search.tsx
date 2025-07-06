@@ -738,36 +738,48 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
       {/* Products Grid */}
       <ProductGrid 
-        products={searchResults?.hits.map(hit => ({
-          id: parseInt(hit.objectID.replace('rsr-', '')),
-          name: hit.title,
-          description: hit.description,
-          category: hit.categoryName,
-          manufacturer: hit.manufacturerName,
-          sku: hit.sku,
-          priceWholesale: hit.tierPricing?.platinum?.toString() || "0",
-          priceMAP: null,
-          priceMSRP: null, 
-          priceBronze: hit.tierPricing?.bronze?.toString() || "0",
-          priceGold: hit.tierPricing?.gold?.toString() || "0",
-          pricePlatinum: hit.tierPricing?.platinum?.toString() || "0",
-          inStock: hit.inStock,
-          stockQuantity: hit.inventory?.onHand || 0,
-          distributor: hit.distributor,
-          requiresFFL: false,
-          mustRouteThroughGunFirm: false,
-          tags: null,
-          images: hit.images || [],
-          upcCode: null,
-          weight: "0",
-          dimensions: null,
-          restrictions: null,
-          stateRestrictions: null,
-          returnPolicyDays: 30,
-          isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        })) || []}
+        products={searchResults?.hits.map((hit, index) => {
+          // Extract numeric ID from objectID or use index as fallback
+          let productId: number;
+          if (hit.objectID.startsWith('rsr-')) {
+            const numericPart = hit.objectID.replace('rsr-', '');
+            productId = parseInt(numericPart) || index + 1;
+          } else {
+            // For other objectID formats, try parsing directly or use index
+            productId = parseInt(hit.objectID) || index + 1;
+          }
+          
+          return {
+            id: productId,
+            name: hit.title || hit.name || 'Unknown Product',
+            description: hit.description || '',
+            category: hit.categoryName || hit.category || 'Uncategorized',
+            manufacturer: hit.manufacturerName || hit.manufacturer || 'Unknown',
+            sku: hit.sku || hit.stockNo || '',
+            priceWholesale: hit.tierPricing?.platinum?.toString() || "0",
+            priceMAP: null,
+            priceMSRP: null, 
+            priceBronze: hit.tierPricing?.bronze?.toString() || "0",
+            priceGold: hit.tierPricing?.gold?.toString() || "0",
+            pricePlatinum: hit.tierPricing?.platinum?.toString() || "0",
+            inStock: hit.inStock ?? true,
+            stockQuantity: hit.inventory?.onHand || hit.quantity || 0,
+            distributor: hit.distributor || 'RSR',
+            requiresFFL: hit.requiresFFL || false,
+            mustRouteThroughGunFirm: false,
+            tags: null,
+            images: hit.images || [],
+            upcCode: hit.upcCode || null,
+            weight: "0",
+            dimensions: null,
+            restrictions: null,
+            stateRestrictions: null,
+            returnPolicyDays: 30,
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+        }) || []}
         loading={isLoading}
         onAddToCart={handleAddToCart}
       />
