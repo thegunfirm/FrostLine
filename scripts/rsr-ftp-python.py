@@ -15,7 +15,7 @@ class RSRFTPClient:
         self.host = "ftps.rsrgroup.com"
         self.port = 2222
         self.username = os.getenv("RSR_USERNAME", "63824")
-        self.password = os.getenv("RSR_PASSWORD", "RunTheGunZ623!")
+        self.password = os.getenv("RSR_PASSWORD", "2SSinQ58")
         self.ftp = None
         
     def connect(self):
