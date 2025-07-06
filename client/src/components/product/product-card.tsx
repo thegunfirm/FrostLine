@@ -6,7 +6,6 @@ import { Product } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 import { useProgressiveImage } from "@/hooks/use-progressive-image";
-import { SecurePricing } from "@/components/product/secure-pricing";
 
 interface ProductCardProps {
   product: Product;
@@ -87,17 +86,47 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
           </p>
         </div>
         
-        <div className="mb-3">
-          <SecurePricing 
-            product={{
-              priceBronze: product.priceBronze,
-              priceGold: product.priceGold,
-              pricePlatinum: product.pricePlatinum,
-              priceMSRP: product.priceMSRP
-            }}
-            showUpgradePrompt={false}
-            className="text-sm"
-          />
+        <div className="mb-3 space-y-1">
+          {/* Bronze Price - Always show as public pricing */}
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-gun-gray-light">Bronze:</span>
+            <span className="text-xs font-medium text-gun-black">
+              ${parseFloat(product.priceBronze || "0").toFixed(2)}
+            </span>
+          </div>
+          
+          {/* Gold Price - Show if different from Bronze */}
+          {product.priceGold && parseFloat(product.priceGold) !== parseFloat(product.priceBronze || "0") && (
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gun-gray-light">Gold:</span>
+              <span className="text-xs font-medium text-gun-black">
+                ${parseFloat(product.priceGold).toFixed(2)}
+              </span>
+            </div>
+          )}
+          
+          {/* Your Price - Show user's tier pricing */}
+          {user ? (
+            <div className="flex justify-between items-center border-t border-gray-200 pt-1">
+              <span className="text-xs text-gun-gray-light font-medium">Your Price:</span>
+              <div className="text-sm font-bold text-gun-gold">
+                {user.subscriptionTier === 'Gold' && product.priceGold ? 
+                  `$${parseFloat(product.priceGold).toFixed(2)}` :
+                  user.subscriptionTier === 'Platinum' ? 
+                    'Login to cart' :
+                    `$${parseFloat(product.priceBronze || "0").toFixed(2)}`
+                }
+                <span className="text-xs ml-1 text-gun-gray-light">({user.subscriptionTier})</span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-between items-center border-t border-gray-200 pt-1">
+              <span className="text-xs text-gun-gray-light font-medium">Platinum:</span>
+              <span className="text-xs text-gun-gold font-medium">
+                Login to view
+              </span>
+            </div>
+          )}
         </div>
         
         <div className="flex items-center justify-between mb-3">
