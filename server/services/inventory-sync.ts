@@ -51,7 +51,7 @@ class InventorySyncService {
         nextSync: this.calculateNextSync('02:00', 'daily'),
         isRunning: false,
         manufacturersToSync: ['ALL'], // Special keyword to sync all manufacturers
-        maxProductsPerManufacturer: 2000, // Sync 2000 products per day
+        maxProductsPerManufacturer: 4200, // Sync 4200 products per day
         createdAt: new Date(),
         updatedAt: new Date()
       }
