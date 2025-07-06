@@ -2036,21 +2036,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get search options (categories, manufacturers)
   app.get("/api/search/options", async (req, res) => {
     try {
-      // Get categories from products
-      const categoryResult = await db.select({ 
+      // Get distinct categories from products - simplified query
+      const categoryResult = await db.selectDistinct({ 
         category: products.category 
       })
       .from(products)
       .where(eq(products.isActive, true))
-      .groupBy(products.category);
+      .orderBy(products.category);
 
-      // Get manufacturers from products
-      const manufacturerResult = await db.select({ 
+      // Get distinct manufacturers from products
+      const manufacturerResult = await db.selectDistinct({ 
         manufacturer: products.manufacturer 
       })
       .from(products)
-      .where(and(eq(products.isActive, true), ne(products.manufacturer, null)))
-      .groupBy(products.manufacturer);
+      .where(eq(products.isActive, true))
+      .orderBy(products.manufacturer);
 
       res.json({
         categories: categoryResult.map(r => r.category).filter(Boolean),
