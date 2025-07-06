@@ -320,8 +320,8 @@ class RSRAPIService {
   }
 
   private getAPIImageUrl(imgName: string, size: 'thumb' | 'standard' | 'large'): string {
-    // RSR images are served from their dedicated image subdomain
-    const baseUrl = 'https://img.rsrgroup.com/images/inventory';
+    // RSR images are served from their test image subdomain
+    const baseUrl = 'https://imgtest.rsrgroup.com/images/inventory';
     const cleanImgName = imgName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
     
     switch (size) {
