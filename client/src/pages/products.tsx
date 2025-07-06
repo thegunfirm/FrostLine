@@ -10,6 +10,9 @@ export default function Products() {
   const initialQuery = params.get('search') || "";
   const initialCategory = params.get('category') || "";
   const initialManufacturer = params.get('manufacturer') || "";
+  
+  console.log("Products page URL:", location);
+  console.log("Parsed URL params:", { initialQuery, initialCategory, initialManufacturer });
 
   return (
     <div className="min-h-screen bg-gray-50">
