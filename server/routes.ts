@@ -1993,61 +1993,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== ALGOLIA SEARCH & AI LEARNING ENDPOINTS =====
   
-  // Enhanced Algolia search with AI learning
+  // Direct Algolia search (simplified)
   app.post("/api/search/algolia", async (req, res) => {
     try {
       const { query = "", filters = {}, sort = "relevance", page = 0, hitsPerPage = 24 } = req.body;
       
-      // Initialize AI learning system
-      const { aiSearchLearning } = await import("./services/ai-search-learning");
-      await aiSearchLearning.initialize();
-      
-      // Expand query with AI-learned synonyms
-      const expandedQuery = await aiSearchLearning.expandQuery(query);
-      
-      // Build Algolia request
-      const algoliaRequest = {
-        requests: [{
-          indexName: 'products',
-          params: {
-            query: expandedQuery,
-            page,
-            hitsPerPage,
-            filters: [
-              filters.category ? `categoryName:"${filters.category}"` : null,
-              filters.manufacturer ? `manufacturerName:"${filters.manufacturer}"` : null,
-              filters.inStock ? 'inStock:true' : null
-            ].filter(Boolean).join(' AND '),
-            ...(sort === 'price_asc' && { sortFacetValuesBy: 'count' }),
-            ...(sort === 'price_desc' && { sortFacetValuesBy: 'count' })
-          }
-        }]
+      // Build minimal Algolia search params (start simple)
+      const searchParams = {
+        query: query || "",
+        hitsPerPage: Math.min(hitsPerPage || 24, 100)
       };
 
+      console.log('Algolia search params:', JSON.stringify(searchParams, null, 2));
+
       // Make request to Algolia
-      const response = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/*/queries`, {
+      const response = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/products/query`, {
         method: 'POST',
         headers: {
           'X-Algolia-API-Key': process.env.ALGOLIA_API_KEY!,
           'X-Algolia-Application-Id': process.env.ALGOLIA_APP_ID!,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(algoliaRequest)
+        body: JSON.stringify(searchParams)
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Algolia error response:', errorText);
+        console.error('Request body was:', JSON.stringify(searchParams));
         throw new Error(`Algolia search failed: ${response.statusText}`);
       }
 
       const searchResults = await response.json();
-      const result = searchResults.results[0];
 
-      // Record successful search for learning
-      if (result.hits && result.hits.length > 0) {
-        await aiSearchLearning.recordSearchSuccess(query, result.hits, ['search']);
-      }
-
-      res.json(result);
+      res.json(searchResults);
     } catch (error) {
       console.error('Algolia search error:', error);
       res.status(500).json({ error: 'Search temporarily unavailable' });
