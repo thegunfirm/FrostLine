@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Product } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
+import { useProgressiveImage } from "@/hooks/use-progressive-image";
 
 interface ProductCardProps {
   product: Product;
@@ -14,6 +15,14 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCardProps) {
   const { user } = useAuth();
+  const {
+    imageUrl,
+    altText,
+    isLoading: imageLoading,
+    hasError: imageError,
+    onLoad,
+    onError
+  } = useProgressiveImage(product.id, 'card');
 
   const getTierPrice = (product: Product) => {
     if (!user) return null;
@@ -56,15 +65,24 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
   return (
     <Card className="group cursor-pointer hover:shadow-xl transition-shadow duration-300">
       <div className="aspect-square relative overflow-hidden">
-        {product.images && Array.isArray(product.images) && product.images.length > 0 ? (
+        {imageUrl ? (
           <img 
-            src={product.images[0] as string}
-            alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            src={imageUrl}
+            alt={altText || product.name}
+            className={cn(
+              "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300",
+              imageLoading && "opacity-50"
+            )}
+            onLoad={onLoad}
+            onError={onError}
           />
         ) : (
           <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-            <span className="text-gray-400">No Image</span>
+            {imageLoading ? (
+              <div className="w-8 h-8 border-4 border-gun-gold border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <span className="text-gray-400">No Image</span>
+            )}
           </div>
         )}
         
