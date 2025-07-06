@@ -1860,6 +1860,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Hide Gold when Equal MAP system setting endpoints
+  app.get("/api/admin/system-settings/hide_gold_when_equal_map", async (req, res) => {
+    try {
+      const [setting] = await db.select()
+        .from(systemSettings)
+        .where(eq(systemSettings.key, "hide_gold_when_equal_map"));
+      
+      if (!setting) {
+        // Return default value if setting doesn't exist
+        res.json({ key: "hide_gold_when_equal_map", value: "false" });
+      } else {
+        res.json(setting);
+      }
+    } catch (error) {
+      console.error("Hide Gold setting fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch hide Gold setting" });
+    }
+  });
+
+  app.put("/api/admin/system-settings/hide_gold_when_equal_map", async (req, res) => {
+    try {
+      const { value } = req.body;
+      
+      // Validate the boolean value
+      if (value !== "true" && value !== "false") {
+        return res.status(400).json({ error: "Value must be 'true' or 'false'" });
+      }
+      
+      // Upsert setting (update if exists, insert if doesn't)
+      await db.insert(systemSettings)
+        .values({
+          key: "hide_gold_when_equal_map",
+          value: value.toString(),
+          description: "Hide Gold tier pricing completely when RSR provides identical MSRP and MAP values",
+          category: "pricing"
+        })
+        .onConflictDoUpdate({
+          target: systemSettings.key,
+          set: { value: value.toString(), updatedAt: new Date() }
+        });
+      
+      res.json({ 
+        message: value === "true" 
+          ? "Gold pricing will be hidden when MSRP equals MAP"
+          : "Gold pricing will use discount when MSRP equals MAP",
+        value: value.toString()
+      });
+    } catch (error) {
+      console.error("Hide Gold setting update error:", error);
+      res.status(500).json({ error: "Failed to update hide Gold setting" });
+    }
+  });
+
   // Pricing Rules Management API endpoints
   app.get("/api/admin/pricing-rules", async (req, res) => {
     try {

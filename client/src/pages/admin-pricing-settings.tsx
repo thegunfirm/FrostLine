@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -49,6 +50,7 @@ export default function AdminPricingSettings() {
   });
 
   const [missingMapDiscount, setMissingMapDiscount] = useState("5.0");
+  const [hideGoldWhenEqualMAP, setHideGoldWhenEqualMAP] = useState(false);
 
   // Fetch active pricing rules
   const { data: activeRule, isLoading } = useQuery({
@@ -59,6 +61,12 @@ export default function AdminPricingSettings() {
   // Fetch missing MAP discount setting
   const { data: missingMapSetting } = useQuery({
     queryKey: ["/api/admin/system-settings/missing_map_discount_percent"],
+    refetchInterval: 30000,
+  });
+
+  // Fetch hide Gold pricing setting
+  const { data: hideGoldSetting } = useQuery({
+    queryKey: ["/api/admin/system-settings/hide_gold_when_equal_map"],
     refetchInterval: 30000,
   });
 
@@ -89,6 +97,13 @@ export default function AdminPricingSettings() {
       setMissingMapDiscount(missingMapSetting.value);
     }
   }, [missingMapSetting]);
+
+  // Update hide Gold setting when loaded
+  useEffect(() => {
+    if (hideGoldSetting?.value) {
+      setHideGoldWhenEqualMAP(hideGoldSetting.value === "true");
+    }
+  }, [hideGoldSetting]);
 
   // Save pricing rules mutation
   const savePricingRules = useMutation({
@@ -131,6 +146,27 @@ export default function AdminPricingSettings() {
       toast({
         title: "Save Failed",
         description: error.message || "Failed to save missing MAP discount setting.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update hide Gold setting mutation
+  const updateHideGoldSetting = useMutation({
+    mutationFn: async (hideGold: boolean) => {
+      return apiRequest("PUT", "/api/admin/system-settings/hide_gold_when_equal_map", { value: hideGold.toString() });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Setting Updated",
+        description: hideGoldWhenEqualMAP ? "Gold pricing will be hidden when MSRP equals MAP" : "Gold pricing will use discount when MSRP equals MAP",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/system-settings/hide_gold_when_equal_map"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update hide Gold setting.",
         variant: "destructive",
       });
     },
@@ -416,34 +452,62 @@ export default function AdminPricingSettings() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="missingMapDiscount">Gold Tier Discount (%)</Label>
-                  <Input
-                    id="missingMapDiscount"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="50"
-                    value={missingMapDiscount}
-                    onChange={(e) => setMissingMapDiscount(e.target.value)}
-                    placeholder="5.0"
-                    className="max-w-32"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Percentage discount when MSRP = MAP
+                {/* Hide Gold Pricing Toggle */}
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <Switch
+                      id="hideGoldPricing"
+                      checked={hideGoldWhenEqualMAP}
+                      onCheckedChange={(checked) => {
+                        setHideGoldWhenEqualMAP(checked);
+                        updateHideGoldSetting.mutate(checked);
+                      }}
+                    />
+                    <Label htmlFor="hideGoldPricing" className="text-sm font-medium">
+                      Hide Gold pricing completely when MSRP = MAP
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {hideGoldWhenEqualMAP 
+                      ? "Gold pricing will not be displayed for products with identical MSRP and MAP" 
+                      : "Gold pricing will use the discount percentage below when MSRP equals MAP"
+                    }
                   </p>
                 </div>
+
+                {/* Discount Percentage - only show when not hiding Gold pricing */}
+                {!hideGoldWhenEqualMAP && (
+                  <div>
+                    <Label htmlFor="missingMapDiscount">Gold Tier Discount (%)</Label>
+                    <Input
+                      id="missingMapDiscount"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="50"
+                      value={missingMapDiscount}
+                      onChange={(e) => setMissingMapDiscount(e.target.value)}
+                      placeholder="5.0"
+                      className="max-w-32"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Percentage discount when MSRP = MAP
+                    </p>
+                  </div>
+                )}
                 
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleSaveMissingMapDiscount}
-                    disabled={saveMissingMapDiscount.isPending}
-                    size="sm"
-                    variant="outline"
-                  >
-                    {saveMissingMapDiscount.isPending ? "Saving..." : "Save Discount Setting"}
-                  </Button>
-                </div>
+                {!hideGoldWhenEqualMAP && (
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleSaveMissingMapDiscount}
+                      disabled={saveMissingMapDiscount.isPending}
+                      size="sm"
+                      variant="outline"
+                    >
+                      {saveMissingMapDiscount.isPending ? "Saving..." : "Save Discount Setting"}
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div>

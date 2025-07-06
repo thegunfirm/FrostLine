@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
 import { Lock, Star, Crown } from "lucide-react";
 
 interface SecurePricingProps {
@@ -16,6 +17,26 @@ interface SecurePricingProps {
 export function SecurePricing({ product, showUpgradePrompt = true, className = "" }: SecurePricingProps) {
   const { user } = useAuth();
   
+  // Fetch hide Gold pricing setting
+  const { data: hideGoldSetting } = useQuery({
+    queryKey: ["/api/admin/system-settings/hide_gold_when_equal_map"],
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  const shouldHideGoldPricing = () => {
+    // Hide Gold pricing if the setting is enabled and MSRP equals MAP
+    if (hideGoldSetting?.value === "true") {
+      const bronzePrice = product.priceBronze ? parseFloat(product.priceBronze) : 0;
+      const goldPrice = product.priceGold ? parseFloat(product.priceGold) : 0;
+      
+      // If Bronze (MSRP) equals Gold (MAP), hide Gold pricing
+      if (bronzePrice > 0 && goldPrice > 0 && Math.abs(bronzePrice - goldPrice) < 0.01) {
+        return true;
+      }
+    }
+    return false;
+  };
+  
   // CRITICAL: Never display platinum pricing publicly
   const getUserPrice = () => {
     if (!user) {
@@ -26,6 +47,10 @@ export function SecurePricing({ product, showUpgradePrompt = true, className = "
     // Authenticated users see pricing based on tier
     switch (user.subscriptionTier) {
       case 'Gold':
+        // Check if Gold pricing should be hidden when MSRP equals MAP
+        if (shouldHideGoldPricing()) {
+          return product.priceBronze ? parseFloat(product.priceBronze) : null;
+        }
         // Only show Gold pricing if priceGold is available
         return product.priceGold ? parseFloat(product.priceGold) : 
                (product.priceBronze ? parseFloat(product.priceBronze) : null);
@@ -58,8 +83,8 @@ export function SecurePricing({ product, showUpgradePrompt = true, className = "
     const bronzePrice = product.priceBronze ? parseFloat(product.priceBronze) : 0;
     const goldPrice = product.priceGold ? parseFloat(product.priceGold) : 0;
 
-    // Only show Gold upgrade if Gold pricing is available (when MAP exists)
-    if (tier === 'Bronze' && goldPrice > 0 && product.priceGold) {
+    // Only show Gold upgrade if Gold pricing is available and not hidden
+    if (tier === 'Bronze' && goldPrice > 0 && product.priceGold && !shouldHideGoldPricing()) {
       const goldSavings = bronzePrice - goldPrice;
       if (goldSavings > 0) {
         return {

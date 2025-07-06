@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import { Product } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
@@ -23,6 +24,26 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
     onLoad,
     onError
   } = useProgressiveImage(product.id, 'card');
+
+  // Fetch hide Gold pricing setting
+  const { data: hideGoldSetting } = useQuery({
+    queryKey: ["/api/admin/system-settings/hide_gold_when_equal_map"],
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  const shouldHideGoldPricing = () => {
+    // Hide Gold pricing if the setting is enabled and MSRP equals MAP
+    if (hideGoldSetting?.value === "true") {
+      const bronzePrice = product.priceBronze ? parseFloat(product.priceBronze) : 0;
+      const goldPrice = product.priceGold ? parseFloat(product.priceGold) : 0;
+      
+      // If Bronze (MSRP) equals Gold (MAP), hide Gold pricing
+      if (bronzePrice > 0 && goldPrice > 0 && Math.abs(bronzePrice - goldPrice) < 0.01) {
+        return true;
+      }
+    }
+    return false;
+  };
 
 
 
@@ -95,8 +116,8 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
             </span>
           </div>
           
-          {/* Gold Price - MAP (always show if available) */}
-          {product.priceGold && parseFloat(product.priceGold) > 0 && (
+          {/* Gold Price - MAP (show if available and not hidden) */}
+          {product.priceGold && parseFloat(product.priceGold) > 0 && !shouldHideGoldPricing() && (
             <div className="flex justify-between items-center">
               <span className="text-xs font-medium text-yellow-500">Gold:</span>
               <span className="text-xs font-medium text-gun-black">
@@ -110,7 +131,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
             <div className="flex justify-between items-center border-t border-gray-200 pt-1">
               <span className="text-xs text-gun-gray-light font-medium">Your Price:</span>
               <div className="text-sm font-bold text-gun-gold">
-                {user.subscriptionTier === 'Gold' && product.priceGold ? 
+                {user.subscriptionTier === 'Gold' && product.priceGold && !shouldHideGoldPricing() ? 
                   `$${parseFloat(product.priceGold).toFixed(2)}` :
                   user.subscriptionTier === 'Platinum' ? 
                     'Login to cart' :
