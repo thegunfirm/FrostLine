@@ -541,8 +541,9 @@ export const authenticRSRCatalog: RSRProduct[] = [
 
 /**
  * Get expanded RSR catalog for fallback when API is unavailable
+ * No artificial limit - returns all available authentic products
  */
-export function getExpandedRSRCatalog(limit: number = 1000): RSRProduct[] {
+export function getExpandedRSRCatalog(limit: number = 50000): RSRProduct[] {
   return authenticRSRCatalog.slice(0, limit);
 }
 

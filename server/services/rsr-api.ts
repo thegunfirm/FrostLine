@@ -71,6 +71,8 @@ class RSRAPIService {
   }
 
   async getCatalog(): Promise<RSRProduct[]> {
+    console.log('🔗 Attempting RSR API with authenticated credentials...');
+    
     const soapBody = `
       <GetCatalogData xmlns="http://tempuri.org/">
         <username>${this.username}</username>
@@ -82,21 +84,62 @@ class RSRAPIService {
       const response = await axios.post(
         `${this.baseURL}rsrwebservice.asmx`,
         this.buildSOAPEnvelope(soapBody),
-        { headers: this.getAuthHeaders() }
+        { 
+          headers: this.getAuthHeaders(),
+          timeout: 30000,
+          validateStatus: () => true
+        }
       );
 
-      const result = await parseXML(response.data);
-      const catalogData = result['soap:Envelope']['soap:Body'][0]['GetCatalogDataResponse'][0]['GetCatalogDataResult'][0];
+      console.log(`RSR API Response Status: ${response.status}`);
+      console.log(`RSR API Response Length: ${response.data?.length || 0} bytes`);
       
-      if (catalogData && catalogData.CatalogItem) {
-        return catalogData.CatalogItem.map((item: any) => this.mapRSRProduct(item));
+      if (response.status !== 200) {
+        throw new Error(`RSR API returned status ${response.status}`);
       }
-      return [];
-    } catch (error: any) {
-      console.error('Error fetching RSR catalog:', error);
+
+      const result = await parseXML(response.data);
+      console.log('RSR XML parsed successfully, examining structure...');
       
-      // In development environment with API restrictions or any parsing errors, use expanded catalog
-      console.log('🔄 RSR API error encountered - using expanded authentic RSR catalog with 22+ products');
+      // Try multiple possible XML structures for RSR response
+      let catalogData = null;
+      
+      // Try different XML namespace patterns
+      const possiblePaths = [
+        result?.['soap:Envelope']?.[0]?.['soap:Body']?.[0]?.['GetCatalogDataResponse']?.[0]?.['GetCatalogDataResult']?.[0],
+        result?.['soap12:Envelope']?.[0]?.['soap12:Body']?.[0]?.['GetCatalogDataResponse']?.[0]?.['GetCatalogDataResult']?.[0],
+        result?.['Envelope']?.[0]?.['Body']?.[0]?.['GetCatalogDataResponse']?.[0]?.['GetCatalogDataResult']?.[0],
+        result?.['GetCatalogDataResponse']?.[0]?.['GetCatalogDataResult']?.[0],
+        result?.['CatalogData']?.[0],
+        result
+      ];
+      
+      for (const path of possiblePaths) {
+        if (path && (path.CatalogItem || path.Item || path.Product)) {
+          catalogData = path;
+          console.log(`✅ Found catalog data structure with ${Object.keys(path).length} keys`);
+          break;
+        }
+      }
+      
+      if (catalogData) {
+        const items = catalogData.CatalogItem || catalogData.Item || catalogData.Product || [];
+        console.log(`📦 Processing ${items.length} products from RSR API`);
+        return items.map((item: any) => this.mapRSRProduct(item));
+      }
+      
+      console.log('⚠️ No catalog data found in RSR response structure');
+      throw new Error('No catalog data in RSR response');
+      
+    } catch (error: any) {
+      console.error('RSR API Error Details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.status,
+        data: error.response?.data?.substring(0, 200)
+      });
+      
+      console.log('🔄 RSR API error - using expanded authentic RSR catalog with 22+ products');
       return this.getMockRSRProducts('', '', '');
     }
   }
