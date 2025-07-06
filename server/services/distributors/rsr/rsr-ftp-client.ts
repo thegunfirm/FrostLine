@@ -43,7 +43,7 @@ class RSRFTPClient {
   constructor() {
     // Use existing RSR credentials from environment if available
     this.config = {
-      host: process.env.RSR_FTP_HOST || '',
+      host: process.env.RSR_FTP_HOST || 'ftp.rsrgroup.com',
       username: process.env.RSR_USERNAME || '63824',
       password: process.env.RSR_PASSWORD || 'RunTheGunZ623!',
       port: 21,
@@ -52,7 +52,7 @@ class RSRFTPClient {
       autoProcessFiles: true,
       downloadImages: false,
       downloadHighRes: false,
-      enabled: false
+      enabled: true
     };
 
     this.status = {

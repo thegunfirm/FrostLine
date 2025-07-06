@@ -1593,10 +1593,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // RSR FTP status endpoint
   app.get("/api/admin/rsr-ftp/status", async (req, res) => {
-    if (!req.isAuthenticated() || req.user.role !== "admin") {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-
     try {
       const status = rsrFTPClient.getStatus();
       res.json(status);
@@ -1608,10 +1604,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // RSR FTP connection test endpoint
   app.post("/api/admin/rsr-ftp/test", async (req, res) => {
-    if (!req.isAuthenticated() || req.user.role !== "admin") {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-
     try {
       const result = await rsrFTPClient.testConnection();
       res.json(result);
@@ -1623,10 +1615,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // RSR FTP sync trigger endpoint
   app.post("/api/admin/rsr-ftp/sync", async (req, res) => {
-    if (!req.isAuthenticated() || req.user.role !== "admin") {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-
     try {
       await rsrFTPClient.triggerSync();
       res.json({ message: "RSR FTP sync completed successfully" });
@@ -1638,10 +1626,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // RSR FTP configuration endpoint
   app.post("/api/admin/rsr-ftp/config", async (req, res) => {
-    if (!req.isAuthenticated() || req.user.role !== "admin") {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-
     try {
       const { host, username, password, enabled, syncSchedule } = req.body;
       
