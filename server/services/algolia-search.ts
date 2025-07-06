@@ -1,4 +1,4 @@
-import * as algoliasearch from 'algoliasearch';
+const { algoliasearch } = require('algoliasearch');
 import { RSRProduct } from './rsr-api';
 
 export interface AlgoliaProduct {
@@ -43,12 +43,12 @@ class AlgoliaSearchService {
 
     // Search client for read operations
     this.client = algoliasearch(appId, apiKey);
-    this.index = this.client.initIndex('products');
+    this.index = 'products';
 
     // Admin client for write operations
     if (adminApiKey) {
       this.adminClient = algoliasearch(appId, adminApiKey);
-      this.adminIndex = this.adminClient.initIndex('products');
+      this.adminIndex = 'products';
     }
   }
 
@@ -104,14 +104,17 @@ class AlgoliaSearchService {
 
   // Index RSR products in Algolia
   async indexProducts(rsrProducts: RSRProduct[]): Promise<void> {
-    if (!this.adminIndex) {
+    if (!this.adminClient) {
       throw new Error('Admin API key required for indexing');
     }
 
     const algoliaProducts = rsrProducts.map(product => this.rsrToAlgoliaProduct(product));
     
     try {
-      await this.adminIndex.saveObjects(algoliaProducts);
+      await this.adminClient.saveObjects({
+        indexName: this.adminIndex,
+        objects: algoliaProducts
+      });
       console.log(`Indexed ${algoliaProducts.length} products in Algolia`);
     } catch (error) {
       console.error('Error indexing products in Algolia:', error);
@@ -121,7 +124,7 @@ class AlgoliaSearchService {
 
   // Configure search settings
   async configureSearchSettings(): Promise<void> {
-    if (!this.adminIndex) {
+    if (!this.adminClient) {
       throw new Error('Admin API key required for configuration');
     }
 
@@ -166,7 +169,10 @@ class AlgoliaSearchService {
     };
 
     try {
-      await this.adminIndex.setSettings(settings);
+      await this.adminClient.setSettings({
+        indexName: this.adminIndex,
+        indexSettings: settings
+      });
       console.log('Algolia search settings configured');
     } catch (error) {
       console.error('Error configuring Algolia settings:', error);
@@ -223,7 +229,13 @@ class AlgoliaSearchService {
     }
 
     try {
-      const result = await this.index.search(query, searchOptions);
+      const result = await this.client.searchSingleIndex({
+        indexName: this.index,
+        searchParams: {
+          query,
+          ...searchOptions
+        }
+      });
       return {
         hits: result.hits,
         nbHits: result.nbHits,
@@ -240,7 +252,10 @@ class AlgoliaSearchService {
   // Get product by stock number
   async getProduct(stockNo: string): Promise<AlgoliaProduct | null> {
     try {
-      const result = await this.index.getObject(stockNo);
+      const result = await this.client.getObject({
+        indexName: this.index,
+        objectID: stockNo
+      });
       return result as AlgoliaProduct;
     } catch (error) {
       console.error('Error getting product from Algolia:', error);
