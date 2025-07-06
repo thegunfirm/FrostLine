@@ -89,16 +89,16 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
         <div className="mb-3 space-y-1">
           {/* Bronze Price - Always show as public pricing */}
           <div className="flex justify-between items-center">
-            <span className="text-xs text-gun-gray-light">Bronze:</span>
+            <span className="text-xs font-medium text-amber-600">Bronze:</span>
             <span className="text-xs font-medium text-gun-black">
               ${parseFloat(product.priceBronze || "0").toFixed(2)}
             </span>
           </div>
           
-          {/* Gold Price - Show if different from Bronze */}
-          {product.priceGold && parseFloat(product.priceGold) !== parseFloat(product.priceBronze || "0") && (
+          {/* Gold Price - Always show if available */}
+          {product.priceGold && (
             <div className="flex justify-between items-center">
-              <span className="text-xs text-gun-gray-light">Gold:</span>
+              <span className="text-xs font-medium text-yellow-500">Gold:</span>
               <span className="text-xs font-medium text-gun-black">
                 ${parseFloat(product.priceGold).toFixed(2)}
               </span>
