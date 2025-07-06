@@ -1265,35 +1265,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Direct RSR image serving with multiple domain attempts
+  // Advanced RSR product image system with multiple views
   app.get("/api/rsr-image/:imageName", async (req, res) => {
     try {
       const imageName = req.params.imageName;
+      const view = req.query.view as 'front' | 'side' | 'back' | 'detail' || 'front';
       const size = req.query.size as 'thumb' | 'standard' | 'large' || 'standard';
       const cleanImgName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
       
-      // Try multiple RSR domains and patterns as user requested direct rsrgroup.com
-      const urlPatterns = [
-        `https://www.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
-        `https://www.rsrgroup.com/Custom/Assets/ProductImages/${cleanImgName}.jpg`,
+      // Based on RSR product page structure with multiple image views
+      const imagePatterns = [
+        // RSR product page images (3 views + high-res as user mentioned)
+        `https://www.rsrgroup.com/Custom/Packages/RSR/Images/Product/${cleanImgName}_${view}.jpg`,
+        `https://www.rsrgroup.com/Custom/Packages/RSR/Images/Product/${cleanImgName}_1.jpg`,
+        `https://www.rsrgroup.com/Custom/Packages/RSR/Images/Product/${cleanImgName}_2.jpg`,
+        `https://www.rsrgroup.com/Custom/Packages/RSR/Images/Product/${cleanImgName}_3.jpg`,
+        `https://www.rsrgroup.com/Custom/Packages/RSR/Images/Product/${cleanImgName}.jpg`,
+        // Try different naming conventions for multiple views
+        `https://www.rsrgroup.com/images/products/${cleanImgName}_${view}.jpg`,
+        `https://www.rsrgroup.com/images/products/${cleanImgName}_1.jpg`,
+        `https://www.rsrgroup.com/images/products/${cleanImgName}_2.jpg`,
+        `https://www.rsrgroup.com/images/products/${cleanImgName}_3.jpg`,
         `https://www.rsrgroup.com/images/products/${cleanImgName}.jpg`,
-        `https://rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
+        // Original patterns as fallback
+        `https://www.rsrgroup.com/Custom/Assets/ProductImages/${cleanImgName}.jpg`,
         `https://img.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
-        `https://img.rsrgroup.com/images/inventory/${size}/${cleanImgName}.jpg`,
-        `https://www.rsrgroup.com/productimages/${cleanImgName}.jpg`,
-        `https://www.rsrgroup.com/images/${cleanImgName}.jpg`
+        `https://img.rsrgroup.com/images/inventory/${size}/${cleanImgName}.jpg`
       ];
 
-      for (const url of urlPatterns) {
+      for (const url of imagePatterns) {
         try {
-          console.log(`Trying RSR image URL: ${url}`);
+          console.log(`Checking RSR product image: ${url}`);
           
           const response = await axios.get(url, {
             responseType: "arraybuffer",
             headers: {
               Referer: "https://www.rsrgroup.com/",
               "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36",
-              "Accept": "image/webp,image/apng,image/*,*/*;q=0.8"
+              "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
+              "Cache-Control": "no-cache"
             },
             timeout: 15000,
             validateStatus: () => true
@@ -1302,40 +1312,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const contentType = response.headers['content-type'] || '';
           const isImage = contentType.startsWith('image/');
           
-          // Look for actual images (not tiny placeholders or HTML)
-          if (isImage && response.data.length > 5000) {
-            console.log(`Found actual RSR image: ${url} (${response.data.length} bytes)`);
+          // Look for actual product images (larger than placeholders)
+          if (isImage && response.data.length > 8000) {
+            console.log(`✅ Found RSR product image: ${url} (${response.data.length} bytes)`);
             
             res.set({
               'Content-Type': contentType,
               'Cache-Control': 'public, max-age=86400',
-              'Content-Length': response.data.length
+              'Content-Length': response.data.length,
+              'X-Image-Source': 'RSR-Product-Page'
             });
             
             return res.send(Buffer.from(response.data));
+          } else if (isImage && response.data.length === 4226) {
+            console.log(`⚠️ RSR placeholder: ${url}`);
           } else if (response.data.length > 0) {
-            console.log(`Skipping ${url}: ${isImage ? 'small image' : 'non-image'} (${response.data.length} bytes, ${contentType})`);
+            console.log(`❌ Not image: ${url} (${response.data.length} bytes, ${contentType})`);
           }
         } catch (urlError: any) {
-          console.log(`Failed ${url}: ${urlError.message}`);
+          console.log(`🔍 Trying next: ${urlError.message}`);
           continue;
         }
       }
 
-      // No actual image found
-      console.log(`No actual RSR image found for ${imageName}`);
+      // No actual product image found
+      console.log(`🚫 No RSR product images found for ${imageName}`);
       res.status(404).json({ 
-        error: 'No actual product image available',
-        imageName,
+        error: 'No product images available',
+        product: imageName,
+        view,
         size,
-        triedUrls: urlPatterns.length
+        searchedPatterns: imagePatterns.length
       });
 
     } catch (error: any) {
-      console.error(`RSR image endpoint error for ${req.params.imageName}:`, error);
+      console.error(`❌ RSR product image error:`, error.message);
       res.status(500).json({ 
-        error: 'Failed to fetch image',
-        imageName: req.params.imageName
+        error: 'Image service unavailable',
+        product: req.params.imageName
       });
     }
   });
