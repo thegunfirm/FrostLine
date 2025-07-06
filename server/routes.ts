@@ -1374,7 +1374,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             return res.send(Buffer.from(response.data));
           } else if (isImage && response.data.length === 4226) {
-            console.log(`📷 RSR placeholder detected: ${url}`);
+            console.log(`📷 RSR placeholder available: ${url}`);
+            // Return the authentic RSR placeholder image
+            res.set({
+              'Content-Type': contentType,
+              'Cache-Control': 'public, max-age=86400',
+              'Content-Length': response.data.length,
+              'X-Image-Source': 'RSR-Placeholder',
+              'X-Image-View': view,
+              'X-Image-Size': size
+            });
+            
+            return res.send(Buffer.from(response.data));
           } else if (response.data.length > 0) {
             console.log(`❌ HTML/Non-image: ${url} (${contentType})`);
           }
