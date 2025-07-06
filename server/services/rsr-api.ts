@@ -75,7 +75,7 @@ class RSRAPIService {
     
     try {
       // First try the Hetzner proxy server for full 29k catalog
-      const HETZNER_PROXY_URL = process.env.HETZNER_PROXY_URL || 'http://your-hetzner-server:3001';
+      const HETZNER_PROXY_URL = process.env.HETZNER_PROXY_URL || 'http://5.78.137.95:3001';
       
       console.log(`📡 Connecting to Hetzner RSR proxy: ${HETZNER_PROXY_URL}`);
       
