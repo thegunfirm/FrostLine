@@ -64,7 +64,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   // Advanced filter states
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
-  const [inStockOnly, setInStockOnly] = useState(true);
+  const [inStockOnly, setInStockOnly] = useState(false);
   const [newItemsOnly, setNewItemsOnly] = useState(false);
   
   // Firearm-specific filter states
@@ -480,11 +480,11 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                     <Label htmlFor="availability">Availability</Label>
                     <Select value={inStockOnly ? "in-stock" : "all"} onValueChange={(value) => setInStockOnly(value === "in-stock")}>
                       <SelectTrigger id="availability">
-                        <SelectValue placeholder="In Stock" />
+                        <SelectValue placeholder="All Products" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="in-stock">In Stock Only</SelectItem>
                         <SelectItem value="all">All Products</SelectItem>
+                        <SelectItem value="in-stock">In Stock Only</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
