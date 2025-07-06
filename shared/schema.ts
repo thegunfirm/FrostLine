@@ -40,6 +40,11 @@ export const products = pgTable("products", {
   mustRouteThroughGunFirm: boolean("must_route_through_gun_firm").default(false),
   tags: json("tags"),
   images: json("images"), // Array of image objects with multiple resolutions
+  upcCode: text("upc_code"),
+  weight: decimal("weight", { precision: 8, scale: 2 }).default("0"),
+  dimensions: json("dimensions"), // {length, width, height}
+  restrictions: json("restrictions"), // RSR restrictions object
+  stateRestrictions: json("state_restrictions"), // Array of restricted states
   returnPolicyDays: integer("return_policy_days").default(30),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),

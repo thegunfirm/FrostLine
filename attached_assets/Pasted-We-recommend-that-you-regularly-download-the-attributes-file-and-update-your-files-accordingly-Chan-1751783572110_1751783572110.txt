@@ -1,0 +1,72 @@
+We recommend that you regularly download the attributes file and update your files accordingly. Changes to this file occur every 2 hours and we want to make sure you have the most up-to-date information.
+
+    Format: Ascii text, semi-colon delimited
+    Import into Excel or other spreadsheet program and use the data fields listed below as headings in the spreadsheet.
+    Use this layout with the attributes-all.txt file.
+    There are 55 data fields.
+
+#	Field Description	Notes
+1	RSR Stock Number	
+2	Manufacturer Id	
+
+	Fields 3-52 are Attribute Descriptions on this RSR Stock Number.
+There are a maximum of 50 different attributes for each stock number.
+Not all attributes exist for a given stock number. If an attribute does not exist for the particular stock number, the field remains, but is blank.
+	
+3	Accessories	
+4	Action	
+5	Type of Barrel	
+6	Barrel Length	
+7	Catalog Code (Department Number)	
+8	Chamber	
+9	Chokes	
+10	Condition	
+11	Capacity	
+12	Description	
+13	Dram	
+14	Edge	
+15	Firing Casing	
+16	Finish	Combined with Color (Field 48) prior to July 2020
+17	Fit	
+18	Fit	A stock number may have two Fits
+19	Feet per Second	
+20	Frame	Combined with Material (Field 49) prior to July 2020
+21	Caliber	
+22	Caliber	A stock number may have two Calibers
+23	Grain Weight	
+24	Grips	Combined with Stock (Field 50) prior to July 2020
+25	Hand	
+26	Manufacturer	
+27	Manufacturer Part #	Added June 2010
+28	Manufacturer Weight	
+29	MOA	
+30	Model	
+31	Model	A stock number may have two Models
+32	New Stock #	
+33	NSN	National Stock #, added June 2010
+34	Objective	
+35	Ounce of Shot	
+36	Packaging	
+37	Power	
+38	Reticle	
+39	Safety	
+40	Sights	
+41	Size	
+42	Type	
+43	Units per Box	
+44	Units per Case	
+45	Wt Characteristics	
+46	Sub Category	
+47	Diameter	Added October 2019
+48	Color	Added July 2020
+49	Material	Added July 2020
+50	Stock	Added July 2020
+51	Lens Color	Added July 2020
+52	Handle Color	Added July 2020
+
+	Fields 53-55 are reserved for future use.
+	
+53	Reserved for future use	
+54	Reserved for future use
+	
+55	Reserved for future use
