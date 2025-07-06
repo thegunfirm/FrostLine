@@ -485,7 +485,36 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
       {/* Products Grid */}
       <ProductGrid 
-        products={searchResults?.hits || []}
+        products={searchResults?.hits.map(hit => ({
+          id: parseInt(hit.objectID.replace('rsr-', '')),
+          name: hit.title,
+          description: hit.description,
+          category: hit.categoryName,
+          manufacturer: hit.manufacturerName,
+          sku: hit.sku,
+          priceWholesale: hit.tierPricing.platinum?.toString() || "0",
+          priceMAP: null,
+          priceMSRP: null, 
+          priceBronze: hit.tierPricing.bronze?.toString() || "0",
+          priceGold: hit.tierPricing.gold?.toString() || "0",
+          pricePlatinum: hit.tierPricing.platinum?.toString() || "0",
+          inStock: hit.inStock,
+          stockQuantity: hit.inventory?.onHand || 0,
+          distributor: hit.distributor,
+          requiresFFL: false,
+          mustRouteThroughGunFirm: false,
+          tags: null,
+          images: hit.images || [],
+          upcCode: null,
+          weight: "0",
+          dimensions: null,
+          restrictions: null,
+          stateRestrictions: null,
+          returnPolicyDays: 30,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })) || []}
         loading={isLoading}
         onAddToCart={handleAddToCart}
       />
