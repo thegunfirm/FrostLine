@@ -201,7 +201,9 @@ export class RSRAutoSync {
             updates.push({
               stockNo: rsrProduct.stockNo,
               quantity: rsrProduct.quantity,
-              rsrPrice: rsrProduct.rsrPrice
+              rsrPrice: rsrProduct.rsrPrice,
+              retailPrice: rsrProduct.retailPrice,
+              mapPrice: rsrProduct.mapPrice
             });
           }
         } else {
@@ -225,7 +227,7 @@ export class RSRAutoSync {
   }
 
   /**
-   * Parse RSR inventory line (simplified)
+   * Parse RSR inventory line with complete pricing data
    */
   private parseRSRLine(line: string): any {
     const fields = line.split(';');
@@ -235,9 +237,11 @@ export class RSRAutoSync {
       stockNo: fields[0]?.trim() || '',
       description: fields[2]?.trim() || '',
       departmentNumber: fields[3]?.trim() || '',
-      rsrPrice: fields[6]?.trim() || '0',
+      retailPrice: parseFloat(fields[5]?.trim() || '0'),  // MSRP
+      rsrPrice: fields[6]?.trim() || '0',                 // Wholesale
       quantity: parseInt(fields[8]?.trim() || '0'),
-      fullManufacturerName: fields[10]?.trim() || ''
+      fullManufacturerName: fields[10]?.trim() || '',
+      mapPrice: parseFloat(fields[62]?.trim() || fields[5]?.trim() || '0')  // MAP field
     };
   }
 
