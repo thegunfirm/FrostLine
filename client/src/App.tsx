@@ -13,6 +13,7 @@ import Products from "@/pages/products";
 import ProductDetail from "@/pages/product-detail";
 import Membership from "@/pages/membership";
 import ImageTest from "@/pages/image-test";
+import AdminSync from "@/pages/admin-sync";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/product/:id" component={ProductDetail} />
       <Route path="/membership" component={Membership} />
       <Route path="/image-test" component={ImageTest} />
+      <Route path="/admin-sync" component={AdminSync} />
       <Route component={NotFound} />
     </Switch>
   );
