@@ -72,10 +72,14 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   const [actionType, setActionType] = useState("all");
   const [barrelLength, setBarrelLength] = useState("all");
   const [capacity, setCapacity] = useState("all");
+  
+  // Additional filter states
+  const [stateRestriction, setStateRestriction] = useState("all");
+  const [priceTier, setPriceTier] = useState("all");
 
   // Get search results from Algolia
   const { data: searchResults, isLoading, error } = useQuery({
-    queryKey: ['algolia-search', searchQuery, category, manufacturer, sortBy, currentPage, resultsPerPage, priceMin, priceMax, inStockOnly, newItemsOnly],
+    queryKey: ['algolia-search', searchQuery, category, manufacturer, sortBy, currentPage, resultsPerPage, priceMin, priceMax, inStockOnly, newItemsOnly, caliber, actionType, barrelLength, capacity, stateRestriction, priceTier],
     queryFn: async () => {
       const response = await apiRequest('POST', '/api/search/algolia', {
         query: searchQuery,
@@ -85,7 +89,13 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           inStock: inStockOnly,
           priceMin: priceMin ? parseFloat(priceMin) : undefined,
           priceMax: priceMax ? parseFloat(priceMax) : undefined,
-          newItem: newItemsOnly || undefined
+          newItem: newItemsOnly || undefined,
+          caliber: caliber && caliber !== "all" ? caliber : undefined,
+          actionType: actionType && actionType !== "all" ? actionType : undefined,
+          barrelLength: barrelLength && barrelLength !== "all" ? barrelLength : undefined,
+          capacity: capacity && capacity !== "all" ? capacity : undefined,
+          stateRestriction: stateRestriction && stateRestriction !== "all" ? stateRestriction : undefined,
+          priceTier: priceTier && priceTier !== "all" ? priceTier : undefined
         },
         sort: sortBy,
         page: currentPage,
@@ -562,6 +572,130 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                           Over $1000
                         </Button>
                       </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Firearm-Specific Filters */}
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold text-gun-black mb-4">Firearm Specifications</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="caliber">Caliber</Label>
+                      <Select value={caliber} onValueChange={setCaliber}>
+                        <SelectTrigger id="caliber">
+                          <SelectValue placeholder="All Calibers" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Calibers</SelectItem>
+                          <SelectItem value="9mm">9mm</SelectItem>
+                          <SelectItem value="5.56 NATO">5.56 NATO</SelectItem>
+                          <SelectItem value=".22 LR">.22 LR</SelectItem>
+                          <SelectItem value="12 Gauge">12 Gauge</SelectItem>
+                          <SelectItem value=".45 ACP">.45 ACP</SelectItem>
+                          <SelectItem value=".38 Special">.38 Special</SelectItem>
+                          <SelectItem value=".308 Win">.308 Win</SelectItem>
+                          <SelectItem value="7.62x39">7.62x39</SelectItem>
+                          <SelectItem value=".357 Magnum">.357 Magnum</SelectItem>
+                          <SelectItem value=".223 Rem">.223 Rem</SelectItem>
+                          <SelectItem value="20 Gauge">20 Gauge</SelectItem>
+                          <SelectItem value=".410 Bore">.410 Bore</SelectItem>
+                          <SelectItem value=".270 Win">.270 Win</SelectItem>
+                          <SelectItem value=".40 S&W">.40 S&W</SelectItem>
+                          <SelectItem value="30-06">30-06</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="action-type">Action Type</Label>
+                      <Select value={actionType} onValueChange={setActionType}>
+                        <SelectTrigger id="action-type">
+                          <SelectValue placeholder="All Actions" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Actions</SelectItem>
+                          <SelectItem value="Semi-Auto">Semi-Auto</SelectItem>
+                          <SelectItem value="Bolt Action">Bolt Action</SelectItem>
+                          <SelectItem value="Pump Action">Pump Action</SelectItem>
+                          <SelectItem value="Lever Action">Lever Action</SelectItem>
+                          <SelectItem value="Single Action">Single Action</SelectItem>
+                          <SelectItem value="Double Action">Double Action</SelectItem>
+                          <SelectItem value="Break Action">Break Action</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="barrel-length">Barrel Length</Label>
+                      <Select value={barrelLength} onValueChange={setBarrelLength}>
+                        <SelectTrigger id="barrel-length">
+                          <SelectValue placeholder="All Lengths" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Lengths</SelectItem>
+                          <SelectItem value="Pistol Length">Pistol Length</SelectItem>
+                          <SelectItem value="Under 16&quot;">Under 16"</SelectItem>
+                          <SelectItem value="16&quot;-20&quot;">16"-20"</SelectItem>
+                          <SelectItem value="20&quot;-24&quot;">20"-24"</SelectItem>
+                          <SelectItem value="24&quot;+">24"+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="capacity">Capacity</Label>
+                      <Select value={capacity} onValueChange={setCapacity}>
+                        <SelectTrigger id="capacity">
+                          <SelectValue placeholder="All Capacities" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Capacities</SelectItem>
+                          <SelectItem value="1-5 rounds">1-5 rounds</SelectItem>
+                          <SelectItem value="6-10 rounds">6-10 rounds</SelectItem>
+                          <SelectItem value="11-15 rounds">11-15 rounds</SelectItem>
+                          <SelectItem value="16-30 rounds">16-30 rounds</SelectItem>
+                          <SelectItem value="30+ rounds">30+ rounds</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Filters */}
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold text-gun-black mb-4">Additional Filters</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="state-restriction">State Availability</Label>
+                      <Select value={stateRestriction} onValueChange={setStateRestriction}>
+                        <SelectTrigger id="state-restriction">
+                          <SelectValue placeholder="All States" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All States</SelectItem>
+                          <SelectItem value="no-restrictions">No State Restrictions</SelectItem>
+                          <SelectItem value="california-compliant">California Compliant</SelectItem>
+                          <SelectItem value="new-york-compliant">New York Compliant</SelectItem>
+                          <SelectItem value="massachusetts-compliant">Massachusetts Compliant</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="price-tier">Price Tier Focus</Label>
+                      <Select value={priceTier} onValueChange={setPriceTier}>
+                        <SelectTrigger id="price-tier">
+                          <SelectValue placeholder="All Price Tiers" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Price Tiers</SelectItem>
+                          <SelectItem value="budget">Budget Friendly (Under $300)</SelectItem>
+                          <SelectItem value="mid-range">Mid-Range ($300-$800)</SelectItem>
+                          <SelectItem value="premium">Premium ($800-$1500)</SelectItem>
+                          <SelectItem value="high-end">High-End ($1500+)</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>

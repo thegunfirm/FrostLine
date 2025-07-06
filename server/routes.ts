@@ -1993,16 +1993,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== ALGOLIA SEARCH & AI LEARNING ENDPOINTS =====
   
-  // Direct Algolia search (simplified)
+  // Direct Algolia search with comprehensive filtering
   app.post("/api/search/algolia", async (req, res) => {
     try {
       const { query = "", filters = {}, sort = "relevance", page = 0, hitsPerPage = 24 } = req.body;
       
-      // Build minimal Algolia search params (start simple)
-      const searchParams = {
+      // Build Algolia filters array
+      const algoliaFilters = [];
+      
+      // Basic filters
+      if (filters.category) {
+        algoliaFilters.push(`category:"${filters.category}"`);
+      }
+      if (filters.manufacturer) {
+        algoliaFilters.push(`manufacturer:"${filters.manufacturer}"`);
+      }
+      if (filters.inStock) {
+        algoliaFilters.push('inStock:true');
+      }
+      if (filters.newItem) {
+        algoliaFilters.push('newItem:true');
+      }
+      
+      // Firearm-specific filters (check tags)
+      if (filters.caliber) {
+        algoliaFilters.push(`tags:"${filters.caliber}"`);
+      }
+      if (filters.actionType) {
+        algoliaFilters.push(`tags:"${filters.actionType}"`);
+      }
+      if (filters.barrelLength) {
+        algoliaFilters.push(`tags:"${filters.barrelLength}"`);
+      }
+      if (filters.capacity) {
+        algoliaFilters.push(`tags:"${filters.capacity}"`);
+      }
+      
+      // Price range filters
+      const priceFilters = [];
+      if (filters.priceMin && filters.priceMax) {
+        priceFilters.push(`retailPrice:${filters.priceMin} TO ${filters.priceMax}`);
+      } else if (filters.priceMin) {
+        priceFilters.push(`retailPrice:${filters.priceMin} TO 99999`);
+      } else if (filters.priceMax) {
+        priceFilters.push(`retailPrice:0 TO ${filters.priceMax}`);
+      }
+      
+      // Price tier filters (convert to price ranges)
+      if (filters.priceTier) {
+        switch (filters.priceTier) {
+          case 'budget':
+            priceFilters.push('retailPrice:0 TO 300');
+            break;
+          case 'mid-range':
+            priceFilters.push('retailPrice:300 TO 800');
+            break;
+          case 'premium':
+            priceFilters.push('retailPrice:800 TO 1500');
+            break;
+          case 'high-end':
+            priceFilters.push('retailPrice:1500 TO 99999');
+            break;
+        }
+      }
+      
+      if (priceFilters.length > 0) {
+        algoliaFilters.push(priceFilters.join(' AND '));
+      }
+      
+      // State restriction filters (could be implemented as tags in future)
+      if (filters.stateRestriction && filters.stateRestriction !== 'no-restrictions') {
+        // For now, just add as a tag filter - would need to enhance product tagging for this
+        algoliaFilters.push(`tags:"${filters.stateRestriction}"`);
+      }
+      
+      // Build sort parameter
+      let sortParam = undefined;
+      switch (sort) {
+        case 'price_asc':
+          sortParam = 'retailPrice:asc';
+          break;
+        case 'price_desc':
+          sortParam = 'retailPrice:desc';
+          break;
+        case 'name_asc':
+          sortParam = 'name:asc';
+          break;
+        case 'name_desc':
+          sortParam = 'name:desc';
+          break;
+        case 'newest':
+          sortParam = 'newItem:desc';
+          break;
+        default:
+          sortParam = undefined; // Use relevance
+      }
+      
+      // Build search params
+      const searchParams: any = {
         query: query || "",
-        hitsPerPage: Math.min(hitsPerPage || 24, 100)
+        hitsPerPage: Math.min(hitsPerPage || 24, 100),
+        page: page || 0
       };
+      
+      if (algoliaFilters.length > 0) {
+        searchParams.filters = algoliaFilters.join(' AND ');
+      }
+      
+      if (sortParam) {
+        searchParams.restrictSearchableAttributes = sortParam;
+      }
 
       console.log('Algolia search params:', JSON.stringify(searchParams, null, 2));
 
