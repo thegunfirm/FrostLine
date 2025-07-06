@@ -128,6 +128,58 @@ export const heroCarouselSlides = pgTable("hero_carousel_slides", {
   updatedAt: timestamp("updated_at").defaultNow()
 });
 
+// AI Search Learning System Tables
+export const searchCache = pgTable("search_cache", {
+  id: serial("id").primaryKey(),
+  originalQuery: text("original_query").notNull().unique(),
+  expandedQuery: text("expanded_query").notNull(),
+  results: json("results").notNull(),
+  metadata: json("metadata").notNull(),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
+export const searchLearning = pgTable("search_learning", {
+  id: serial("id").primaryKey(),
+  originalQuery: text("original_query").notNull(),
+  expandedQuery: text("expanded_query").notNull(),
+  resultCount: integer("result_count").notNull(),
+  userInteractions: json("user_interactions").notNull(),
+  relevanceScore: decimal("relevance_score", { precision: 3, scale: 2 }).notNull(),
+  learningData: json("learning_data"),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
+export const searchFeedback = pgTable("search_feedback", {
+  id: serial("id").primaryKey(),
+  searchQuery: text("search_query").notNull(),
+  feedbackText: text("feedback_text").notNull(),
+  category: text("category"),
+  timestamp: timestamp("timestamp").defaultNow(),
+  isResolved: boolean("is_resolved").default(false),
+});
+
+// Category ribbon management for CMS
+export const categoryRibbons = pgTable("category_ribbons", {
+  id: serial("id").primaryKey(),
+  categoryName: text("category_name").notNull().unique(),
+  ribbonText: text("ribbon_text").notNull(),
+  displayOrder: integer("display_order").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// System settings for various configurations
+export const systemSettings = pgTable("system_settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  description: text("description"),
+  category: text("category").default("general"),
+  isEditable: boolean("is_editable").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many, one }) => ({
   orders: many(orders),
@@ -156,17 +208,6 @@ export const fflsRelations = relations(ffls, ({ many }) => ({
   orders: many(orders),
   preferredByUsers: many(users),
 }));
-
-export const systemSettings = pgTable("system_settings", {
-  id: serial("id").primaryKey(),
-  key: text("key").notNull().unique(),
-  value: text("value").notNull(),
-  description: text("description"),
-  category: text("category").notNull().default("sync"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
 
 export const pricingRules = pgTable("pricing_rules", {
   id: serial("id").primaryKey(),

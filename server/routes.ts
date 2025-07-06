@@ -1991,6 +1991,214 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== ALGOLIA SEARCH & AI LEARNING ENDPOINTS =====
+  
+  // Enhanced Algolia search with AI learning
+  app.post("/api/search/algolia", async (req, res) => {
+    try {
+      const { query = "", filters = {}, sort = "relevance", page = 0, hitsPerPage = 24 } = req.body;
+      
+      // Initialize AI learning system
+      const { aiSearchLearning } = await import("./services/ai-search-learning");
+      await aiSearchLearning.initialize();
+      
+      // Expand query with AI-learned synonyms
+      const expandedQuery = await aiSearchLearning.expandQuery(query);
+      
+      // Build Algolia request
+      const algoliaRequest = {
+        requests: [{
+          indexName: 'products',
+          params: {
+            query: expandedQuery,
+            page,
+            hitsPerPage,
+            filters: [
+              filters.category ? `categoryName:"${filters.category}"` : null,
+              filters.manufacturer ? `manufacturerName:"${filters.manufacturer}"` : null,
+              filters.inStock ? 'inStock:true' : null
+            ].filter(Boolean).join(' AND '),
+            ...(sort === 'price_asc' && { sortFacetValuesBy: 'count' }),
+            ...(sort === 'price_desc' && { sortFacetValuesBy: 'count' })
+          }
+        }]
+      };
+
+      // Make request to Algolia
+      const response = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/*/queries`, {
+        method: 'POST',
+        headers: {
+          'X-Algolia-API-Key': process.env.ALGOLIA_API_KEY!,
+          'X-Algolia-Application-Id': process.env.ALGOLIA_APP_ID!,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(algoliaRequest)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Algolia search failed: ${response.statusText}`);
+      }
+
+      const searchResults = await response.json();
+      const result = searchResults.results[0];
+
+      // Record successful search for learning
+      if (result.hits && result.hits.length > 0) {
+        await aiSearchLearning.recordSearchSuccess(query, result.hits, ['search']);
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error('Algolia search error:', error);
+      res.status(500).json({ error: 'Search temporarily unavailable' });
+    }
+  });
+
+  // Get search options (categories, manufacturers)
+  app.get("/api/search/options", async (req, res) => {
+    try {
+      // Get categories from products
+      const categoryResult = await db.select({ 
+        category: products.category 
+      })
+      .from(products)
+      .where(eq(products.isActive, true))
+      .groupBy(products.category);
+
+      // Get manufacturers from products
+      const manufacturerResult = await db.select({ 
+        manufacturer: products.manufacturer 
+      })
+      .from(products)
+      .where(and(eq(products.isActive, true), ne(products.manufacturer, null)))
+      .groupBy(products.manufacturer);
+
+      res.json({
+        categories: categoryResult.map(r => r.category).filter(Boolean),
+        manufacturers: manufacturerResult.map(r => r.manufacturer).filter(Boolean)
+      });
+    } catch (error) {
+      console.error('Search options error:', error);
+      res.status(500).json({ error: 'Failed to load search options' });
+    }
+  });
+
+  // Submit search feedback
+  app.post("/api/search/feedback", async (req, res) => {
+    try {
+      const { query, category, manufacturer, message } = req.body;
+      
+      const { aiSearchLearning } = await import("./services/ai-search-learning");
+      await aiSearchLearning.recordSearchFeedback(query, message, category);
+      
+      res.json({ message: 'Feedback recorded successfully' });
+    } catch (error) {
+      console.error('Search feedback error:', error);
+      res.status(500).json({ error: 'Failed to record feedback' });
+    }
+  });
+
+  // ===== CATEGORY RIBBON MANAGEMENT (CMS) =====
+  
+  // Get category ribbons
+  app.get("/api/admin/category-ribbons", async (req, res) => {
+    try {
+      const { categoryRibbons } = await import("../shared/schema");
+      const ribbons = await db.select().from(categoryRibbons).orderBy(categoryRibbons.displayOrder);
+      res.json(ribbons);
+    } catch (error) {
+      console.error('Category ribbons error:', error);
+      res.status(500).json({ error: 'Failed to load category ribbons' });
+    }
+  });
+
+  // Create or update category ribbon
+  app.post("/api/admin/category-ribbons", async (req, res) => {
+    try {
+      const { categoryRibbons } = await import("../shared/schema");
+      const { categoryName, ribbonText, displayOrder, isActive } = req.body;
+      
+      const ribbon = await db.insert(categoryRibbons).values({
+        categoryName,
+        ribbonText,
+        displayOrder: displayOrder || 0,
+        isActive: isActive !== false
+      }).onConflictDoUpdate({
+        target: categoryRibbons.categoryName,
+        set: {
+          ribbonText,
+          displayOrder: displayOrder || 0,
+          isActive: isActive !== false
+        }
+      }).returning();
+      
+      res.json(ribbon[0]);
+    } catch (error) {
+      console.error('Category ribbon save error:', error);
+      res.status(500).json({ error: 'Failed to save category ribbon' });
+    }
+  });
+
+  // Delete category ribbon
+  app.delete("/api/admin/category-ribbons/:id", async (req, res) => {
+    try {
+      const { categoryRibbons } = await import("../shared/schema");
+      const { id } = req.params;
+      
+      await db.delete(categoryRibbons).where(eq(categoryRibbons.id, parseInt(id)));
+      res.json({ message: 'Category ribbon deleted successfully' });
+    } catch (error) {
+      console.error('Category ribbon delete error:', error);
+      res.status(500).json({ error: 'Failed to delete category ribbon' });
+    }
+  });
+
+  // ===== SEARCH ANALYTICS & AI LEARNING ADMIN =====
+  
+  // Get search analytics
+  app.get("/api/admin/search-analytics", async (req, res) => {
+    try {
+      const { aiSearchLearning } = await import("./services/ai-search-learning");
+      const analytics = await aiSearchLearning.getSearchAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      console.error('Search analytics error:', error);
+      res.status(500).json({ error: 'Failed to load search analytics' });
+    }
+  });
+
+  // Get active ribbon mappings for frontend
+  app.get("/api/category-ribbons/active", async (req, res) => {
+    try {
+      const { categoryRibbons } = await import("../shared/schema");
+      const activeRibbons = await db.select()
+        .from(categoryRibbons)
+        .where(eq(categoryRibbons.isActive, true))
+        .orderBy(categoryRibbons.displayOrder);
+      
+      res.json(activeRibbons);
+    } catch (error) {
+      console.error('Active ribbons error:', error);
+      res.status(500).json({ error: 'Failed to load active ribbons' });
+    }
+  });
+
+  // Record user interaction for AI learning
+  app.post("/api/search/interaction", async (req, res) => {
+    try {
+      const { query, productId, interactionType } = req.body;
+      
+      // Record interaction for AI learning
+      const { aiSearchLearning } = await import("./services/ai-search-learning");
+      await aiSearchLearning.recordSearchSuccess(query, [], [interactionType]);
+      
+      res.json({ message: 'Interaction recorded' });
+    } catch (error) {
+      console.error('Search interaction error:', error);
+      res.status(500).json({ error: 'Failed to record interaction' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
