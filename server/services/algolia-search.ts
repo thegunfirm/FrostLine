@@ -3,27 +3,30 @@ import { RSRProduct } from './rsr-api';
 
 export interface AlgoliaProduct {
   objectID: string;
-  stockNo: string;
-  name: string;
+  title: string;
   description: string;
-  fullDescription: string;
-  category: string;
-  subCategory: string;
-  manufacturer: string;
-  mfgPartNumber: string;
+  sku: string;
   upc: string;
-  retailPrice: number;
-  rsrPrice: number;
-  weight: number;
-  inStock: boolean;
-  quantity: number;
-  imageUrl: string;
-  newItem: boolean;
-  promo: string;
-  allocated: string;
-  accessories: string;
-  searchableText: string;
-  tags: string[];
+  manufacturerName: string;
+  categoryName: string;
+  subcategoryName: string;
+  inventory: {
+    onHand: number;
+    allocated: boolean;
+    dropShippable: boolean;
+  };
+  price: {
+    msrp: number;
+    retailMap: number;
+    dealerPrice: number;
+    dealerCasePrice: number;
+  };
+  images: Array<{
+    image: string;
+    id: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
 }
 
 class AlgoliaSearchService {
