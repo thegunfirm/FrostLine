@@ -60,14 +60,14 @@ export class PricingEngine {
       parseFloat(rules.bronzeFlatMarkup)
     );
 
-    // Calculate Gold pricing - only if MAP is available
-    const gold = mapPrice ? this.applyMarkup(
+    // Calculate Gold pricing - always calculate based on markup rules
+    const gold = this.applyMarkup(
       wholesalePrice,
       rules.goldMarkupType,
       parseFloat(rules.goldMarkupValue),
       parseFloat(rules.goldThreshold),
       parseFloat(rules.goldFlatMarkup)
-    ) : null;
+    );
 
     // Calculate Platinum pricing
     const platinum = this.applyMarkup(
