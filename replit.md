@@ -155,4 +155,5 @@ Changelog:
 
 ```
 Preferred communication style: Simple, everyday language.
+Image policy: NEVER use Unsplash or any placeholder images. Only use authentic distributor images (RSR, etc.) even if they show "Image Coming Soon" placeholders.
 ```
