@@ -168,6 +168,29 @@ export const systemSettings = pgTable("system_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const pricingRules = pgTable("pricing_rules", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  // Bronze tier markup rules
+  bronzeMarkupType: text("bronze_markup_type").notNull().default("percentage"), // 'flat' or 'percentage'
+  bronzeMarkupValue: decimal("bronze_markup_value", { precision: 10, scale: 2 }).notNull().default("10.00"),
+  bronzeThreshold: decimal("bronze_threshold", { precision: 10, scale: 2 }).notNull().default("200.00"),
+  bronzeFlatMarkup: decimal("bronze_flat_markup", { precision: 10, scale: 2 }).notNull().default("20.00"),
+  // Gold tier markup rules
+  goldMarkupType: text("gold_markup_type").notNull().default("percentage"),
+  goldMarkupValue: decimal("gold_markup_value", { precision: 10, scale: 2 }).notNull().default("5.00"),
+  goldThreshold: decimal("gold_threshold", { precision: 10, scale: 2 }).notNull().default("200.00"),
+  goldFlatMarkup: decimal("gold_flat_markup", { precision: 10, scale: 2 }).notNull().default("15.00"),
+  // Platinum tier markup rules
+  platinumMarkupType: text("platinum_markup_type").notNull().default("percentage"),
+  platinumMarkupValue: decimal("platinum_markup_value", { precision: 10, scale: 2 }).notNull().default("2.00"),
+  platinumThreshold: decimal("platinum_threshold", { precision: 10, scale: 2 }).notNull().default("200.00"),
+  platinumFlatMarkup: decimal("platinum_flat_markup", { precision: 10, scale: 2 }).notNull().default("10.00"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
@@ -225,6 +248,23 @@ export const insertSystemSettingSchema = createInsertSchema(systemSettings).pick
   isActive: true,
 });
 
+export const insertPricingRuleSchema = createInsertSchema(pricingRules).pick({
+  name: true,
+  bronzeMarkupType: true,
+  bronzeMarkupValue: true,
+  bronzeThreshold: true,
+  bronzeFlatMarkup: true,
+  goldMarkupType: true,
+  goldMarkupValue: true,
+  goldThreshold: true,
+  goldFlatMarkup: true,
+  platinumMarkupType: true,
+  platinumMarkupValue: true,
+  platinumThreshold: true,
+  platinumFlatMarkup: true,
+  isActive: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -240,3 +280,5 @@ export type HeroCarouselSlide = typeof heroCarouselSlides.$inferSelect;
 export type InsertHeroCarouselSlide = z.infer<typeof insertHeroCarouselSlideSchema>;
 export type SystemSetting = typeof systemSettings.$inferSelect;
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
+export type PricingRule = typeof pricingRules.$inferSelect;
+export type InsertPricingRule = z.infer<typeof insertPricingRuleSchema>;

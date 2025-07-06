@@ -4,8 +4,10 @@ import { createServer, type Server } from "http";
 import { join } from "path";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
-import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema, type InsertProduct, systemSettings } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema, type InsertProduct, systemSettings, pricingRules, insertPricingRuleSchema } from "@shared/schema";
+import { pricingEngine } from "./services/pricing-engine";
 import { db } from "./db";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 // Temporarily disabled while fixing import issues
 // import ApiContracts from "authorizenet";
@@ -1803,6 +1805,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("RSR sync frequency update error:", error);
       res.status(500).json({ error: "Failed to update RSR sync frequency" });
+    }
+  });
+
+  // Pricing Rules Management API endpoints
+  app.get("/api/admin/pricing-rules", async (req, res) => {
+    try {
+      const rules = await db.select().from(pricingRules);
+      res.json(rules);
+    } catch (error) {
+      console.error("Pricing rules fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch pricing rules" });
+    }
+  });
+
+  app.post("/api/admin/pricing-rules", async (req, res) => {
+    try {
+      const ruleData = insertPricingRuleSchema.parse(req.body);
+      
+      // Set all existing rules to inactive
+      await db.update(pricingRules).set({ isActive: false });
+      
+      // Create new active rule
+      const [newRule] = await db.insert(pricingRules)
+        .values({ ...ruleData, isActive: true })
+        .returning();
+      
+      res.json(newRule);
+    } catch (error) {
+      console.error("Pricing rule creation error:", error);
+      res.status(500).json({ error: "Failed to create pricing rule" });
+    }
+  });
+
+  app.put("/api/admin/pricing-rules/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const ruleData = insertPricingRuleSchema.parse(req.body);
+      
+      // Set all existing rules to inactive
+      await db.update(pricingRules).set({ isActive: false });
+      
+      // Update the specified rule and make it active
+      const [updatedRule] = await db.update(pricingRules)
+        .set({ ...ruleData, isActive: true })
+        .where(eq(pricingRules.id, parseInt(id)))
+        .returning();
+      
+      res.json(updatedRule);
+    } catch (error) {
+      console.error("Pricing rule update error:", error);
+      res.status(500).json({ error: "Failed to update pricing rule" });
+    }
+  });
+
+  app.post("/api/admin/pricing-rules/recalculate", async (req, res) => {
+    try {
+      const updatedCount = await pricingEngine.recalculateAllProductPricing();
+      res.json({ 
+        message: `Successfully recalculated pricing for ${updatedCount} products`,
+        updatedCount 
+      });
+    } catch (error) {
+      console.error("Pricing recalculation error:", error);
+      res.status(500).json({ error: "Failed to recalculate product pricing" });
+    }
+  });
+
+  app.get("/api/admin/pricing-rules/active", async (req, res) => {
+    try {
+      const [activeRule] = await db.select()
+        .from(pricingRules)
+        .where(eq(pricingRules.isActive, true))
+        .limit(1);
+      
+      res.json(activeRule || null);
+    } catch (error) {
+      console.error("Active pricing rule fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch active pricing rule" });
     }
   });
 

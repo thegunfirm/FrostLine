@@ -26,7 +26,9 @@ export function SecurePricing({ product, showUpgradePrompt = true, className = "
     // Authenticated users see pricing based on tier
     switch (user.subscriptionTier) {
       case 'Gold':
-        return product.priceGold ? parseFloat(product.priceGold) : null;
+        // Only show Gold pricing if priceGold is available
+        return product.priceGold ? parseFloat(product.priceGold) : 
+               (product.priceBronze ? parseFloat(product.priceBronze) : null);
       case 'Bronze':
         return product.priceBronze ? parseFloat(product.priceBronze) : null;
       default:
@@ -56,7 +58,8 @@ export function SecurePricing({ product, showUpgradePrompt = true, className = "
     const bronzePrice = product.priceBronze ? parseFloat(product.priceBronze) : 0;
     const goldPrice = product.priceGold ? parseFloat(product.priceGold) : 0;
 
-    if (tier === 'Bronze' && goldPrice > 0) {
+    // Only show Gold upgrade if Gold pricing is available (when MAP exists)
+    if (tier === 'Bronze' && goldPrice > 0 && product.priceGold) {
       const goldSavings = bronzePrice - goldPrice;
       if (goldSavings > 0) {
         return {
@@ -96,7 +99,7 @@ export function SecurePricing({ product, showUpgradePrompt = true, className = "
         <Badge variant={userTier === 'Gold' ? 'default' : 'secondary'} className="text-xs">
           {userTier === 'Gold' && <Star className="w-3 h-3 mr-1" />}
           {userTier === 'Platinum' && <Crown className="w-3 h-3 mr-1" />}
-          {userTier} Price
+          {userTier}
         </Badge>
       </div>
 

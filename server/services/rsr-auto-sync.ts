@@ -67,7 +67,8 @@ export class RSRAutoSync {
       // Check if RSR inventory file exists
       const inventoryPath = join(process.cwd(), 'server', 'data', 'rsrinventory-new.txt');
       
-      if (!require('fs').existsSync(inventoryPath)) {
+      const fs = await import('fs');
+      if (!fs.existsSync(inventoryPath)) {
         console.log('📂 No RSR inventory file found, skipping sync');
         return;
       }
