@@ -1998,12 +1998,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { query = "", filters = {}, sort = "relevance", page = 0, hitsPerPage = 24 } = req.body;
       
+      console.log("Algolia search received:", {
+        query,
+        filters,
+        sort,
+        page,
+        hitsPerPage
+      });
+      
       // Build Algolia filters array
       const algoliaFilters = [];
       
-      // Basic filters
+      // Basic filters  
       if (filters.category) {
-        algoliaFilters.push(`category:"${filters.category}"`);
+        algoliaFilters.push(`categoryName:"${filters.category}"`);
       }
       if (filters.manufacturer) {
         algoliaFilters.push(`manufacturer:"${filters.manufacturer}"`);
