@@ -66,6 +66,12 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   const [priceMax, setPriceMax] = useState("");
   const [inStockOnly, setInStockOnly] = useState(true);
   const [newItemsOnly, setNewItemsOnly] = useState(false);
+  
+  // Firearm-specific filter states
+  const [caliber, setCaliber] = useState("all");
+  const [actionType, setActionType] = useState("all");
+  const [barrelLength, setBarrelLength] = useState("all");
+  const [capacity, setCapacity] = useState("all");
 
   // Get search results from Algolia
   const { data: searchResults, isLoading, error } = useQuery({

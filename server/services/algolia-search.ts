@@ -57,11 +57,88 @@ class AlgoliaSearchService {
 
   // Convert RSR product to Algolia format
   private rsrToAlgoliaProduct(rsrProduct: RSRProduct): AlgoliaProduct {
+    // Extract caliber from product name
+    const extractCaliber = (name: string): string | null => {
+      const calibers = [
+        { pattern: /9\s*mm|9mm/i, value: '9mm' },
+        { pattern: /5\.56|556/i, value: '5.56 NATO' },
+        { pattern: /\.22\s*LR|22\s*LR|22LR/i, value: '.22 LR' },
+        { pattern: /12\s*GA|12\s*GAUGE/i, value: '12 Gauge' },
+        { pattern: /\.45\s*ACP|45\s*ACP|45ACP/i, value: '.45 ACP' },
+        { pattern: /\.38\s*SPECIAL|38\s*SPECIAL/i, value: '.38 Special' },
+        { pattern: /\.308|308\s*WIN/i, value: '.308 Win' },
+        { pattern: /7\.62|762/i, value: '7.62x39' },
+        { pattern: /\.357|357\s*MAG/i, value: '.357 Magnum' },
+        { pattern: /\.223|223\s*REM/i, value: '.223 Rem' },
+        { pattern: /20\s*GA|20\s*GAUGE/i, value: '20 Gauge' },
+        { pattern: /\.410|410\s*BORE/i, value: '.410 Bore' },
+        { pattern: /\.270|270\s*WIN/i, value: '.270 Win' },
+        { pattern: /\.40|40\s*S&W|40SW/i, value: '.40 S&W' },
+        { pattern: /30-06|3006/i, value: '30-06' }
+      ];
+      
+      for (const caliber of calibers) {
+        if (caliber.pattern.test(name)) {
+          return caliber.value;
+        }
+      }
+      return null;
+    };
+
+    // Extract action type from product name
+    const extractActionType = (name: string): string | null => {
+      if (/SEMI\s*AUTO|SEMI-AUTO/i.test(name)) return 'Semi-Auto';
+      if (/BOLT\s*ACTION|BOLT/i.test(name)) return 'Bolt Action';
+      if (/PUMP\s*ACTION|PUMP/i.test(name)) return 'Pump Action';
+      if (/LEVER\s*ACTION|LEVER/i.test(name)) return 'Lever Action';
+      if (/SINGLE\s*ACTION/i.test(name)) return 'Single Action';
+      if (/DOUBLE\s*ACTION/i.test(name)) return 'Double Action';
+      if (/BREAK\s*ACTION|BREAK/i.test(name)) return 'Break Action';
+      return null;
+    };
+
+    // Extract barrel length category
+    const extractBarrelLength = (name: string): string | null => {
+      const barrelMatch = name.match(/(\d+(?:\.\d+)?)\s*["\s*INCH|IN]/i);
+      if (barrelMatch) {
+        const length = parseFloat(barrelMatch[1]);
+        if (length < 16) return 'Under 16"';
+        if (length <= 20) return '16"-20"';
+        if (length <= 24) return '20"-24"';
+        return '24"+';
+      }
+      if (/PISTOL|HANDGUN/i.test(name)) return 'Pistol Length';
+      return null;
+    };
+
+    // Extract capacity category
+    const extractCapacity = (name: string): string | null => {
+      const capacityMatch = name.match(/(\d+)\s*(?:RD|ROUND|SHOT)/i);
+      if (capacityMatch) {
+        const capacity = parseInt(capacityMatch[1]);
+        if (capacity <= 5) return '1-5 rounds';
+        if (capacity <= 10) return '6-10 rounds';
+        if (capacity <= 15) return '11-15 rounds';
+        if (capacity <= 30) return '16-30 rounds';
+        return '30+ rounds';
+      }
+      return null;
+    };
+
+    const caliber = extractCaliber(rsrProduct.description);
+    const actionType = extractActionType(rsrProduct.description);
+    const barrelLength = extractBarrelLength(rsrProduct.description);
+    const capacity = extractCapacity(rsrProduct.description);
+
     const tags = [
       rsrProduct.categoryDesc,
       rsrProduct.manufacturer,
       rsrProduct.departmentDesc,
-      rsrProduct.subDepartmentDesc
+      rsrProduct.subDepartmentDesc,
+      caliber,
+      actionType,
+      barrelLength,
+      capacity
     ].filter(Boolean);
 
     if (rsrProduct.newItem) tags.push('New');
@@ -76,7 +153,11 @@ class AlgoliaSearchService {
       rsrProduct.mfgName,
       rsrProduct.mfgPartNumber,
       rsrProduct.categoryDesc,
-      rsrProduct.accessories
+      rsrProduct.accessories,
+      caliber,
+      actionType,
+      barrelLength,
+      capacity
     ].filter(Boolean).join(' ');
 
     return {
@@ -147,6 +228,10 @@ class AlgoliaSearchService {
         'filterOnly(manufacturer)',
         'filterOnly(inStock)',
         'filterOnly(newItem)',
+        'filterOnly(caliber)',
+        'filterOnly(actionType)',
+        'filterOnly(barrelLength)',
+        'filterOnly(capacity)',
         'filterOnly(tags)'
       ],
       customRanking: [
