@@ -160,10 +160,18 @@ async function processAuthenticRSR() {
   
   console.log(`📊 Processing ${lines.length} authentic RSR products...`);
   
-  // Clear existing products
-  console.log('🗑️ Clearing existing products...');
-  await db.delete(products);
-  console.log('✅ Database cleared');
+  // Check existing products before clearing
+  const existingCount = await db.select().from(products).where(eq(products.distributor, 'RSR'));
+  console.log(`📦 Found ${existingCount.length} existing RSR products`);
+  
+  // Only clear if we have fewer than 1000 products (partial load)
+  if (existingCount.length < 1000) {
+    console.log('🗑️ Clearing existing products for fresh load...');
+    await db.delete(products);
+    console.log('✅ Database cleared');
+  } else {
+    console.log('📦 Keeping existing products, will skip duplicates');
+  }
   
   let processed = 0;
   let inserted = 0;
