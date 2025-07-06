@@ -1,6 +1,6 @@
-import { createWriteStream, existsSync, mkdirSync } from 'fs';
+import { createWriteStream, existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { rsrSessionManager } from './rsr-session';
+import { rsrAPI } from './rsr-api';
 
 export interface ImageDownloadResult {
   success: boolean;
@@ -22,17 +22,47 @@ class ImageDownloadService {
     }
   }
 
+  private getLocalPath(imageName: string, size: 'thumb' | 'standard' | 'large'): string {
+    const cleanName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
+    const filename = `${cleanName}_${size}.jpg`;
+    return join(this.imageDirectory, filename);
+  }
+
   /**
-   * Download RSR image and store locally
-   * Note: RSR images require age verification on their website
+   * Download RSR image and store locally using API authentication
    */
   async downloadRSRImage(imageName: string, size: 'thumb' | 'standard' | 'large' = 'standard'): Promise<ImageDownloadResult> {
-    // RSR images are not accessible due to age verification requirements
-    // Return error to indicate images are not available
-    return { 
-      success: false, 
-      error: "RSR images require age verification on their website" 
-    };
+    if (!imageName) {
+      return { success: false, error: "No image name provided" };
+    }
+
+    const localPath = this.getLocalPath(imageName, size);
+    
+    // Check if already exists
+    if (existsSync(localPath)) {
+      return { success: true, localPath };
+    }
+
+    try {
+      // Use API-based authentication instead of web scraping
+      const imageBuffer = await rsrAPI.getImageWithAuth(imageName, size);
+      
+      if (!imageBuffer) {
+        return { success: false, error: "Failed to fetch image from RSR API" };
+      }
+
+      // Write to local file
+      writeFileSync(localPath, imageBuffer);
+      this.downloadedImages.add(`${imageName}-${size}`);
+      
+      return { success: true, localPath };
+    } catch (error) {
+      console.error(`Error downloading RSR image ${imageName}:`, error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : "Unknown error downloading image" 
+      };
+    }
   }
 
   /**

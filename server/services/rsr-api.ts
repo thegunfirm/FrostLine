@@ -229,6 +229,95 @@ class RSRAPIService {
     }
   }
 
+  async getImageWithAuth(imgName: string, size: 'thumb' | 'standard' | 'large' = 'standard'): Promise<Buffer | null> {
+    if (!imgName) return null;
+    
+    // Try multiple strategies to access RSR images
+    const strategies = [
+      // Strategy 1: Direct access with dealer credentials
+      async () => {
+        const imageUrl = this.getAPIImageUrl(imgName, size);
+        return await axios.get(imageUrl, {
+          responseType: 'arraybuffer',
+          headers: {
+            'Authorization': `Basic ${Buffer.from(`${this.standardUsername}:${this.standardPassword}`).toString('base64')}`,
+            'User-Agent': 'RSR-API-Client/1.0',
+            'Accept': 'image/jpeg,image/png,image/*,*/*'
+          },
+          timeout: 15000
+        });
+      },
+      
+      // Strategy 2: Try API credentials if different
+      async () => {
+        if (this.username !== this.standardUsername) {
+          const imageUrl = this.getAPIImageUrl(imgName, size);
+          return await axios.get(imageUrl, {
+            responseType: 'arraybuffer',
+            headers: {
+              'Authorization': `Basic ${Buffer.from(`${this.username}:${this.password}`).toString('base64')}`,
+              'User-Agent': 'RSR-API-Client/1.0',
+              'Accept': 'image/jpeg,image/png,image/*,*/*'
+            },
+            timeout: 15000
+          });
+        }
+        throw new Error('Same credentials');
+      },
+      
+      // Strategy 3: Direct access with age verification cookie
+      async () => {
+        const imageUrl = this.getAPIImageUrl(imgName, size);
+        return await axios.get(imageUrl, {
+          responseType: 'arraybuffer',
+          headers: {
+            'Authorization': `Basic ${Buffer.from(`${this.standardUsername}:${this.standardPassword}`).toString('base64')}`,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Cookie': 'age_verified=true; user_preference=dealer_access',
+            'Accept': 'image/jpeg,image/png,image/*,*/*'
+          },
+          timeout: 15000
+        });
+      }
+    ];
+
+    // Try each strategy
+    for (let i = 0; i < strategies.length; i++) {
+      try {
+        const response = await strategies[i]();
+        
+        // Check if we got an image (not HTML)
+        const contentType = response.headers['content-type'] || '';
+        if (contentType.includes('image/') || response.data.length > 1000) {
+          return Buffer.from(response.data);
+        }
+        
+        console.log(`Strategy ${i + 1} returned non-image content for ${imgName}`);
+      } catch (error) {
+        console.log(`Strategy ${i + 1} failed for ${imgName}:`, error.message);
+      }
+    }
+
+    console.error(`All strategies failed for RSR image ${imgName}`);
+    return null;
+  }
+
+  private getAPIImageUrl(imgName: string, size: 'thumb' | 'standard' | 'large'): string {
+    // RSR images are served from their main website with authentication headers
+    const baseUrl = 'https://www.rsrgroup.com/images/inventory';
+    const cleanImgName = imgName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
+    
+    switch (size) {
+      case 'thumb':
+        return `${baseUrl}/thumb/${cleanImgName}.jpg`;
+      case 'large':
+        return `${baseUrl}/large/${cleanImgName}.jpg`;
+      case 'standard':
+      default:
+        return `${baseUrl}/${cleanImgName}.jpg`;
+    }
+  }
+
   private getMockRSRProducts(searchTerm: string, category?: string, manufacturer?: string): RSRProduct[] {
     const mockProducts: RSRProduct[] = [
       {

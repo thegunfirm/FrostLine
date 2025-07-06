@@ -986,6 +986,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test RSR API image access
+  app.get("/api/test-rsr-image/:imageName", async (req, res) => {
+    try {
+      const imageName = req.params.imageName;
+      const size = req.query.size as 'thumb' | 'standard' | 'large' || 'standard';
+      
+      console.log(`Testing RSR API image access for: ${imageName} (${size})`);
+      
+      const imageBuffer = await rsrAPI.getImageWithAuth(imageName, size);
+      
+      if (!imageBuffer) {
+        return res.status(404).json({ 
+          error: "Image not found or authentication failed",
+          imageName,
+          size
+        });
+      }
+
+      // Check if this is actually an image or HTML
+      const contentPreview = imageBuffer.toString('utf8', 0, 100);
+      const isHTML = contentPreview.includes('<html') || contentPreview.includes('<!DOCTYPE');
+      
+      if (isHTML) {
+        return res.status(200).json({
+          error: "Received HTML instead of image",
+          imageName,
+          size,
+          contentPreview,
+          message: "RSR age verification still blocking access"
+        });
+      }
+
+      res.set({
+        'Content-Type': 'image/jpeg',
+        'Cache-Control': 'public, max-age=86400',
+        'Content-Length': imageBuffer.length
+      });
+      
+      res.send(imageBuffer);
+    } catch (error: any) {
+      console.error(`RSR image test error for ${req.params.imageName}:`, error);
+      res.status(500).json({ 
+        error: "Failed to fetch image from RSR API",
+        details: error.message,
+        imageName: req.params.imageName
+      });
+    }
+  });
+
   // Image optimization endpoints
   app.get("/api/images/optimize/:productId", async (req, res) => {
     try {
