@@ -1808,6 +1808,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Missing MAP Discount system setting endpoints
+  app.get("/api/admin/system-settings/missing_map_discount_percent", async (req, res) => {
+    try {
+      const [setting] = await db.select()
+        .from(systemSettings)
+        .where(eq(systemSettings.key, "missing_map_discount_percent"));
+      
+      if (!setting) {
+        // Return default value if setting doesn't exist
+        res.json({ key: "missing_map_discount_percent", value: "5.0" });
+      } else {
+        res.json(setting);
+      }
+    } catch (error) {
+      console.error("Missing MAP discount fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch missing MAP discount setting" });
+    }
+  });
+
+  app.put("/api/admin/system-settings/missing_map_discount_percent", async (req, res) => {
+    try {
+      const { value } = req.body;
+      
+      // Validate the discount percentage
+      const discountPercent = parseFloat(value);
+      if (isNaN(discountPercent) || discountPercent < 0 || discountPercent > 50) {
+        return res.status(400).json({ error: "Discount percentage must be between 0 and 50" });
+      }
+      
+      // Upsert setting (update if exists, insert if doesn't)
+      await db.insert(systemSettings)
+        .values({
+          key: "missing_map_discount_percent",
+          value: value.toString(),
+          description: "Discount percentage applied when RSR provides identical MSRP and MAP values",
+          category: "pricing"
+        })
+        .onConflictDoUpdate({
+          target: systemSettings.key,
+          set: { value: value.toString(), updatedAt: new Date() }
+        });
+      
+      res.json({ 
+        message: "Missing MAP discount percentage updated successfully",
+        value: value.toString()
+      });
+    } catch (error) {
+      console.error("Missing MAP discount update error:", error);
+      res.status(500).json({ error: "Failed to update missing MAP discount setting" });
+    }
+  });
+
   // Pricing Rules Management API endpoints
   app.get("/api/admin/pricing-rules", async (req, res) => {
     try {

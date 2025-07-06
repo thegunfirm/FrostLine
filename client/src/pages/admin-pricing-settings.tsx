@@ -48,9 +48,17 @@ export default function AdminPricingSettings() {
     platinumFlatMarkup: "10.00"
   });
 
+  const [missingMapDiscount, setMissingMapDiscount] = useState("5.0");
+
   // Fetch active pricing rules
   const { data: activeRule, isLoading } = useQuery({
     queryKey: ["/api/admin/pricing-rules/active"],
+    refetchInterval: 30000,
+  });
+
+  // Fetch missing MAP discount setting
+  const { data: missingMapSetting } = useQuery({
+    queryKey: ["/api/admin/system-settings/missing_map_discount_percent"],
     refetchInterval: 30000,
   });
 
@@ -75,6 +83,13 @@ export default function AdminPricingSettings() {
     }
   }, [activeRule]);
 
+  // Update missing MAP discount when setting is loaded
+  useEffect(() => {
+    if (missingMapSetting?.value) {
+      setMissingMapDiscount(missingMapSetting.value);
+    }
+  }, [missingMapSetting]);
+
   // Save pricing rules mutation
   const savePricingRules = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -95,6 +110,27 @@ export default function AdminPricingSettings() {
       toast({
         title: "Save Failed",
         description: error.message || "Failed to save pricing rules.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Save missing MAP discount setting mutation
+  const saveMissingMapDiscount = useMutation({
+    mutationFn: async (value: string) => {
+      return apiRequest("PUT", "/api/admin/system-settings/missing_map_discount_percent", { value });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Missing MAP Discount Updated",
+        description: "The discount percentage has been saved successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/system-settings/missing_map_discount_percent"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Save Failed",
+        description: error.message || "Failed to save missing MAP discount setting.",
         variant: "destructive",
       });
     },
@@ -126,6 +162,10 @@ export default function AdminPricingSettings() {
 
   const handleSave = () => {
     savePricingRules.mutate(formData);
+  };
+
+  const handleSaveMissingMapDiscount = () => {
+    saveMissingMapDiscount.mutate(missingMapDiscount);
   };
 
   const handleRecalculate = () => {
@@ -359,12 +399,76 @@ export default function AdminPricingSettings() {
         </Card>
       </div>
 
+
+
       <Card>
         <CardHeader>
           <CardTitle>Pricing Configuration</CardTitle>
           <CardDescription>Current markup rules and examples</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Missing MAP Discount Configuration */}
+          <div className="mb-8 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+            <h4 className="font-semibold mb-3 text-blue-900 dark:text-blue-100">Missing MAP Discount Configuration</h4>
+            <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
+              Applied to products where RSR provides identical MSRP and MAP values (currently affects 3,086 products)
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="missingMapDiscount">Gold Tier Discount (%)</Label>
+                  <Input
+                    id="missingMapDiscount"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="50"
+                    value={missingMapDiscount}
+                    onChange={(e) => setMissingMapDiscount(e.target.value)}
+                    placeholder="5.0"
+                    className="max-w-32"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Percentage discount when MSRP = MAP
+                  </p>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleSaveMissingMapDiscount}
+                    disabled={saveMissingMapDiscount.isPending}
+                    size="sm"
+                    variant="outline"
+                  >
+                    {saveMissingMapDiscount.isPending ? "Saving..." : "Save Discount Setting"}
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <h5 className="font-medium mb-3">Discount Example</h5>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Original MSRP/MAP:</span>
+                    <span className="font-mono">$100.00</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Gold Price ({missingMapDiscount}% off):</span>
+                    <span className="font-mono text-green-600">
+                      ${(100 * (1 - parseFloat(missingMapDiscount || "0") / 100)).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Member Savings:</span>
+                    <span>${(100 * parseFloat(missingMapDiscount || "0") / 100).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Pricing Examples */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h4 className="font-semibold mb-3">Example Pricing ($100 wholesale)</h4>
