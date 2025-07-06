@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { db } from '../server/db.js';
 import { products } from '../shared/schema.js';
+import { eq } from 'drizzle-orm';
 
 /**
  * Parse RSR inventory line (77 fields)
@@ -160,18 +161,13 @@ async function processAuthenticRSR() {
   
   console.log(`📊 Processing ${lines.length} authentic RSR products...`);
   
-  // Check existing products before clearing
+  // Check existing products
   const existingCount = await db.select().from(products).where(eq(products.distributor, 'RSR'));
-  console.log(`📦 Found ${existingCount.length} existing RSR products`);
+  console.log(`📦 Found ${existingCount.length} existing RSR products - will add new ones`);
   
-  // Only clear if we have fewer than 1000 products (partial load)
-  if (existingCount.length < 1000) {
-    console.log('🗑️ Clearing existing products for fresh load...');
-    await db.delete(products);
-    console.log('✅ Database cleared');
-  } else {
-    console.log('📦 Keeping existing products, will skip duplicates');
-  }
+  // Get existing SKUs to avoid duplicates
+  const existingSkus = new Set(existingCount.map(p => p.sku).filter(Boolean));
+  console.log(`📋 Will skip ${existingSkus.size} existing SKUs`);
   
   let processed = 0;
   let inserted = 0;
@@ -194,6 +190,11 @@ async function processAuthenticRSR() {
       try {
         const rsrProduct = parseRSRLine(line);
         if (!rsrProduct) continue;
+        
+        // Skip if product already exists
+        if (existingSkus.has(rsrProduct.stockNo)) {
+          continue;
+        }
         
         const product = transformRSRProduct(rsrProduct);
         productBatch.push(product);

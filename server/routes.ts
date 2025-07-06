@@ -1385,7 +1385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const isActualImage = imageSize > 10000; // Real images are usually larger
           
           availableImages.push({
-            view,
+            angle: view,
             url: rsrImageUrl,
             size: imageSize,
             isActual: isActualImage,
@@ -1467,7 +1467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             'Cache-Control': 'public, max-age=86400',
             'Content-Length': response.data.length,
             'X-Image-Source': 'RSR',
-            'X-Image-View': view,
+            'X-Image-Angle': angle,
             'X-Image-Size': size
           });
           
@@ -1484,7 +1484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(404).json({ 
         error: 'No authentic product images available',
         product: imageName,
-        view,
+        angle,
         size,
         url: rsrImageUrl,
         note: 'Only authentic RSR images are served'
