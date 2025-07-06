@@ -12,7 +12,9 @@ import { z } from "zod";
 import { rsrAPI, type RSRProduct } from "./services/rsr-api";
 import { inventorySync } from "./services/inventory-sync";
 import { imageService } from "./services/image-service";
+import { rsrFileProcessor } from "./services/rsr-file-processor";
 import axios from "axios";
+import multer from "multer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
