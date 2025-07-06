@@ -234,7 +234,20 @@ class RSRAPIService {
     
     // Try multiple strategies to access RSR images
     const strategies = [
-      // Strategy 1: Direct access with dealer credentials
+      // Strategy 1: Direct access without authentication (public images)
+      async () => {
+        const imageUrl = this.getAPIImageUrl(imgName, size);
+        return await axios.get(imageUrl, {
+          responseType: 'arraybuffer',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'image/jpeg,image/png,image/*,*/*'
+          },
+          timeout: 15000
+        });
+      },
+      
+      // Strategy 2: Direct access with dealer credentials
       async () => {
         const imageUrl = this.getAPIImageUrl(imgName, size);
         return await axios.get(imageUrl, {
@@ -248,7 +261,26 @@ class RSRAPIService {
         });
       },
       
-      // Strategy 2: Try API credentials if different
+      // Strategy 3: Try www.rsrgroup.com path (original)
+      async () => {
+        const baseUrl = 'https://www.rsrgroup.com/images/inventory';
+        const cleanImgName = imgName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
+        const imageUrl = size === 'thumb' ? `${baseUrl}/thumb/${cleanImgName}.jpg` : 
+                        size === 'large' ? `${baseUrl}/large/${cleanImgName}.jpg` : 
+                        `${baseUrl}/${cleanImgName}.jpg`;
+        
+        return await axios.get(imageUrl, {
+          responseType: 'arraybuffer',
+          headers: {
+            'Authorization': `Basic ${Buffer.from(`${this.standardUsername}:${this.standardPassword}`).toString('base64')}`,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'image/jpeg,image/png,image/*,*/*'
+          },
+          timeout: 15000
+        });
+      },
+      
+      // Strategy 4: Try API credentials if different
       async () => {
         if (this.username !== this.standardUsername) {
           const imageUrl = this.getAPIImageUrl(imgName, size);
@@ -263,21 +295,6 @@ class RSRAPIService {
           });
         }
         throw new Error('Same credentials');
-      },
-      
-      // Strategy 3: Direct access with age verification cookie
-      async () => {
-        const imageUrl = this.getAPIImageUrl(imgName, size);
-        return await axios.get(imageUrl, {
-          responseType: 'arraybuffer',
-          headers: {
-            'Authorization': `Basic ${Buffer.from(`${this.standardUsername}:${this.standardPassword}`).toString('base64')}`,
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Cookie': 'age_verified=true; user_preference=dealer_access',
-            'Accept': 'image/jpeg,image/png,image/*,*/*'
-          },
-          timeout: 15000
-        });
       }
     ];
 
@@ -303,8 +320,8 @@ class RSRAPIService {
   }
 
   private getAPIImageUrl(imgName: string, size: 'thumb' | 'standard' | 'large'): string {
-    // RSR images are served from their main website with authentication headers
-    const baseUrl = 'https://www.rsrgroup.com/images/inventory';
+    // RSR images are served from their dedicated image subdomain
+    const baseUrl = 'https://img.rsrgroup.com/images/inventory';
     const cleanImgName = imgName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
     
     switch (size) {
