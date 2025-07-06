@@ -39,6 +39,7 @@ export function ProgressiveImage({
   const [isLoading, setIsLoading] = useState(true);
   const [showHighRes, setShowHighRes] = useState(false);
   const [imageLoadError, setImageLoadError] = useState(false);
+  const [allImagesFailedToLoad, setAllImagesFailedToLoad] = useState(false);
   
   // Get optimal image variant based on context
   const getOptimalVariant = (context: 'card' | 'detail' | 'zoom' | 'gallery'): ImageVariant => {

@@ -1021,7 +1021,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // RSR Image Proxy with authentication
+  // RSR Image Proxy - Returns 404 when images require age verification
   app.get("/api/images/rsr-proxy/:stockNo/:size", async (req, res) => {
     try {
       const { stockNo, size } = req.params;
@@ -1042,37 +1042,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: "Invalid size parameter" });
       }
 
-      // Use RSR API credentials to fetch image with authentication
-      const response = await fetch(`https://www.rsrgroup.com${rsrPath}`, {
-        headers: {
-          'Authorization': `Basic ${Buffer.from(`${process.env.RSR_USERNAME}:${process.env.RSR_PASSWORD}`).toString('base64')}`,
-          'User-Agent': 'Mozilla/5.0 (compatible; TheGunFirm/1.0)',
-          'Accept': 'image/jpeg,image/png,image/gif,image/webp,*/*'
-        }
+      // RSR images require age verification on their website
+      // For now, we'll return a 404 to indicate images are not available
+      // This allows the Progressive Image component to handle the fallback gracefully
+      res.status(404).json({ 
+        error: "RSR images require age verification",
+        message: "Images are not accessible due to RSR's age verification requirements" 
       });
-
-      if (response.ok) {
-        // Stream the image directly to the client
-        const contentType = response.headers.get('content-type') || 'image/jpeg';
-        res.set('Content-Type', contentType);
-        res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
-        
-        const imageBuffer = await response.arrayBuffer();
-        res.send(Buffer.from(imageBuffer));
-      } else {
-        // Image not found or authentication failed
-        res.status(404).json({ error: "Image not available" });
-      }
     } catch (error: any) {
       console.error("Error fetching RSR image:", error);
-      res.status(500).json({ error: "Failed to fetch image" });
+      res.status(404).json({ error: "Image not available" });
     }
   });
 
-  // Legacy image handling removed - only serve authentic RSR images
-  app.get("/api/images/legacy/:productId", async (req, res) => {
-    // This endpoint is deprecated - redirect to main image optimization
-    res.redirect(`/api/images/optimize/${req.params.productId}`);
+  // Download and serve RSR images locally
+  app.post("/api/images/download/:imageName", async (req, res) => {
+    const { imageName } = req.params;
+    
+    try {
+      const { imageDownloadService } = await import('./services/image-download');
+      const result = await imageDownloadService.downloadProductImages(imageName);
+      
+      res.json({
+        success: true,
+        images: {
+          thumbnail: result.thumbnail,
+          standard: result.standard,
+          large: result.large
+        },
+        errors: result.errors
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Check if local image exists
+  app.get("/api/images/local/:imageName/:size", async (req, res) => {
+    const { imageName, size } = req.params;
+    
+    try {
+      const { imageDownloadService } = await import('./services/image-download');
+      const localPath = imageDownloadService.getLocalImagePath(imageName, size as 'thumb' | 'standard' | 'large');
+      
+      if (localPath) {
+        res.json({ exists: true, path: localPath });
+      } else {
+        res.json({ exists: false });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // RSR session testing endpoint - disabled due to age verification requirements
+  app.get("/api/test-rsr-session", async (req, res) => {
+    res.json({
+      success: false,
+      message: 'RSR images require age verification on their website',
+      note: 'RSR session testing is disabled due to age verification requirements'
+    });
   });
 
   const httpServer = createServer(app);

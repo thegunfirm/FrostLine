@@ -33,7 +33,7 @@ class ImageService {
     // This routes through our server with proper authentication
     const variants: ImageVariant[] = [
       {
-        url: `/api/images/rsr-proxy/${cleanImageName}/thumb`,
+        url: `/images/products/${cleanImageName}_thumb.jpg`,
         width: 150,
         height: 150,
         size: 'thumbnail',
@@ -41,7 +41,7 @@ class ImageService {
         loadPriority: 'high'
       },
       {
-        url: `/api/images/rsr-proxy/${cleanImageName}/standard`,
+        url: `/images/products/${cleanImageName}_standard.jpg`,
         width: 400,
         height: 400,
         size: 'standard',
@@ -49,7 +49,7 @@ class ImageService {
         loadPriority: 'high'
       },
       {
-        url: `/api/images/rsr-proxy/${cleanImageName}/large`,
+        url: `/images/products/${cleanImageName}_large.jpg`,
         width: 800,
         height: 800,
         size: 'large',
@@ -63,7 +63,7 @@ class ImageService {
       alt: `${productName} - Product Image`,
       variants,
       primaryVariant: variants[1], // Standard resolution as primary
-      fallbackUrl: `/api/images/rsr-proxy/${cleanImageName}/standard`
+      fallbackUrl: `/images/products/${cleanImageName}_standard.jpg`
     };
   }
 
