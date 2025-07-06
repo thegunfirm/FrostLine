@@ -995,8 +995,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Product not found" });
       }
 
-      // Handle legacy image format
-      if (product.images && Array.isArray(product.images)) {
+      // Check if product has RSR stock number for real image generation  
+      const stockNo = product.sku;
+      
+      if (stockNo && typeof stockNo === 'string') {
+        // Generate RSR-based images using the actual stock number
+        const productImage = imageService.generateRSRImageVariants(stockNo, product.name);
+        const optimalVariant = imageService.getOptimalVariant(productImage, context);
+        const progressiveConfig = imageService.getProgressiveLoadingConfig(productImage);
+        
+        res.json({
+          productImage,
+          optimalVariant,
+          progressiveConfig,
+          srcSet: imageService.generateSrcSet(productImage),
+          sizes: imageService.generateSizes(context)
+        });
+      } else if (product.images && Array.isArray(product.images)) {
         const images = product.images as any[];
         
         if (images.length > 0) {
