@@ -29,22 +29,11 @@ class ImageService {
     const cleanImageName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
     const imageId = `rsr-${cleanImageName}`;
     
-    // RSR provides up to 7 image views per product (_1.jpg through _7.jpg)
+    // RSR provides exactly 7 image views per product (_1.jpg through _7.jpg)
     const variants: ImageVariant[] = [];
     
-    // Generate all 7 possible image views
+    // Generate all 7 possible image views (standard resolution)
     for (let view = 1; view <= 7; view++) {
-      // Thumbnail version
-      variants.push({
-        url: `/api/rsr-image/${cleanImageName}?size=thumb&view=${view}`,
-        width: 150,
-        height: 150,
-        size: 'thumbnail',
-        quality: 'medium',
-        loadPriority: view === 1 ? 'high' : 'medium'
-      });
-      
-      // Standard resolution version
       variants.push({
         url: `/api/rsr-image/${cleanImageName}?size=standard&view=${view}`,
         width: 400,
@@ -53,23 +42,13 @@ class ImageService {
         quality: 'medium',
         loadPriority: view === 1 ? 'high' : 'medium'
       });
-      
-      // High-resolution version
-      variants.push({
-        url: `/api/rsr-image/${cleanImageName}?size=highres&view=${view}`,
-        width: 800,
-        height: 800,
-        size: 'large',
-        quality: 'high',
-        loadPriority: 'low'
-      });
     }
 
     return {
       id: imageId,
       alt: `${productName} - Product Image`,
       variants,
-      primaryVariant: variants[1], // Standard resolution view 1 as primary
+      primaryVariant: variants[0], // First view as primary
       fallbackUrl: `/api/rsr-image/${cleanImageName}?size=standard&view=1`
     };
   }
