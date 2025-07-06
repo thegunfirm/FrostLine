@@ -1,14 +1,11 @@
 /**
- * Sync RSR Products to Algolia using HTTP API
- * Updates Algolia with current RSR products including markup pricing
+ * Continue Algolia Sync from where it left off
+ * Resumes RSR product sync without clearing existing index
  */
 
 const https = require('https');
 const { Pool } = require('pg');
 
-/**
- * Make HTTP request to Algolia API
- */
 function makeAlgoliaRequest(method, path, data = null) {
   return new Promise((resolve, reject) => {
     const options = {
@@ -61,18 +58,25 @@ function makeAlgoliaRequest(method, path, data = null) {
   });
 }
 
-/**
- * Sync RSR products to Algolia with markup pricing
- */
-async function syncToAlgolia() {
+async function continueAlgoliaSync() {
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
   });
 
   try {
-    console.log('🔄 Starting Algolia sync with RSR products...');
+    console.log('🔄 Continuing Algolia sync from where it left off...');
     
-    // Get all RSR products with markup pricing
+    // Get current Algolia index count
+    let currentCount = 0;
+    try {
+      const indexStats = await makeAlgoliaRequest('GET', '/1/indexes/products');
+      currentCount = indexStats.entries || 0;
+      console.log(`📊 Current Algolia index has ${currentCount} products`);
+    } catch (error) {
+      console.log('📊 Could not get current index count, starting from 0');
+    }
+    
+    // Get remaining products to sync (skip those already synced)
     const productsResult = await pool.query(`
       SELECT 
         id,
@@ -94,13 +98,18 @@ async function syncToAlgolia() {
       WHERE distributor = 'RSR'
       AND price_bronze IS NOT NULL
       ORDER BY id
+      OFFSET ${currentCount}
     `);
     
-    console.log(`📦 Found ${productsResult.rows.length} RSR products to sync`);
+    console.log(`📦 Found ${productsResult.rows.length} remaining RSR products to sync`);
     
-    // Transform products to Algolia format
+    if (productsResult.rows.length === 0) {
+      console.log('✅ All products are already synced!');
+      return;
+    }
+
+    // Transform remaining products to Algolia format
     const algoliaProducts = productsResult.rows.map(product => {
-      // Map category names
       const categoryMapping = {
         'Handguns': 'Handguns',
         'Long Guns': 'Rifles', 
@@ -120,14 +129,14 @@ async function syncToAlgolia() {
         title: product.name || '',
         description: product.description || product.name || '',
         sku: product.sku || '',
-        upc: '', // RSR doesn't provide UPC in our current format
+        upc: '', 
         manufacturerName: product.manufacturer || '',
         categoryName: categoryName,
-        subcategoryName: categoryName, // Use same as category for now
+        subcategoryName: categoryName,
         inventory: {
           onHand: product.stock_quantity || 0,
           allocated: false,
-          dropShippable: true // RSR products are drop-shippable
+          dropShippable: true
         },
         price: {
           msrp: product.msrp || product.bronze || 0,
@@ -135,7 +144,6 @@ async function syncToAlgolia() {
           dealerPrice: product.wholesale || product.platinum || 0,
           dealerCasePrice: product.wholesale || product.platinum || 0
         },
-        // Our tier pricing system
         tierPricing: {
           bronze: product.bronze || 0,
           gold: product.gold || 0,
@@ -153,19 +161,7 @@ async function syncToAlgolia() {
       };
     });
 
-    console.log('📋 Sample Algolia product structure:');
-    console.log(JSON.stringify(algoliaProducts[0], null, 2));
-
-    // Clear existing index
-    console.log('🗑️  Clearing existing Algolia index...');
-    try {
-      await makeAlgoliaRequest('POST', '/1/indexes/products/clear');
-      console.log('✅ Index cleared successfully');
-    } catch (error) {
-      console.log('⚠️  Could not clear index:', error.message);
-    }
-
-    // Batch sync to Algolia (250 records at a time for HTTP requests)
+    // Continue batch sync to Algolia
     const batchSize = 250;
     let synced = 0;
     let errors = 0;
@@ -174,7 +170,9 @@ async function syncToAlgolia() {
       const batch = algoliaProducts.slice(i, i + batchSize);
       
       try {
-        console.log(`🔄 Syncing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(algoliaProducts.length / batchSize)} (${batch.length} products)...`);
+        const batchNumber = Math.floor(i / batchSize) + 1;
+        const totalBatches = Math.ceil(algoliaProducts.length / batchSize);
+        console.log(`🔄 Syncing batch ${batchNumber}/${totalBatches} (${batch.length} products)...`);
         
         const requestData = {
           requests: batch.map(product => ({
@@ -183,13 +181,13 @@ async function syncToAlgolia() {
           }))
         };
         
-        const response = await makeAlgoliaRequest('POST', '/1/indexes/products/batch', requestData);
+        await makeAlgoliaRequest('POST', '/1/indexes/products/batch', requestData);
         synced += batch.length;
         
-        console.log(`✅ Batch synced successfully (Total: ${synced}/${algoliaProducts.length})`);
+        console.log(`✅ Batch synced successfully (Total: ${currentCount + synced}/${currentCount + algoliaProducts.length})`);
         
-        // Wait briefly between batches to avoid rate limits
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait briefly between batches
+        await new Promise(resolve => setTimeout(resolve, 50));
         
       } catch (error) {
         errors++;
@@ -197,40 +195,25 @@ async function syncToAlgolia() {
       }
     }
 
-    console.log(`\n🎉 Algolia sync complete!`);
-    console.log(`   ✅ Synced: ${synced} products`);
+    console.log(`\n🎉 Algolia sync continuation complete!`);
+    console.log(`   ✅ Synced: ${synced} additional products`);
     console.log(`   ❌ Errors: ${errors} batches`);
-    
-    // Get final index stats
-    try {
-      const indexStats = await makeAlgoliaRequest('GET', '/1/indexes/products');
-      console.log(`\n📊 Algolia Index Status:`);
-      console.log(`   📁 Index: products`);
-      console.log(`   📦 Entries: ${indexStats.entries || 0}`);
-      console.log(`   💾 Data Size: ${indexStats.dataSize || 0} bytes`);
-    } catch (error) {
-      console.log('📊 Index stats not available');
-    }
-
-    console.log('\n🚀 Your RSR products are now searchable in Algolia!');
-    console.log('💎 Includes tier pricing (Bronze/Gold/Platinum)');
-    console.log('📸 RSR image integration maintained');
-    console.log('🔍 Full-text search enabled across all products');
+    console.log(`   📊 Total products in index: ${currentCount + synced}`);
 
   } catch (error) {
-    console.error('❌ Error in Algolia sync:', error);
+    console.error('❌ Error in Algolia sync continuation:', error);
   } finally {
     await pool.end();
   }
 }
 
 // Run the script
-syncToAlgolia()
+continueAlgoliaSync()
   .then(() => {
-    console.log('✅ Algolia sync completed');
+    console.log('✅ Algolia sync continuation completed');
     process.exit(0);
   })
   .catch((error) => {
-    console.error('❌ Algolia sync failed:', error);
+    console.error('❌ Algolia sync continuation failed:', error);
     process.exit(1);
   });
