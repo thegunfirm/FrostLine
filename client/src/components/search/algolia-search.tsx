@@ -53,6 +53,9 @@ interface SearchResponse {
 export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initialManufacturer = "" }: AlgoliaSearchProps) {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [category, setCategory] = useState(initialCategory || "all");
+  
+  console.log("AlgoliaSearch props:", { initialQuery, initialCategory, initialManufacturer });
+  console.log("Current category state:", category);
   const [manufacturer, setManufacturer] = useState(initialManufacturer || "all");
   const [sortBy, setSortBy] = useState("relevance");
   const [showFilters, setShowFilters] = useState(false);
