@@ -95,8 +95,8 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
             </span>
           </div>
           
-          {/* Gold Price - MAP (if available and different from Bronze) */}
-          {product.priceGold && parseFloat(product.priceGold) !== parseFloat(product.priceBronze || "0") && (
+          {/* Gold Price - MAP (always show if available) */}
+          {product.priceGold && parseFloat(product.priceGold) > 0 && (
             <div className="flex justify-between items-center">
               <span className="text-xs font-medium text-yellow-500">Gold:</span>
               <span className="text-xs font-medium text-gun-black">
