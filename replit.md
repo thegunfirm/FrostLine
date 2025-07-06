@@ -201,6 +201,10 @@ Changelog:
 - July 06, 2025. **ALGOLIA INTEGRATION STATUS**: Discovered 29,883 products in existing Algolia index from different system
 - July 06, 2025. **PRICING TIER MAPPING**: Bronze=MSRP, Gold=RetailMAP, Platinum=DealerPrice for existing catalog products
 - July 06, 2025. **ALGOLIA PAUSED**: User to resolve RSR API issues first, will revisit Algolia integration Monday
+- July 06, 2025. **CMS SYNC CONTROLS COMPLETED**: Added comprehensive admin interface for managing RSR sync frequency and enable/disable
+- July 06, 2025. **SYSTEM SETTINGS DATABASE**: Created system_settings table for CMS-configurable sync parameters
+- July 06, 2025. **ADMIN INTERFACE**: New /admin-sync-settings page with real-time status monitoring and frequency controls
+- July 06, 2025. **SYNC MANAGEMENT**: Users can now adjust sync frequency (1-24 hours) or disable sync completely through CMS
 ```
 
 ## User Preferences

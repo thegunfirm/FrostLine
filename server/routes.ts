@@ -4,7 +4,8 @@ import { createServer, type Server } from "http";
 import { join } from "path";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
-import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema, type InsertProduct } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema, type InsertProduct, systemSettings } from "@shared/schema";
+import { db } from "./db";
 import { z } from "zod";
 // Temporarily disabled while fixing import issues
 // import ApiContracts from "authorizenet";
@@ -1725,6 +1726,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("RSR sync stop error:", error);
       res.status(500).json({ error: "Failed to stop RSR auto-sync" });
+    }
+  });
+
+  // System Settings API endpoints
+  app.get("/api/admin/settings", async (req, res) => {
+    try {
+      const settings = await db.select().from(systemSettings);
+      res.json(settings);
+    } catch (error) {
+      console.error("Settings fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch system settings" });
+    }
+  });
+
+  app.post("/api/admin/settings", async (req, res) => {
+    try {
+      const { key, value, description, category } = req.body;
+      
+      // Upsert setting (update if exists, insert if doesn't)
+      await db.insert(systemSettings)
+        .values({ key, value, description, category })
+        .onConflictDoUpdate({
+          target: systemSettings.key,
+          set: { value, description, category, updatedAt: new Date() }
+        });
+      
+      res.json({ message: "Setting updated successfully" });
+    } catch (error) {
+      console.error("Settings update error:", error);
+      res.status(500).json({ error: "Failed to update setting" });
+    }
+  });
+
+  app.post("/api/admin/settings/rsr-sync-frequency", async (req, res) => {
+    try {
+      const { frequency, enabled } = req.body;
+      
+      // Update RSR sync frequency setting
+      await db.insert(systemSettings)
+        .values({
+          key: "rsr_sync_frequency",
+          value: frequency,
+          description: "RSR inventory sync frequency in hours",
+          category: "sync"
+        })
+        .onConflictDoUpdate({
+          target: systemSettings.key,
+          set: { value: frequency, updatedAt: new Date() }
+        });
+      
+      // Update RSR sync enabled setting
+      await db.insert(systemSettings)
+        .values({
+          key: "rsr_sync_enabled",
+          value: enabled.toString(),
+          description: "Enable or disable RSR inventory sync",
+          category: "sync"
+        })
+        .onConflictDoUpdate({
+          target: systemSettings.key,
+          set: { value: enabled.toString(), updatedAt: new Date() }
+        });
+      
+      // Restart sync with new settings
+      rsrAutoSync.stop();
+      if (enabled) {
+        rsrAutoSync.start();
+      }
+      
+      res.json({ 
+        message: enabled 
+          ? `RSR sync updated to run every ${frequency} hours`
+          : "RSR sync disabled"
+      });
+    } catch (error) {
+      console.error("RSR sync frequency update error:", error);
+      res.status(500).json({ error: "Failed to update RSR sync frequency" });
     }
   });
 

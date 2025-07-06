@@ -157,6 +157,17 @@ export const fflsRelations = relations(ffls, ({ many }) => ({
   preferredByUsers: many(users),
 }));
 
+export const systemSettings = pgTable("system_settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  description: text("description"),
+  category: text("category").notNull().default("sync"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
@@ -206,6 +217,14 @@ export const insertHeroCarouselSlideSchema = createInsertSchema(heroCarouselSlid
   isActive: true,
 });
 
+export const insertSystemSettingSchema = createInsertSchema(systemSettings).pick({
+  key: true,
+  value: true,
+  description: true,
+  category: true,
+  isActive: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -219,3 +238,5 @@ export type StateShippingPolicy = typeof stateShippingPolicies.$inferSelect;
 export type TierPricingRule = typeof tierPricingRules.$inferSelect;
 export type HeroCarouselSlide = typeof heroCarouselSlides.$inferSelect;
 export type InsertHeroCarouselSlide = z.infer<typeof insertHeroCarouselSlideSchema>;
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;

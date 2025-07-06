@@ -16,6 +16,7 @@ import ImageTest from "@/pages/image-test";
 import AdminSync from "@/pages/admin-sync";
 import AdminRSRFTP from "@/pages/admin-rsr-ftp";
 import AdminRSRUpload from "@/pages/admin-rsr-upload";
+import AdminSyncSettings from "@/pages/admin-sync-settings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/admin-sync" component={AdminSync} />
       <Route path="/admin-rsr-ftp" component={AdminRSRFTP} />
       <Route path="/admin-rsr-upload" component={AdminRSRUpload} />
+      <Route path="/admin-sync-settings" component={AdminSyncSettings} />
       <Route component={NotFound} />
     </Switch>
   );
