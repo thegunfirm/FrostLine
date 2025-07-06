@@ -420,17 +420,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // RSR API Integration and Hybrid Search Endpoints (Temporarily Disabled)
+  // RSR API Integration and Hybrid Search Endpoints
   app.post("/api/admin/sync-rsr-catalog", async (req, res) => {
     try {
-      // await hybridSearch.syncCatalogToAlgolia();
+      console.log("🚀 Starting RSR catalog sync with real products...");
+      
+      // Get real RSR products using the working RSR API
+      const rsrProducts = await rsrAPI.getCatalog();
+      console.log(`📦 Fetched ${rsrProducts.length} products from RSR`);
+      
+      // Clear existing sample products first
+      await storage.clearAllProducts();
+      console.log("🗑️ Cleared sample products");
+      
+      let created = 0;
+      let errors = 0;
+      
+      // Add real RSR products to database
+      for (const rsrProduct of rsrProducts.slice(0, 50)) { // Limit to 50 for initial sync
+        try {
+          const product = await transformRSRToProduct(rsrProduct);
+          await storage.createProduct(product);
+          created++;
+          
+          if (created % 10 === 0) {
+            console.log(`✅ Added ${created} RSR products...`);
+          }
+        } catch (error: any) {
+          console.error(`Error adding RSR product ${rsrProduct.stockNo}:`, error.message);
+          errors++;
+        }
+      }
+      
+      console.log(`🎯 RSR sync complete: ${created} products added, ${errors} errors`);
+      
       res.json({ 
-        success: false, 
-        message: "RSR catalog sync temporarily disabled - infrastructure being set up" 
+        success: true, 
+        message: `RSR catalog sync complete: ${created} authentic products added`,
+        created,
+        errors,
+        source: "RSR API"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("RSR catalog sync error:", error);
-      res.status(500).json({ message: "Catalog sync failed" });
+      res.status(500).json({ message: "Catalog sync failed: " + error.message });
     }
   });
 

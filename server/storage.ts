@@ -76,6 +76,9 @@ export interface IStorage {
   updateHeroCarouselSlide(id: number, updates: Partial<HeroCarouselSlide>): Promise<HeroCarouselSlide>;
   deleteHeroCarouselSlide(id: number): Promise<void>;
   getActiveHeroCarouselSlides(): Promise<HeroCarouselSlide[]>;
+  
+  // Product management
+  clearAllProducts(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -337,6 +340,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(heroCarouselSlides)
       .where(eq(heroCarouselSlides.isActive, true))
       .orderBy(asc(heroCarouselSlides.displayOrder));
+  }
+
+  async clearAllProducts(): Promise<void> {
+    await db.delete(products);
   }
 }
 
