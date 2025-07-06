@@ -29,11 +29,10 @@ class ImageService {
     const cleanImageName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
     const imageId = `rsr-${cleanImageName}`;
     
-    // Use authenticated RSR image proxy endpoints instead of direct RSR URLs
-    // This routes through our server with proper authentication
+    // Use working RSR image endpoint with successful authentication method
     const variants: ImageVariant[] = [
       {
-        url: `/images/products/${cleanImageName}_thumb.jpg`,
+        url: `/api/rsr-image/${cleanImageName}?size=thumb`,
         width: 150,
         height: 150,
         size: 'thumbnail',
@@ -41,7 +40,7 @@ class ImageService {
         loadPriority: 'high'
       },
       {
-        url: `/images/products/${cleanImageName}_standard.jpg`,
+        url: `/api/rsr-image/${cleanImageName}?size=standard`,
         width: 400,
         height: 400,
         size: 'standard',
@@ -49,7 +48,7 @@ class ImageService {
         loadPriority: 'high'
       },
       {
-        url: `/images/products/${cleanImageName}_large.jpg`,
+        url: `/api/rsr-image/${cleanImageName}?size=large`,
         width: 800,
         height: 800,
         size: 'large',
@@ -63,7 +62,7 @@ class ImageService {
       alt: `${productName} - Product Image`,
       variants,
       primaryVariant: variants[1], // Standard resolution as primary
-      fallbackUrl: `/images/products/${cleanImageName}_standard.jpg`
+      fallbackUrl: `/api/rsr-image/${cleanImageName}?size=standard`
     };
   }
 

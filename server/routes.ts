@@ -1265,6 +1265,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Serve RSR images directly using successful method
+  app.get("/api/rsr-image/:imageName", async (req, res) => {
+    try {
+      const imageName = req.params.imageName;
+      const size = req.query.size as 'thumb' | 'standard' | 'large' || 'standard';
+      
+      // Use the proven successful method
+      const baseUrl = 'https://imgtest.rsrgroup.com/images/inventory';
+      const cleanImgName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
+      const imageUrl = size === 'thumb' ? `${baseUrl}/thumb/${cleanImgName}.jpg` : 
+                     size === 'large' ? `${baseUrl}/large/${cleanImgName}.jpg` : 
+                     `${baseUrl}/${cleanImgName}.jpg`;
+      
+      const response = await axios.get(imageUrl, {
+        responseType: "arraybuffer",
+        headers: {
+          Referer: "https://www.rsrgroup.com/",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
+        },
+        timeout: 10000,
+        validateStatus: () => true
+      });
+
+      const contentType = response.headers['content-type'] || '';
+      const isImage = contentType.startsWith('image/');
+      
+      if (isImage && response.data.length > 1000) {
+        // Set proper headers and serve the image
+        res.set({
+          'Content-Type': contentType,
+          'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+          'Content-Length': response.data.length
+        });
+        
+        res.send(Buffer.from(response.data));
+      } else {
+        res.status(404).json({ 
+          error: 'Image not found',
+          imageName,
+          size
+        });
+      }
+    } catch (error: any) {
+      console.error(`RSR image serving failed:`, error);
+      res.status(500).json({ 
+        error: 'Failed to fetch image',
+        imageName: req.params.imageName,
+        size: req.query.size || 'standard'
+      });
+    }
+  });
+
   // Test RSR image access with user's exact approach
   app.get("/api/test-user-method/:imageName", async (req, res) => {
     try {

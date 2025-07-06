@@ -12,6 +12,7 @@ import Register from "@/pages/register";
 import Products from "@/pages/products";
 import ProductDetail from "@/pages/product-detail";
 import Membership from "@/pages/membership";
+import ImageTest from "@/pages/image-test";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/products" component={Products} />
       <Route path="/product/:id" component={ProductDetail} />
       <Route path="/membership" component={Membership} />
+      <Route path="/image-test" component={ImageTest} />
       <Route component={NotFound} />
     </Switch>
   );
