@@ -14,6 +14,7 @@ import { inventorySync } from "./services/inventory-sync";
 import { imageService } from "./services/image-service";
 import { rsrFTPClient } from "./services/distributors/rsr/rsr-ftp-client";
 import { rsrFileUpload } from "./services/rsr-file-upload";
+import { rsrAutoSync } from "./services/rsr-auto-sync";
 import axios from "axios";
 import multer from "multer";
 
@@ -1688,6 +1689,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("RSR FTP config error:", error);
       res.status(500).json({ error: "Failed to update RSR FTP configuration" });
+    }
+  });
+
+  // RSR Auto-Sync endpoints
+  app.get("/api/admin/rsr/sync-status", async (req, res) => {
+    try {
+      const status = rsrAutoSync.getStatus();
+      res.json({
+        ...status,
+        message: status.isScheduled 
+          ? `RSR auto-sync running every 2 hours. Last sync: ${status.lastSync.toISOString()}`
+          : "RSR auto-sync is not running"
+      });
+    } catch (error) {
+      console.error("RSR sync status error:", error);
+      res.status(500).json({ error: "Failed to get RSR sync status" });
+    }
+  });
+
+  app.post("/api/admin/rsr/sync-start", async (req, res) => {
+    try {
+      rsrAutoSync.start();
+      res.json({ message: "RSR 2-hour auto-sync started successfully" });
+    } catch (error) {
+      console.error("RSR sync start error:", error);
+      res.status(500).json({ error: "Failed to start RSR auto-sync" });
+    }
+  });
+
+  app.post("/api/admin/rsr/sync-stop", async (req, res) => {
+    try {
+      rsrAutoSync.stop();
+      res.json({ message: "RSR auto-sync stopped successfully" });
+    } catch (error) {
+      console.error("RSR sync stop error:", error);
+      res.status(500).json({ error: "Failed to stop RSR auto-sync" });
     }
   });
 

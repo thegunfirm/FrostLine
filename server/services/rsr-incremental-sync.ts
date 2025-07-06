@@ -6,8 +6,7 @@
 import { db } from '../db';
 import { products } from '@shared/schema';
 import { eq, sql } from 'drizzle-orm';
-import { RSRFTPClient } from './distributors/rsr/rsr-ftp-client';
-import { parseRSRInventoryLine } from './distributors/rsr/rsr-file-processor';
+import { rsrFTPClient } from './distributors/rsr/rsr-ftp-client';
 
 interface RSRChangeTracker {
   stockNo: string;

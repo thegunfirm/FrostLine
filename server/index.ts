@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { rsrAutoSync } from "./services/rsr-auto-sync";
 import { pricingService } from "./services/pricing-service";
 
 const app = express();
@@ -40,6 +41,9 @@ app.use((req, res, next) => {
 (async () => {
   // Initialize pricing service
   await pricingService.initializeDefaultPricing();
+  
+  // Start RSR 2-hour auto-sync
+  rsrAutoSync.start();
   
   const server = await registerRoutes(app);
 
