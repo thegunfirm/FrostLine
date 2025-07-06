@@ -1216,17 +1216,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test RSR API connection
+  // Test RSR API connection via server proxy
   app.get("/api/test-rsr-connection", async (req, res) => {
     try {
-      console.log('🔍 Testing RSR API connection...');
+      console.log('🔍 Testing RSR API connection via server proxy...');
+      
+      // Try calling your server's RSR proxy
+      const proxyResponse = await fetch('http://5.78.137.95:3001/api/rsr/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: 'glock' })
+      });
+      
+      if (proxyResponse.ok) {
+        const data = await proxyResponse.json();
+        console.log('✅ RSR API via server proxy successful');
+        res.json({ 
+          success: true, 
+          message: 'RSR API working via server proxy',
+          source: 'server-proxy',
+          data: data
+        });
+        return;
+      }
+    } catch (proxyError) {
+      console.log('Server proxy not available, using fallback');
+    }
+    
+    // Fallback to existing RSR API logic
+    try {
       const products = await rsrAPI.getProducts('GLOCK', 1);
       console.log(`✅ RSR API success: ${products.length} products found`);
       res.json({ 
         success: true, 
         productCount: products.length,
         sampleProduct: products[0] ? products[0].stockNo : null,
-        message: 'RSR API is working correctly'
+        message: 'RSR API is working correctly',
+        source: 'direct'
       });
     } catch (error: any) {
       console.error('❌ RSR API error:', error.message);
