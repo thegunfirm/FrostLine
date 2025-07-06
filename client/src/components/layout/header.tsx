@@ -13,9 +13,9 @@ const categories = [
   "Shotguns",
   "Ammunition",
   "Optics",
-  "Accessories",
-  "Holsters",
-  "Parts"
+  "Parts",
+  "Safety",
+  "Accessories"
 ];
 
 export function Header() {
