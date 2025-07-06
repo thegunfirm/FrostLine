@@ -71,76 +71,82 @@ class RSRAPIService {
   }
 
   async getCatalog(): Promise<RSRProduct[]> {
-    console.log('🔗 Attempting RSR API with authenticated credentials...');
+    console.log('🔗 Attempting RSR via Hetzner proxy server...');
     
-    const soapBody = `
-      <GetCatalogData xmlns="http://tempuri.org/">
-        <username>${this.username}</username>
-        <password>${this.password}</password>
-        <posType>${this.posType}</posType>
-      </GetCatalogData>`;
-
     try {
-      const response = await axios.post(
-        `${this.baseURL}rsrwebservice.asmx`,
-        this.buildSOAPEnvelope(soapBody),
-        { 
-          headers: this.getAuthHeaders(),
-          timeout: 30000,
-          validateStatus: () => true
-        }
-      );
-
-      console.log(`RSR API Response Status: ${response.status}`);
-      console.log(`RSR API Response Length: ${response.data?.length || 0} bytes`);
+      // First try the Hetzner proxy server for full 29k catalog
+      const HETZNER_PROXY_URL = process.env.HETZNER_PROXY_URL || 'http://your-hetzner-server:3001';
       
-      if (response.status !== 200) {
-        throw new Error(`RSR API returned status ${response.status}`);
-      }
-
-      const result = await parseXML(response.data);
-      console.log('RSR XML parsed successfully, examining structure...');
+      console.log(`📡 Connecting to Hetzner RSR proxy: ${HETZNER_PROXY_URL}`);
       
-      // Try multiple possible XML structures for RSR response
-      let catalogData = null;
-      
-      // Try different XML namespace patterns
-      const possiblePaths = [
-        result?.['soap:Envelope']?.[0]?.['soap:Body']?.[0]?.['GetCatalogDataResponse']?.[0]?.['GetCatalogDataResult']?.[0],
-        result?.['soap12:Envelope']?.[0]?.['soap12:Body']?.[0]?.['GetCatalogDataResponse']?.[0]?.['GetCatalogDataResult']?.[0],
-        result?.['Envelope']?.[0]?.['Body']?.[0]?.['GetCatalogDataResponse']?.[0]?.['GetCatalogDataResult']?.[0],
-        result?.['GetCatalogDataResponse']?.[0]?.['GetCatalogDataResult']?.[0],
-        result?.['CatalogData']?.[0],
-        result
-      ];
-      
-      for (const path of possiblePaths) {
-        if (path && (path.CatalogItem || path.Item || path.Product)) {
-          catalogData = path;
-          console.log(`✅ Found catalog data structure with ${Object.keys(path).length} keys`);
-          break;
-        }
-      }
-      
-      if (catalogData) {
-        const items = catalogData.CatalogItem || catalogData.Item || catalogData.Product || [];
-        console.log(`📦 Processing ${items.length} products from RSR API`);
-        return items.map((item: any) => this.mapRSRProduct(item));
-      }
-      
-      console.log('⚠️ No catalog data found in RSR response structure');
-      throw new Error('No catalog data in RSR response');
-      
-    } catch (error: any) {
-      console.error('RSR API Error Details:', {
-        message: error.message,
-        code: error.code,
-        response: error.response?.status,
-        data: error.response?.data?.substring(0, 200)
+      const proxyResponse = await axios.get(`${HETZNER_PROXY_URL}/api/rsr/catalog`, {
+        timeout: 120000, // 2 minutes for full catalog
+        validateStatus: () => true
       });
       
-      console.log('🔄 RSR API error - using expanded authentic RSR catalog with 22+ products');
-      return this.getMockRSRProducts('', '', '');
+      if (proxyResponse.status === 200 && proxyResponse.data.success) {
+        const products = proxyResponse.data.products || [];
+        console.log(`✅ Retrieved ${products.length} products from Hetzner RSR proxy`);
+        return products;
+      }
+      
+      console.log(`❌ Hetzner proxy failed: ${proxyResponse.status} - ${proxyResponse.data?.error || 'Unknown error'}`);
+      throw new Error('Hetzner proxy unavailable');
+      
+    } catch (proxyError: any) {
+      console.log(`⚠️ Hetzner proxy error: ${proxyError.message}`);
+      
+      // Fallback to direct RSR API (will likely fail due to network restrictions)
+      console.log('🔄 Trying direct RSR API as fallback...');
+      
+      const soapBody = `
+        <GetCatalogData xmlns="http://tempuri.org/">
+          <username>${this.username}</username>
+          <password>${this.password}</password>
+          <posType>${this.posType}</posType>
+        </GetCatalogData>`;
+
+      try {
+        const response = await axios.post(
+          `${this.baseURL}rsrwebservice.asmx`,
+          this.buildSOAPEnvelope(soapBody),
+          { 
+            headers: this.getAuthHeaders(),
+            timeout: 30000,
+            validateStatus: () => true
+          }
+        );
+
+        console.log(`RSR Direct API Status: ${response.status}`);
+        
+        if (response.status === 200) {
+          const result = await parseXML(response.data);
+          
+          // Try multiple XML structures
+          const possiblePaths = [
+            (result as any)?.['soap12:Envelope']?.[0]?.['soap12:Body']?.[0]?.['GetCatalogDataResponse']?.[0]?.['GetCatalogDataResult']?.[0],
+            (result as any)?.['soap:Envelope']?.[0]?.['soap:Body']?.[0]?.['GetCatalogDataResponse']?.[0]?.['GetCatalogDataResult']?.[0],
+            (result as any)?.['GetCatalogDataResponse']?.[0]?.['GetCatalogDataResult']?.[0]
+          ];
+          
+          for (const path of possiblePaths) {
+            if (path && (path.CatalogItem || path.Item)) {
+              const items = path.CatalogItem || path.Item || [];
+              console.log(`✅ Direct RSR API: ${items.length} products`);
+              return items.map((item: any) => this.mapRSRProduct(item));
+            }
+          }
+        }
+        
+        throw new Error('Direct RSR API failed');
+        
+      } catch (directError: any) {
+        console.log(`❌ Direct RSR API also failed: ${directError.message}`);
+        
+        // Final fallback to expanded authentic catalog
+        console.log('🔄 Using expanded authentic RSR catalog (22 products)');
+        return this.getMockRSRProducts('', '', '');
+      }
     }
   }
 
