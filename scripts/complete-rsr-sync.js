@@ -55,11 +55,18 @@ class RSRInventorySync {
           headers: {
             'Content-Type': 'application/soap+xml; charset=utf-8',
             'SOAPAction': 'http://www.rsrgroup.com/webservices/GetRSRInventory',
-            'User-Agent': 'Mozilla/5.0 (compatible; TheGunFirm/1.0)'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'application/soap+xml, application/dime, multipart/related, text/*',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'Authorization': `Basic ${Buffer.from(RSR_CONFIG.username + ':' + RSR_CONFIG.password).toString('base64')}`
           },
           httpsAgent: httpsAgent,
           timeout: 120000, // 2 minute timeout
-          maxRedirects: 0 // Don't follow redirects
+          maxRedirects: 5, // Allow redirects
+          validateStatus: function (status) {
+            return status >= 200 && status < 400; // Accept redirects
+          }
         });
 
         // Parse XML response
