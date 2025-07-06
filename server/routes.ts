@@ -7,7 +7,7 @@ import bcrypt from "bcrypt";
 import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema, type InsertProduct, systemSettings, pricingRules, insertPricingRuleSchema, products } from "@shared/schema";
 import { pricingEngine } from "./services/pricing-engine";
 import { db } from "./db";
-import { eq, and, ne } from "drizzle-orm";
+import { eq, and, ne, inArray } from "drizzle-orm";
 import { z } from "zod";
 // Temporarily disabled while fixing import issues
 // import ApiContracts from "authorizenet";
@@ -2236,7 +2236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ];
       
       const settings = await db.select().from(systemSettings)
-        .where(sql`${systemSettings.key} = ANY(${searchKeys})`);
+        .where(inArray(systemSettings.key, searchKeys));
       
       // Convert to object format with defaults
       const settingsObj = {
