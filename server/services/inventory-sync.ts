@@ -1,6 +1,7 @@
 import { rsrAPI, type RSRProduct } from './rsr-api';
 import { storage } from '../storage';
 import { pricingService, type RSRPricing } from './pricing-service';
+import { imageService } from './image-service';
 import type { InsertProduct } from '@shared/schema';
 
 export interface SyncConfiguration {
@@ -488,7 +489,7 @@ class InventorySyncService {
       requiresFFL: true,
       mustRouteThroughGunFirm: true,
       tags: [rsrProduct.categoryDesc, rsrProduct.manufacturer, "Firearms"],
-      images: [`https://www.rsrgroup.com/images/inventory/${rsrProduct.imgName}`],
+      images: imageService.processRSRProductImages(rsrProduct),
       returnPolicyDays: 30,
       isActive: true
     };

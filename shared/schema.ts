@@ -39,7 +39,7 @@ export const products = pgTable("products", {
   requiresFFL: boolean("requires_ffl").default(false),
   mustRouteThroughGunFirm: boolean("must_route_through_gun_firm").default(false),
   tags: json("tags"),
-  images: json("images"),
+  images: json("images"), // Array of image objects with multiple resolutions
   returnPolicyDays: integer("return_policy_days").default(30),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),

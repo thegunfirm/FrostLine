@@ -9,6 +9,7 @@ import { z } from "zod";
 // import { hybridSearch } from "./services/hybrid-search";
 import { rsrAPI, type RSRProduct } from "./services/rsr-api";
 import { inventorySync } from "./services/inventory-sync";
+import { imageService } from "./services/image-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -979,6 +980,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Error fetching sync status:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Image optimization endpoints
+  app.get("/api/images/optimize/:productId", async (req, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const context = req.query.context as 'card' | 'detail' | 'zoom' | 'gallery' || 'detail';
+      
+      const product = await storage.getProduct(productId);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      // Handle legacy image format
+      if (product.images && Array.isArray(product.images)) {
+        const images = product.images as any[];
+        
+        if (images.length > 0) {
+          // Check if it's new format (ProductImage objects) or legacy (string URLs)
+          const firstImage = images[0];
+          
+          if (typeof firstImage === 'string') {
+            // Legacy format - convert to new format
+            const productImage = {
+              id: `legacy-${productId}`,
+              alt: `${product.name} - Product Image`,
+              variants: [
+                {
+                  url: firstImage,
+                  width: 400,
+                  height: 400,
+                  size: 'standard' as const,
+                  quality: 'medium' as const,
+                  loadPriority: 'high' as const
+                }
+              ],
+              primaryVariant: {
+                url: firstImage,
+                width: 400,
+                height: 400,
+                size: 'standard' as const,
+                quality: 'medium' as const,
+                loadPriority: 'high' as const
+              },
+              fallbackUrl: firstImage
+            };
+            
+            res.json({
+              productImage,
+              optimalVariant: productImage.primaryVariant,
+              progressiveConfig: {
+                placeholder: firstImage,
+                initial: firstImage,
+                highRes: firstImage,
+                alt: productImage.alt
+              }
+            });
+          } else {
+            // New format - use image service
+            const productImage = firstImage;
+            const optimalVariant = imageService.getOptimalVariant(productImage, context);
+            const progressiveConfig = imageService.getProgressiveLoadingConfig(productImage);
+            
+            res.json({
+              productImage,
+              optimalVariant,
+              progressiveConfig,
+              srcSet: imageService.generateSrcSet(productImage),
+              sizes: imageService.generateSizes(context)
+            });
+          }
+        } else {
+          res.status(404).json({ error: "No images found for this product" });
+        }
+      } else {
+        res.status(404).json({ error: "No images found for this product" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/images/verify/:imageUrl", async (req, res) => {
+    try {
+      const imageUrl = decodeURIComponent(req.params.imageUrl);
+      const isAvailable = await imageService.verifyImageUrl(imageUrl);
+      
+      res.json({ available: isAvailable, url: imageUrl });
+    } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
