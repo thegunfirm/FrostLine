@@ -1412,29 +1412,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced RSR product image system with session authentication
+  // Enhanced RSR product image system with 7-image support for firearms
   app.get("/api/rsr-image/:imageName", async (req, res) => {
     try {
       const imageName = req.params.imageName;
-      const view = req.query.view || '1'; // Default to first image
+      const angle = req.query.angle || '1'; // Angles 1, 2, 3
       const size = req.query.size as 'thumb' | 'standard' | 'highres' || 'standard';
       const cleanImgName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
       
-      // Use the correct RSR image URLs provided by user
+      // RSR image URL patterns for firearms (7 total images):
+      // 3 main: _1.jpg, _2.jpg, _3.jpg
+      // 3 thumbnails: _1_thumb.jpg, _2_thumb.jpg, _3_thumb.jpg  
+      // 1 high-res: _1_HR.jpg (typically only angle 1)
       let rsrImageUrl = '';
       
       switch (size) {
         case 'thumb':
-          rsrImageUrl = `https://img.rsrgroup.com/pimages/${cleanImgName}_${view}_thumb.jpg`;
-          break;
-        case 'standard':
-          rsrImageUrl = `https://img.rsrgroup.com/pimages/${cleanImgName}_${view}.jpg`;
+          rsrImageUrl = `https://img.rsrgroup.com/pimages/${cleanImgName}_${angle}_thumb.jpg`;
           break;
         case 'highres':
-          rsrImageUrl = `https://img.rsrgroup.com/highres-pimages/${cleanImgName}_${view}_HR.jpg`;
+          // High-res typically only available for angle 1
+          rsrImageUrl = `https://img.rsrgroup.com/highres-pimages/${cleanImgName}_1_HR.jpg`;
           break;
+        case 'standard':
         default:
-          rsrImageUrl = `https://img.rsrgroup.com/pimages/${cleanImgName}_${view}.jpg`;
+          rsrImageUrl = `https://img.rsrgroup.com/pimages/${cleanImgName}_${angle}.jpg`;
+          break;
       }
       
       console.log(`🔍 Accessing RSR image: ${rsrImageUrl}`);
