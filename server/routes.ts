@@ -1265,54 +1265,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve RSR images directly using correct img.rsrgroup.com domain
+  // Direct RSR image serving with multiple domain attempts
   app.get("/api/rsr-image/:imageName", async (req, res) => {
     try {
       const imageName = req.params.imageName;
       const size = req.query.size as 'thumb' | 'standard' | 'large' || 'standard';
-      
-      // Use the correct img.rsrgroup.com domain as confirmed by user
-      const baseUrl = 'https://img.rsrgroup.com/images/inventory';
       const cleanImgName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
-      const imageUrl = size === 'thumb' ? `${baseUrl}/thumb/${cleanImgName}.jpg` : 
-                     size === 'large' ? `${baseUrl}/large/${cleanImgName}.jpg` : 
-                     `${baseUrl}/${cleanImgName}.jpg`;
       
-      const response = await axios.get(imageUrl, {
-        responseType: "arraybuffer",
-        headers: {
-          Referer: "https://www.rsrgroup.com/",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
-        },
-        timeout: 10000,
-        validateStatus: () => true
+      // Try multiple RSR domains and patterns as user requested direct rsrgroup.com
+      const urlPatterns = [
+        `https://www.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
+        `https://www.rsrgroup.com/Custom/Assets/ProductImages/${cleanImgName}.jpg`,
+        `https://www.rsrgroup.com/images/products/${cleanImgName}.jpg`,
+        `https://rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
+        `https://img.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
+        `https://img.rsrgroup.com/images/inventory/${size}/${cleanImgName}.jpg`,
+        `https://www.rsrgroup.com/productimages/${cleanImgName}.jpg`,
+        `https://www.rsrgroup.com/images/${cleanImgName}.jpg`
+      ];
+
+      for (const url of urlPatterns) {
+        try {
+          console.log(`Trying RSR image URL: ${url}`);
+          
+          const response = await axios.get(url, {
+            responseType: "arraybuffer",
+            headers: {
+              Referer: "https://www.rsrgroup.com/",
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36",
+              "Accept": "image/webp,image/apng,image/*,*/*;q=0.8"
+            },
+            timeout: 15000,
+            validateStatus: () => true
+          });
+
+          const contentType = response.headers['content-type'] || '';
+          const isImage = contentType.startsWith('image/');
+          
+          // Look for actual images (not tiny placeholders or HTML)
+          if (isImage && response.data.length > 5000) {
+            console.log(`Found actual RSR image: ${url} (${response.data.length} bytes)`);
+            
+            res.set({
+              'Content-Type': contentType,
+              'Cache-Control': 'public, max-age=86400',
+              'Content-Length': response.data.length
+            });
+            
+            return res.send(Buffer.from(response.data));
+          } else if (response.data.length > 0) {
+            console.log(`Skipping ${url}: ${isImage ? 'small image' : 'non-image'} (${response.data.length} bytes, ${contentType})`);
+          }
+        } catch (urlError: any) {
+          console.log(`Failed ${url}: ${urlError.message}`);
+          continue;
+        }
+      }
+
+      // No actual image found
+      console.log(`No actual RSR image found for ${imageName}`);
+      res.status(404).json({ 
+        error: 'No actual product image available',
+        imageName,
+        size,
+        triedUrls: urlPatterns.length
       });
 
-      const contentType = response.headers['content-type'] || '';
-      const isImage = contentType.startsWith('image/');
-      
-      if (isImage && response.data.length > 1000) {
-        // Set proper headers and serve the image
-        res.set({
-          'Content-Type': contentType,
-          'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
-          'Content-Length': response.data.length
-        });
-        
-        res.send(Buffer.from(response.data));
-      } else {
-        res.status(404).json({ 
-          error: 'Image not found',
-          imageName,
-          size
-        });
-      }
     } catch (error: any) {
-      console.error(`RSR image serving failed:`, error);
+      console.error(`RSR image endpoint error for ${req.params.imageName}:`, error);
       res.status(500).json({ 
         error: 'Failed to fetch image',
-        imageName: req.params.imageName,
-        size: req.query.size || 'standard'
+        imageName: req.params.imageName
       });
     }
   });
