@@ -14,6 +14,7 @@ import ProductDetail from "@/pages/product-detail";
 import Membership from "@/pages/membership";
 import ImageTest from "@/pages/image-test";
 import AdminSync from "@/pages/admin-sync";
+import AdminRSRFTP from "@/pages/admin-rsr-ftp";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/membership" component={Membership} />
       <Route path="/image-test" component={ImageTest} />
       <Route path="/admin-sync" component={AdminSync} />
+      <Route path="/admin-rsr-ftp" component={AdminRSRFTP} />
       <Route component={NotFound} />
     </Switch>
   );

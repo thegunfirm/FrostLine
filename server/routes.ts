@@ -12,7 +12,7 @@ import { z } from "zod";
 import { rsrAPI, type RSRProduct } from "./services/rsr-api";
 import { inventorySync } from "./services/inventory-sync";
 import { imageService } from "./services/image-service";
-import { rsrFileProcessor } from "./services/rsr-file-processor";
+import { rsrFTPClient } from "./services/distributors/rsr/rsr-ftp-client";
 import axios from "axios";
 import multer from "multer";
 
@@ -1588,6 +1588,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
         size: req.query.size || 'standard',
         message: 'Network or authentication error'
       });
+    }
+  });
+
+  // RSR FTP status endpoint
+  app.get("/api/admin/rsr-ftp/status", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    try {
+      const status = rsrFTPClient.getStatus();
+      res.json(status);
+    } catch (error) {
+      console.error("RSR FTP status error:", error);
+      res.status(500).json({ error: "Failed to get RSR FTP status" });
+    }
+  });
+
+  // RSR FTP connection test endpoint
+  app.post("/api/admin/rsr-ftp/test", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    try {
+      const result = await rsrFTPClient.testConnection();
+      res.json(result);
+    } catch (error) {
+      console.error("RSR FTP test error:", error);
+      res.status(500).json({ error: "Failed to test RSR FTP connection" });
+    }
+  });
+
+  // RSR FTP sync trigger endpoint
+  app.post("/api/admin/rsr-ftp/sync", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    try {
+      await rsrFTPClient.triggerSync();
+      res.json({ message: "RSR FTP sync completed successfully" });
+    } catch (error) {
+      console.error("RSR FTP sync error:", error);
+      res.status(500).json({ error: "RSR FTP sync failed" });
+    }
+  });
+
+  // RSR FTP configuration endpoint
+  app.post("/api/admin/rsr-ftp/config", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    try {
+      const { host, username, password, enabled, syncSchedule } = req.body;
+      
+      rsrFTPClient.updateConfig({
+        host,
+        username,
+        password,
+        enabled,
+        syncSchedule
+      });
+      
+      res.json({ message: "RSR FTP configuration updated successfully" });
+    } catch (error) {
+      console.error("RSR FTP config error:", error);
+      res.status(500).json({ error: "Failed to update RSR FTP configuration" });
     }
   });
 
