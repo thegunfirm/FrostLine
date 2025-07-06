@@ -13,6 +13,7 @@ import { rsrAPI, type RSRProduct } from "./services/rsr-api";
 import { inventorySync } from "./services/inventory-sync";
 import { imageService } from "./services/image-service";
 import { rsrFTPClient } from "./services/distributors/rsr/rsr-ftp-client";
+import { rsrFileUpload } from "./services/rsr-file-upload";
 import axios from "axios";
 import multer from "multer";
 
@@ -1621,6 +1622,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("RSR FTP sync error:", error);
       res.status(500).json({ error: "RSR FTP sync failed" });
+    }
+  });
+
+  // RSR file upload endpoint (FileZilla downloaded files)
+  app.post("/api/admin/rsr/upload", rsrFileUpload.upload.single('rsrFile'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No RSR file uploaded" });
+      }
+
+      // Determine file type based on filename
+      let fileType: 'inventory' | 'quantity' | 'layout' | 'fulfillment' = 'inventory';
+      if (req.file.originalname.includes('IM-QTY')) fileType = 'quantity';
+      else if (req.file.originalname.includes('fulfillment')) fileType = 'fulfillment';
+      else if (req.file.originalname.includes('layout')) fileType = 'layout';
+
+      const result = await rsrFileUpload.processFile(req.file.filename, fileType);
+      res.json(result);
+    } catch (error) {
+      console.error("RSR file upload error:", error);
+      res.status(500).json({ error: "Failed to process RSR file upload" });
+    }
+  });
+
+  // Get uploaded RSR files
+  app.get("/api/admin/rsr/files", async (req, res) => {
+    try {
+      const files = await rsrFileUpload.getFiles();
+      res.json({ files });
+    } catch (error) {
+      console.error("RSR files list error:", error);
+      res.status(500).json({ error: "Failed to get RSR files" });
+    }
+  });
+
+  // Clean up old RSR files
+  app.post("/api/admin/rsr/cleanup", async (req, res) => {
+    try {
+      const result = await rsrFileUpload.cleanup();
+      res.json({ message: "RSR file cleanup completed", result });
+    } catch (error) {
+      console.error("RSR cleanup error:", error);
+      res.status(500).json({ error: "Failed to cleanup RSR files" });
     }
   });
 
