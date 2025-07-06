@@ -56,8 +56,8 @@ export default function AdminSync() {
         <CardHeader>
           <CardTitle>RSR Inventory Sync</CardTitle>
           <CardDescription>
-            Populate your Hetzner database with authentic RSR products directly from Replit.
-            This bypasses all network restrictions by running the sync through your existing database connection.
+            Sync thousands of authentic RSR firearms and accessories directly to your Hetzner database.
+            This process will clear existing products and replace them with live RSR inventory data.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

@@ -30,69 +30,35 @@ export default function ProductDetail() {
 
   const { data: product, isLoading, error } = useProduct(parseInt(id || "0"));
 
-  // Sample product data for demonstration since we don't have real products yet
-  const sampleProduct = {
-    id: 1,
-    name: "Glock 19 Gen 5 9mm Pistol",
-    manufacturer: "Glock",
-    model: "G19 Gen 5",
-    category: "Handguns",
-    subcategory: "Striker-Fired",
-    sku: "GLK-G19G5-9MM",
-    upc: "764503913419",
-    msrp: 599.99,
-    bronzePrice: 549.99,
-    goldPrice: 529.99,
-    platinumPrice: 509.99,
-    inStock: true,
-    quantity: 15,
-    imageUrl: "/api/placeholder/600/400",
-    images: [
-      "/api/placeholder/600/400",
-      "/api/placeholder/600/400",
-      "/api/placeholder/600/400",
-      "/api/placeholder/600/400"
-    ],
-    description: "The Glock 19 Gen 5 represents the pinnacle of Glock's engineering excellence. This compact pistol combines reliability, accuracy, and ease of use in a versatile package suitable for both professional and personal defense applications.",
-    features: [
-      "Glock Marksman Barrel (GMB) for enhanced accuracy",
-      "nDLC finish for superior durability",
-      "Ambidextrous slide stop levers",
-      "Reversible magazine catch",
-      "No finger grooves for improved ergonomics",
-      "Flared mag well for faster reloads"
-    ],
-    specifications: {
-      "Caliber": "9mm Luger",
-      "Action": "Striker-Fired",
-      "Capacity": "15+1 rounds",
-      "Barrel Length": "4.02 inches",
-      "Overall Length": "7.36 inches",
-      "Width": "1.26 inches",
-      "Height": "5.04 inches",
-      "Weight": "23.65 oz (loaded)",
-      "Trigger Pull": "5.5 lbs",
-      "Safety": "3 automatic safeties",
-      "Finish": "nDLC coating",
-      "Sights": "Glock night sights"
-    },
-    reviews: {
-      average: 4.8,
-      count: 247,
-      breakdown: {
-        5: 198,
-        4: 32,
-        3: 12,
-        2: 3,
-        1: 2
-      }
-    },
-    requiresFFL: true,
-    shippingInfo: "Ships to FFL dealer only. Please select your preferred FFL during checkout.",
-    warranty: "Glock factory warranty included"
-  };
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded mb-4"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="h-96 bg-gray-200 rounded"></div>
+            <div className="space-y-4">
+              <div className="h-6 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+              <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const displayProduct = product || sampleProduct;
+  if (error || !product) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <h1 className="text-2xl font-bold mb-4">Product Not Found</h1>
+        <p className="text-gray-600 mb-4">The product you're looking for doesn't exist or has been removed.</p>
+        <Link href="/products">
+          <Button>Browse Products</Button>
+        </Link>
+      </div>
+    );
+  }
 
   const getCurrentPrice = () => {
     if (!user) return displayProduct.msrp;

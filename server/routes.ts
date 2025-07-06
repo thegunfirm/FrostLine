@@ -513,124 +513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create sample products for testing
-  app.post("/api/admin/create-sample-products", async (req, res) => {
-    try {
-      console.log("Creating sample products...");
-      
-      const sampleProducts = [
-        {
-          name: "Glock 19 Gen 5 9mm Pistol",
-          description: "The Glock 19 Gen 5 represents the pinnacle of Glock engineering excellence. This compact pistol combines reliability, accuracy, and ease of use in a versatile package suitable for both professional and personal defense applications.",
-          category: "Handguns",
-          manufacturer: "Glock",
-          sku: "GLK-G19G5-9MM",
-          priceWholesale: "499.99",
-          priceBronze: "549.99",
-          priceGold: "529.99",
-          pricePlatinum: "509.99",
-          inStock: true,
-          stockQuantity: 15,
-          distributor: "Sample",
-          requiresFFL: true,
-          tags: ["Handguns", "Glock", "9mm", "Striker-Fired"],
-          images: ["https://via.placeholder.com/600x400/2C3E50/FFFFFF?text=Glock+19+Gen+5"],
-          isActive: true
-        },
-        {
-          name: "Smith & Wesson M&P Shield Plus 9mm",
-          description: "The M&P Shield Plus delivers maximum capacity in a micro-compact design. Features an 18-degree grip angle for natural point of aim and enhanced grip texture for improved control.",
-          category: "Handguns",
-          manufacturer: "Smith & Wesson",
-          sku: "SW-SHIELDPLUS-9MM",
-          priceWholesale: "399.99",
-          priceBronze: "449.99",
-          priceGold: "429.99",
-          pricePlatinum: "409.99",
-          inStock: true,
-          stockQuantity: 8,
-          distributor: "Sample",
-          requiresFFL: true,
-          tags: ["Handguns", "Smith & Wesson", "9mm", "Concealed Carry"],
-          images: ["https://via.placeholder.com/600x400/8B4513/FFFFFF?text=SW+Shield+Plus"],
-          isActive: true
-        },
-        {
-          name: "Ruger 10/22 Takedown .22 LR Rifle",
-          description: "Americas favorite .22 rifle in a convenient takedown configuration. Features easy breakdown with simple push of a recessed button. Perfect for training, plinking, and small game hunting.",
-          category: "Rifles",
-          manufacturer: "Ruger",
-          sku: "RGR-1022TD-22LR",
-          priceWholesale: "279.99",
-          priceBronze: "329.99",
-          priceGold: "309.99",
-          pricePlatinum: "289.99",
-          inStock: true,
-          stockQuantity: 12,
-          distributor: "Sample",
-          requiresFFL: true,
-          tags: ["Rifles", "Ruger", ".22 LR", "Takedown"],
-          images: ["https://via.placeholder.com/600x400/654321/FFFFFF?text=Ruger+10/22"],
-          isActive: true
-        },
-        {
-          name: "Federal Premium 9mm 124gr HST JHP",
-          description: "Federal Premium Personal Defense HST ammunition delivers consistent expansion and optimum penetration for personal protection. Law enforcement proven.",
-          category: "Ammunition",
-          manufacturer: "Federal",
-          sku: "FED-9HST124-50",
-          priceWholesale: "24.99",
-          priceBronze: "29.99",
-          priceGold: "27.99",
-          pricePlatinum: "25.99",
-          inStock: true,
-          stockQuantity: 50,
-          distributor: "Sample",
-          requiresFFL: false,
-          tags: ["Ammunition", "Federal", "9mm", "HST", "Self Defense"],
-          images: ["https://via.placeholder.com/600x400/FF6B35/FFFFFF?text=Federal+HST+9mm"],
-          isActive: true
-        },
-        {
-          name: "Vortex Crossfire Red Dot Sight",
-          description: "The Crossfire red dot delivers maximum versatility in a compact package. Features unlimited eye relief, 1x magnification, and a 2 MOA red dot reticle.",
-          category: "Optics",
-          manufacturer: "Vortex",
-          sku: "VTX-CF-RD2",
-          priceWholesale: "129.99",
-          priceBronze: "179.99",
-          priceGold: "159.99",
-          pricePlatinum: "139.99",
-          inStock: true,
-          stockQuantity: 25,
-          distributor: "Sample",
-          requiresFFL: false,
-          tags: ["Optics", "Vortex", "Red Dot", "1x"],
-          images: ["https://via.placeholder.com/600x400/FF0000/FFFFFF?text=Vortex+Crossfire"],
-          isActive: true
-        }
-      ];
-      
-      let insertedCount = 0;
-      for (const productData of sampleProducts) {
-        try {
-          await storage.createProduct(productData);
-          insertedCount++;
-        } catch (error) {
-          console.error(`Error inserting product ${productData.sku}:`, error);
-        }
-      }
-      
-      console.log(`Successfully created ${insertedCount} sample products`);
-      res.json({ 
-        message: `Successfully created ${insertedCount} sample products`,
-        inserted: insertedCount
-      });
-    } catch (error: any) {
-      console.error("Sample product creation error:", error);
-      res.status(500).json({ error: error.message });
-    }
-  });
+
 
   // RSR Integration Functions
   function transformRSRToProduct(rsrProduct: RSRProduct): InsertProduct {
@@ -735,67 +618,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let rsrProducts: RSRProduct[] = [];
       let source = 'api';
       
-      // Try to get real RSR data first
-      try {
-        rsrProducts = await rsrAPI.getCatalog();
-        rsrProducts = rsrProducts.slice(0, 200); // Limit for quick sync
-        console.log(`📦 Retrieved ${rsrProducts.length} products from RSR API`);
-      } catch (error: any) {
-        console.log('⚠️ RSR API blocked, using authenticated sample products');
-        source = 'authenticated-sample';
-        
-        // Use real RSR products with authentic stock numbers
-        rsrProducts = [
-          {
-            stockNo: "GLPG1950203",
-            upc: "764503026157",
-            description: "Glock 19 Gen 5 9mm 15rd Fixed Sights",
-            fullDescription: "Glock 19 Gen 5 9mm 15rd Fixed Sights - The new Gen 5 Glock 19 features a new barrel with enhanced crown for improved accuracy, nDLC finish barrel for enhanced corrosion protection, ambidextrous slide stop levers, removable front sight, new frame design without finger grooves.",
-            categoryDesc: "Handguns",
-            departmentDesc: "Firearms",
-            subDepartmentDesc: "Striker Fired Pistols",
-            manufacturer: "Glock Inc",
-            mfgName: "Glock Inc",
-            retailPrice: 649.99,
-            rsrPrice: 425.50,
-            weight: 1.85,
-            quantity: 15,
-            imgName: "GLPG1950203_1.jpg"
-          },
-          {
-            stockNo: "SWMP9SPC",
-            upc: "022188871555", 
-            description: "Smith & Wesson M&P9 Shield Plus 9mm",
-            fullDescription: "Smith & Wesson M&P9 Shield Plus 9mm with enhanced trigger, improved grip texture, and increased capacity. Features include aggressive grip texture, enhanced sear engagement surfaces, and lighter trigger.",
-            categoryDesc: "Handguns",
-            departmentDesc: "Firearms", 
-            subDepartmentDesc: "Striker Fired Pistols",
-            manufacturer: "Smith & Wesson",
-            mfgName: "Smith & Wesson",
-            retailPrice: 499.99,
-            rsrPrice: 365.75,
-            weight: 1.2,
-            quantity: 23,
-            imgName: "SWMP9SPC_1.jpg"
-          },
-          {
-            stockNo: "RUG1103",
-            upc: "736676011032",
-            description: "Ruger 10/22 Carbine .22 LR 18.5\" Barrel",
-            fullDescription: "Ruger 10/22 Carbine .22 LR 18.5\" Barrel 10-Round. America's favorite .22 rifle. Reliable, accurate, and affordable. Features include extended magazine release, crossbolt safety, and combination scope base.",
-            categoryDesc: "Rifles",
-            departmentDesc: "Firearms",
-            subDepartmentDesc: "Semi-Auto Rifles",
-            manufacturer: "Sturm, Ruger & Co Inc",
-            mfgName: "Ruger",
-            retailPrice: 329.99,
-            rsrPrice: 245.75,
-            weight: 5.0,
-            quantity: 8,
-            imgName: "RUG1103_1.jpg"
-          }
-        ];
-      }
+      // Get real RSR data only - no fallbacks
+      rsrProducts = await rsrAPI.getCatalog();
+      console.log(`📦 Retrieved ${rsrProducts.length} products from RSR API`);
+      
+      // Remove limit - sync all available products
+      console.log(`🔄 Syncing all ${rsrProducts.length} authentic RSR products`);
 
       // Clear existing RSR products from Hetzner database
       await storage.clearAllProducts();
