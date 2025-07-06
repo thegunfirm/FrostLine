@@ -15,6 +15,11 @@ const BATCH_SIZE = 1000;
  * Map product to Algolia format
  */
 function mapProductToAlgolia(product: any) {
+  // Parse pricing data properly handling snake_case and camelCase
+  const bronzePrice = parseFloat(product.price_bronze || product.priceBronze || '0');
+  const goldPrice = parseFloat(product.price_gold || product.priceGold || '0');
+  const platinumPrice = parseFloat(product.price_platinum || product.pricePlatinum || '0');
+  
   return {
     objectID: product.sku || product.id.toString(),
     title: product.name,
@@ -27,10 +32,16 @@ function mapProductToAlgolia(product: any) {
     sku: product.sku,
     inStock: product.inStock || false,
     quantity: product.stockQuantity || 0,
-    retailPrice: parseFloat(product.priceBronze || '0'),
+    retailPrice: bronzePrice,
     dealerPrice: parseFloat(product.priceWholesale || '0'),
-    msrp: parseFloat(product.priceBronze || '0'),
-    retailMap: parseFloat(product.priceGold || '0'),
+    msrp: bronzePrice,
+    retailMap: goldPrice,
+    // Add the tierPricing structure that frontend expects
+    tierPricing: {
+      bronze: bronzePrice,
+      gold: goldPrice > 0 ? goldPrice : null, // Hide Gold pricing when not available
+      platinum: platinumPrice
+    },
     requiresFFL: product.requiresFFL || false,
     tags: [
       product.category,
