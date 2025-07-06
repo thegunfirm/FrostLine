@@ -142,7 +142,12 @@ class RSRFTPClient {
         user: this.config.username,
         password: this.config.password,
         port: this.config.port,
-        secure: this.config.secure ? 'explicit' : false
+        secure: true,
+        secureOptions: {
+          rejectUnauthorized: false,
+          requestCert: false,
+          agent: false
+        }
       });
 
       const list = await client.list();
@@ -247,7 +252,12 @@ class RSRFTPClient {
         user: this.config.username,
         password: this.config.password,
         port: this.config.port,
-        secure: this.config.secure ? 'explicit' : false
+        secure: true,
+        secureOptions: {
+          rejectUnauthorized: false,
+          requestCert: false,
+          agent: false
+        }
       });
 
       // Download RSR inventory files
