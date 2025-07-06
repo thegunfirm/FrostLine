@@ -160,10 +160,10 @@ async function completeAlgoliaDeployment() {
             dropShippable: true
           },
           price: {
-            msrp: product.msrp || product.bronze || 0,
-            retailMap: product.map || product.gold || 0,
-            dealerPrice: product.wholesale || product.platinum || 0,
-            dealerCasePrice: product.wholesale || product.platinum || 0
+            msrp: product.bronze || 0,
+            retailMap: product.gold || 0,
+            dealerPrice: product.platinum || 0,
+            dealerCasePrice: product.platinum || 0
           },
           tierPricing: {
             bronze: product.bronze || 0,
