@@ -1342,6 +1342,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return 'ageVerified=true; rsrSessionId=verified';
   }
 
+  // RSR Multiple Images endpoint - gets all available views for a product
+  app.get("/api/rsr-images/:stockNo", async (req, res) => {
+    const stockNo = req.params.stockNo;
+    const size = (req.query.size as string) || 'standard';
+    
+    try {
+      const availableImages = [];
+      
+      // Try to fetch up to 7 different views for this product
+      for (let view = 1; view <= 7; view++) {
+        try {
+          let rsrImageUrl = '';
+          
+          switch (size) {
+            case 'thumb':
+              rsrImageUrl = `https://img.rsrgroup.com/pimages/${stockNo}_${view}_thumb.jpg`;
+              break;
+            case 'standard':
+              rsrImageUrl = `https://img.rsrgroup.com/pimages/${stockNo}_${view}.jpg`;
+              break;
+            case 'highres':
+            case 'large':
+              rsrImageUrl = `https://img.rsrgroup.com/highres-pimages/${stockNo}_${view}_HR.jpg`;
+              break;
+          }
+          
+          console.log(`🔍 Testing RSR image view ${view}: ${rsrImageUrl}`);
+          
+          const response = await axios.get(rsrImageUrl, {
+            responseType: "arraybuffer",
+            timeout: 5000,
+            headers: {
+              Referer: "https://www.rsrgroup.com/",
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
+            }
+          });
+          
+          const imageSize = response.data.length;
+          console.log(`✅ RSR image view ${view} found: ${rsrImageUrl} (${imageSize} bytes)`);
+          
+          // Check if this is an actual image (not placeholder)
+          const isActualImage = imageSize > 10000; // Real images are usually larger
+          
+          availableImages.push({
+            view,
+            url: rsrImageUrl,
+            size: imageSize,
+            isActual: isActualImage,
+            type: isActualImage ? 'product-photo' : 'placeholder'
+          });
+          
+        } catch (error: any) {
+          console.log(`❌ RSR image view ${view} not found for ${stockNo}`);
+          break; // Stop trying more views once we hit a 404
+        }
+      }
+      
+      res.json({
+        stockNo,
+        totalViews: availableImages.length,
+        actualPhotos: availableImages.filter(img => img.isActual).length,
+        placeholders: availableImages.filter(img => !img.isActual).length,
+        images: availableImages
+      });
+      
+    } catch (error: any) {
+      console.error(`Error fetching RSR images for ${stockNo}:`, error.message);
+      res.status(500).json({ error: "Failed to fetch RSR images" });
+    }
+  });
+
   // Enhanced RSR product image system with session authentication
   app.get("/api/rsr-image/:imageName", async (req, res) => {
     try {
