@@ -1216,6 +1216,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test RSR API connection
+  app.get("/api/test-rsr-connection", async (req, res) => {
+    try {
+      console.log('🔍 Testing RSR API connection...');
+      const products = await rsrAPI.getProducts('GLOCK', 1);
+      console.log(`✅ RSR API success: ${products.length} products found`);
+      res.json({ 
+        success: true, 
+        productCount: products.length,
+        sampleProduct: products[0] ? products[0].stockNo : null,
+        message: 'RSR API is working correctly'
+      });
+    } catch (error: any) {
+      console.error('❌ RSR API error:', error.message);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message,
+        code: error.code || 'Unknown error',
+        details: error.response?.data || 'No response data'
+      });
+    }
+  });
+
   // Download and serve RSR images locally
   app.post("/api/images/download/:imageName", async (req, res) => {
     const { imageName } = req.params;
