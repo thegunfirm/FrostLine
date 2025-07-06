@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { AlgoliaSearch } from "@/components/search/algolia-search";
 
 export default function Products() {
   const [location] = useLocation();
+  const [key, setKey] = useState(0); // Force re-render key
 
   // Parse URL params for initial state
   const urlParts = location.split('?');
@@ -16,6 +17,11 @@ export default function Products() {
   console.log("Products page URL:", location);
   console.log("Query string:", queryString);
   console.log("Parsed URL params:", { initialQuery, initialCategory, initialManufacturer });
+
+  // Force re-render when location changes
+  useEffect(() => {
+    setKey(prev => prev + 1);
+  }, [location]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -32,6 +38,7 @@ export default function Products() {
 
         {/* Enhanced Algolia Search Component */}
         <AlgoliaSearch 
+          key={key}
           initialQuery={initialQuery}
           initialCategory={initialCategory}
           initialManufacturer={initialManufacturer}
