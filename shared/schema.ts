@@ -180,6 +180,31 @@ export const systemSettings = pgTable("system_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Filter configurations for CMS-controlled search filtering
+export const filterConfigurations = pgTable("filter_configurations", {
+  id: serial("id").primaryKey(),
+  filterType: text("filter_type").notNull(), // "category", "manufacturer", "price_range", etc.
+  displayName: text("display_name").notNull(),
+  isEnabled: boolean("is_enabled").default(true),
+  defaultValue: text("default_value").default("all"),
+  displayOrder: integer("display_order").default(0),
+  isRequired: boolean("is_required").default(false),
+  options: json("options"), // Array of available options for dropdown filters
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Category settings for CMS control
+export const categorySettings = pgTable("category_settings", {
+  id: serial("id").primaryKey(),
+  categoryName: text("category_name").notNull().unique(),
+  isEnabled: boolean("is_enabled").default(true),
+  displayOrder: integer("display_order").default(0),
+  parentCategory: text("parent_category"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many, one }) => ({
   orders: many(orders),
@@ -306,6 +331,23 @@ export const insertPricingRuleSchema = createInsertSchema(pricingRules).pick({
   isActive: true,
 });
 
+export const insertFilterConfigurationSchema = createInsertSchema(filterConfigurations).pick({
+  filterType: true,
+  displayName: true,
+  isEnabled: true,
+  defaultValue: true,
+  displayOrder: true,
+  isRequired: true,
+  options: true,
+});
+
+export const insertCategorySettingSchema = createInsertSchema(categorySettings).pick({
+  categoryName: true,
+  isEnabled: true,
+  displayOrder: true,
+  parentCategory: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -323,3 +365,7 @@ export type SystemSetting = typeof systemSettings.$inferSelect;
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 export type PricingRule = typeof pricingRules.$inferSelect;
 export type InsertPricingRule = z.infer<typeof insertPricingRuleSchema>;
+export type FilterConfiguration = typeof filterConfigurations.$inferSelect;
+export type InsertFilterConfiguration = z.infer<typeof insertFilterConfigurationSchema>;
+export type CategorySetting = typeof categorySettings.$inferSelect;
+export type InsertCategorySetting = z.infer<typeof insertCategorySettingSchema>;

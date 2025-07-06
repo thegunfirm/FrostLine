@@ -192,6 +192,7 @@ class AlgoliaSearchService {
       inStock?: boolean;
       priceMin?: number;
       priceMax?: number;
+      newItem?: boolean;
     },
     options?: {
       hitsPerPage?: number;
@@ -220,6 +221,9 @@ class AlgoliaSearchService {
     }
     if (filters?.priceMax !== undefined) {
       filterParts.push(`retailPrice <= ${filters.priceMax}`);
+    }
+    if (filters?.newItem !== undefined) {
+      filterParts.push(`newItem:${filters.newItem}`);
     }
 
     if (filterParts.length > 0) {

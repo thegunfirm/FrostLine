@@ -52,25 +52,34 @@ interface SearchResponse {
 
 export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initialManufacturer = "" }: AlgoliaSearchProps) {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [category, setCategory] = useState(initialCategory);
-  const [manufacturer, setManufacturer] = useState(initialManufacturer);
+  const [category, setCategory] = useState(initialCategory || "all");
+  const [manufacturer, setManufacturer] = useState(initialManufacturer || "all");
   const [sortBy, setSortBy] = useState("relevance");
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [resultsPerPage, setResultsPerPage] = useState(24);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  
+  // Advanced filter states
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [inStockOnly, setInStockOnly] = useState(true);
+  const [newItemsOnly, setNewItemsOnly] = useState(false);
 
   // Get search results from Algolia
   const { data: searchResults, isLoading, error } = useQuery({
-    queryKey: ['algolia-search', searchQuery, category, manufacturer, sortBy, currentPage, resultsPerPage],
+    queryKey: ['algolia-search', searchQuery, category, manufacturer, sortBy, currentPage, resultsPerPage, priceMin, priceMax, inStockOnly, newItemsOnly],
     queryFn: async () => {
       const response = await apiRequest('POST', '/api/search/algolia', {
         query: searchQuery,
         filters: {
-          category,
-          manufacturer,
-          inStock: true
+          category: category && category !== "all" ? category : undefined,
+          manufacturer: manufacturer && manufacturer !== "all" ? manufacturer : undefined,
+          inStock: inStockOnly,
+          priceMin: priceMin ? parseFloat(priceMin) : undefined,
+          priceMax: priceMax ? parseFloat(priceMax) : undefined,
+          newItem: newItemsOnly || undefined
         },
         sort: sortBy,
         page: currentPage,
@@ -119,9 +128,13 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
   const handleClearFilters = () => {
     setSearchQuery("");
-    setCategory("");
-    setManufacturer("");
+    setCategory("all");
+    setManufacturer("all");
     setSortBy("relevance");
+    setPriceMin("");
+    setPriceMax("");
+    setInStockOnly(true);
+    setNewItemsOnly(false);
     setCurrentPage(0);
   };
 
@@ -251,7 +264,15 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     );
   };
 
-  const activeFiltersCount = [searchQuery, category, manufacturer].filter(Boolean).length;
+  const activeFiltersCount = [
+    searchQuery,
+    category !== "all" ? category : null,
+    manufacturer !== "all" ? manufacturer : null,
+    priceMin,
+    priceMax,
+    !inStockOnly ? "all-items" : null,
+    newItemsOnly ? "new-items" : null
+  ].filter(Boolean).length;
 
   return (
     <div className="space-y-6">
@@ -385,69 +406,158 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               <CardTitle className="text-lg font-oswald">Filter Products</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger id="category">
-                      <SelectValue placeholder="All Categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All Categories</SelectItem>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-6">
+                {/* Primary Filters */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger id="category">
+                        <SelectValue placeholder="All Categories" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat} value={cat || "unknown"}>
+                            {cat || "Unknown"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="manufacturer">Manufacturer</Label>
+                    <Select value={manufacturer} onValueChange={setManufacturer}>
+                      <SelectTrigger id="manufacturer">
+                        <SelectValue placeholder="All Manufacturers" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Manufacturers</SelectItem>
+                        {manufacturers.map((mfg) => (
+                          <SelectItem key={mfg} value={mfg || "unknown"}>
+                            {mfg || "Unknown"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="sort">Sort By</Label>
+                    <Select value={sortBy} onValueChange={setSortBy}>
+                      <SelectTrigger id="sort">
+                        <SelectValue placeholder="Relevance" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="relevance">Relevance</SelectItem>
+                        <SelectItem value="price_asc">Price: Low to High</SelectItem>
+                        <SelectItem value="price_desc">Price: High to Low</SelectItem>
+                        <SelectItem value="name_asc">Name A-Z</SelectItem>
+                        <SelectItem value="name_desc">Name Z-A</SelectItem>
+                        <SelectItem value="newest">Newest First</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="availability">Availability</Label>
+                    <Select value={inStockOnly ? "in-stock" : "all"} onValueChange={(value) => setInStockOnly(value === "in-stock")}>
+                      <SelectTrigger id="availability">
+                        <SelectValue placeholder="In Stock" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="in-stock">In Stock Only</SelectItem>
+                        <SelectItem value="all">All Products</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="manufacturer">Manufacturer</Label>
-                  <Select value={manufacturer} onValueChange={setManufacturer}>
-                    <SelectTrigger id="manufacturer">
-                      <SelectValue placeholder="All Manufacturers" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All Manufacturers</SelectItem>
-                      {manufacturers.map((mfg) => (
-                        <SelectItem key={mfg} value={mfg}>
-                          {mfg}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Advanced Filters */}
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold text-gun-black mb-4">Advanced Filters</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Price Range */}
+                    <div className="space-y-2">
+                      <Label>Price Range</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Min"
+                          value={priceMin}
+                          onChange={(e) => setPriceMin(e.target.value)}
+                          min="0"
+                          step="0.01"
+                          className="w-full"
+                        />
+                        <span className="text-gun-gray-light">to</span>
+                        <Input
+                          type="number"
+                          placeholder="Max"
+                          value={priceMax}
+                          onChange={(e) => setPriceMax(e.target.value)}
+                          min="0"
+                          step="0.01"
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="sort">Sort By</Label>
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger id="sort">
-                      <SelectValue placeholder="Relevance" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="relevance">Relevance</SelectItem>
-                      <SelectItem value="price_asc">Price: Low to High</SelectItem>
-                      <SelectItem value="price_desc">Price: High to Low</SelectItem>
-                      <SelectItem value="name_asc">Name A-Z</SelectItem>
-                      <SelectItem value="name_desc">Name Z-A</SelectItem>
-                      <SelectItem value="newest">Newest First</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                    {/* Special Items */}
+                    <div className="space-y-2">
+                      <Label>Special Items</Label>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="new-items"
+                          checked={newItemsOnly}
+                          onChange={(e) => setNewItemsOnly(e.target.checked)}
+                          className="rounded"
+                        />
+                        <Label htmlFor="new-items" className="text-sm">New Items Only</Label>
+                      </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="availability">Availability</Label>
-                  <Select value="in-stock" onValueChange={() => {}}>
-                    <SelectTrigger id="availability">
-                      <SelectValue placeholder="In Stock" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="in-stock">In Stock</SelectItem>
-                      <SelectItem value="all">All Products</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    {/* Quick Price Ranges */}
+                    <div className="space-y-2">
+                      <Label>Quick Price Ranges</Label>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { setPriceMin("0"); setPriceMax("100"); }}
+                          className="text-xs"
+                        >
+                          Under $100
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { setPriceMin("100"); setPriceMax("500"); }}
+                          className="text-xs"
+                        >
+                          $100-$500
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { setPriceMin("500"); setPriceMax("1000"); }}
+                          className="text-xs"
+                        >
+                          $500-$1000
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { setPriceMin("1000"); setPriceMax(""); }}
+                          className="text-xs"
+                        >
+                          Over $1000
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 

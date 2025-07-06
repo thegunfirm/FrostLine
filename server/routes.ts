@@ -4,10 +4,10 @@ import { createServer, type Server } from "http";
 import { join } from "path";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
-import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema, type InsertProduct, systemSettings, pricingRules, insertPricingRuleSchema } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema, type InsertProduct, systemSettings, pricingRules, insertPricingRuleSchema, products } from "@shared/schema";
 import { pricingEngine } from "./services/pricing-engine";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { z } from "zod";
 // Temporarily disabled while fixing import issues
 // import ApiContracts from "authorizenet";
@@ -2129,6 +2129,177 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Category ribbon delete error:', error);
       res.status(500).json({ error: 'Failed to delete category ribbon' });
+    }
+  });
+
+  // ===== FILTER CONFIGURATION ADMIN =====
+  
+  // Get all filter configurations
+  app.get("/api/admin/filter-configurations", async (req, res) => {
+    try {
+      const { filterConfigurations } = await import("../shared/schema");
+      const configs = await db.select().from(filterConfigurations).orderBy(filterConfigurations.displayOrder);
+      res.json(configs);
+    } catch (error) {
+      console.error('Filter configurations error:', error);
+      res.status(500).json({ error: 'Failed to load filter configurations' });
+    }
+  });
+
+  // Create new filter configuration
+  app.post("/api/admin/filter-configurations", async (req, res) => {
+    try {
+      const { filterConfigurations, insertFilterConfigurationSchema } = await import("../shared/schema");
+      const data = insertFilterConfigurationSchema.parse(req.body);
+      
+      const [config] = await db.insert(filterConfigurations).values(data).returning();
+      res.json(config);
+    } catch (error) {
+      console.error('Filter configuration create error:', error);
+      res.status(500).json({ error: 'Failed to create filter configuration' });
+    }
+  });
+
+  // Update filter configuration
+  app.put("/api/admin/filter-configurations/:id", async (req, res) => {
+    try {
+      const { filterConfigurations, insertFilterConfigurationSchema } = await import("../shared/schema");
+      const { id } = req.params;
+      const data = insertFilterConfigurationSchema.parse(req.body);
+      
+      const [config] = await db.update(filterConfigurations)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(filterConfigurations.id, parseInt(id)))
+        .returning();
+      
+      res.json(config);
+    } catch (error) {
+      console.error('Filter configuration update error:', error);
+      res.status(500).json({ error: 'Failed to update filter configuration' });
+    }
+  });
+
+  // Delete filter configuration
+  app.delete("/api/admin/filter-configurations/:id", async (req, res) => {
+    try {
+      const { filterConfigurations } = await import("../shared/schema");
+      const { id } = req.params;
+      
+      await db.delete(filterConfigurations).where(eq(filterConfigurations.id, parseInt(id)));
+      res.json({ message: 'Filter configuration deleted successfully' });
+    } catch (error) {
+      console.error('Filter configuration delete error:', error);
+      res.status(500).json({ error: 'Failed to delete filter configuration' });
+    }
+  });
+
+  // Get all category settings
+  app.get("/api/admin/category-settings", async (req, res) => {
+    try {
+      const { categorySettings } = await import("../shared/schema");
+      const settings = await db.select().from(categorySettings).orderBy(categorySettings.displayOrder);
+      res.json(settings);
+    } catch (error) {
+      console.error('Category settings error:', error);
+      res.status(500).json({ error: 'Failed to load category settings' });
+    }
+  });
+
+  // Create/update category setting
+  app.post("/api/admin/category-settings", async (req, res) => {
+    try {
+      const { categorySettings, insertCategorySettingSchema } = await import("../shared/schema");
+      const data = insertCategorySettingSchema.parse(req.body);
+      
+      const [setting] = await db.insert(categorySettings).values(data).onConflictDoUpdate({
+        target: categorySettings.categoryName,
+        set: { ...data, updatedAt: new Date() }
+      }).returning();
+      
+      res.json(setting);
+    } catch (error) {
+      console.error('Category setting save error:', error);
+      res.status(500).json({ error: 'Failed to save category setting' });
+    }
+  });
+
+  // Get search settings (from system_settings table)
+  app.get("/api/admin/search-settings", async (req, res) => {
+    try {
+      const { systemSettings } = await import("../shared/schema");
+      
+      // Get all search-related settings
+      const searchKeys = [
+        'default_category', 'default_manufacturer', 'default_sort_by', 'default_results_per_page',
+        'enable_advanced_filters', 'enable_price_range_filter', 'enable_stock_filter',
+        'enable_new_items_filter', 'enable_quick_price_ranges', 'max_price_range', 'price_range_step'
+      ];
+      
+      const settings = await db.select().from(systemSettings)
+        .where(sql`${systemSettings.key} = ANY(${searchKeys})`);
+      
+      // Convert to object format with defaults
+      const settingsObj = {
+        defaultCategory: "all",
+        defaultManufacturer: "all", 
+        defaultSortBy: "relevance",
+        defaultResultsPerPage: 24,
+        enableAdvancedFilters: true,
+        enablePriceRangeFilter: true,
+        enableStockFilter: true,
+        enableNewItemsFilter: true,
+        enableQuickPriceRanges: true,
+        maxPriceRange: 10000,
+        priceRangeStep: 0.01
+      };
+
+      settings.forEach(setting => {
+        const camelKey = setting.key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+        if (setting.value === 'true' || setting.value === 'false') {
+          settingsObj[camelKey] = setting.value === 'true';
+        } else if (!isNaN(parseFloat(setting.value))) {
+          settingsObj[camelKey] = parseFloat(setting.value);
+        } else {
+          settingsObj[camelKey] = setting.value;
+        }
+      });
+      
+      res.json(settingsObj);
+    } catch (error) {
+      console.error('Search settings error:', error);
+      res.status(500).json({ error: 'Failed to load search settings' });
+    }
+  });
+
+  // Update search settings
+  app.put("/api/admin/search-settings", async (req, res) => {
+    try {
+      const { systemSettings } = await import("../shared/schema");
+      const settings = req.body;
+      
+      // Convert camelCase back to snake_case and save each setting
+      const updates = Object.entries(settings).map(([key, value]) => {
+        const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+        return {
+          key: snakeKey,
+          value: String(value),
+          category: 'search',
+          description: `Search setting for ${key}`
+        };
+      });
+
+      // Upsert each setting
+      for (const update of updates) {
+        await db.insert(systemSettings).values(update).onConflictDoUpdate({
+          target: systemSettings.key,
+          set: { value: update.value, updatedAt: new Date() }
+        });
+      }
+      
+      res.json({ message: 'Search settings updated successfully' });
+    } catch (error) {
+      console.error('Search settings update error:', error);
+      res.status(500).json({ error: 'Failed to update search settings' });
     }
   });
 

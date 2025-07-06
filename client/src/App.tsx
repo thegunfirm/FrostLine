@@ -19,6 +19,7 @@ import AdminRSRUpload from "@/pages/admin-rsr-upload";
 import AdminSyncSettings from "@/pages/admin-sync-settings";
 import AdminPricingSettings from "@/pages/admin-pricing-settings";
 import AdminCategoryRibbons from "@/pages/admin-category-ribbons";
+import AdminFilterSettings from "@/pages/admin-filter-settings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/admin-sync-settings" component={AdminSyncSettings} />
       <Route path="/admin-pricing-settings" component={AdminPricingSettings} />
       <Route path="/admin-category-ribbons" component={AdminCategoryRibbons} />
+      <Route path="/admin-filter-settings" component={AdminFilterSettings} />
       <Route component={NotFound} />
     </Switch>
   );
