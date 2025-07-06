@@ -29,22 +29,11 @@ class ImageService {
     const cleanImageName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
     const imageId = `rsr-${cleanImageName}`;
     
-    // Firearm-appropriate placeholder images mapped by manufacturer/type
-    const placeholderImages = {
-      'GLPG': 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=400&h=400&fit=crop&auto=format', // Glock
-      'SWMP': 'https://images.unsplash.com/photo-1544824724-c606d27b9435?w=400&h=400&fit=crop&auto=format', // Smith & Wesson
-      'RUG': 'https://images.unsplash.com/photo-1518131672697-613becd4fab5?w=400&h=400&fit=crop&auto=format', // Ruger
-      'FED': 'https://images.unsplash.com/photo-1551269901-5c5e14c25df7?w=400&h=400&fit=crop&auto=format', // Federal ammo
-      'VORTEX': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=400&fit=crop&auto=format' // Optics
-    };
-    
-    // Find matching placeholder by manufacturer prefix
-    const prefix = Object.keys(placeholderImages).find(key => cleanImageName.startsWith(key));
-    const selectedImage = placeholderImages[prefix as keyof typeof placeholderImages] || placeholderImages['GLPG'];
-
+    // Use authenticated RSR image proxy endpoints instead of direct RSR URLs
+    // This routes through our server with proper authentication
     const variants: ImageVariant[] = [
       {
-        url: selectedImage.replace('w=400&h=400', 'w=150&h=150'),
+        url: `/api/images/rsr-proxy/${cleanImageName}/thumb`,
         width: 150,
         height: 150,
         size: 'thumbnail',
@@ -52,7 +41,7 @@ class ImageService {
         loadPriority: 'high'
       },
       {
-        url: selectedImage,
+        url: `/api/images/rsr-proxy/${cleanImageName}/standard`,
         width: 400,
         height: 400,
         size: 'standard',
@@ -60,7 +49,7 @@ class ImageService {
         loadPriority: 'high'
       },
       {
-        url: selectedImage.replace('w=400&h=400', 'w=800&h=800'),
+        url: `/api/images/rsr-proxy/${cleanImageName}/large`,
         width: 800,
         height: 800,
         size: 'large',
@@ -74,7 +63,7 @@ class ImageService {
       alt: `${productName} - Product Image`,
       variants,
       primaryVariant: variants[1], // Standard resolution as primary
-      fallbackUrl: selectedImage
+      fallbackUrl: `/api/images/rsr-proxy/${cleanImageName}/standard`
     };
   }
 

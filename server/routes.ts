@@ -995,7 +995,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Product not found" });
       }
 
-      // Check if product has RSR stock number for real image generation  
+      // Only serve images if product has RSR stock number  
       const stockNo = product.sku;
       
       if (stockNo && typeof stockNo === 'string') {
@@ -1011,83 +1011,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
           srcSet: imageService.generateSrcSet(productImage),
           sizes: imageService.generateSizes(context)
         });
-      } else if (product.images && Array.isArray(product.images)) {
-        const images = product.images as any[];
-        
-        if (images.length > 0) {
-          // Check if it's new format (ProductImage objects) or legacy (string URLs)
-          const firstImage = images[0];
-          
-          if (typeof firstImage === 'string') {
-            // Legacy format - convert to new format
-            const productImage = {
-              id: `legacy-${productId}`,
-              alt: `${product.name} - Product Image`,
-              variants: [
-                {
-                  url: firstImage,
-                  width: 400,
-                  height: 400,
-                  size: 'standard' as const,
-                  quality: 'medium' as const,
-                  loadPriority: 'high' as const
-                }
-              ],
-              primaryVariant: {
-                url: firstImage,
-                width: 400,
-                height: 400,
-                size: 'standard' as const,
-                quality: 'medium' as const,
-                loadPriority: 'high' as const
-              },
-              fallbackUrl: firstImage
-            };
-            
-            res.json({
-              productImage,
-              optimalVariant: productImage.primaryVariant,
-              progressiveConfig: {
-                placeholder: firstImage,
-                initial: firstImage,
-                highRes: firstImage,
-                alt: productImage.alt
-              }
-            });
-          } else {
-            // New format - use image service
-            const productImage = firstImage;
-            const optimalVariant = imageService.getOptimalVariant(productImage, context);
-            const progressiveConfig = imageService.getProgressiveLoadingConfig(productImage);
-            
-            res.json({
-              productImage,
-              optimalVariant,
-              progressiveConfig,
-              srcSet: imageService.generateSrcSet(productImage),
-              sizes: imageService.generateSizes(context)
-            });
-          }
-        } else {
-          res.status(404).json({ error: "No images found for this product" });
-        }
       } else {
-        res.status(404).json({ error: "No images found for this product" });
+        // No authentic images available
+        res.status(404).json({ error: "No images available for this product" });
       }
     } catch (error: any) {
+      console.error("Error optimizing image:", error);
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.get("/api/images/verify/:imageUrl", async (req, res) => {
+  // RSR Image Proxy with authentication
+  app.get("/api/images/rsr-proxy/:stockNo/:size", async (req, res) => {
     try {
-      const imageUrl = decodeURIComponent(req.params.imageUrl);
-      const isAvailable = await imageService.verifyImageUrl(imageUrl);
+      const { stockNo, size } = req.params;
       
-      res.json({ available: isAvailable, url: imageUrl });
+      // Map size to RSR URL structure
+      let rsrPath = '';
+      switch (size) {
+        case 'thumb':
+          rsrPath = `/images/inventory/thumb/${stockNo}.jpg`;
+          break;
+        case 'standard':
+          rsrPath = `/images/inventory/${stockNo}.jpg`;
+          break;
+        case 'large':
+          rsrPath = `/images/inventory/large/${stockNo}.jpg`;
+          break;
+        default:
+          return res.status(400).json({ error: "Invalid size parameter" });
+      }
+
+      // Use RSR API credentials to fetch image with authentication
+      const response = await fetch(`https://www.rsrgroup.com${rsrPath}`, {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${process.env.RSR_USERNAME}:${process.env.RSR_PASSWORD}`).toString('base64')}`,
+          'User-Agent': 'Mozilla/5.0 (compatible; TheGunFirm/1.0)',
+          'Accept': 'image/jpeg,image/png,image/gif,image/webp,*/*'
+        }
+      });
+
+      if (response.ok) {
+        // Stream the image directly to the client
+        const contentType = response.headers.get('content-type') || 'image/jpeg';
+        res.set('Content-Type', contentType);
+        res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+        
+        const imageBuffer = await response.arrayBuffer();
+        res.send(Buffer.from(imageBuffer));
+      } else {
+        // Image not found or authentication failed
+        res.status(404).json({ error: "Image not available" });
+      }
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error("Error fetching RSR image:", error);
+      res.status(500).json({ error: "Failed to fetch image" });
     }
+  });
+
+  // Legacy image handling removed - only serve authentic RSR images
+  app.get("/api/images/legacy/:productId", async (req, res) => {
+    // This endpoint is deprecated - redirect to main image optimization
+    res.redirect(`/api/images/optimize/${req.params.productId}`);
   });
 
   const httpServer = createServer(app);

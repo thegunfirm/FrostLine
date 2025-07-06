@@ -38,6 +38,7 @@ export function ProgressiveImage({
   const [isHighResLoaded, setIsHighResLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showHighRes, setShowHighRes] = useState(false);
+  const [imageLoadError, setImageLoadError] = useState(false);
   
   // Get optimal image variant based on context
   const getOptimalVariant = (context: 'card' | 'detail' | 'zoom' | 'gallery'): ImageVariant => {
@@ -124,14 +125,9 @@ export function ProgressiveImage({
     }
   };
 
-  if (!currentImage) {
-    return (
-      <div className={`bg-gray-100 dark:bg-gray-800 animate-pulse ${className}`}>
-        <div className="w-full h-full flex items-center justify-center text-gray-400">
-          No Image Available
-        </div>
-      </div>
-    );
+  // Don't render anything if no image or image failed to load
+  if (!currentImage || imageLoadError) {
+    return null;
   }
 
   return (
@@ -144,7 +140,10 @@ export function ProgressiveImage({
         sizes={generateSizes()}
         className="w-full h-full object-cover transition-opacity duration-300"
         onLoad={handleImageLoad}
-        onError={() => setIsLoading(false)}
+        onError={() => {
+          setIsLoading(false);
+          setImageLoadError(true);
+        }}
         style={{
           opacity: isLoading ? 0.7 : 1,
         }}
