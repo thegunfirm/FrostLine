@@ -126,10 +126,28 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
             </div>
           )}
           
-          {/* Member Price - Show tier-specific pricing, never wholesale/dealer price */}
-          {user ? (
+          {/* Bronze Price - Always show as reference */}
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-gun-gray-light">Bronze Price:</span>
+            <span className="text-xs text-gun-black">
+              ${parseFloat(product.priceBronze || "0").toFixed(2)}
+            </span>
+          </div>
+          
+          {/* Gold Price - Show if user is not Bronze */}
+          {user && user.subscriptionTier !== "Bronze" && (
             <div className="flex justify-between items-center">
-              <span className="text-xs text-gun-gray-light">Your Price:</span>
+              <span className="text-xs text-gun-gray-light">Gold Price:</span>
+              <span className="text-xs text-gun-black">
+                ${parseFloat(product.priceGold || "0").toFixed(2)}
+              </span>
+            </div>
+          )}
+          
+          {/* Your Price - Show tier-specific pricing, never wholesale/dealer price */}
+          {user ? (
+            <div className="flex justify-between items-center border-t border-gray-200 pt-1">
+              <span className="text-xs text-gun-gray-light font-medium">Your Price:</span>
               <div className={cn(
                 "text-sm font-bold text-gun-gold",
                 isPlatinumMember && tierPrice && "platinum-glint"
@@ -138,8 +156,8 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
               </div>
             </div>
           ) : (
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gun-gray-light">Member Price:</span>
+            <div className="flex justify-between items-center border-t border-gray-200 pt-1">
+              <span className="text-xs text-gun-gray-light font-medium">Member Price:</span>
               <span className="text-xs text-gun-gold font-medium">
                 Login to View
               </span>
