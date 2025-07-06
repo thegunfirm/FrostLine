@@ -1,7 +1,8 @@
-const { Client } = require('pg');
-const axios = require('axios');
-const https = require('https');
-const xml2js = require('xml2js');
+import pkg from 'pg';
+const { Client } = pkg;
+import axios from 'axios';
+import https from 'https';
+import xml2js from 'xml2js';
 
 // Database connection
 const client = new Client({

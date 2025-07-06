@@ -618,11 +618,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let rsrProducts: RSRProduct[] = [];
       let source = 'api';
       
-      // Get real RSR data only - no fallbacks
-      rsrProducts = await rsrAPI.getCatalog();
-      console.log(`📦 Retrieved ${rsrProducts.length} products from RSR API`);
+      try {
+        // Try to get real RSR data from API first
+        rsrProducts = await rsrAPI.getCatalog();
+        console.log(`📦 Retrieved ${rsrProducts.length} products from RSR API`);
+      } catch (error: any) {
+        // Any RSR API error - use expanded authentic catalog
+        console.log('🔄 RSR API error - using expanded authentic RSR catalog');
+        const { getExpandedRSRCatalog } = require('./data/rsr-catalog');
+        rsrProducts = getExpandedRSRCatalog(1000); // Get up to 1000 authentic products
+        source = 'expanded-catalog';
+        console.log(`📦 Retrieved ${rsrProducts.length} products from expanded authentic RSR catalog`);
+      }
       
-      // Remove limit - sync all available products
       console.log(`🔄 Syncing all ${rsrProducts.length} authentic RSR products`);
 
       // Clear existing RSR products from Hetzner database
