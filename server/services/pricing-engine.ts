@@ -107,6 +107,7 @@ export class PricingEngine {
    * Update product pricing in database
    */
   async updateProductPricing(productId: number, pricing: PricingCalculation) {
+    console.log(`💰 Updating product ${productId}: Bronze=$${pricing.bronze}, Gold=$${pricing.gold}, Platinum=$${pricing.platinum}`);
     await db
       .update(products)
       .set({
