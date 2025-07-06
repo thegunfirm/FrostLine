@@ -97,6 +97,8 @@ export class RSRAutoSync {
             .set({
               quantity: update.quantity,
               priceWholesale: update.rsrPrice,
+              priceMsrp: update.retailPrice,
+              priceMap: update.mapPrice,
               updatedAt: new Date()
             })
             .where(eq(products.sku, update.stockNo));
