@@ -31,11 +31,6 @@ export default function Home() {
     // TODO: Implement cart functionality
   };
 
-  const handleViewDetails = (product: any) => {
-    console.log("View product:", product);
-    // TODO: Navigate to product details
-  };
-
   return (
     <div className="min-h-screen">
       {/* Hero Carousel */}
@@ -129,7 +124,6 @@ export default function Home() {
             products={featuredProducts || []}
             loading={productsLoading}
             onAddToCart={handleAddToCart}
-            onViewDetails={handleViewDetails}
           />
 
           {/* Call to Action */}

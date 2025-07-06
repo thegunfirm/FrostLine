@@ -63,14 +63,14 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
   const isPlatinumMember = user?.subscriptionTier === "Platinum";
 
   return (
-    <Card className="group cursor-pointer hover:shadow-xl transition-shadow duration-300">
+    <Card className="group cursor-pointer hover:shadow-xl transition-shadow duration-300 h-fit">
       <div className="aspect-square relative overflow-hidden">
         {imageUrl ? (
           <img 
             src={imageUrl}
             alt={altText || product.name}
             className={cn(
-              "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300",
+              "w-full h-full object-contain group-hover:scale-105 transition-transform duration-300",
               imageLoading && "opacity-50"
             )}
             onLoad={onLoad}
@@ -95,26 +95,50 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
         )}
       </div>
       
-      <CardContent className="p-6">
-        <div className="mb-2">
-          <h3 className="text-lg font-oswald font-semibold text-gun-black mb-1 group-hover:text-gun-gold transition-colors duration-200">
+      <CardContent className="p-4">
+        <div className="mb-3">
+          <h3 className="text-sm font-oswald font-semibold text-gun-black mb-1 group-hover:text-gun-gold transition-colors duration-200 line-clamp-2">
             {product.name}
           </h3>
-          <p className="text-gun-gray-light text-sm line-clamp-2">
+          <p className="text-gun-gray-light text-xs line-clamp-2">
             {product.description}
           </p>
         </div>
         
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-gun-black">
-            <span className="text-sm text-gun-gray-light">Member Price:</span>
+        <div className="mb-3 space-y-1">
+          {/* MSRP */}
+          {product.priceMSRP && (
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gun-gray-light">MSRP:</span>
+              <span className="text-xs text-gun-gray-light line-through">
+                ${parseFloat(product.priceMSRP).toFixed(2)}
+              </span>
+            </div>
+          )}
+          
+          {/* MAP */}
+          {product.priceMAP && (
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gun-gray-light">MAP:</span>
+              <span className="text-xs text-gun-black font-medium">
+                ${parseFloat(product.priceMAP).toFixed(2)}
+              </span>
+            </div>
+          )}
+          
+          {/* Member Price */}
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-gun-gray-light">Member Price:</span>
             <div className={cn(
-              "text-xl font-bold",
+              "text-sm font-bold text-gun-gold",
               isPlatinumMember && tierPrice && "platinum-glint"
             )}>
               {formatPrice(tierPrice)}
             </div>
           </div>
+        </div>
+        
+        <div className="flex items-center justify-between mb-3">
           {getAvailabilityBadge()}
         </div>
         
@@ -123,7 +147,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
             <Button
               variant="outline"
               size="sm"
-              className="w-full"
+              className="w-full text-xs"
             >
               View Details
             </Button>
@@ -133,7 +157,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
             <Button
               onClick={() => onAddToCart?.(product)}
               size="sm"
-              className="flex-1 bg-gun-gold hover:bg-gun-gold-bright text-gun-black"
+              className="flex-1 bg-gun-gold hover:bg-gun-gold-bright text-gun-black text-xs"
             >
               Add to Cart
             </Button>
