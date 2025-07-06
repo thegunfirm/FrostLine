@@ -155,7 +155,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
             </div>
           ) : (
             <div className="flex justify-between items-center border-t border-gray-200 pt-1">
-              <span className="text-xs text-gun-gray-light font-medium">Member Price:</span>
+              <span className="text-xs text-gun-gray-light font-medium">Platinum Price:</span>
               <span className="text-xs text-gun-gold font-medium">
                 Login to View
               </span>
