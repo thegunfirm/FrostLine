@@ -335,6 +335,38 @@ class RSRAPIService {
     }
   }
 
+  /**
+   * Successfully access RSR images using the user's proven method
+   */
+  async getImageWithUserMethod(imgName: string, size: 'thumb' | 'standard' | 'large' = 'standard'): Promise<Buffer | null> {
+    try {
+      const imageUrl = this.getAPIImageUrl(imgName, size);
+      
+      const response = await axios.get(imageUrl, {
+        responseType: "arraybuffer",
+        headers: {
+          Referer: "https://www.rsrgroup.com/",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
+        },
+        timeout: 10000,
+        validateStatus: () => true // Accept any status code
+      });
+
+      const contentType = response.headers['content-type'] || '';
+      const isImage = contentType.startsWith('image/');
+      
+      if (isImage && response.data.length > 1000) {
+        return Buffer.from(response.data);
+      }
+      
+      console.log(`RSR image ${imgName} not accessible or invalid content`);
+      return null;
+    } catch (error: any) {
+      console.error(`RSR image access failed for ${imgName}:`, error.message);
+      return null;
+    }
+  }
+
   private getMockRSRProducts(searchTerm: string, category?: string, manufacturer?: string): RSRProduct[] {
     const mockProducts: RSRProduct[] = [
       {

@@ -12,6 +12,7 @@ import { z } from "zod";
 import { rsrAPI, type RSRProduct } from "./services/rsr-api";
 import { inventorySync } from "./services/inventory-sync";
 import { imageService } from "./services/image-service";
+import axios from "axios";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -1261,6 +1262,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Test RSR image access with user's exact approach
+  app.get("/api/test-user-method/:imageName", async (req, res) => {
+    try {
+      const imageName = req.params.imageName;
+      const size = req.query.size as 'thumb' | 'standard' | 'large' || 'standard';
+      
+      console.log(`Testing user's method for RSR image: ${imageName} (${size})`);
+      
+      // Use the exact approach suggested by user
+      const baseUrl = 'https://imgtest.rsrgroup.com/images/inventory';
+      const cleanImgName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
+      const imageUrl = size === 'thumb' ? `${baseUrl}/thumb/${cleanImgName}.jpg` : 
+                     size === 'large' ? `${baseUrl}/large/${cleanImgName}.jpg` : 
+                     `${baseUrl}/${cleanImgName}.jpg`;
+      
+      const response = await axios.get(imageUrl, {
+        responseType: "arraybuffer",
+        headers: {
+          Referer: "https://www.rsrgroup.com/",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
+          // Optional: Cookie: 'ageVerified=true; ASP.NET_SessionId=...'
+        },
+        timeout: 10000,
+        validateStatus: () => true // Accept any status code
+      });
+
+      const contentType = response.headers['content-type'] || '';
+      const isImage = contentType.startsWith('image/');
+      
+      if (isImage) {
+        return res.json({
+          success: true,
+          strategy: 'User Suggested Method',
+          contentType,
+          size: response.data.length,
+          url: imageUrl,
+          message: 'Successfully accessed RSR image with browser headers!'
+        });
+      } else {
+        // Convert arraybuffer to string for analysis
+        const textContent = Buffer.from(response.data).toString('utf8');
+        return res.json({
+          error: 'Received HTML instead of image',
+          imageName,
+          size: size,
+          contentPreview: textContent.substring(0, 200),
+          message: 'RSR age verification still blocking access',
+          contentType: contentType,
+          statusCode: response.status
+        });
+      }
+    } catch (error: any) {
+      console.error(`RSR image test failed:`, error);
+      res.status(500).json({ 
+        error: error.message,
+        imageName: req.params.imageName,
+        size: req.query.size || 'standard',
+        message: 'Network or authentication error'
+      });
     }
   });
 
