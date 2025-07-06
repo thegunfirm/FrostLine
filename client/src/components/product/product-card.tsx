@@ -134,15 +134,13 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
             </span>
           </div>
           
-          {/* Gold Price - Show if user is not Bronze */}
-          {user && user.subscriptionTier !== "Bronze" && (
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gun-gray-light">Gold Price:</span>
-              <span className="text-xs text-gun-black">
-                ${parseFloat(product.priceGold || "0").toFixed(2)}
-              </span>
-            </div>
-          )}
+          {/* Gold Price - Always show */}
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-gun-gray-light">Gold Price:</span>
+            <span className="text-xs text-gun-black">
+              ${parseFloat(product.priceGold || "0").toFixed(2)}
+            </span>
+          </div>
           
           {/* Your Price - Show tier-specific pricing, never wholesale/dealer price */}
           {user ? (
