@@ -241,7 +241,7 @@ export class RSRAutoSync {
       rsrPrice: fields[6]?.trim() || '0',                 // Wholesale
       quantity: parseInt(fields[8]?.trim() || '0'),
       fullManufacturerName: fields[10]?.trim() || '',
-      mapPrice: parseFloat(fields[62]?.trim() || fields[5]?.trim() || '0')  // MAP field
+      mapPrice: parseFloat(fields[70]?.trim() || fields[5]?.trim() || '0')  // MAP field at position 70
     };
   }
 
