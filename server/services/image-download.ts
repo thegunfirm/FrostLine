@@ -1,5 +1,6 @@
 import { createWriteStream, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { rsrSessionManager } from './rsr-session';
 
 export interface ImageDownloadResult {
   success: boolean;
@@ -84,17 +85,19 @@ class ImageDownloadService {
   }
 
   /**
-   * Download with RSR authentication
+   * Download with RSR authentication and age verification bypass
    */
   private async downloadWithAuth(url: string): Promise<Response> {
-    const credentials = Buffer.from(`${process.env.RSR_USERNAME}:${process.env.RSR_PASSWORD}`).toString('base64');
+    // Use the sophisticated RSR session manager for age verification bypass
+    const session = await rsrSessionManager.getAuthenticatedSession();
     
     return fetch(url, {
       headers: {
-        'Authorization': `Basic ${credentials}`,
+        'Cookie': session.cookies.join('; '),
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.rsrgroup.com/',
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
       },

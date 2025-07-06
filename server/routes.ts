@@ -1021,37 +1021,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // RSR Image Proxy - Returns 404 when images require age verification
+  // RSR Image Proxy - Now with sophisticated age verification bypass
   app.get("/api/images/rsr-proxy/:stockNo/:size", async (req, res) => {
     try {
       const { stockNo, size } = req.params;
       
       // Map size to RSR URL structure
-      let rsrPath = '';
+      let rsrImageUrl = '';
       switch (size) {
         case 'thumb':
-          rsrPath = `/images/inventory/thumb/${stockNo}.jpg`;
+          rsrImageUrl = `https://www.rsrgroup.com/images/inventory/thumb/${stockNo}.jpg`;
           break;
         case 'standard':
-          rsrPath = `/images/inventory/${stockNo}.jpg`;
+          rsrImageUrl = `https://www.rsrgroup.com/images/inventory/${stockNo}.jpg`;
           break;
         case 'large':
-          rsrPath = `/images/inventory/large/${stockNo}.jpg`;
+          rsrImageUrl = `https://www.rsrgroup.com/images/inventory/large/${stockNo}.jpg`;
           break;
         default:
           return res.status(400).json({ error: "Invalid size parameter" });
       }
 
-      // RSR images require age verification on their website
-      // For now, we'll return a 404 to indicate images are not available
-      // This allows the Progressive Image component to handle the fallback gracefully
-      res.status(404).json({ 
-        error: "RSR images require age verification",
-        message: "Images are not accessible due to RSR's age verification requirements" 
+      // Use sophisticated RSR session manager with age verification bypass
+      const { rsrSessionManager } = await import('./services/rsr-session');
+      const session = await rsrSessionManager.getAuthenticatedSession();
+      
+      // Fetch image with authenticated session
+      const imageResponse = await fetch(rsrImageUrl, {
+        headers: {
+          'Cookie': session.cookies.join('; '),
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Referer': 'https://www.rsrgroup.com/',
+          'Cache-Control': 'no-cache'
+        }
       });
+      
+      if (imageResponse.ok) {
+        // Proxy the image response
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+        
+        res.set({
+          'Content-Type': contentType,
+          'Cache-Control': 'public, max-age=3600',
+          'Access-Control-Allow-Origin': '*'
+        });
+        
+        res.send(Buffer.from(imageBuffer));
+      } else {
+        console.log(`RSR image not found: ${rsrImageUrl} - Status: ${imageResponse.status}`);
+        res.status(404).json({ 
+          error: "Image not found",
+          message: "RSR image not available" 
+        });
+      }
     } catch (error: any) {
       console.error("Error fetching RSR image:", error);
-      res.status(404).json({ error: "Image not available" });
+      res.status(404).json({ error: "Image not available", details: error.message });
     }
   });
 
