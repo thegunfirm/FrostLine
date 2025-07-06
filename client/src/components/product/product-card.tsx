@@ -106,7 +106,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
         </div>
         
         <div className="mb-3 space-y-1">
-          {/* MSRP */}
+          {/* MSRP - Show if available */}
           {product.priceMSRP && (
             <div className="flex justify-between items-center">
               <span className="text-xs text-gun-gray-light">MSRP:</span>
@@ -116,7 +116,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
             </div>
           )}
           
-          {/* MAP */}
+          {/* MAP - Show if available */}
           {product.priceMAP && (
             <div className="flex justify-between items-center">
               <span className="text-xs text-gun-gray-light">MAP:</span>
@@ -126,16 +126,25 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
             </div>
           )}
           
-          {/* Member Price */}
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-gun-gray-light">Member Price:</span>
-            <div className={cn(
-              "text-sm font-bold text-gun-gold",
-              isPlatinumMember && tierPrice && "platinum-glint"
-            )}>
-              {formatPrice(tierPrice)}
+          {/* Member Price - Show tier-specific pricing, never wholesale/dealer price */}
+          {user ? (
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gun-gray-light">Your Price:</span>
+              <div className={cn(
+                "text-sm font-bold text-gun-gold",
+                isPlatinumMember && tierPrice && "platinum-glint"
+              )}>
+                {formatPrice(tierPrice)}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gun-gray-light">Member Price:</span>
+              <span className="text-xs text-gun-gold font-medium">
+                Login to View
+              </span>
+            </div>
+          )}
         </div>
         
         <div className="flex items-center justify-between mb-3">
