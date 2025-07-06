@@ -6,6 +6,7 @@ import { Product } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 import { useProgressiveImage } from "@/hooks/use-progressive-image";
+import { SecurePricing } from "@/components/product/secure-pricing";
 
 interface ProductCardProps {
   product: Product;
@@ -24,25 +25,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
     onError
   } = useProgressiveImage(product.id, 'card');
 
-  const getTierPrice = (product: Product) => {
-    if (!user) return null;
-    
-    switch (user.subscriptionTier) {
-      case "Bronze":
-        return product.priceBronze;
-      case "Gold":
-        return product.priceGold;
-      case "Platinum":
-        return product.pricePlatinum;
-      default:
-        return null;
-    }
-  };
 
-  const formatPrice = (price: string | null) => {
-    if (!price) return "Login Required";
-    return `$${parseFloat(price).toFixed(2)}`;
-  };
 
   const getAvailabilityBadge = () => {
     if (!product.inStock) {
@@ -59,8 +42,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
     );
   };
 
-  const tierPrice = getTierPrice(product);
-  const isPlatinumMember = user?.subscriptionTier === "Platinum";
+
 
   return (
     <Card className="group cursor-pointer hover:shadow-xl transition-shadow duration-300 h-fit">
@@ -105,62 +87,17 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
           </p>
         </div>
         
-        <div className="mb-3 space-y-1">
-          {/* MSRP - Show if available */}
-          {product.priceMSRP && (
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gun-gray-light">MSRP:</span>
-              <span className="text-xs text-gun-gray-light line-through">
-                ${parseFloat(product.priceMSRP).toFixed(2)}
-              </span>
-            </div>
-          )}
-          
-          {/* MAP - Show if available */}
-          {product.priceMAP && (
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gun-gray-light">MAP:</span>
-              <span className="text-xs text-gun-black font-medium">
-                ${parseFloat(product.priceMAP).toFixed(2)}
-              </span>
-            </div>
-          )}
-          
-          {/* Bronze Price - Always show as reference */}
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-gun-gray-light">Bronze Price:</span>
-            <span className="text-xs text-gun-black">
-              ${parseFloat(product.priceBronze || "0").toFixed(2)}
-            </span>
-          </div>
-          
-          {/* Gold Price - Always show */}
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-gun-gray-light">Gold Price:</span>
-            <span className="text-xs text-gun-black">
-              ${parseFloat(product.priceGold || "0").toFixed(2)}
-            </span>
-          </div>
-          
-          {/* Your Price - Show tier-specific pricing, never wholesale/dealer price */}
-          {user ? (
-            <div className="flex justify-between items-center border-t border-gray-200 pt-1">
-              <span className="text-xs text-gun-gray-light font-medium">Your Price:</span>
-              <div className={cn(
-                "text-sm font-bold text-gun-gold",
-                isPlatinumMember && tierPrice && "platinum-glint"
-              )}>
-                {formatPrice(tierPrice)}
-              </div>
-            </div>
-          ) : (
-            <div className="flex justify-between items-center border-t border-gray-200 pt-1">
-              <span className="text-xs text-gun-gray-light font-medium">Platinum Price:</span>
-              <span className="text-xs text-gun-gold font-medium">
-                Login or add to cart to view
-              </span>
-            </div>
-          )}
+        <div className="mb-3">
+          <SecurePricing 
+            product={{
+              priceBronze: product.priceBronze,
+              priceGold: product.priceGold,
+              pricePlatinum: product.pricePlatinum,
+              priceMSRP: product.priceMSRP
+            }}
+            showUpgradePrompt={false}
+            className="text-sm"
+          />
         </div>
         
         <div className="flex items-center justify-between mb-3">
