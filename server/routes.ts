@@ -1265,14 +1265,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve RSR images directly using successful method
+  // Serve RSR images directly using correct img.rsrgroup.com domain
   app.get("/api/rsr-image/:imageName", async (req, res) => {
     try {
       const imageName = req.params.imageName;
       const size = req.query.size as 'thumb' | 'standard' | 'large' || 'standard';
       
-      // Use the proven successful method
-      const baseUrl = 'https://imgtest.rsrgroup.com/images/inventory';
+      // Use the correct img.rsrgroup.com domain as confirmed by user
+      const baseUrl = 'https://img.rsrgroup.com/images/inventory';
       const cleanImgName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
       const imageUrl = size === 'thumb' ? `${baseUrl}/thumb/${cleanImgName}.jpg` : 
                      size === 'large' ? `${baseUrl}/large/${cleanImgName}.jpg` : 
@@ -1329,19 +1329,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Try multiple RSR image URL patterns to find actual product photos
       const urlPatterns = [
-        // Original pattern that works for placeholders
+        // Try img.rsrgroup.com first (user suggested this domain)
+        `https://img.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
+        `https://img.rsrgroup.com/images/inventory/${size}/${cleanImgName}.jpg`,
+        `https://img.rsrgroup.com/images/inventory/large/${cleanImgName}.jpg`,
+        `https://img.rsrgroup.com/images/inventory/thumb/${cleanImgName}.jpg`,
+        // Original imgtest pattern for comparison
         `https://imgtest.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
         // Try main RSR domain patterns
         `https://www.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
         `https://www.rsrgroup.com/Custom/Assets/ProductImages/${cleanImgName}.jpg`,
         `https://www.rsrgroup.com/images/products/${cleanImgName}.jpg`,
         `https://www.rsrgroup.com/productimages/${cleanImgName}.jpg`,
-        // Try with different file extensions
-        `https://imgtest.rsrgroup.com/images/inventory/${cleanImgName}.png`,
-        `https://www.rsrgroup.com/images/inventory/${cleanImgName}.png`,
-        // Try with size variations
-        `https://imgtest.rsrgroup.com/images/inventory/${size}/${cleanImgName}.jpg`,
-        `https://www.rsrgroup.com/images/inventory/${size}/${cleanImgName}.jpg`,
       ];
       
       const results = [];
