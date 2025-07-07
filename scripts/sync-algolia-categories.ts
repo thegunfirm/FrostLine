@@ -43,11 +43,22 @@ function mapProductToAlgolia(product: any) {
       platinum: platinumPrice
     },
     requiresFFL: product.requiresFFL || false,
-    tags: [
-      product.category,
-      product.manufacturer || 'Unknown',
-      product.requiresFFL ? 'Firearms' : 'Accessories'
-    ],
+    tags: (() => {
+      // Start with basic tags
+      const basicTags = [
+        product.category,
+        product.manufacturer || 'Unknown',
+        product.requiresFFL ? 'Firearms' : 'Non-Firearms'
+      ];
+      
+      // Add RSR tags if they exist (these contain important product classification)
+      if (product.tags && Array.isArray(product.tags)) {
+        basicTags.push(...product.tags);
+      }
+      
+      // Remove duplicates and return
+      return [...new Set(basicTags)];
+    })(),
     imageUrl: product.images && Array.isArray(product.images) && product.images.length > 0 
       ? product.images[0] 
       : `/api/rsr-image/${product.sku}`,
