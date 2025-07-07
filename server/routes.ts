@@ -2012,6 +2012,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Basic filters  
       if (filters.category) {
         algoliaFilters.push(`categoryName:"${filters.category}"`);
+        
+        // Special handling for Handguns category: exclude accessories
+        if (filters.category === "Handguns") {
+          algoliaFilters.push('NOT tags:"Accessories"');
+        }
       }
       if (filters.manufacturer) {
         algoliaFilters.push(`manufacturer:"${filters.manufacturer}"`);
