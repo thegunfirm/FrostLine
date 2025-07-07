@@ -235,6 +235,9 @@ Changelog:
 - July 07, 2025. **CONTINUOUS BATCH PROCESSING**: Successfully processed 98+ Glock products in automated batches, correcting miscategorized parts, apparel, and accessories
 - July 07, 2025. **CATEGORIZATION ACCURACY**: Down to only 10 remaining products with accessory tags in Handguns category (mostly HK rifles and magazines correctly tagged)
 - July 07, 2025. **ALGOLIA INDEX UPDATED**: Real-time sync completed for 18,000+ products ensuring search results reflect corrected categorization
+- July 07, 2025. **HANDGUN FILTER BUG FIXED**: Replaced non-existent "pistol"/"revolver" tags with actual "Handguns" tag in backend filtering logic
+- July 07, 2025. **BACKEND FILTER OPERATIONAL**: Now correctly filters for tags:"Handguns" AND NOT tags:"Accessories" for default handgun view
+- July 07, 2025. **PENDING**: Algolia index sync needed to reflect corrected handgun categorization - backend fix complete, search index update required
 ```
 
 ## User Preferences
