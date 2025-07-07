@@ -738,24 +738,14 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
       {/* Products Grid */}
       <ProductGrid 
-        products={searchResults?.hits.map((hit, index) => {
-          // Extract numeric ID from objectID or use index as fallback
-          let productId: number;
-          if (hit.objectID.startsWith('rsr-')) {
-            const numericPart = hit.objectID.replace('rsr-', '');
-            productId = parseInt(numericPart) || index + 1;
-          } else {
-            // For other objectID formats, try parsing directly or use index
-            productId = parseInt(hit.objectID) || index + 1;
-          }
-          
+        products={searchResults?.hits.map((hit, index) => {          
           return {
-            id: productId,
-            name: hit.title || hit.name || 'Unknown Product',
+            id: index + 1, // Use sequential ID to satisfy Product interface
+            name: hit.title || 'Unknown Product',
             description: hit.description || '',
-            category: hit.categoryName || hit.category || 'Uncategorized',
-            manufacturer: hit.manufacturerName || hit.manufacturer || 'Unknown',
-            sku: hit.sku || hit.stockNo || '',
+            category: hit.categoryName || 'Uncategorized',
+            manufacturer: hit.manufacturerName || 'Unknown',
+            sku: hit.sku || hit.objectID || '', // This is the important field for RSR images
             priceWholesale: hit.tierPricing?.platinum?.toString() || "0",
             priceMAP: null,
             priceMSRP: null, 
@@ -763,7 +753,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
             priceGold: hit.tierPricing?.gold?.toString() || "0",
             pricePlatinum: hit.tierPricing?.platinum?.toString() || "0",
             inStock: hit.inStock ?? true,
-            stockQuantity: hit.inventory?.onHand || hit.quantity || 0,
+            stockQuantity: hit.quantity || 0,
             distributor: hit.distributor || 'RSR',
             requiresFFL: hit.requiresFFL || false,
             mustRouteThroughGunFirm: false,

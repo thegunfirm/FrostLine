@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Product } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
-import { useProgressiveImage } from "@/hooks/use-progressive-image";
 
 interface ProductCardProps {
   product: Product;
@@ -16,14 +16,17 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCardProps) {
   const { user } = useAuth();
-  const {
-    imageUrl,
-    altText,
-    isLoading: imageLoading,
-    hasError: imageError,
-    onLoad,
-    onError
-  } = useProgressiveImage(product.id, 'card');
+  // For Algolia search results, use the SKU directly for RSR images
+  const imageUrl = product.sku ? `/api/rsr-image/${product.sku}` : '/api/placeholder-image.jpg';
+  const altText = product.name || 'Product Image';
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
+
+  const onLoad = () => setImageLoading(false);
+  const onError = () => {
+    setImageLoading(false);
+    setImageError(true);
+  };
 
   // Fetch hide Gold pricing setting
   const { data: hideGoldSetting } = useQuery({
