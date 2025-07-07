@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
+import { cn } from "@/lib/utils";
 
 interface CategoryRibbon {
   id: number;
@@ -23,11 +23,15 @@ export function CategoryRibbon() {
   });
 
   const handleCategoryClick = (categoryName: string) => {
-    // Navigate to products page with category filter
-    const params = new URLSearchParams();
-    params.set('category', categoryName);
-    setLocation(`/products?${params.toString()}`);
+    console.log("CategoryRibbon click:", categoryName);
+    const newUrl = `/products?category=${encodeURIComponent(categoryName)}`;
+    console.log("Navigating to:", newUrl);
+    window.history.pushState({}, '', newUrl);
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
+
+  // Get current category from URL to determine active state
+  const currentCategory = new URLSearchParams(window.location.search).get('category');
 
   if (isLoading || !ribbons || ribbons.length === 0) {
     // Fallback to default categories while loading
@@ -36,24 +40,33 @@ export function CategoryRibbon() {
       { text: "Rifles", category: "Rifles" },
       { text: "Shotguns", category: "Shotguns" },
       { text: "Ammunition", category: "Ammunition" },
-      { text: "Optics", category: "Optics & Scopes" },
+      { text: "Optics", category: "Optics" },
+      { text: "Parts", category: "Parts" },
+      { text: "Safety", category: "Safety" },
       { text: "Accessories", category: "Accessories" }
     ];
 
     return (
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 gap-4 overflow-x-auto">
-            <div className="flex items-center space-x-8 min-w-max">
-              {defaultCategories.map((item) => (
-                <Button
+      <div className="hidden md:block border-t border-gun-gray bg-gun-gray">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="flex justify-between items-center">
+            {/* Spacer for logo */}
+            <div className="w-48"></div>
+            
+            {/* Category buttons - evenly distributed */}
+            <div className="flex flex-1 justify-evenly">
+              {defaultCategories.map((item, index) => (
+                <button
                   key={item.category}
-                  variant="ghost"
-                  className="text-gun-gray-dark hover:text-gun-black hover:bg-gun-gold/10 px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
                   onClick={() => handleCategoryClick(item.category)}
+                  className={cn(
+                    "py-2 px-4 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase min-w-0",
+                    index < defaultCategories.length - 1 && "border-r border-gun-black",
+                    currentCategory === item.category && "bg-gun-black text-gun-gold"
+                  )}
                 >
                   {item.text}
-                </Button>
+                </button>
               ))}
             </div>
           </div>
@@ -63,29 +76,28 @@ export function CategoryRibbon() {
   }
 
   return (
-    <div className="bg-white border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4 overflow-x-auto">
-          <div className="flex items-center space-x-8 min-w-max">
-            {ribbons.map((ribbon) => (
-              <Button
+    <div className="hidden md:block border-t border-gun-gray bg-gun-gray">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <div className="flex justify-between items-center">
+          {/* Spacer for logo */}
+          <div className="w-48"></div>
+          
+          {/* Category buttons - evenly distributed */}
+          <div className="flex flex-1 justify-evenly">
+            {ribbons.map((ribbon, index) => (
+              <button
                 key={ribbon.id}
-                variant="ghost"
-                className="text-gun-gray-dark hover:text-gun-black hover:bg-gun-gold/10 px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
                 onClick={() => handleCategoryClick(ribbon.categoryName)}
+                className={cn(
+                  "py-2 px-4 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase min-w-0",
+                  index < ribbons.length - 1 && "border-r border-gun-black",
+                  currentCategory === ribbon.categoryName && "bg-gun-black text-gun-gold"
+                )}
               >
                 {ribbon.ribbonText}
-              </Button>
+              </button>
             ))}
           </div>
-          
-          <Button
-            variant="ghost"
-            className="text-gun-gray-dark hover:text-gun-black hover:bg-gun-gold/10 px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
-            onClick={() => setLocation('/products')}
-          >
-            View All
-          </Button>
         </div>
       </div>
     </div>
