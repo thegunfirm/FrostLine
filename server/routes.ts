@@ -2040,9 +2040,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (filters.category === "Handguns") {
           console.log("Handgun subcategory filter:", filters.handgunSubcategory);
           if (filters.handgunSubcategory === "complete") {
-            // Show only complete handguns - those without subcategoryName (complete guns don't have subcategories)
-            algoliaFilters.push('NOT _exists_:subcategoryName');
-            console.log("Applied complete handguns filter: NOT _exists_:subcategoryName");
+            // Show only complete handguns using FFL requirement
+            algoliaFilters.push('requiresFFL:true');
+            console.log("Applied complete handguns filter: requiresFFL:true");
           } else if (filters.handgunSubcategory === "accessories") {
             // Show only handgun accessories
             algoliaFilters.push('tags:"Accessories"');

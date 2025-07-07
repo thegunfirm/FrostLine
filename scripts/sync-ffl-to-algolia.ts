@@ -36,8 +36,8 @@ async function syncFflToAlgolia() {
       console.log(`🔄 Syncing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(handgunProducts.length / batchSize)}...`);
       
       const algoliaUpdates = batch.map(product => ({
-        objectID: product.sku,
-        requiresFFL: product.requiresFFL, // Add the FFL field
+          objectID: product.sku,
+          requiresFFL: product.requiresFFL, // Add the FFL field
         // Include other core fields for completeness
         title: product.name,
         name: product.name,
