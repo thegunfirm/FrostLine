@@ -2051,13 +2051,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Show everything in Handguns category (no additional filter)
             console.log("Applied all handguns filter: showing everything");
           } else {
-            // DEFAULT: Prioritize complete handguns by boosting them in ranking
-            // Use subcategoryName to filter out common accessories like barrels and sights
-            const componentSubcategories = ["Barrels", "Sights", "Triggers", "Grips", "Magazines"];
-            const excludeComponents = componentSubcategories.map(sub => `NOT subcategoryName:"${sub}"`).join(' AND ');
+            // DEFAULT: Show only complete handguns using a simpler but effective approach
+            // Use the "complete" filter to show only actual firearms
+            algoliaFilters.push('NOT _exists_:subcategoryName');
             
-            // Don't apply the exclusion filter, but let the ranking boost (isCompleteFirearm) handle prioritization
-            console.log("Applied default handguns filter: categoryName only with ranking boost for complete handguns");
+            // Add major exclusions for common accessory categories
+            const majorExclusions = [
+              'NOT tags:"Accessories"',
+              'NOT title:"SIGHT"',
+              'NOT title:"MOUNT"', 
+              'NOT title:"BBL"',
+              'NOT title:"BARREL"',
+              'NOT title:"MAGWELL"',
+              'NOT title:"TRIGGER"',
+              'NOT title:"GRIP"',
+              'NOT title:"SLIDE"',
+              'NOT title:"COMP"',
+              'NOT title:"MAG "',
+              'NOT title:"HOLSTER"',
+              'NOT title:"XS "',
+              'NOT title:"TYRANT"',
+              'NOT title:"TRUE PREC"',
+              'NOT title:"TALON"',
+              'NOT title:"FOR GLOCK"',
+              'NOT title:"FITS GLOCK"',
+              'NOT title:"FOR SIG"',
+              'NOT title:"FITS SIG"'
+            ];
+            
+            majorExclusions.forEach(exclusion => algoliaFilters.push(exclusion));
+            console.log("Applied focused complete handguns filter: excluding major accessory categories");
           }
         }
       }
