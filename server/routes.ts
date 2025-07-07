@@ -526,6 +526,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function transformRSRToProduct(rsrProduct: RSRProduct): InsertProduct {
     // Calculate tier pricing based on RSR wholesale price
     const wholesale = rsrProduct.rsrPrice;
+    const msrp = rsrProduct.retailPrice;
+    const map = rsrProduct.retailMAP;
+    
     const bronzePrice = (wholesale * 1.2).toFixed(2); // 20% markup for Bronze
     const goldPrice = (wholesale * 1.15).toFixed(2);   // 15% markup for Gold  
     const platinumPrice = (wholesale * 1.1).toFixed(2); // 10% markup for Platinum
@@ -542,19 +545,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       name: rsrProduct.description,
       description: rsrProduct.fullDescription || rsrProduct.description,
       category: rsrProduct.categoryDesc,
+      subcategoryName: rsrProduct.subcategoryName || null, // CRITICAL for handgun classification
+      departmentDesc: rsrProduct.departmentDesc || null,
+      subDepartmentDesc: rsrProduct.subDepartmentDesc || null,
       manufacturer: rsrProduct.mfgName,
+      manufacturerPartNumber: rsrProduct.manufacturerPartNumber || null,
       sku: rsrProduct.stockNo,
       priceWholesale: wholesale.toFixed(2),
+      priceMAP: map?.toFixed(2) || null,
+      priceMSRP: msrp?.toFixed(2) || null,
       priceBronze: bronzePrice,
       priceGold: goldPrice,
       pricePlatinum: platinumPrice,
       inStock: rsrProduct.quantity > 0,
       stockQuantity: rsrProduct.quantity,
+      allocated: rsrProduct.allocatedCloseoutDeleted || null,
+      newItem: rsrProduct.newItem || false,
+      promo: rsrProduct.promo || null,
+      accessories: rsrProduct.accessories || null,
       distributor: 'RSR',
       requiresFFL: requiresFFL,
       mustRouteThroughGunFirm: requiresFFL, // All FFL items route through Gun Firm
-      tags: [rsrProduct.categoryDesc, rsrProduct.mfgName, rsrProduct.departmentDesc].filter(Boolean),
+      tags: [rsrProduct.categoryDesc, rsrProduct.mfgName, rsrProduct.departmentDesc, rsrProduct.subcategoryName].filter(Boolean),
       images: [imageUrl],
+      upcCode: rsrProduct.upcCode || null,
+      weight: rsrProduct.productWeight ? parseFloat(rsrProduct.productWeight) : 0,
+      dimensions: {
+        length: rsrProduct.shippingLength || null,
+        width: rsrProduct.shippingWidth || null,
+        height: rsrProduct.shippingHeight || null
+      },
+      groundShipOnly: rsrProduct.groundShipOnly === 'Y',
+      adultSignatureRequired: rsrProduct.adultSignatureRequired === 'Y',
+      prop65: rsrProduct.prop65 === 'Y',
       returnPolicyDays: 30,
       isActive: true
     };

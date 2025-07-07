@@ -25,7 +25,11 @@ export const products = pgTable("products", {
   name: text("name").notNull(),
   description: text("description"),
   category: text("category").notNull(),
+  subcategoryName: text("subcategory_name"), // RSR subcategory for proper classification
+  departmentDesc: text("department_desc"), // RSR department description
+  subDepartmentDesc: text("sub_department_desc"), // RSR sub-department description
   manufacturer: text("manufacturer"),
+  manufacturerPartNumber: text("manufacturer_part_number"), // Manufacturer's part number
   sku: text("sku").unique(),
   priceWholesale: decimal("price_wholesale", { precision: 10, scale: 2 }).notNull(), // RSR Dealer Price (Platinum base)
   priceMAP: decimal("price_map", { precision: 10, scale: 2 }), // RSR MAP price (Gold base)
@@ -35,6 +39,10 @@ export const products = pgTable("products", {
   pricePlatinum: decimal("price_platinum", { precision: 10, scale: 2 }), // Calculated Platinum price
   inStock: boolean("in_stock").default(true),
   stockQuantity: integer("stock_quantity").default(0),
+  allocated: text("allocated"), // RSR allocation status (Y/N)
+  newItem: boolean("new_item").default(false), // Whether it's a new product
+  promo: text("promo"), // Promotional information
+  accessories: text("accessories"), // What accessories come with the product
   distributor: text("distributor").default("RSR"),
   requiresFFL: boolean("requires_ffl").default(false),
   mustRouteThroughGunFirm: boolean("must_route_through_gun_firm").default(false),
@@ -45,6 +53,9 @@ export const products = pgTable("products", {
   dimensions: json("dimensions"), // {length, width, height}
   restrictions: json("restrictions"), // RSR restrictions object
   stateRestrictions: json("state_restrictions"), // Array of restricted states
+  groundShipOnly: boolean("ground_ship_only").default(false),
+  adultSignatureRequired: boolean("adult_signature_required").default(false),
+  prop65: boolean("prop65").default(false), // California Prop 65 warning required
   returnPolicyDays: integer("return_policy_days").default(30),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),

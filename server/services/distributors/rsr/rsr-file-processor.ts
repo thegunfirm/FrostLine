@@ -10,27 +10,33 @@ import type { InsertProduct } from '@shared/schema';
  */
 
 export interface RSRInventoryRecord {
-  stockNumber: string;
-  upcCode: string;
-  description: string;
-  departmentNumber: string;
-  manufacturerId: string;
-  retailPrice: string;      // MSRP
-  rsrPricing: string;       // Dealer cost
-  productWeight: string;
-  inventoryQuantity: string;
-  model: string;
-  fullManufacturerName: string;
-  manufacturerPartNumber: string;
-  allocatedCloseoutDeleted: string;
-  expandedDescription: string;
-  imageName: string;
+  stockNumber: string;            // Field 1
+  upcCode: string;               // Field 2
+  description: string;           // Field 3
+  departmentNumber: string;      // Field 4
+  manufacturerId: string;        // Field 5
+  retailPrice: string;          // Field 6 - MSRP
+  rsrPricing: string;           // Field 7 - Dealer cost
+  productWeight: string;        // Field 8
+  inventoryQuantity: string;    // Field 9
+  model: string;               // Field 10
+  fullManufacturerName: string; // Field 11
+  manufacturerPartNumber: string; // Field 12
+  allocatedCloseoutDeleted: string; // Field 13
+  expandedDescription: string;  // Field 14
+  imageName: string;           // Field 15
+  departmentDesc: string;      // Field 16 - Department description
+  subcategoryName: string;     // Field 17 - CRITICAL for handgun classification
+  subDepartmentDesc: string;   // Field 18 - Sub-department description
+  accessories: string;         // Field 19 - Accessories included
+  promo: string;              // Field 20 - Promotional information
+  // ... additional fields 21-77 exist but these are the critical ones
   stateRestrictions: Record<string, string>;
   groundShipOnly: string;
   adultSignatureRequired: string;
   blockedFromDropShip: string;
   dateEntered: string;
-  retailMAP: string;
+  retailMAP: string;          // Field 62 - MAP pricing
   imageDisclaimer: string;
   shippingLength: string;
   shippingWidth: string;
@@ -158,6 +164,11 @@ class RSRFileProcessor {
       name: record.description,
       description: record.expandedDescription || record.description,
       category: this.mapDepartmentToCategory(record.departmentNumber),
+      // CRITICAL: Add RSR classification fields for proper handgun filtering
+      subcategoryName: record.subcategoryName || null,
+      departmentDesc: record.departmentDesc || null,
+      subDepartmentDesc: record.subDepartmentDesc || null,
+      manufacturerPartNumber: record.manufacturerPartNumber || null,
       manufacturer: record.fullManufacturerName,
       sku: record.stockNumber,
       upcCode: record.upcCode,
@@ -169,6 +180,13 @@ class RSRFileProcessor {
       pricePlatinum: record.rsrPricing || "0", // Platinum = Dealer price
       inStock: parseInt(record.inventoryQuantity) > 0,
       stockQuantity: parseInt(record.inventoryQuantity) || 0,
+      allocated: record.allocatedCloseoutDeleted || null,
+      newItem: record.promo?.includes('NEW') || false,
+      promo: record.promo || null,
+      accessories: record.accessories || null,
+      groundShipOnly: record.groundShipOnly === 'Y',
+      adultSignatureRequired: record.adultSignatureRequired === 'Y',
+      prop65: record.prop65 === 'Y',
       distributor: "RSR",
       requiresFFL: this.requiresFFL(record.departmentNumber),
       images: record.imageName ? [record.imageName] : [],

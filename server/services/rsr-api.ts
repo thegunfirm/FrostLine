@@ -7,12 +7,18 @@ const parseXML = promisify(parseString);
 
 export interface RSRProduct {
   stockNo: string;
+  upcCode: string;
   upc: string;
   description: string;
   categoryDesc: string;
+  subcategoryName?: string; // CRITICAL for handgun classification
   manufacturer: string;
+  mfgName: string;
+  manufacturerPartNumber?: string;
   retailPrice: number;
+  retailMAP?: number;
   rsrPrice: number;
+  productWeight?: string;
   weight: number;
   quantity: number;
   imgName: string;
@@ -23,9 +29,15 @@ export interface RSRProduct {
   accessories: string;
   promo: string;
   allocated: string;
-  mfgName: string;
+  allocatedCloseoutDeleted?: string;
   mfgPartNumber: string;
   newItem: boolean;
+  groundShipOnly?: string;
+  adultSignatureRequired?: string;
+  prop65?: string;
+  shippingLength?: string;
+  shippingWidth?: string;
+  shippingHeight?: string;
   expandedData: any;
 }
 
