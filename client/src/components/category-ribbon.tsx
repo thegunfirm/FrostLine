@@ -42,7 +42,7 @@ export function CategoryRibbon() {
       { text: "Ammunition", category: "Ammunition" },
       { text: "Optics", category: "Optics" },
       { text: "Parts", category: "Parts" },
-      { text: "Safety", category: "Safety" },
+      { text: "NFA", category: "NFA" },
       { text: "Accessories", category: "Accessories" }
     ];
 
@@ -60,7 +60,7 @@ export function CategoryRibbon() {
                   key={item.category}
                   onClick={() => handleCategoryClick(item.category)}
                   className={cn(
-                    "py-2 px-4 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase min-w-0",
+                    "py-2 px-4 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase min-w-0 whitespace-nowrap",
                     index < defaultCategories.length - 1 && "border-r border-gun-black",
                     currentCategory === item.category && "bg-gun-black text-gun-gold"
                   )}
