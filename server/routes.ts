@@ -2474,5 +2474,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
 
+  // Zoho Integration Routes
+  app.post('/api/zoho/sync-all', async (req, res) => {
+    try {
+      const { zohoIntegration } = await import('./services/zoho-integration');
+      const result = await zohoIntegration.syncAllProductsToZoho(req.body.batchSize || 50);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/zoho/sync-product/:id', async (req, res) => {
+    try {
+      const { zohoIntegration } = await import('./services/zoho-integration');
+      const productId = parseInt(req.params.id);
+      
+      const product = await db.select().from(products).where(eq(products.id, productId)).limit(1);
+      if (product.length === 0) {
+        return res.status(404).json({ error: 'Product not found' });
+      }
+
+      const success = await zohoIntegration.syncProductToZoho(product[0]);
+      res.json({ success });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/zoho/status', async (req, res) => {
+    try {
+      const { zohoIntegration } = await import('./services/zoho-integration');
+      const status = await zohoIntegration.getIntegrationStatus();
+      res.json(status);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/zoho/webhook', async (req, res) => {
+    try {
+      const { zohoIntegration } = await import('./services/zoho-integration');
+      const success = await zohoIntegration.handleZohoWebhook(req.body);
+      res.json({ success });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/zoho/setup-webhook', async (req, res) => {
+    try {
+      const { zohoIntegration } = await import('./services/zoho-integration');
+      const success = await zohoIntegration.createZohoWebhook();
+      res.json({ success });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }
