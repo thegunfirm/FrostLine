@@ -2028,10 +2028,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Show everything in Handguns category (no additional filter)
             console.log("Applied all handguns filter: showing everything");
           } else {
-            // DEFAULT: When no subcategory specified, show only actual handguns (pistols/revolvers)
+            // DEFAULT: When no subcategory specified, show only actual handguns
             // This is what users expect when clicking "Handguns" - actual firearms for sales conversion
-            algoliaFilters.push('(tags:"pistol" OR tags:"revolver")');
-            console.log("Applied default handguns filter: (tags:\"pistol\" OR tags:\"revolver\")");
+            // Filter for products with "Handguns" tag but exclude those with "Accessories" tag
+            algoliaFilters.push('tags:"Handguns"');
+            algoliaFilters.push('NOT tags:"Accessories"');
+            console.log("Applied default handguns filter: tags:\"Handguns\" AND NOT tags:\"Accessories\"");
           }
         }
       }
