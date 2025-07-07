@@ -2051,11 +2051,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Show everything in Handguns category (no additional filter)
             console.log("Applied all handguns filter: showing everything");
           } else {
-            // DEFAULT: Show only complete handguns using RSR data structure
-            // Complete handguns have no subcategory (same as "complete" filter)
-            algoliaFilters.push('NOT _exists_:subcategoryName');
+            // DEFAULT: Show only complete handguns using simple FFL requirement
+            // Complete handguns require FFL, accessories don't
+            algoliaFilters.push('requiresFFL:true');
             
-            console.log("Applied default complete handguns filter: no subcategory (same as complete filter)");
+            console.log("Applied simple FFL filter: only products requiring FFL transfer");
           }
         }
       }
