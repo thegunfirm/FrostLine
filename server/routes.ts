@@ -2017,10 +2017,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (filters.category === "Handguns") {
           console.log("Handgun subcategory filter:", filters.handgunSubcategory);
           if (filters.handgunSubcategory === "complete") {
-            // Show only complete handguns (exclude accessories, barrels, sights, etc.)
-            algoliaFilters.push('NOT tags:"Accessories"');
-            algoliaFilters.push('isCompleteFirearm:1');
-            console.log("Applied complete handguns filter: NOT tags:\"Accessories\" AND isCompleteFirearm:1");
+            // Show only complete handguns - those without subcategoryName (complete guns don't have subcategories)
+            algoliaFilters.push('NOT _exists_:subcategoryName');
+            console.log("Applied complete handguns filter: NOT _exists_:subcategoryName");
           } else if (filters.handgunSubcategory === "accessories") {
             // Show only handgun accessories
             algoliaFilters.push('tags:"Accessories"');
