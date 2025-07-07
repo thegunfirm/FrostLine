@@ -1,0 +1,36 @@
+Complete RSR Product Schema (77 Fields)
+Based on the RSR file processor, here's the complete RSR inventory data structure with all 77 fields:
+Core Product Information (Fields 0-14)
+•	Field 0: stockNumber - RSR Stock Number (Primary identifier)
+•	Field 1: upcCode - Universal Product Code
+•	Field 2: description - Short product description
+•	Field 3: departmentNumber - RSR Department classification (1-20)
+•	Field 4: manufacturerId - Manufacturer code (GLOCK, SIG, etc.)
+•	Field 5: retailPrice - MSRP/Retail Price (Bronze base)
+•	Field 6: rsrPricing - RSR Wholesale/Dealer Price (Platinum base)
+•	Field 7: productWeight - Product weight
+•	Field 8: inventoryQuantity - Current stock quantity
+•	Field 9: model - Product model number
+•	Field 10: fullManufacturerName - Complete manufacturer name
+•	Field 11: manufacturerPartNumber - Manufacturer's part number
+•	Field 12: allocatedCloseoutDeleted - Product status
+•	Field 13: expandedDescription - Full detailed description
+•	Field 14: imageName - RSR image filename
+State Restrictions (Fields 15-65)
+Fields 15-65: Individual state restriction flags for all 50 states + DC
+•	Each field corresponds to a specific state (AK, AL, AR, AZ, CA, CO, CT, DC, DE, FL, GA, HI, IA, ID, IL, IN, KS, KY, LA, MA, MD, ME, MI, MN, MO, MS, MT, NC, ND, NE, NH, NJ, NM, NV, NY, OH, OK, OR, PA, RI, SC, SD, TN, TX, UT, VA, VT, WA, WI, WV, WY)
+•	Values: 'Y' = restricted in that state, blank = allowed
+Shipping & Additional Info (Fields 66-76)
+•	Field 66: groundShipOnly - Must ship ground (Y/N)
+•	Field 67: adultSignatureRequired - Adult signature required (Y/N)
+•	Field 68: blockedFromDropShip - Cannot drop ship (Y/N)
+•	Field 69: dateEntered - Date product entered RSR system
+•	Field 70: retailMAP - Manufacturer's Advertised Price (Gold base)
+•	Field 71: imageDisclaimer - Image disclaimer text
+•	Field 72: shippingLength - Shipping box length
+•	Field 73: shippingWidth - Shipping box width
+•	Field 74: shippingHeight - Shipping box height
+•	Field 75: prop65 - California Prop 65 warning required (Y/N)
+•	Field 76: vendorApprovalRequired - Vendor approval needed (Y/N)
+How We Map RSR to Our Product Schema
+

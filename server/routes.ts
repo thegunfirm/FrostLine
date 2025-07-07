@@ -2013,9 +2013,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (filters.category) {
         algoliaFilters.push(`categoryName:"${filters.category}"`);
         
-        // Special handling for Handguns category: exclude accessories
+        // Special handling for Handguns category with subcategory filtering
         if (filters.category === "Handguns") {
-          algoliaFilters.push('NOT tags:"Accessories"');
+          console.log("Handgun subcategory filter:", filters.handgunSubcategory);
+          if (filters.handgunSubcategory === "complete") {
+            // Show only complete handguns (exclude accessories)
+            algoliaFilters.push('NOT tags:"Accessories"');
+            console.log("Applied complete handguns filter: NOT tags:\"Accessories\"");
+          } else if (filters.handgunSubcategory === "accessories") {
+            // Show only handgun accessories
+            algoliaFilters.push('tags:"Accessories"');
+            console.log("Applied accessories filter: tags:\"Accessories\"");
+          }
+          // When handgunSubcategory is "all" or undefined, show everything (no additional filter)
         }
       }
       if (filters.manufacturer) {

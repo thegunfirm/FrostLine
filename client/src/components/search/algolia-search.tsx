@@ -79,10 +79,13 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   // Additional filter states
   const [stateRestriction, setStateRestriction] = useState("all");
   const [priceTier, setPriceTier] = useState("all");
+  
+  // Handgun subcategory filter
+  const [handgunSubcategory, setHandgunSubcategory] = useState("all");
 
   // Get search results from Algolia
   const { data: searchResults, isLoading, error } = useQuery({
-    queryKey: ['algolia-search', searchQuery, category, manufacturer, sortBy, currentPage, resultsPerPage, priceMin, priceMax, inStockOnly, newItemsOnly, caliber, actionType, barrelLength, capacity, stateRestriction, priceTier],
+    queryKey: ['algolia-search', searchQuery, category, manufacturer, sortBy, currentPage, resultsPerPage, priceMin, priceMax, inStockOnly, newItemsOnly, caliber, actionType, barrelLength, capacity, stateRestriction, priceTier, handgunSubcategory],
     queryFn: async () => {
       const response = await apiRequest('POST', '/api/search/algolia', {
         query: searchQuery,
@@ -98,7 +101,8 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           barrelLength: barrelLength && barrelLength !== "all" ? barrelLength : undefined,
           capacity: capacity && capacity !== "all" ? capacity : undefined,
           stateRestriction: stateRestriction && stateRestriction !== "all" ? stateRestriction : undefined,
-          priceTier: priceTier && priceTier !== "all" ? priceTier : undefined
+          priceTier: priceTier && priceTier !== "all" ? priceTier : undefined,
+          handgunSubcategory: handgunSubcategory && handgunSubcategory !== "all" ? handgunSubcategory : undefined
         },
         sort: sortBy,
         page: currentPage,
@@ -444,6 +448,23 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Handgun Subcategory Filter - Only show when Handguns is selected */}
+                  {category === "Handguns" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="handgun-subcategory">Handgun Type</Label>
+                      <Select value={handgunSubcategory} onValueChange={setHandgunSubcategory}>
+                        <SelectTrigger id="handgun-subcategory">
+                          <SelectValue placeholder="All Handgun Products" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Handgun Products</SelectItem>
+                          <SelectItem value="complete">Complete Handguns</SelectItem>
+                          <SelectItem value="accessories">Handgun Accessories</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="manufacturer">Manufacturer</Label>
