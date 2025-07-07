@@ -2017,9 +2017,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (filters.category === "Handguns") {
           console.log("Handgun subcategory filter:", filters.handgunSubcategory);
           if (filters.handgunSubcategory === "complete") {
-            // Show only complete handguns (exclude accessories)
+            // Show only complete handguns (exclude accessories, barrels, sights, etc.)
             algoliaFilters.push('NOT tags:"Accessories"');
-            console.log("Applied complete handguns filter: NOT tags:\"Accessories\"");
+            algoliaFilters.push('isCompleteFirearm:1');
+            console.log("Applied complete handguns filter: NOT tags:\"Accessories\" AND isCompleteFirearm:1");
           } else if (filters.handgunSubcategory === "accessories") {
             // Show only handgun accessories
             algoliaFilters.push('tags:"Accessories"');
@@ -2028,10 +2029,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Show everything in Handguns category (no additional filter)
             console.log("Applied all handguns filter: showing everything");
           } else {
-            // DEFAULT: When no subcategory specified, show all products in Handguns category
-            // This includes complete handguns, parts, accessories - everything customers expect to find
-            // The category filter is sufficient since products are properly categorized
-            console.log("Applied default handguns filter: categoryName only (showing all handgun products)");
+            // DEFAULT: Prioritize complete handguns by boosting them in ranking
+            // Use subcategoryName to filter out common accessories like barrels and sights
+            const componentSubcategories = ["Barrels", "Sights", "Triggers", "Grips", "Magazines"];
+            const excludeComponents = componentSubcategories.map(sub => `NOT subcategoryName:"${sub}"`).join(' AND ');
+            
+            // Don't apply the exclusion filter, but let the ranking boost (isCompleteFirearm) handle prioritization
+            console.log("Applied default handguns filter: categoryName only with ranking boost for complete handguns");
           }
         }
       }

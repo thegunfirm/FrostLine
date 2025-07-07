@@ -80,8 +80,18 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   const [stateRestriction, setStateRestriction] = useState("all");
   const [priceTier, setPriceTier] = useState("all");
   
-  // Handgun subcategory filter
-  const [handgunSubcategory, setHandgunSubcategory] = useState("all");
+  // Handgun subcategory filter - default to "complete" for better UX
+  const [handgunSubcategory, setHandgunSubcategory] = useState(() => {
+    // If initial category is Handguns, default to showing complete handguns
+    return initialCategory === "Handguns" ? "complete" : "all";
+  });
+
+  // Auto-switch to complete handguns when category changes to Handguns
+  useEffect(() => {
+    if (category === "Handguns" && handgunSubcategory === "all") {
+      setHandgunSubcategory("complete");
+    }
+  }, [category, handgunSubcategory]);
 
   // Get search results from Algolia
   const { data: searchResults, isLoading, error } = useQuery({

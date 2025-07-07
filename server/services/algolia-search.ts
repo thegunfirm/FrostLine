@@ -1,4 +1,4 @@
-const { algoliasearch } = require('algoliasearch');
+import { algoliasearch } from 'algoliasearch';
 import { RSRProduct } from './rsr-api';
 
 export interface AlgoliaProduct {
@@ -53,6 +53,22 @@ class AlgoliaSearchService {
       this.adminClient = algoliasearch(appId, adminApiKey);
       this.adminIndex = 'products';
     }
+  }
+
+  // Check if product is a complete handgun vs component
+  private isCompleteHandgun(name: string): boolean {
+    const componentKeywords = [
+      'slide', 'barrel', 'frame', 'grip', 'trigger', 'sight', 'magazine',
+      'mag', 'spring', 'pin', 'screw', 'bolt', 'carrier', 'guide',
+      'assembly', 'kit', 'part', 'component', 'replacement', 'upgrade',
+      'accessory', 'mount', 'rail', 'laser', 'light', 'holster',
+      'case', 'bag', 'cleaning', 'tool', 'lubricant', 'oil'
+    ];
+    
+    const nameWords = name.toLowerCase().split(/\s+/);
+    return !componentKeywords.some(keyword => 
+      nameWords.some(word => word.includes(keyword))
+    );
   }
 
   // Convert RSR product to Algolia format
@@ -160,6 +176,9 @@ class AlgoliaSearchService {
       capacity
     ].filter(Boolean).join(' ');
 
+    // Determine if this is a complete handgun for ranking boost
+    const isCompleteHandgun = this.isCompleteHandgun(rsrProduct.description);
+
     return {
       objectID: rsrProduct.stockNo,
       stockNo: rsrProduct.stockNo,
@@ -182,7 +201,8 @@ class AlgoliaSearchService {
       allocated: rsrProduct.allocated,
       accessories: rsrProduct.accessories,
       searchableText,
-      tags
+      tags,
+      isCompleteFirearm: isCompleteHandgun ? 1 : 0  // Ranking boost for complete handguns
     };
   }
 
@@ -235,6 +255,7 @@ class AlgoliaSearchService {
         'filterOnly(tags)'
       ],
       customRanking: [
+        'desc(isCompleteFirearm)',
         'desc(inStock)',
         'desc(newItem)',
         'asc(retailPrice)'
