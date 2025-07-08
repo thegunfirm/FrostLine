@@ -2032,11 +2032,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Build Algolia filters array
       const algoliaFilters = [];
       
-      // Basic filters using authentic RSR department numbers
+      // Basic filters using authentic RSR department numbers with proper exclusions
       if (filters.category) {
-        // Use authentic RSR department structure - simple and reliable
+        // Use authentic RSR department structure with proper filtering
         const categoryToDepartment = {
-          "Handguns": "01",        // Department 01 (all handguns - pistols and revolvers)
+          "Handguns": "01",        // Department 01 (pistols and revolvers only)
           "Long Guns": "05",       // Department 05 (rifles and shotguns)
           "Rifles": "05",          // Also maps to department 05
           "Shotguns": "05",        // Also maps to department 05
@@ -2044,8 +2044,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
         
         const department = categoryToDepartment[filters.category];
-        if (department) {
-          // Use authentic RSR department number filtering
+        if (department === "01") {
+          // For handguns, filter department 01 but exclude magazines and parts
+          algoliaFilters.push(`departmentNumber:"01"`);
+          algoliaFilters.push(`NOT (name:"MAGAZINE" OR name:"MAG" OR name:"CLIP" OR name:"SLIDE" OR name:"BARREL" OR name:"FRAME" OR name:"UPPER" OR name:"LOWER")`);
+          console.log(`Applied RSR department 01 filter with exclusions for actual handguns`);
+        } else if (department) {
+          // Use authentic RSR department number filtering for other departments
           algoliaFilters.push(`departmentNumber:"${department}"`);
           console.log(`Applied RSR department filter for ${filters.category}: ${department}`);
         } else {
