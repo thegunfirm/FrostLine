@@ -2167,6 +2167,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Handgun type filter (revolver vs pistol)
+      if (filters.handgunType) {
+        if (filters.handgunType === 'revolver') {
+          // Match revolver patterns in product names
+          algoliaFilters.push('(name:"REVOLVER" OR name:"REV " OR name:"MAGNUM" OR name:"PYTHON" OR name:"COBRA" OR name:"VAQUERO" OR name:"SINGLE SIX" OR name:"BLACKHAWK" OR name:"REDHAWK" OR name:"SUPER REDHAWK" OR name:"GP100" OR name:"SP101" OR name:"LCR" OR name:"LCRKC" OR name:"LCRX" OR name:"RHINO" OR name:"CHIAPPA" OR name:"JUDGE" OR name:"GOVERNOR" OR name:"RAGING" OR name:"TRACKER" OR name:"ULTRA" OR name:"POLICE" OR name:"DETECTIVE" OR name:"BODYGUARD 38" OR name:"AIRLITE" OR name:"AIRWEIGHT" OR name:"PERFORMANCE CENTER" OR name:"629" OR name:"686" OR name:"66" OR name:"19" OR name:"586" OR name:"27" OR name:"28" OR name:"29" OR name:"36" OR name:"37" OR name:"38" OR name:"42" OR name:"43" OR name:"48" OR name:"49" OR name:"51" OR name:"60" OR name:"63" OR name:"64" OR name:"65" OR name:"67" OR name:"317" OR name:"331" OR name:"332" OR name:"337" OR name:"340" OR name:"342" OR name:"351" OR name:"360" OR name:"386" OR name:"396" OR name:"442" OR name:"460" OR name:"500" OR name:"617" OR name:"619" OR name:"620" OR name:"627" OR name:"627" OR name:"637" OR name:"638" OR name:"640" OR name:"642" OR name:"648" OR name:"649" OR name:"650" OR name:"651" OR name:"657" OR name:"681" OR name:"686" OR name:"693" OR name:"696")');
+        } else if (filters.handgunType === 'pistol') {
+          // Exclude revolver patterns to show pistols
+          algoliaFilters.push('NOT (name:"REVOLVER" OR name:"REV " OR name:"MAGNUM" OR name:"PYTHON" OR name:"COBRA" OR name:"VAQUERO" OR name:"SINGLE SIX" OR name:"BLACKHAWK" OR name:"REDHAWK" OR name:"SUPER REDHAWK" OR name:"GP100" OR name:"SP101" OR name:"LCR" OR name:"LCRKC" OR name:"LCRX" OR name:"RHINO" OR name:"CHIAPPA" OR name:"JUDGE" OR name:"GOVERNOR" OR name:"RAGING" OR name:"TRACKER" OR name:"ULTRA" OR name:"POLICE" OR name:"DETECTIVE" OR name:"BODYGUARD 38" OR name:"AIRLITE" OR name:"AIRWEIGHT")');
+        }
+      }
+      
       // Build sort parameter
       let sortParam = undefined;
       switch (sort) {

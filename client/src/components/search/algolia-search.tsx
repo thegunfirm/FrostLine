@@ -76,6 +76,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   const [handgunPriceRange, setHandgunPriceRange] = useState("all");
   const [handgunCapacity, setHandgunCapacity] = useState("all");
   const [handgunStockStatus, setHandgunStockStatus] = useState("all");
+  const [handgunType, setHandgunType] = useState("all");
   
   // Legacy firearm-specific filter states (kept for non-handgun categories)
   const [caliber, setCaliber] = useState("all");
@@ -92,7 +93,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
   // Get search results from Algolia
   const { data: searchResults, isLoading, error } = useQuery({
-    queryKey: ['algolia-search', searchQuery, category, manufacturer, sortBy, currentPage, resultsPerPage, priceMin, priceMax, inStockOnly, newItemsOnly, caliber, actionType, barrelLength, capacity, stateRestriction, priceTier, handgunSubcategory, handgunManufacturer, handgunCaliber, handgunPriceRange, handgunCapacity, handgunStockStatus],
+    queryKey: ['algolia-search', searchQuery, category, manufacturer, sortBy, currentPage, resultsPerPage, priceMin, priceMax, inStockOnly, newItemsOnly, caliber, actionType, barrelLength, capacity, stateRestriction, priceTier, handgunSubcategory, handgunManufacturer, handgunCaliber, handgunPriceRange, handgunCapacity, handgunStockStatus, handgunType],
     queryFn: async () => {
       const response = await apiRequest('POST', '/api/search/algolia', {
         query: searchQuery,
@@ -116,7 +117,8 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           handgunCaliber: handgunCaliber && handgunCaliber !== "all" ? handgunCaliber : undefined,
           handgunPriceRange: handgunPriceRange && handgunPriceRange !== "all" ? handgunPriceRange : undefined,
           handgunCapacity: handgunCapacity && handgunCapacity !== "all" ? handgunCapacity : undefined,
-          handgunStockStatus: handgunStockStatus && handgunStockStatus !== "all" ? handgunStockStatus : undefined
+          handgunStockStatus: handgunStockStatus && handgunStockStatus !== "all" ? handgunStockStatus : undefined,
+          handgunType: handgunType && handgunType !== "all" ? handgunType : undefined
         },
         sort: sortBy,
         page: currentPage,
@@ -216,6 +218,11 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     { value: "out-of-stock", label: "Out of Stock" }
   ];
 
+  const handgunTypes = [
+    { value: "pistol", label: "Pistol" },
+    { value: "revolver", label: "Revolver" }
+  ];
+
   const resultsPerPageOptions = [24, 28, 96];
 
   const handleSearch = (e: React.FormEvent) => {
@@ -239,6 +246,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     setHandgunPriceRange("all");
     setHandgunCapacity("all");
     setHandgunStockStatus("all");
+    setHandgunType("all");
   };
 
   const handleAddToCart = (product: any) => {
@@ -685,7 +693,25 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                 {category === "Handguns" && (
                   <div className="border-t pt-4">
                     <h4 className="font-semibold text-gun-black mb-4">🔫 Handgun Filters</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                      {/* Handgun Type */}
+                      <div className="space-y-2">
+                        <Label htmlFor="handgun-type">Type</Label>
+                        <Select value={handgunType} onValueChange={setHandgunType}>
+                          <SelectTrigger id="handgun-type">
+                            <SelectValue placeholder="All Types" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            {handgunTypes.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
                       {/* Handgun Manufacturer */}
                       <div className="space-y-2">
                         <Label htmlFor="handgun-manufacturer">Manufacturer</Label>
