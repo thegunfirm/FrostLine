@@ -42,8 +42,8 @@ app.use((req, res, next) => {
   // Initialize pricing service
   await pricingService.initializeDefaultPricing();
   
-  // Start RSR 2-hour auto-sync
-  rsrAutoSync.start();
+  // Auto-sync disabled during data integrity work
+  // rsrAutoSync.start();
   
   const server = await registerRoutes(app);
 
