@@ -28,7 +28,7 @@ function transformRSRProduct(fields) {
   const rsrPrice = fields[6];
   const weight = fields[7];
   const inventoryQuantity = fields[8];
-  const model = fields[9];
+  const model = fields[9]; // RSR model/subcategory code
   const fullMfgName = fields[10];
   const mfgPartNumber = fields[11];
   const allocatedStatus = fields[12];
@@ -73,7 +73,9 @@ function transformRSRProduct(fields) {
     description: expandedDescription || productDescription || '',
     category,
     departmentNumber: departmentNumber, // Store the actual RSR department number
+    subcategoryName: model, // RSR model/subcategory code (305 = Pistols subcategory)
     manufacturer: fullMfgName || 'Unknown',
+    manufacturerPartNumber: mfgPartNumber,
     sku: stockNumber,
     upcCode: upcCode || null,
     priceWholesale: wholesale.toFixed(2),
