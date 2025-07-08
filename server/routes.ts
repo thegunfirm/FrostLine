@@ -2032,8 +2032,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Build Algolia filters array
       const algoliaFilters = [];
       
+      // Department number filtering (takes precedence over category)
+      if (filters.departmentNumber) {
+        algoliaFilters.push(`departmentNumber:"${filters.departmentNumber}"`);
+        console.log(`Applied department number filter: ${filters.departmentNumber}`);
+      }
       // Basic filters using authentic RSR department numbers with proper exclusions
-      if (filters.category) {
+      else if (filters.category) {
         // Use authentic RSR department structure with proper filtering
         const categoryToDepartment = {
           "Handguns": "01",        // Department 01 (pistols and revolvers only)
@@ -2045,10 +2050,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const department = categoryToDepartment[filters.category];
         if (department === "01") {
-          // For handguns, use department 01 AND category "Handguns" (now properly categorized)
+          // For handguns, use department 01 only (authentic RSR categorization)
           algoliaFilters.push(`departmentNumber:"01"`);
-          algoliaFilters.push(`category:"Handguns"`);
-          console.log(`Applied RSR department 01 filter for actual handguns only`);
+          console.log(`Applied RSR department 01 filter for all handgun products`);
         } else if (department) {
           // Use authentic RSR department number filtering for other departments
           algoliaFilters.push(`departmentNumber:"${department}"`);

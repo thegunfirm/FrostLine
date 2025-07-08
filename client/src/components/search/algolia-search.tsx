@@ -102,7 +102,8 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           capacity: capacity && capacity !== "all" ? capacity : undefined,
           stateRestriction: stateRestriction && stateRestriction !== "all" ? stateRestriction : undefined,
           priceTier: priceTier && priceTier !== "all" ? priceTier : undefined,
-          handgunSubcategory: handgunSubcategory && handgunSubcategory !== "all" ? handgunSubcategory : undefined
+          handgunSubcategory: handgunSubcategory && handgunSubcategory !== "all" ? handgunSubcategory : undefined,
+          departmentNumber: category === "Handguns" ? "01" : undefined
         },
         sort: sortBy,
         page: currentPage,
