@@ -65,7 +65,7 @@ export class RSRAutoSync {
       console.log(`🔄 RSR incremental sync starting at ${startTime.toISOString()}`);
       
       // Check if RSR inventory file exists
-      const inventoryPath = join(process.cwd(), 'server', 'data', 'rsrinventory-new.txt');
+      const inventoryPath = join(process.cwd(), 'server', 'data', 'rsr', 'downloads', 'rsrinventory-new.txt');
       
       const fs = await import('fs');
       if (!fs.existsSync(inventoryPath)) {
@@ -115,6 +115,7 @@ export class RSRAutoSync {
             name: add.description,
             sku: add.stockNo,
             category: this.mapDepartmentToCategory(add.departmentNumber),
+            departmentNumber: add.departmentNumber,
             manufacturer: add.fullManufacturerName,
             priceWholesale: add.rsrPrice,
             quantity: add.quantity,
@@ -247,10 +248,19 @@ export class RSRAutoSync {
 
   private mapDepartmentToCategory(departmentNumber: string): string {
     const categoryMap: Record<string, string> = {
-      '1': 'Handguns', '2': 'Used Handguns', '3': 'Used Long Guns',
-      '4': 'Tasers', '5': 'Long Guns', '6': 'NFA Products',
-      '7': 'Black Powder', '8': 'Optics', '9': 'Optical Accessories',
-      '10': 'Magazines', '18': 'Ammunition'
+      '1': 'Handguns', '2': 'Used Handguns', '3': 'Used Long Guns', '4': 'Tasers',
+      '5': 'Long Guns', '6': 'NFA Products', '7': 'Black Powder', '8': 'Optics',
+      '9': 'Optical Accessories', '10': 'Magazines', '11': 'Grips, Pads, Stocks, Bipods',
+      '12': 'Soft Gun Cases, Packs, Bags', '13': 'Misc. Accessories', '14': 'Holsters & Pouches',
+      '15': 'Reloading Equipment', '16': 'Black Powder Accessories', '17': 'Closeout Accessories',
+      '18': 'Ammunition', '19': 'Survival & Camping Supplies', '20': 'Lights, Lasers & Batteries',
+      '21': 'Cleaning Equipment', '22': 'Airguns', '23': 'Knives & Tools', '24': 'High Capacity Magazines',
+      '25': 'Safes & Security', '26': 'Safety & Protection', '27': 'Non-Lethal Defense',
+      '28': 'Binoculars', '29': 'Spotting Scopes', '30': 'Sights', '31': 'Optical Accessories',
+      '32': 'Barrels, Choke Tubes & Muzzle Devices', '33': 'Clothing', '34': 'Parts',
+      '35': 'Slings & Swivels', '36': 'Electronics', '38': 'Books, Software & DVDs',
+      '39': 'Targets', '40': 'Hard Gun Cases', '41': 'Upper Receivers & Conversion Kits',
+      '42': 'SBR Barrels & Upper Receivers', '43': 'Upper Receivers & Conversion Kits - High Capacity'
     };
     return categoryMap[departmentNumber] || 'Accessories';
   }
