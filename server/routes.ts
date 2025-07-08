@@ -2032,31 +2032,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Build Algolia filters array
       const algoliaFilters = [];
       
-      // Basic filters  
+      // Basic filters using department numbers instead of category names
       if (filters.category) {
-        algoliaFilters.push(`categoryName:"${filters.category}"`);
+        // Map category names to department numbers for precise filtering
+        const categoryToDepartment = {
+          "Handguns": ["01", "02"], // Department 01 (new handguns) + 02 (used handguns)
+          "Long Guns": ["05"],      // Department 05 (long guns/rifles)
+          "Rifles": ["05"],         // Also maps to department 05
+          "Shotguns": ["05"],       // Also maps to department 05
+          // For other categories, fall back to category name
+        };
         
-        // Special handling for Handguns category with subcategory filtering
-        if (filters.category === "Handguns") {
-          console.log("Handgun subcategory filter:", filters.handgunSubcategory);
-          if (filters.handgunSubcategory === "complete") {
-            // Show only complete handguns using FFL requirement
-            algoliaFilters.push('requiresFFL:true');
-            console.log("Applied complete handguns filter: requiresFFL:true");
-          } else if (filters.handgunSubcategory === "accessories") {
-            // Show only handgun accessories
-            algoliaFilters.push('tags:"Accessories"');
-            console.log("Applied accessories filter: tags:\"Accessories\"");
-          } else if (filters.handgunSubcategory === "all") {
-            // Show everything in Handguns category (no additional filter)
-            console.log("Applied all handguns filter: showing everything");
+        const departments = categoryToDepartment[filters.category];
+        if (departments && departments.length > 0) {
+          // Use department number filtering for firearms
+          if (departments.length === 1) {
+            algoliaFilters.push(`departmentNumber:"${departments[0]}"`);
           } else {
-            // DEFAULT: Show only complete handguns using simple FFL requirement
-            // Complete handguns require FFL, accessories don't
-            algoliaFilters.push('requiresFFL:true');
-            
-            console.log("Applied simple FFL filter: only products requiring FFL transfer");
+            // Multiple departments (e.g., Handguns = 01 OR 02)
+            const deptFilter = departments.map(dept => `departmentNumber:"${dept}"`).join(' OR ');
+            algoliaFilters.push(`(${deptFilter})`);
           }
+          console.log(`Applied department filter for ${filters.category}:`, departments);
+        } else {
+          // Fall back to category name for non-firearm categories
+          algoliaFilters.push(`categoryName:"${filters.category}"`);
+          console.log(`Applied category filter: categoryName:"${filters.category}"`);
         }
       }
       if (filters.manufacturer) {
