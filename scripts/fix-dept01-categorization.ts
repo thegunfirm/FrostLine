@@ -31,9 +31,12 @@ async function fixDept01Categorization() {
       const name = product.name.toLowerCase();
       let newCategory = product.category;
       
-      // Identify parts and components
+      // Identify parts and components (expanded list)
       if (name.includes('frame') || name.includes('lower') || name.includes('upper') || 
-          name.includes('slide') || name.includes('barrel') || name.includes('receiver')) {
+          name.includes('slide') || name.includes('barrel') || name.includes('receiver') ||
+          name.includes('gas tube') || name.includes('buffer') || name.includes('spring') ||
+          name.includes('pin') || name.includes('screw') || name.includes('kit') ||
+          name.includes('replacement') || name.includes('shok-buff')) {
         newCategory = 'Parts';
         partsFixed++;
       }
@@ -43,9 +46,11 @@ async function fixDept01Categorization() {
         newCategory = 'Magazines';
         magazinesFixed++;
       }
-      // Identify accessories
+      // Identify accessories (expanded list)
       else if (name.includes('holster') || name.includes('case') || name.includes('sight') ||
-               name.includes('grip') || name.includes('trigger') || name.includes('mount')) {
+               name.includes('grip') || name.includes('trigger') || name.includes('mount') ||
+               name.includes('bipod') || name.includes('light') || name.includes('laser') ||
+               name.includes('sling') || name.includes('rail') || name.includes('scope')) {
         newCategory = 'Accessories';
         accessoriesFixed++;
       }
