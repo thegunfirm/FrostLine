@@ -763,10 +763,10 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         products={searchResults?.hits.map((hit, index) => {          
           return {
             id: index + 1, // Use sequential ID to satisfy Product interface
-            name: hit.title || 'Unknown Product',
+            name: hit.name || 'Unknown Product',
             description: hit.description || '',
-            category: hit.categoryName || 'Uncategorized',
-            manufacturer: hit.manufacturerName || 'Unknown',
+            category: hit.category || 'Uncategorized',
+            manufacturer: hit.manufacturer || 'Unknown',
             sku: hit.sku || hit.objectID || '', // This is the important field for RSR images
             priceWholesale: hit.tierPricing?.platinum?.toString() || "0",
             priceMAP: null,
