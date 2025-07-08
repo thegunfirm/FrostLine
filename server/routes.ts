@@ -2064,7 +2064,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       if (filters.manufacturer) {
-        algoliaFilters.push(`manufacturer:"${filters.manufacturer}"`);
+        algoliaFilters.push(`manufacturerName:"${filters.manufacturer}"`);
       }
       if (filters.inStock) {
         algoliaFilters.push('inStock:true');
@@ -2127,24 +2127,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Enhanced handgun-specific filters
       if (filters.handgunManufacturer) {
-        algoliaFilters.push(`manufacturer:"${filters.handgunManufacturer}"`);
+        algoliaFilters.push(`manufacturerName:"${filters.handgunManufacturer}"`);
       }
       
       if (filters.handgunCaliber) {
-        // Search in product name for caliber (case-insensitive)
-        const caliber = filters.handgunCaliber;
-        algoliaFilters.push(`(name:"${caliber}" OR name:"${caliber.toLowerCase()}")`);
+        // For caliber, we'll modify the query instead of using filters
+        // This is handled later in the query building process
+        // Adding a placeholder filter that will be replaced by query search
       }
       
       if (filters.handgunPriceRange) {
         // Convert price range to numeric filter
         const priceRangeMap = {
-          "Under $300": "priceBronze:0 TO 300",
-          "$300-$500": "priceBronze:300 TO 500",
-          "$500-$750": "priceBronze:500 TO 750",
-          "$750-$1000": "priceBronze:750 TO 1000",
-          "$1000-$1500": "priceBronze:1000 TO 1500",
-          "Over $1500": "priceBronze:1500 TO 99999"
+          "Under $300": "tierPricing.bronze < 300",
+          "$300-$500": "tierPricing.bronze >= 300 AND tierPricing.bronze < 500",
+          "$500-$750": "tierPricing.bronze >= 500 AND tierPricing.bronze < 750",
+          "$750-$1000": "tierPricing.bronze >= 750 AND tierPricing.bronze < 1000",
+          "$1000-$1500": "tierPricing.bronze >= 1000 AND tierPricing.bronze < 1500",
+          "Over $1500": "tierPricing.bronze >= 1500"
         };
         
         if (priceRangeMap[filters.handgunPriceRange]) {
@@ -2153,16 +2153,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (filters.handgunCapacity) {
-        // Search in product name for capacity (various formats)
-        const capacity = filters.handgunCapacity;
-        if (capacity.includes('r')) {
-          // For "10r" format, search for "10R" and "10RD"
-          const num = capacity.replace('r', '');
-          algoliaFilters.push(`(name:"${num}R" OR name:"${num}RD" OR name:"${num}-R" OR name:"${num} R")`);
-        } else {
-          // For plain number, search for various round formats
-          algoliaFilters.push(`(name:"${capacity}R" OR name:"${capacity}RD" OR name:"${capacity}-R" OR name:"${capacity} R")`);
-        }
+        // For capacity, we'll modify the query instead of using filters
+        // This is handled in the query building process
       }
       
       if (filters.handgunStockStatus) {
@@ -2180,10 +2172,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let sortParam = undefined;
       switch (sort) {
         case 'price_asc':
-          sortParam = 'priceBronze:asc';
+          sortParam = 'tierPricing.bronze:asc';
           break;
         case 'price_desc':
-          sortParam = 'priceBronze:desc';
+          sortParam = 'tierPricing.bronze:desc';
           break;
         case 'name_asc':
           sortParam = 'name:asc';
@@ -2199,8 +2191,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Build search params
+      let searchQuery = query || "";
+      
+      // Add caliber to search query if specified
+      if (filters.handgunCaliber) {
+        searchQuery = searchQuery ? `${searchQuery} ${filters.handgunCaliber}` : filters.handgunCaliber;
+      }
+      
+      // Add capacity to search query if specified
+      if (filters.handgunCapacity) {
+        const capacity = filters.handgunCapacity;
+        let capacityQuery = '';
+        if (capacity.includes('r')) {
+          // For "10r" format, search for "10R" and "10RD"
+          const num = capacity.replace('r', '');
+          capacityQuery = `${num}R OR ${num}RD`;
+        } else {
+          // For plain number, search for various round formats
+          capacityQuery = `${capacity}R OR ${capacity}RD`;
+        }
+        searchQuery = searchQuery ? `${searchQuery} (${capacityQuery})` : `(${capacityQuery})`;
+      }
+      
       const searchParams: any = {
-        query: query || "",
+        query: searchQuery,
         hitsPerPage: Math.min(hitsPerPage || 24, 100),
         page: page || 0
       };
@@ -2209,9 +2223,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchParams.filters = algoliaFilters.join(' AND ');
       }
       
-      if (sortParam) {
-        searchParams.sort = [sortParam];
-      }
+      // Temporarily disable sorting until Algolia index is properly configured
+      // if (sortParam) {
+      //   searchParams.sort = [sortParam];
+      // }
 
       console.log('Algolia search params:', JSON.stringify(searchParams, null, 2));
 
