@@ -72,6 +72,7 @@ function transformRSRProduct(fields) {
     name: productDescription || 'RSR Product',
     description: expandedDescription || productDescription || '',
     category,
+    departmentNumber: departmentNumber, // Store the actual RSR department number
     manufacturer: fullMfgName || 'Unknown',
     sku: stockNumber,
     upcCode: upcCode || null,
