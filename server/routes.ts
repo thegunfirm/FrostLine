@@ -2131,8 +2131,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (filters.handgunCaliber) {
-        // Search in product name for caliber
-        algoliaFilters.push(`name:"${filters.handgunCaliber}"`);
+        // Search in product name for caliber (case-insensitive)
+        const caliber = filters.handgunCaliber;
+        algoliaFilters.push(`(name:"${caliber}" OR name:"${caliber.toLowerCase()}")`);
       }
       
       if (filters.handgunPriceRange) {
@@ -2152,8 +2153,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (filters.handgunCapacity) {
-        // Search in product name for capacity
-        algoliaFilters.push(`name:"${filters.handgunCapacity}"`);
+        // Search in product name for capacity (various formats)
+        const capacity = filters.handgunCapacity;
+        if (capacity.includes('r')) {
+          // For "10r" format, search for "10R" and "10RD"
+          const num = capacity.replace('r', '');
+          algoliaFilters.push(`(name:"${num}R" OR name:"${num}RD" OR name:"${num}-R" OR name:"${num} R")`);
+        } else {
+          // For plain number, search for various round formats
+          algoliaFilters.push(`(name:"${capacity}R" OR name:"${capacity}RD" OR name:"${capacity}-R" OR name:"${capacity} R")`);
+        }
       }
       
       if (filters.handgunStockStatus) {
@@ -2167,14 +2176,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Build sort parameter
+      // Build sort parameter for Algolia
       let sortParam = undefined;
       switch (sort) {
         case 'price_asc':
-          sortParam = 'retailPrice:asc';
+          sortParam = 'priceBronze:asc';
           break;
         case 'price_desc':
-          sortParam = 'retailPrice:desc';
+          sortParam = 'priceBronze:desc';
           break;
         case 'name_asc':
           sortParam = 'name:asc';
@@ -2201,7 +2210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (sortParam) {
-        searchParams.restrictSearchableAttributes = sortParam;
+        searchParams.sort = [sortParam];
       }
 
       console.log('Algolia search params:', JSON.stringify(searchParams, null, 2));
