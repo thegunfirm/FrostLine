@@ -2032,28 +2032,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Build Algolia filters array
       const algoliaFilters = [];
       
-      // Basic filters using department numbers instead of category names
+      // Basic filters using authentic RSR department numbers
       if (filters.category) {
-        // Map category names to department numbers for precise filtering
+        // Use authentic RSR department structure - simple and reliable
         const categoryToDepartment = {
-          "Handguns": ["01", "02"], // Department 01 (new handguns) + 02 (used handguns)
-          "Long Guns": ["05"],      // Department 05 (long guns/rifles)
-          "Rifles": ["05"],         // Also maps to department 05
-          "Shotguns": ["05"],       // Also maps to department 05
+          "Handguns": "01",        // Department 01 (all handguns - pistols and revolvers)
+          "Long Guns": "05",       // Department 05 (rifles and shotguns)
+          "Rifles": "05",          // Also maps to department 05
+          "Shotguns": "05",        // Also maps to department 05
           // For other categories, fall back to category name
         };
         
-        const departments = categoryToDepartment[filters.category];
-        if (departments && departments.length > 0) {
-          // Use department number filtering for firearms
-          if (departments.length === 1) {
-            algoliaFilters.push(`departmentNumber:"${departments[0]}"`);
-          } else {
-            // Multiple departments (e.g., Handguns = 01 OR 02)
-            const deptFilter = departments.map(dept => `departmentNumber:"${dept}"`).join(' OR ');
-            algoliaFilters.push(`(${deptFilter})`);
-          }
-          console.log(`Applied department filter for ${filters.category}:`, departments);
+        const department = categoryToDepartment[filters.category];
+        if (department) {
+          // Use authentic RSR department number filtering
+          algoliaFilters.push(`departmentNumber:"${department}"`);
+          console.log(`Applied RSR department filter for ${filters.category}: ${department}`);
         } else {
           // Fall back to category name for non-firearm categories
           algoliaFilters.push(`categoryName:"${filters.category}"`);
