@@ -18,7 +18,7 @@ async function syncHandgunDepartmentNumbers() {
   console.log(`📊 Found ${handgunProducts.length} handgun products`);
   
   const algoliaObjects = handgunProducts.map(product => ({
-    objectID: product.id.toString(),
+    objectID: product.sku, // Use SKU as objectID to match existing Algolia records
     departmentNumber: product.departmentNumber,
     name: product.name,
     category: product.category,
@@ -63,9 +63,9 @@ async function syncHandgunDepartmentNumbers() {
         requests: batch.map(obj => ({
           action: 'partialUpdateObject',
           body: {
-            objectID: obj.objectID,
             departmentNumber: obj.departmentNumber
-          }
+          },
+          objectID: obj.objectID
         }))
       })
     });
