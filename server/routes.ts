@@ -2124,6 +2124,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // For now, just add as a tag filter - would need to enhance product tagging for this
         algoliaFilters.push(`tags:"${filters.stateRestriction}"`);
       }
+
+      // Enhanced handgun-specific filters
+      if (filters.handgunManufacturer) {
+        algoliaFilters.push(`manufacturer:"${filters.handgunManufacturer}"`);
+      }
+      
+      if (filters.handgunCaliber) {
+        // Search in product name for caliber
+        algoliaFilters.push(`name:"${filters.handgunCaliber}"`);
+      }
+      
+      if (filters.handgunPriceRange) {
+        // Convert price range to numeric filter
+        const priceRangeMap = {
+          "Under $300": "priceBronze:0 TO 300",
+          "$300-$500": "priceBronze:300 TO 500",
+          "$500-$750": "priceBronze:500 TO 750",
+          "$750-$1000": "priceBronze:750 TO 1000",
+          "$1000-$1500": "priceBronze:1000 TO 1500",
+          "Over $1500": "priceBronze:1500 TO 99999"
+        };
+        
+        if (priceRangeMap[filters.handgunPriceRange]) {
+          algoliaFilters.push(priceRangeMap[filters.handgunPriceRange]);
+        }
+      }
+      
+      if (filters.handgunCapacity) {
+        // Search in product name for capacity
+        algoliaFilters.push(`name:"${filters.handgunCapacity}"`);
+      }
+      
+      if (filters.handgunStockStatus) {
+        if (filters.handgunStockStatus === 'in-stock') {
+          algoliaFilters.push('inStock:true');
+        } else if (filters.handgunStockStatus === 'out-of-stock') {
+          algoliaFilters.push('inStock:false');
+        } else if (filters.handgunStockStatus === 'low-stock') {
+          algoliaFilters.push('inStock:true');
+          algoliaFilters.push('stockQuantity:0 TO 5');
+        }
+      }
       
       // Build sort parameter
       let sortParam = undefined;
