@@ -26,6 +26,7 @@ export const products = pgTable("products", {
   description: text("description"),
   category: text("category").notNull(),
   subcategoryName: text("subcategory_name"), // RSR subcategory for proper classification
+  departmentNumber: text("department_number"), // RSR department number (01, 02, 05, etc.)
   departmentDesc: text("department_desc"), // RSR department description
   subDepartmentDesc: text("sub_department_desc"), // RSR sub-department description
   manufacturer: text("manufacturer"),
