@@ -2045,10 +2045,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const department = categoryToDepartment[filters.category];
         if (department === "01") {
-          // For handguns, filter department 01 but exclude magazines and parts
+          // For handguns, use department 01 AND category "Handguns" (now properly categorized)
           algoliaFilters.push(`departmentNumber:"01"`);
-          algoliaFilters.push(`NOT (name:"MAGAZINE" OR name:"MAG" OR name:"CLIP" OR name:"SLIDE" OR name:"BARREL" OR name:"FRAME" OR name:"UPPER" OR name:"LOWER")`);
-          console.log(`Applied RSR department 01 filter with exclusions for actual handguns`);
+          algoliaFilters.push(`category:"Handguns"`);
+          console.log(`Applied RSR department 01 filter for actual handguns only`);
         } else if (department) {
           // Use authentic RSR department number filtering for other departments
           algoliaFilters.push(`departmentNumber:"${department}"`);
