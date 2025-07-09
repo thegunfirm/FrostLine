@@ -2073,8 +2073,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         algoliaFilters.push('newItem:true');
       }
       
-      // Firearm-specific filters (check tags)
-      if (filters.caliber) {
+      // Firearm-specific filters (check tags) - Skip if using handgun-specific caliber filter
+      if (filters.caliber && !filters.handgunCaliber) {
         algoliaFilters.push(`tags:"${filters.caliber}"`);
       }
       if (filters.actionType) {
@@ -2133,7 +2133,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (filters.handgunCaliber) {
         // For caliber, we'll modify the query instead of using filters
         // This is handled later in the query building process
-        // Adding a placeholder filter that will be replaced by query search
       }
       
       if (filters.handgunPriceRange) {
@@ -2193,7 +2192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Build search params
       let searchQuery = query || "";
       
-      // Add caliber to search query if specified
+      // Add caliber to search query if specified (for handgun-specific caliber filter)
       if (filters.handgunCaliber) {
         searchQuery = searchQuery ? `${searchQuery} ${filters.handgunCaliber}` : filters.handgunCaliber;
       }

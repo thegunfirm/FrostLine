@@ -156,22 +156,22 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     "Winchester"
   ];
 
-  // Handgun-specific filter options
+  // Handgun-specific filter options - Use actual manufacturer names from Algolia index
   const handgunManufacturers = [
-    { value: "S&W", label: "Smith & Wesson" },
-    { value: "SPGFLD", label: "Springfield" },
-    { value: "GLOCK", label: "Glock" },
-    { value: "SIG", label: "Sig Sauer" },
-    { value: "BERETA", label: "Beretta" },
-    { value: "RUGER", label: "Ruger" },
-    { value: "ARMSCR", label: "Rock Island" },
-    { value: "BERSA", label: "Bersa" },
-    { value: "WALTHR", label: "Walther" },
-    { value: "HERTG", label: "Heritage" },
-    { value: "COLT", label: "Colt" },
+    { value: "Smith & Wesson", label: "Smith & Wesson" },
+    { value: "Springfield", label: "Springfield" },
+    { value: "Glock Inc", label: "Glock" },
+    { value: "Sig Sauer", label: "Sig Sauer" },
+    { value: "Beretta", label: "Beretta" },
+    { value: "Ruger", label: "Ruger" },
+    { value: "Rock Island", label: "Rock Island" },
+    { value: "Bersa", label: "Bersa" },
+    { value: "Walther", label: "Walther" },
+    { value: "Heritage", label: "Heritage" },
+    { value: "Colt", label: "Colt" },
     { value: "FN", label: "FN" },
-    { value: "KIMBER", label: "Kimber" },
-    { value: "SHDWSY", label: "Shadow Systems" }
+    { value: "Kimber", label: "Kimber" },
+    { value: "Shadow Systems", label: "Shadow Systems" }
   ];
 
   const handgunCalibers = [
@@ -511,9 +511,10 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {/* Primary Filters */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="space-y-2">
+                {/* Primary Filters - Only show when NOT in handgun category */}
+                {category !== "Handguns" && (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="space-y-2">
                     <Label htmlFor="category">Category</Label>
                     <Select value={category} onValueChange={setCategory}>
                       <SelectTrigger id="category">
@@ -594,6 +595,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                     </Select>
                   </div>
                 </div>
+                )}
 
                 {/* Advanced Filters */}
                 <div className="border-t pt-4">
