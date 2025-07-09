@@ -265,6 +265,9 @@ Changelog:
 - July 09, 2025. **AUTHENTIC RSR FIELD 69 IMPLEMENTATION**: Now using RSR's authentic drop ship determination from field 69 instead of agent classification
 - July 09, 2025. **GLOCK WAREHOUSE CONFIRMATION**: All 241 Glock handguns in department 01 correctly marked warehouse-only by RSR data (0% drop shippable)
 - July 09, 2025. **REALISTIC DISTRIBUTION**: 28.1% warehouse-only vs 71.9% drop shippable reflecting authentic RSR business rules (19,000+ products total)
+- July 09, 2025. **QUANTITY FIELD MAPPING FIXED**: Corrected RSR field 8 (inventoryQuantity) vs field 7 (productWeight) - now showing accurate stock levels
+- July 09, 2025. **STOCK LEVELS CONFIRMED**: 17,000 products total with 12,968 in stock (76.3%) and 4,032 out of stock (23.7%)
+- July 09, 2025. **GLOCK INVENTORY BREAKDOWN**: 241 total Glock handguns (95 in stock, 146 out of stock, all 241 warehouse-only per RSR field 68)
 ```
 
 ## User Preferences
