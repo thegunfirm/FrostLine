@@ -34,9 +34,9 @@ export interface RSRInventoryRecord {
   stateRestrictions: Record<string, string>;
   groundShipOnly: string;
   adultSignatureRequired: string;
-  blockedFromDropShip: string;
+  blockedFromDropShip: string;  // Field 69 - "Y" means blocked from drop ship
   dateEntered: string;
-  retailMAP: string;          // Field 62 - MAP pricing
+  retailMAP: string;          // Field 71 - MAP pricing
   imageDisclaimer: string;
   shippingLength: string;
   shippingWidth: string;
@@ -186,6 +186,7 @@ class RSRFileProcessor {
       accessories: record.accessories || null,
       groundShipOnly: record.groundShipOnly === 'Y',
       adultSignatureRequired: record.adultSignatureRequired === 'Y',
+      dropShippable: record.blockedFromDropShip !== 'Y', // Critical: "Y" means blocked, blank means allowed
       prop65: record.prop65 === 'Y',
       distributor: "RSR",
       requiresFFL: this.requiresFFL(record.departmentNumber),

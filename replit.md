@@ -250,6 +250,10 @@ Changelog:
 - July 08, 2025. **ALGOLIA DEPARTMENT FILTERING READY**: Department-based filtering now operational using authentic RSR department numbers
 - July 08, 2025. **HANDGUN ADVANCED FILTERING IMPLEMENTED**: Added 5 key handgun filters - Manufacturer, Caliber, Price Range, Capacity, and Stock Status - using authentic RSR data with dynamic UI that appears only when Handguns category is selected
 - July 08, 2025. **ROLLBACK COMPLETED**: Removed pistol/revolver type filter that was causing Algolia search errors due to overly complex filter queries
+- July 09, 2025. **DUAL RSR ACCOUNT ARCHITECTURE IMPLEMENTED**: Added dropShippable boolean field to products schema based on RSR field 69 "Blocked from Drop Ship"
+- July 09, 2025. **AUTOMATED MONITORING SYSTEM DEPLOYED**: Created comprehensive monitoring system with 5-minute status checks for hands-off FTP and Algolia sync processing
+- July 09, 2025. **BUSINESS LOGIC FOUNDATION**: dropShippable true → use account 63824 (dropship), dropShippable false → use account 60742 (warehouse)
+- July 09, 2025. **RSR CREDENTIALS UPDATED**: Using main account 60742 (password: 2SSinQ58) for complete inventory access with proper drop ship determination
 ```
 
 ## User Preferences

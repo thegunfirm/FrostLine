@@ -56,6 +56,7 @@ export const products = pgTable("products", {
   stateRestrictions: json("state_restrictions"), // Array of restricted states
   groundShipOnly: boolean("ground_ship_only").default(false),
   adultSignatureRequired: boolean("adult_signature_required").default(false),
+  dropShippable: boolean("drop_shippable").default(true), // RSR field 69: Can be drop shipped directly to consumer
   prop65: boolean("prop65").default(false), // California Prop 65 warning required
   returnPolicyDays: integer("return_policy_days").default(30),
   isActive: boolean("is_active").default(true),

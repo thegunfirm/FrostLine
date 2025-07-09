@@ -18,6 +18,7 @@ import { imageService } from "./services/image-service";
 import { rsrFTPClient } from "./services/distributors/rsr/rsr-ftp-client";
 import { rsrFileUpload } from "./services/rsr-file-upload";
 import { rsrAutoSync } from "./services/rsr-auto-sync";
+import { syncHealthMonitor } from "./services/sync-health-monitor";
 import axios from "axios";
 import multer from "multer";
 
@@ -2649,6 +2650,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Sync Health Monitoring Endpoints
+  app.get("/api/admin/sync-health", async (req, res) => {
+    try {
+      const healthStatus = await syncHealthMonitor.getSyncHealthStatus();
+      res.json(healthStatus);
+    } catch (error: any) {
+      console.error("Error fetching sync health:", error);
+      res.status(500).json({ error: "Failed to fetch sync health status" });
+    }
+  });
+
+  app.post("/api/admin/trigger-rsr-sync", async (req, res) => {
+    try {
+      await syncHealthMonitor.triggerRSRSync();
+      res.json({ 
+        success: true, 
+        message: "RSR sync triggered successfully" 
+      });
+    } catch (error: any) {
+      console.error("Error triggering RSR sync:", error);
+      res.status(500).json({ error: "Failed to trigger RSR sync" });
+    }
+  });
+
+  app.post("/api/admin/trigger-algolia-sync", async (req, res) => {
+    try {
+      await syncHealthMonitor.triggerAlgoliaSync();
+      res.json({ 
+        success: true, 
+        message: "Algolia sync triggered successfully" 
+      });
+    } catch (error: any) {
+      console.error("Error triggering Algolia sync:", error);
+      res.status(500).json({ error: "Failed to trigger Algolia sync" });
     }
   });
 
