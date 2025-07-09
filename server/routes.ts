@@ -2194,7 +2194,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Add caliber to search query if specified (for handgun-specific caliber filter)
       if (filters.handgunCaliber) {
-        searchQuery = searchQuery ? `${searchQuery} ${filters.handgunCaliber}` : filters.handgunCaliber;
+        // For 9MM, search for both "9mm" and "9MM" and their variations like "9mm Luger"
+        let caliberQuery = filters.handgunCaliber;
+        if (filters.handgunCaliber.toUpperCase() === '9MM') {
+          caliberQuery = '9mm*';
+        }
+        searchQuery = searchQuery ? `${searchQuery} (${caliberQuery})` : `(${caliberQuery})`;
       }
       
       // Add capacity to search query if specified
