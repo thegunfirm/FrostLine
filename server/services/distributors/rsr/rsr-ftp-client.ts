@@ -44,7 +44,7 @@ class RSRFTPClient {
     // Use existing RSR credentials from environment if available
     this.config = {
       host: process.env.RSR_FTP_HOST || 'ftps.rsrgroup.com',
-      username: process.env.RSR_USERNAME || '63824',
+      username: process.env.RSR_USERNAME || '60742',
       password: process.env.RSR_PASSWORD || '2SSinQ58',
       port: 2222,
       secure: true,
