@@ -6,9 +6,12 @@
   "totalProducts": 0,
   "errors": [
     "file:///home/runner/workspace/scripts/complete-rsr-sync.js:8\nconst { db } = require('../server/db');\n               ^\n\nReferenceError: require is not defined in ES module scope, you can use import instead\nThis file is being treated as an ES module because it has a '.js' file extension and '/home/runner/workspace/package.json' contains \"type\": \"module\". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.\n    at file:///home/runner/workspace/scripts/complete-rsr-sync.js:8:16\n    at ModuleJob.run (node:internal/modules/esm/module_job:234:25)\n    at async ModuleLoader.import (node:internal/modules/esm/loader:473:24)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:122:5)\n\nNode.js v20.18.1\n",
+    "Database process exited with code 1",
+    "\nnode:internal/modules/run_main:128\n    triggerUncaughtException(\n    ^\n",
+    "Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/workspace/scripts/complete-rsr-sync.js' imported from /home/runner/workspace/\n    at finalizeResolution (node:internal/modules/esm/resolve:265:11)\n    at moduleResolve (node:internal/modules/esm/resolve:933:10)\n    at defaultResolve (node:internal/modules/esm/resolve:1169:11)\n    at nextResolve (node:internal/modules/esm/hooks:868:28)\n    at resolveBase (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1752091229751:2:3212)\n    at resolveDirectory (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1752091229751:2:3584)\n    at resolveTsPaths (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1752091229751:2:4073)\n    at resolve (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1752091229751:2:4447)\n    at nextResolve (node:internal/modules/esm/hooks:868:28)\n    at Hooks.resolve (node:internal/modules/esm/hooks:306:30) {\n  code: 'ERR_MODULE_NOT_FOUND',\n  url: 'file:///home/runner/workspace/scripts/complete-rsr-sync.js'\n}\n\nNode.js v20.18.1\n",
     "Database process exited with code 1"
   ],
   "startTime": "2025-07-09T18:55:49.045Z",
-  "lastActivity": "2025-07-09T18:55:50.776Z",
+  "lastActivity": "2025-07-09T20:00:29.403Z",
   "isStalled": false
 }
