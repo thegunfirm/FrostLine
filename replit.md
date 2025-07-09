@@ -258,6 +258,9 @@ Changelog:
 - July 09, 2025. **DUAL ACCOUNT DISTRIBUTION**: 29,251 products (98.0%) eligible for drop ship account 63824, 585 products (2.0%) require warehouse account 60742
 - July 09, 2025. **WAREHOUSE RESTRICTIONS**: SBR, suppressors, machine guns, silencers, and custom items properly flagged for warehouse fulfillment
 - July 09, 2025. **CMS HEALTH MONITORING OPERATIONAL**: Real-time dashboard displays authentic drop ship vs warehouse distribution with sync status tracking
+- July 09, 2025. **RSR ACCOUNT DISCREPANCY IDENTIFIED**: Current database shows 250 Glock dept 01 products, but new RSR account (60742) should have 321 - missing 71 products
+- July 09, 2025. **DROP SHIP STATUS CONFIRMED**: All current 250 Glock products are correctly flagged as drop shippable (100% drop ship rate)
+- July 09, 2025. **SYNC ISSUE**: RSR FTP connection issues preventing access to complete inventory from new account 60742
 ```
 
 ## User Preferences
