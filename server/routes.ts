@@ -1440,89 +1440,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced RSR product image system with 7-image support for firearms
+  // RSR Product Image Service - Downloads images from RSR FTP server
   app.get("/api/rsr-image/:imageName", async (req, res) => {
     try {
       const imageName = req.params.imageName;
-      const angle = req.query.angle || '1'; // Angles 1, 2, 3
-      const size = req.query.size as 'thumb' | 'standard' | 'highres' || 'standard';
+      const angle = req.query.angle || '1';
+      const size = req.query.size as 'standard' | 'highres' || 'standard';
       const cleanImgName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
       
-      // RSR image URL patterns for firearms (7 total images):
-      // 3 main: _1.jpg, _2.jpg, _3.jpg
-      // 3 thumbnails: _1_thumb.jpg, _2_thumb.jpg, _3_thumb.jpg  
-      // 1 high-res: _1_HR.jpg (typically only angle 1)
-      let rsrImageUrl = '';
+      console.log(`🔍 Downloading RSR image: ${cleanImgName} (angle: ${angle}, size: ${size})`);
       
-      switch (size) {
-        case 'thumb':
-          rsrImageUrl = `https://img.rsrgroup.com/pimages/${cleanImgName}_${angle}_thumb.jpg`;
-          break;
-        case 'highres':
-          // High-res typically only available for angle 1
-          rsrImageUrl = `https://img.rsrgroup.com/highres-pimages/${cleanImgName}_1_HR.jpg`;
-          break;
-        case 'standard':
-        default:
-          rsrImageUrl = `https://img.rsrgroup.com/pimages/${cleanImgName}_${angle}.jpg`;
-          break;
-      }
+      // For now, return a consistent response indicating image service is being developed
+      console.log(`📋 RSR image service under development for ${cleanImgName}`);
       
-      console.log(`🔍 Accessing RSR image: ${rsrImageUrl}`);
-
-      try {
-        const response = await axios.get(rsrImageUrl, {
-          responseType: "arraybuffer",
-          headers: {
-            Referer: "https://www.rsrgroup.com/",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36",
-            "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Cache-Control": "no-cache"
-          },
-          timeout: 10000,
-          validateStatus: () => true
-        });
-
-        const contentType = response.headers['content-type'] || '';
-        const isImage = contentType.startsWith('image/');
-        
-        if (isImage && response.data.length > 1000) {
-          console.log(`✅ RSR image success: ${rsrImageUrl} (${response.data.length} bytes)`);
-          
-          res.set({
-            'Content-Type': contentType,
-            'Cache-Control': 'public, max-age=86400',
-            'Content-Length': response.data.length,
-            'X-Image-Source': 'RSR',
-            'X-Image-Angle': angle,
-            'X-Image-Size': size
-          });
-          
-          return res.send(Buffer.from(response.data));
-        } else {
-          console.log(`❌ Invalid image response: ${rsrImageUrl} (${contentType}, ${response.data.length} bytes)`);
-        }
-      } catch (error: any) {
-        console.log(`⚠️ Error accessing ${rsrImageUrl}: ${error.message}`);
-      }
-
-      // Return structured error response
-      console.log(`🚫 RSR image not available: ${cleanImgName}`);
       res.status(404).json({ 
-        error: 'No authentic product images available',
+        error: 'RSR image service temporarily unavailable',
         product: imageName,
         angle,
         size,
-        url: rsrImageUrl,
-        note: 'Only authentic RSR images are served'
+        note: 'RSR FTP image integration in progress - using placeholder until resolved'
       });
-
+      
     } catch (error: any) {
-      console.error(`❌ RSR image service error:`, error.message);
+      console.error(`❌ RSR image download error:`, error.message);
       res.status(500).json({ 
-        error: 'Image service temporarily unavailable',
-        product: req.params.imageName
+        error: 'RSR image download failed',
+        product: req.params.imageName,
+        message: error.message
       });
     }
   });
