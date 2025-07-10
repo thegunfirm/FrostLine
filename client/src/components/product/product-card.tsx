@@ -35,12 +35,12 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
   });
 
   const shouldHideGoldPricing = () => {
-    // Hide Gold pricing if the setting is enabled and MSRP equals MAP
+    // Hide Gold pricing if the setting is enabled and Bronze equals Gold
     if (hideGoldSetting?.value === "true") {
-      const bronzePrice = product.priceBronze ? parseFloat(product.priceBronze) : 0;
-      const goldPrice = product.priceGold ? parseFloat(product.priceGold) : 0;
+      const bronzePrice = product.priceBronze || product.price_bronze ? parseFloat(product.priceBronze || product.price_bronze) : 0;
+      const goldPrice = product.priceGold || product.price_gold ? parseFloat(product.priceGold || product.price_gold) : 0;
       
-      // If Bronze (MSRP) equals Gold (MAP), hide Gold pricing
+      // If Bronze equals Gold, hide Gold pricing
       if (bronzePrice > 0 && goldPrice > 0 && Math.abs(bronzePrice - goldPrice) < 0.01) {
         return true;
       }
@@ -115,16 +115,16 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
           <div className="flex justify-between items-center">
             <span className="text-xs font-medium text-amber-600">Bronze:</span>
             <span className="text-xs font-medium text-gun-black">
-              ${parseFloat(product.priceBronze || "0").toFixed(2)}
+              ${parseFloat(product.priceBronze || product.price_bronze || "0").toFixed(2)}
             </span>
           </div>
           
           {/* Gold Price - MAP (show if available and not hidden) */}
-          {product.priceGold && parseFloat(product.priceGold) > 0 && !shouldHideGoldPricing() && (
+          {((product.priceGold && parseFloat(product.priceGold) > 0) || (product.price_gold && parseFloat(product.price_gold) > 0)) && !shouldHideGoldPricing() && (
             <div className="flex justify-between items-center">
               <span className="text-xs font-medium text-yellow-500">Gold:</span>
               <span className="text-xs font-medium text-gun-black">
-                ${parseFloat(product.priceGold).toFixed(2)}
+                ${parseFloat(product.priceGold || product.price_gold).toFixed(2)}
               </span>
             </div>
           )}
@@ -134,11 +134,11 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
             <div className="flex justify-between items-center border-t border-gray-200 pt-1">
               <span className="text-xs text-gun-gray-light font-medium">Your Price:</span>
               <div className="text-sm font-bold text-gun-gold">
-                {user.subscriptionTier === 'Gold' && product.priceGold && !shouldHideGoldPricing() ? 
-                  `$${parseFloat(product.priceGold).toFixed(2)}` :
+                {user.subscriptionTier === 'Gold' && ((product.priceGold && parseFloat(product.priceGold) > 0) || (product.price_gold && parseFloat(product.price_gold) > 0)) && !shouldHideGoldPricing() ? 
+                  `$${parseFloat(product.priceGold || product.price_gold).toFixed(2)}` :
                   user.subscriptionTier === 'Platinum' ? 
                     'Login to cart' :
-                    `$${parseFloat(product.priceBronze || "0").toFixed(2)}`
+                    `$${parseFloat(product.priceBronze || product.price_bronze || "0").toFixed(2)}`
                 }
                 <span className="text-xs ml-1 text-gun-gray-light">({user.subscriptionTier})</span>
               </div>

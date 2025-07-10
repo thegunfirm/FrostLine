@@ -2099,6 +2099,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "Optics": "08",          // Department 08 - Optics only
           "Optical Accessories": "optical_accessories", // Departments 09 + 31 combined
           "Sights": "30",          // Department 30 - Sights only
+          "Parts": "34",           // Department 34 - Parts
           // For other categories, fall back to category name
         };
         

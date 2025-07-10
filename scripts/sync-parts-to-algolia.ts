@@ -1,28 +1,23 @@
 /**
- * Sync Optics Products to Algolia
- * Ensures optics departments (08, 09, 30, 31) are properly indexed
+ * Sync Parts Products to Algolia
+ * Ensures parts department (34) is properly indexed
  */
 import { db } from "../server/db";
 import { products } from "../shared/schema";
 import { sql } from "drizzle-orm";
 
-async function syncOpticsToAlgolia() {
+async function syncPartsToAlgolia() {
   try {
-    console.log("🔍 Starting Optics sync to Algolia...");
+    console.log("🔧 Starting Parts sync to Algolia...");
     
-    // Get all optics products from departments 08, 09, 30, 31
-    const opticsProducts = await db.select()
+    // Get all parts products from department 34
+    const partsProducts = await db.select()
       .from(products)
-      .where(sql`department_number IN ('08', '09', '30', '31')`);
+      .where(sql`department_number = '34'`);
     
-    console.log(`📊 Found ${opticsProducts.length} optics products to sync`);
-    console.log("Department breakdown:");
-    console.log(`  Dept 08 (Optics): ${opticsProducts.filter(p => p.departmentNumber === "08").length}`);
-    console.log(`  Dept 09 (Optical Accessories): ${opticsProducts.filter(p => p.departmentNumber === "09").length}`);
-    console.log(`  Dept 30 (Sights): ${opticsProducts.filter(p => p.departmentNumber === "30").length}`);
-    console.log(`  Dept 31 (Optical Accessories): ${opticsProducts.filter(p => p.departmentNumber === "31").length}`);
+    console.log(`📊 Found ${partsProducts.length} parts products to sync`);
     
-    const algoliaObjects = opticsProducts.map(product => ({
+    const algoliaObjects = partsProducts.map(product => ({
       objectID: product.sku,
       name: product.name,
       description: product.description,
@@ -71,27 +66,27 @@ async function syncOpticsToAlgolia() {
       
       if (response.ok) {
         syncedCount += batch.length;
-        console.log(`✅ Synced ${syncedCount}/${algoliaObjects.length} optics products`);
+        console.log(`✅ Synced ${syncedCount}/${algoliaObjects.length} parts products`);
       } else {
         console.error(`❌ Batch sync failed:`, await response.text());
         break;
       }
     }
     
-    console.log(`🎯 Successfully synced ${syncedCount} optics products to Algolia`);
-    console.log("✅ Optics filtering should now work for all departments (08, 09, 30, 31)");
+    console.log(`🎯 Successfully synced ${syncedCount} parts products to Algolia`);
+    console.log("✅ Parts filtering should now work for department 34");
     
   } catch (error) {
-    console.error('❌ Optics sync error:', error);
+    console.error('❌ Parts sync error:', error);
     process.exit(1);
   }
 }
 
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  syncOpticsToAlgolia()
+  syncPartsToAlgolia()
     .then(() => process.exit(0))
     .catch(console.error);
 }
 
-export { syncOpticsToAlgolia };
+export { syncPartsToAlgolia };
