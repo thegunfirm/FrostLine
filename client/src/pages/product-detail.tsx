@@ -37,7 +37,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  ImageIcon
 } from "lucide-react";
 
 interface Product {
@@ -205,27 +206,32 @@ export default function ProductDetail() {
     return `/api/rsr-image/${product.sku}?angle=${angle}&size=thumbnail`;
   };
 
-  // Only show main image (angle 1) initially to avoid multiple FTP timeouts
-  const [imageLoadStates, setImageLoadStates] = useState<{[key: number]: 'loading' | 'loaded' | 'error'}>({});
-  const [showThumbnails, setShowThumbnails] = useState(false);
-
-  // Start with just the main image
-  const availableAngles = [1];
+  // Image loading state management
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
+  const [imageSrc, setImageSrc] = useState<string>('');
   
-  // Load additional angles only after main image loads successfully
-  useEffect(() => {
-    if (imageLoadStates[1] === 'loaded' && product?.sku) {
-      // Give main image time to load, then enable thumbnails
-      setTimeout(() => setShowThumbnails(true), 2000);
-    }
-  }, [imageLoadStates, product?.sku]);
+  // Available angles for images
+  const availableAngles = [1];
 
-  const handleImageLoad = (angle: number) => {
-    setImageLoadStates(prev => ({ ...prev, [angle]: 'loaded' }));
+  // Set image source on product load
+  useEffect(() => {
+    if (product?.sku) {
+      setImageLoading(true);
+      setImageError(false);
+      setImageSrc(getImageUrl(1));
+    }
+  }, [product?.sku]);
+
+  const handleImageLoad = () => {
+    setImageLoading(false);
+    setImageError(false);
   };
 
-  const handleImageError = (angle: number) => {
-    setImageLoadStates(prev => ({ ...prev, [angle]: 'error' }));
+  const handleImageError = () => {
+    setImageLoading(false);
+    setImageError(true);
+    // Don't change src to prevent flashing - just show placeholder
   };
 
   // Handlers
@@ -361,15 +367,29 @@ export default function ProductDetail() {
           {/* Product Images */}
           <div className="space-y-4">
             {/* Main Image */}
-            <div className="aspect-square bg-white rounded-lg border border-gray-200 p-4">
-              <img
-                src={getImageUrl(availableAngles[selectedImageIndex] || 1)}
-                alt={product.name}
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  e.currentTarget.src = "/api/placeholder/400/400";
-                }}
-              />
+            <div className="aspect-square bg-white rounded-lg border border-gray-200 p-4 relative">
+              {imageLoading && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+                </div>
+              )}
+              {imageError ? (
+                <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded">
+                  <div className="text-center text-gray-500">
+                    <ImageIcon className="w-16 h-16 mx-auto mb-2" />
+                    <p className="text-sm">Product image not available</p>
+                  </div>
+                </div>
+              ) : (
+                <img
+                  src={imageSrc}
+                  alt={product.name}
+                  className="w-full h-full object-contain"
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                  style={{ display: imageLoading ? 'none' : 'block' }}
+                />
+              )}
             </div>
             
             {/* Image Note */}
