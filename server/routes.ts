@@ -1507,7 +1507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // RSR Product Image Service - HTTP fallback when FTP fails
+  // RSR Product Image Service - FTP-based image access
   app.get("/api/rsr-image/:imageName", async (req, res) => {
     try {
       const imageName = req.params.imageName;
@@ -1515,53 +1515,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const size = req.query.size as 'standard' | 'highres' || 'standard';
       const cleanImgName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
       
-      // Try HTTP access to RSR images as fallback
-      const urlPatterns = [
-        `https://img.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
-        `https://img.rsrgroup.com/images/inventory/large/${cleanImgName}.jpg`,
-        `https://img.rsrgroup.com/images/inventory/thumb/${cleanImgName}.jpg`,
-      ];
+      // Build RSR FTP image path based on correct structure discovered
+      const firstLetter = cleanImgName.charAt(0).toLowerCase();
+      const ftpImagePath = size === 'highres' 
+        ? `ftp_highres_images/rsr_number/${firstLetter}/${cleanImgName}_${angle}_HR.jpg`
+        : `ftp_images/rsr_number/${firstLetter}/${cleanImgName}_${angle}.jpg`;
       
-      for (const imageUrl of urlPatterns) {
-        try {
-          const response = await axios.get(imageUrl, {
-            responseType: "arraybuffer",
-            headers: {
-              Referer: "https://www.rsrgroup.com/",
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
-            },
-            timeout: 5000,
-            validateStatus: (status) => status === 200
-          });
+      console.log(`🔍 Attempting to fetch RSR image via FTP: ${ftpImagePath}`);
+      
+      // Try to get image from RSR FTP server
+      try {
+        const ftp = await import('basic-ftp');
+        const client = new ftp.Client();
+        
+        await client.access({
+          host: 'ftps.rsrgroup.com',
+          port: 2222,
+          user: '60742',
+          password: '2SSinQ58',
+          secure: true,
+          secureOptions: { 
+            rejectUnauthorized: false,
+            checkServerIdentity: () => undefined // Disable hostname verification
+          }
+        });
+        
+        // Try to download the image to a buffer
+        const fs = await import('fs');
+        const path = await import('path');
+        const os = await import('os');
+        
+        const tempFilePath = path.join(os.tmpdir(), `rsr_${cleanImgName}_${Date.now()}.jpg`);
+        
+        await client.downloadTo(tempFilePath, ftpImagePath);
+        
+        // Check if file was downloaded successfully
+        if (fs.existsSync(tempFilePath)) {
+          const imageBuffer = fs.readFileSync(tempFilePath);
+          fs.unlinkSync(tempFilePath); // Clean up temp file
           
-          const contentType = response.headers['content-type'] || 'image/jpeg';
-          const imageSize = response.data.length;
-          
-          // Check if this is an actual image (not placeholder)
-          if (imageSize > 10000) { // Real images are usually larger than 10KB
-            console.log(`✅ RSR image found: ${cleanImgName} (${imageSize} bytes)`);
+          if (imageBuffer && imageBuffer.length > 0) {
+            console.log(`✅ RSR image found via FTP: ${cleanImgName} (${imageBuffer.length} bytes)`);
             
             // Set appropriate cache headers
             res.set({
-              'Content-Type': contentType,
+              'Content-Type': 'image/jpeg',
               'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
-              'Content-Length': imageSize.toString()
+              'Content-Length': imageBuffer.length.toString()
             });
             
-            return res.send(response.data);
+            client.close();
+            return res.send(imageBuffer);
           }
-        } catch (error: any) {
-          // Continue to next URL pattern
-          continue;
+        }
+        
+        client.close();
+      } catch (ftpError: any) {
+        console.log(`❌ RSR FTP image access failed: ${ftpError.message}`);
+        
+        // Fall back to HTTP endpoints as backup
+        const urlPatterns = [
+          `https://img.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
+          `https://img.rsrgroup.com/images/inventory/large/${cleanImgName}.jpg`,
+          `https://img.rsrgroup.com/images/inventory/thumb/${cleanImgName}.jpg`,
+        ];
+        
+        for (const imageUrl of urlPatterns) {
+          try {
+            const response = await axios.get(imageUrl, {
+              responseType: "arraybuffer",
+              headers: {
+                Referer: "https://www.rsrgroup.com/",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
+              },
+              timeout: 5000,
+              validateStatus: (status) => status === 200
+            });
+            
+            const contentType = response.headers['content-type'] || 'image/jpeg';
+            const imageSize = response.data.length;
+            
+            // Check if this is an actual image (not placeholder)
+            if (imageSize > 10000) { // Real images are usually larger than 10KB
+              console.log(`✅ RSR image found via HTTP fallback: ${cleanImgName} (${imageSize} bytes)`);
+              
+              // Set appropriate cache headers
+              res.set({
+                'Content-Type': contentType,
+                'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+                'Content-Length': imageSize.toString()
+              });
+              
+              return res.send(response.data);
+            }
+          } catch (error: any) {
+            // Continue to next URL pattern
+            continue;
+          }
         }
       }
       
-      // If we get here, no image was found
-      console.log(`❌ RSR image not available: ${cleanImgName} (checked HTTP endpoints)`);
+      // If we get here, no image was found via FTP or HTTP
+      console.log(`❌ RSR image not available: ${cleanImgName} (checked FTP and HTTP endpoints)`);
       res.status(404).json({ 
         error: 'RSR image not available',
         product: cleanImgName,
-        note: 'Image not found on RSR servers'
+        note: 'Image not found on RSR FTP or HTTP servers'
       });
       
     } catch (error: any) {
@@ -2904,6 +2963,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error triggering Algolia sync:", error);
       res.status(500).json({ error: "Failed to trigger Algolia sync" });
+    }
+  });
+
+  // RSR FTP Directory Explorer - Find correct image paths
+  app.get("/api/rsr-ftp/explore/:imageName", async (req, res) => {
+    try {
+      const imageName = req.params.imageName;
+      const cleanImgName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
+      
+      console.log(`🔍 Exploring RSR FTP structure for: ${cleanImgName}`);
+      
+      const ftp = await import('basic-ftp');
+      const client = new ftp.Client();
+      
+      await client.access({
+        host: 'ftps.rsrgroup.com',
+        port: 2222,
+        user: '60742',
+        password: '2SSinQ58',
+        secure: true,
+        secureOptions: { 
+          rejectUnauthorized: false,
+          checkServerIdentity: () => undefined // Disable hostname verification
+        }
+      });
+      
+      const results = [];
+      
+      // Based on RSR docs, images are organized by first letter in subdirectories
+      const firstLetter = cleanImgName.charAt(0).toLowerCase();
+      
+      // Try different path patterns based on RSR documentation
+      const pathsToTry = [
+        `ftp_images/${firstLetter}/${cleanImgName}_1.jpg`,
+        `ftp_images/${firstLetter}/${cleanImgName}_2.jpg`,
+        `ftp_images/${firstLetter}/${cleanImgName}_3.jpg`,
+        `ftp_images/rsr_number/${firstLetter}/${cleanImgName}_1.jpg`,
+        `ftp_images/rsr_number/${firstLetter}/${cleanImgName}_2.jpg`,
+        `ftp_highres_images/${firstLetter}/${cleanImgName}_1_HR.jpg`,
+        `ftp_highres_images/${firstLetter}/${cleanImgName}_2_HR.jpg`,
+        `ftp_highres_images/rsr_number/${firstLetter}/${cleanImgName}_1_HR.jpg`,
+        `ftp_images/${cleanImgName}_1.jpg`,
+        `ftp_images/${cleanImgName}_2.jpg`,
+        `ftp_highres_images/${cleanImgName}_1_HR.jpg`,
+        `new_images/${cleanImgName}_1.jpg`,
+        `new_images/${cleanImgName}_2.jpg`,
+      ];
+      
+      for (const imagePath of pathsToTry) {
+        try {
+          // Try to get file info without downloading
+          const fileInfo = await client.size(imagePath);
+          
+          if (fileInfo > 0) {
+            results.push({
+              path: imagePath,
+              size: fileInfo,
+              exists: true,
+              type: imagePath.includes('_HR') ? 'high-res' : 'standard'
+            });
+            
+            console.log(`✅ Found RSR image: ${imagePath} (${fileInfo} bytes)`);
+          }
+        } catch (error: any) {
+          results.push({
+            path: imagePath,
+            exists: false,
+            error: error.message
+          });
+        }
+      }
+      
+      client.close();
+      
+      res.json({
+        imageName: cleanImgName,
+        firstLetter,
+        exploredPaths: results.filter(r => r.path),
+        foundImages: results.filter(r => r.exists),
+        totalPathsChecked: pathsToTry.length,
+        actualImagesFound: results.filter(r => r.exists).length
+      });
+      
+    } catch (error: any) {
+      console.error(`❌ RSR FTP exploration failed:`, error.message);
+      res.status(500).json({ 
+        error: 'RSR FTP exploration failed',
+        imageName: req.params.imageName,
+        message: error.message
+      });
     }
   });
 
