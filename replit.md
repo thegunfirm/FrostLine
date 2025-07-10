@@ -276,3 +276,53 @@ Changelog:
 Preferred communication style: Simple, everyday language.
 Image policy: NEVER use Unsplash or any placeholder images. Only use authentic distributor images (RSR, etc.) even if they show "Image Coming Soon" placeholders.
 ```
+
+## RSR Department Structure
+
+**Authentic RSR Department Classifications**:
+```
+Department Number
+       1 - Handguns
+       2 - Used Handguns
+       3 - Used Long Guns
+       4 - Tasers
+       5 - Long Guns
+       6 - NFA Products
+       7 - Black Powder
+       8 - Optics
+       9 - Optical Accessories
+     10 - Magazines
+     11 - Grips, Pads, Stocks, Bipods
+     12 - Soft Gun Cases, Packs, Bags
+     13 - Misc. Accessories
+     14 - Holsters & Pouches
+     15 - Reloading Equipment
+     16 - Black Powder Accessories
+     17 - Closeout Accessories
+     18 - Ammunition
+     19 - Survival & Camping Supplies
+     20 - Lights, Lasers & Batteries
+     21 - Cleaning Equipment
+     22 - Airguns
+     23 - Knives & Tools
+     24 - High Capacity Magazines
+     25 - Safes & Security
+     26 - Safety & Protection
+     27 - Non-Lethal Defense
+     28 - Binoculars
+     29 - Spotting Scopes
+     30 - Sights
+     31 - Optical Accessories
+     32 - Barrels, Choke Tubes & Muzzle Devices
+     33 - Clothing
+     34 - Parts
+     35 - Slings & Swivels
+     36 - Electronics
+     37 - Not Used
+     38 - Books, Software & DVD's
+     39 - Targets
+     40 - Hard Gun Cases
+     41 - Upper Receivers & Conversion Kits
+     42 - SBR Barrels & Upper Receivers
+     43 - Upper Receivers & Conversion Kits - High Capacity
+```
