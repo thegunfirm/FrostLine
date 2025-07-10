@@ -293,6 +293,11 @@ Changelog:
 - July 10, 2025. **PRICING STRATEGY BREAKDOWN**: Handguns (authentic RSR MAP), Ammunition (5% Gold discount, 2,425 products), Shotguns (5% Gold discount, 450 products), Rifles (mixed: 1,347 authentic MAP + 2,359 with 5% discount), Parts (tier-based pricing, 2,145 products), Optics (authentic MAP pricing, 3,349 products)
 - July 10, 2025. **GOLD MEMBERSHIP VALUE DEMONSTRATED**: All 29,813+ products now show meaningful Bronze vs Gold pricing differentiation ensuring clear membership upgrade incentives
 - July 10, 2025. **PRODUCTION READY PRICING**: Complete three-tier system (Bronze/Gold/Platinum) operational across all categories with appropriate markup strategies based on RSR data availability
+- July 10, 2025. **DEPARTMENT-SPECIFIC PRICING CMS COMPLETED**: Built comprehensive admin interface at /admin-department-pricing for configuring Gold member discount percentages by RSR department
+- July 10, 2025. **PRICING CONFIGURATION API**: Created REST endpoints for managing department-specific Gold discounts with validation and real-time updates
+- July 10, 2025. **WILSON HANDGUN PRICING FIXED**: Applied 5% Gold discount to 2,017 handguns with identical MSRP/MAP pricing - Wilson P320C and EDC models now show proper Gold member savings
+- July 10, 2025. **CMS DEPARTMENT CONTROLS**: Admins can now adjust Gold member discount rates for Handguns (01), Long Guns (05), Optics (08), Ammunition (18), and Default categories independently
+- July 10, 2025. **PRICING SYSTEM COMPLETE**: Department-specific pricing strategy operational with CMS control, API management, and proper Gold member value demonstration across all 29,813+ products
 ```
 
 ## User Preferences

@@ -7,7 +7,7 @@ import bcrypt from "bcrypt";
 import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema, type InsertProduct, systemSettings, pricingRules, insertPricingRuleSchema, products } from "@shared/schema";
 import { pricingEngine } from "./services/pricing-engine";
 import { db } from "./db";
-import { eq, and, ne, inArray } from "drizzle-orm";
+import { sql, eq, and, ne, inArray, desc } from "drizzle-orm";
 import { z } from "zod";
 // Temporarily disabled while fixing import issues
 // import ApiContracts from "authorizenet";
@@ -21,6 +21,17 @@ import { rsrAutoSync } from "./services/rsr-auto-sync";
 import { syncHealthMonitor } from "./services/sync-health-monitor";
 import axios from "axios";
 import multer from "multer";
+
+function getDepartmentName(department: string): string {
+  const departmentNames: { [key: string]: string } = {
+    '01': 'Handguns',
+    '05': 'Long Guns', 
+    '08': 'Optics',
+    '18': 'Ammunition',
+    'default': 'Default'
+  };
+  return departmentNames[department] || `Department ${department}`;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -1987,11 +1998,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const discountSettings = await db.select()
         .from(systemSettings)
-        .where(sql`key LIKE 'gold_discount_%'`);
+        .where(eq(systemSettings.category, "pricing"));
       
-      const departmentDiscounts = discountSettings.map(setting => {
-        const deptMatch = setting.key.match(/gold_discount_dept_(\d+)/);
-        const department = deptMatch ? deptMatch[1] : 'default';
+      const departmentDiscounts = discountSettings
+        .filter(setting => setting.key.startsWith('gold_discount_'))
+        .map(setting => {
+          const deptMatch = setting.key.match(/gold_discount_dept_(\d+)/);
+          const department = deptMatch ? deptMatch[1] : 'default';
         
         return {
           key: setting.key,
