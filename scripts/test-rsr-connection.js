@@ -14,8 +14,8 @@ async function testRSRFTPConnection() {
     // Test with current credentials
     await client.access({
       host: process.env.RSR_FTP_HOST || 'ftps.rsrgroup.com',
-      user: process.env.RSR_USERNAME || '63824',
-      password: process.env.RSR_PASSWORD || 'RunTheGunZ623!',
+      user: '60742',
+      password: '2SSinQ58',
       port: 2222,
       secure: true
     });
