@@ -2108,6 +2108,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // For rifles and shotguns, use category name filtering
           algoliaFilters.push(`categoryName:"${filters.category}"`);
           console.log(`Applied category filter: categoryName:"${filters.category}"`);
+        } else if (department === "18") {
+          // For ammunition (department 18), filter to in-stock only by default (matches RSR behavior)
+          algoliaFilters.push(`departmentNumber:"18"`);
+          algoliaFilters.push(`stockQuantity > 0`);
+          console.log(`Applied RSR department 18 filter with in-stock filtering (matches RSR behavior)`);
         } else if (department) {
           // Use authentic RSR department number filtering for other departments
           algoliaFilters.push(`departmentNumber:"${department}"`);
