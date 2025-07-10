@@ -615,17 +615,17 @@ export default function ProductDetail() {
                       </div>
                       
                       {/* CTA Section */}
-                      <div className="text-center p-4 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border-2 border-gray-400">
-                        <p className="text-gray-300 mb-3">
+                      <div className="text-center p-4 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border-2 border-yellow-600">
+                        <p className="text-yellow-300 mb-3">
                           Add to Cart or Login to view the price
                         </p>
                         <Link href="/register">
                           <Button 
                             size="lg" 
-                            className="bg-gradient-to-r from-gray-700 to-black hover:from-gray-600 hover:to-gray-800 text-gray-200 font-semibold px-8 py-3 relative overflow-hidden"
+                            className="bg-gradient-to-r from-gray-700 to-black hover:from-gray-600 hover:to-gray-800 text-yellow-300 font-semibold px-8 py-3 relative overflow-hidden"
                           >
                             <span className="relative z-10">Sign up for Free to view membership pricing</span>
-                            <div className="absolute inset-0 bg-gradient-to-r from-gray-400/20 to-gray-300/20 animate-pulse"></div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/20 to-amber-500/20 animate-pulse"></div>
                           </Button>
                         </Link>
                       </div>
