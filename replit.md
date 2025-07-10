@@ -301,6 +301,9 @@ Changelog:
 - July 10, 2025. **PARTS PRICING FIXED**: Applied 5% Gold discount to all 2,145 Parts products (Department 34) that had matching Bronze/Gold pricing
 - July 10, 2025. **PARTS ALGOLIA SYNC COMPLETED**: Updated all 2,145 Parts products in Algolia search index with new 5% Gold member savings pricing
 - July 10, 2025. **ZERO MATCHING PRICING**: All Parts products now show meaningful Bronze vs Gold pricing differentiation ensuring clear Gold membership value
+- July 10, 2025. **NFA CATEGORY PRICING FIXED**: Applied 5% Gold discount to 178 NFA products (Department 06) with matching Bronze/Gold pricing
+- July 10, 2025. **NFA ALGOLIA SYNC COMPLETED**: Updated all 652 NFA products in Algolia search index with correct category name and Gold member savings pricing
+- July 10, 2025. **NFA SEARCH OPERATIONAL**: All 652 NFA products now searchable with proper category filtering and meaningful Bronze vs Gold pricing differentiation
 ```
 
 ## User Preferences
