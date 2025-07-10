@@ -1982,6 +1982,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Department-specific pricing configuration
+  app.get("/api/admin/pricing/department-discounts", async (req, res) => {
+    try {
+      const discountSettings = await db.select()
+        .from(systemSettings)
+        .where(sql`key LIKE 'gold_discount_%'`);
+      
+      const departmentDiscounts = discountSettings.map(setting => {
+        const deptMatch = setting.key.match(/gold_discount_dept_(\d+)/);
+        const department = deptMatch ? deptMatch[1] : 'default';
+        
+        return {
+          key: setting.key,
+          department: department,
+          departmentName: getDepartmentName(department),
+          value: parseFloat(setting.value),
+          description: setting.description
+        };
+      });
+      
+      res.json(departmentDiscounts);
+    } catch (error: any) {
+      console.error("Error fetching department discounts:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/admin/pricing/department-discounts/:key", async (req, res) => {
+    try {
+      const { key } = req.params;
+      const { value } = req.body;
+      
+      // Validate discount percentage
+      const discount = parseFloat(value);
+      if (isNaN(discount) || discount < 0 || discount > 50) {
+        return res.status(400).json({ error: "Discount must be between 0 and 50 percent" });
+      }
+      
+      // Update the setting
+      await db.insert(systemSettings)
+        .values({
+          key: key,
+          value: value.toString(),
+          description: `Gold member discount % for Department ${key.replace('gold_discount_dept_', '').replace('gold_discount_default', 'Default')}`,
+          category: "pricing"
+        })
+        .onConflictDoUpdate({
+          target: systemSettings.key,
+          set: { value: value.toString(), updatedAt: new Date() }
+        });
+      
+      res.json({ message: "Department discount updated successfully", key, value });
+    } catch (error: any) {
+      console.error("Error updating department discount:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Pricing Rules Management API endpoints
   app.get("/api/admin/pricing-rules", async (req, res) => {
     try {
