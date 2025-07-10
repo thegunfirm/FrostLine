@@ -194,11 +194,29 @@ export default function ProductDetail() {
     return Math.max(0, savings);
   };
 
-  // Image handling
-  const getImageUrl = (imageIndex: number = 0) => {
+  // Image handling with multiple angles
+  const getImageUrl = (angle: number = 1) => {
     if (!product?.sku) return "/api/placeholder/400/400";
-    return `/api/rsr-image/${product.sku}`;
+    return `/api/rsr-image/${product.sku}?angle=${angle}`;
   };
+
+  const getThumbnailUrl = (angle: number = 1) => {
+    if (!product?.sku) return "/api/placeholder/150/150";
+    return `/api/rsr-image/${product.sku}?angle=${angle}&size=thumbnail`;
+  };
+
+  // Available image angles (RSR typically provides 1-3 angles)
+  const availableAngles = [1, 2, 3];
+
+  // Track which thumbnail images failed to load
+  const [failedThumbnails, setFailedThumbnails] = useState<Set<number>>(new Set());
+
+  const handleThumbnailError = (angle: number) => {
+    setFailedThumbnails(prev => new Set(prev).add(angle));
+  };
+
+  // Only show thumbnails that haven't failed to load
+  const validAngles = availableAngles.filter(angle => !failedThumbnails.has(angle));
 
   // Handlers
   const handleQuantityChange = (delta: number) => {
@@ -332,9 +350,10 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Product Images */}
           <div className="space-y-4">
+            {/* Main Image */}
             <div className="aspect-square bg-white rounded-lg border border-gray-200 p-4">
               <img
-                src={getImageUrl(selectedImageIndex)}
+                src={getImageUrl(availableAngles[selectedImageIndex] || 1)}
                 alt={product.name}
                 className="w-full h-full object-contain"
                 onError={(e) => {
@@ -343,7 +362,30 @@ export default function ProductDetail() {
               />
             </div>
             
-            {/* Thumbnail navigation would go here if multiple images */}
+            {/* Thumbnail Gallery */}
+            <div className="flex gap-2 justify-center">
+              {availableAngles.map((angle, index) => (
+                <button
+                  key={angle}
+                  onClick={() => setSelectedImageIndex(index)}
+                  className={cn(
+                    "w-20 h-20 rounded-lg border-2 bg-white p-2 transition-all hover:shadow-md",
+                    selectedImageIndex === index 
+                      ? "border-blue-500 shadow-lg" 
+                      : "border-gray-200 hover:border-gray-300"
+                  )}
+                >
+                  <img
+                    src={getThumbnailUrl(angle)}
+                    alt={`${product.name} - Angle ${angle}`}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.src = "/api/placeholder/80/80";
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Product Info */}
