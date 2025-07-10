@@ -221,18 +221,27 @@ export default function ProductDetail() {
       setImageError(false);
       
       // Check if image is available with a quick fetch
-      fetch(getImageUrl(1))
+      const imageUrl = getImageUrl(1);
+      console.log('Checking image availability for:', imageUrl);
+      
+      fetch(imageUrl)
         .then(response => {
+          console.log('Image response status:', response.status);
           if (response.ok) {
-            setImageSrc(getImageUrl(1));
+            console.log('Image available, setting source');
+            setImageSrc(imageUrl);
+            setImageLoading(false);
+            setImageError(false);
           } else {
             // Image not available, show placeholder immediately
+            console.log('Image not available (404), showing placeholder');
             setImageLoading(false);
             setImageError(true);
           }
         })
-        .catch(() => {
+        .catch((error) => {
           // Network error, show placeholder
+          console.log('Image fetch error:', error);
           setImageLoading(false);
           setImageError(true);
         });
