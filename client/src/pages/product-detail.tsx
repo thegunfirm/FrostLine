@@ -153,20 +153,23 @@ export default function ProductDetail() {
     }
   }, [user]);
 
-  // Pricing logic
+  // Pricing logic based on your specification
   const getCurrentPrice = () => {
     if (!product) return 0;
-    if (!user) return product.priceBronze;
+    if (!user) {
+      // For non-authenticated users: show MSRP if present, else dealerPrice
+      return product.priceMSRP || product.priceBronze;
+    }
     
     switch (user.subscriptionTier) {
       case "Bronze":
-        return product.priceBronze;
+        return product.priceMSRP || product.priceBronze;
       case "Gold":
         return product.priceGold;
       case "Platinum":
         return product.pricePlatinum;
       default:
-        return product.priceBronze;
+        return product.priceMSRP || product.priceBronze;
     }
   };
 
@@ -340,9 +343,11 @@ export default function ProductDetail() {
               <div className="flex items-center gap-2 mb-2">
                 <Badge variant="outline">{product.manufacturer}</Badge>
                 {product.newItem && <Badge variant="secondary">New</Badge>}
-                {product.promo && <Badge variant="destructive">Promo</Badge>}
+                {product.promo && <Badge variant="destructive">Closeout</Badge>}
+                {product.requiresFFL && <Badge variant="default">FFL Required</Badge>}
               </div>
               <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
+              <h2 className="text-lg text-gray-600 mb-2">{product.manufacturer}</h2>
               <p className="text-gray-600">{product.description}</p>
             </div>
 
@@ -357,22 +362,30 @@ export default function ProductDetail() {
               )}
             </div>
 
-            {/* Stock Status */}
-            <div className="flex items-center gap-2">
-              {product.inStock ? (
-                <>
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span className="text-green-600 font-medium">In Stock</span>
-                  {product.stockQuantity > 0 && (
-                    <span className="text-gray-500">({product.stockQuantity} available)</span>
-                  )}
-                </>
-              ) : (
-                <>
-                  <XCircle className="w-5 h-5 text-red-500" />
-                  <span className="text-red-600 font-medium">Out of Stock</span>
-                </>
-              )}
+            {/* Stock and Shipping Status */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                {product.inStock ? (
+                  <>
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <span className="text-green-600 font-medium">In Stock</span>
+                    {product.stockQuantity > 0 && (
+                      <span className="text-gray-500">({product.stockQuantity} available)</span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-5 h-5 text-red-500" />
+                    <span className="text-red-600 font-medium">Out of Stock</span>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Package className="w-4 h-4 text-blue-500" />
+                <span className="text-sm text-gray-600">
+                  {product.dropShippable ? "Ships Direct" : "Ships from Warehouse"}
+                </span>
+              </div>
             </div>
 
             {/* Pricing */}
@@ -390,16 +403,19 @@ export default function ProductDetail() {
                         </div>
                       )}
                     </div>
-                    {getSavings() > 0 && (
-                      <div className="text-right">
+                    <div className="text-right">
+                      {/* Show MSRP with retailMap strikethrough if retailMap is lower */}
+                      {product.priceMSRP && product.priceMAP && product.priceMAP < product.priceMSRP && (
                         <div className="text-sm text-gray-500 line-through">
-                          ${product.priceBronze.toFixed(2)}
+                          MSRP: ${product.priceMSRP.toFixed(2)}
                         </div>
+                      )}
+                      {getSavings() > 0 && (
                         <div className="text-sm font-medium text-green-600">
-                          Save ${getSavings().toFixed(2)}
+                          You Save ${getSavings().toFixed(2)}
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
 
                   {/* Tier Upgrade Incentives */}
@@ -504,14 +520,16 @@ export default function ProductDetail() {
                       onClick={handleAddToCart}
                       disabled={!product.inStock}
                       className="flex items-center gap-2"
+                      size="lg"
                     >
                       <ShoppingCart className="w-4 h-4" />
-                      Add to Cart
+                      {product.inStock ? "Add to Cart" : "Out of Stock"}
                     </Button>
                     <Button
                       variant="outline"
                       onClick={handleWishlist}
                       className="flex items-center gap-2"
+                      size="lg"
                     >
                       <Heart className={cn("w-4 h-4", isWishlist && "fill-current")} />
                       Wishlist
@@ -605,10 +623,22 @@ export default function ProductDetail() {
                         <span className="text-gray-600">Manufacturer:</span>
                         <span className="font-medium">{product.manufacturer}</span>
                       </div>
+                      {product.manufacturerPartNumber && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">MPN:</span>
+                          <span className="font-medium">{product.manufacturerPartNumber}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <span className="text-gray-600">Category:</span>
                         <span className="font-medium">{product.category}</span>
                       </div>
+                      {product.subcategoryName && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Type:</span>
+                          <span className="font-medium">{product.subcategoryName}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <span className="text-gray-600">Department:</span>
                         <span className="font-medium">{product.departmentDesc}</span>
@@ -619,15 +649,29 @@ export default function ProductDetail() {
                           <span className="font-medium">{product.weight} lbs</span>
                         </div>
                       )}
+                      {product.upcCode && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">UPC:</span>
+                          <span className="font-medium">{product.upcCode}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="space-y-3">
-                    <h3 className="font-semibold">Compliance</h3>
+                    <h3 className="font-semibold">Compliance & Shipping</h3>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">FFL Required:</span>
                         <span className="font-medium">{product.requiresFFL ? "Yes" : "No"}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Drop Shippable:</span>
+                        <span className="font-medium">{product.dropShippable ? "Yes" : "No"}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Ground Ship Only:</span>
+                        <span className="font-medium">{product.groundShipOnly ? "Yes" : "No"}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Prop 65 Warning:</span>
