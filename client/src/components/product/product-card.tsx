@@ -158,7 +158,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
         </div>
         
         <div className="flex gap-2">
-          <Link href={`/product/${product.id}`} className="flex-1">
+          <Link href={`/product/${product.sku || product.id}`} className="flex-1">
             <Button
               variant="outline"
               size="sm"

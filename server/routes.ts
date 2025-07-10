@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import { join } from "path";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
-import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema, type InsertProduct, systemSettings, pricingRules, insertPricingRuleSchema, products } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema, type InsertProduct, type Product, systemSettings, pricingRules, insertPricingRuleSchema, products } from "@shared/schema";
 import { pricingEngine } from "./services/pricing-engine";
 import { db } from "./db";
 import { sql, eq, and, ne, inArray, desc } from "drizzle-orm";
@@ -187,7 +187,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const product = await storage.getProduct(parseInt(id));
+      let product: Product | undefined;
+      
+      // Try to parse as numeric ID first
+      if (/^\d+$/.test(id)) {
+        product = await storage.getProduct(parseInt(id));
+      } else {
+        // If not numeric, treat as SKU
+        product = await storage.getProductBySku(id);
+      }
       
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
@@ -206,7 +214,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products/related/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const product = await storage.getProduct(parseInt(id));
+      let product: Product | undefined;
+      
+      // Try to parse as numeric ID first
+      if (/^\d+$/.test(id)) {
+        product = await storage.getProduct(parseInt(id));
+      } else {
+        // If not numeric, treat as SKU
+        product = await storage.getProductBySku(id);
+      }
       
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
@@ -214,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get related products by category and manufacturer
       const relatedProducts = await storage.getRelatedProducts(
-        parseInt(id),
+        product.id,
         product.category,
         product.manufacturer
       );
