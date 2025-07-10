@@ -605,9 +605,9 @@ export default function ProductDetail() {
                         </div>
                         
                         {/* Platinum Pricing */}
-                        <div className="p-3 border border-gun-black rounded-lg bg-gradient-to-r from-gun-gray to-gun-black relative overflow-hidden platinum-glint">
-                          <div className="text-sm text-gun-gold mb-1 font-medium">Platinum</div>
-                          <div className="text-2xl font-bold text-gun-gold relative">
+                        <div className="p-3 border border-gun-black rounded-lg bg-gun-black relative overflow-hidden platinum-glint">
+                          <div className="text-sm text-gray-300 mb-1 font-medium">Platinum</div>
+                          <div className="text-2xl font-bold text-gray-300 relative">
                             ***
                             <div className="platinum-spark-animation"></div>
                           </div>
