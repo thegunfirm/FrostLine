@@ -1448,6 +1448,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const size = req.query.size as 'standard' | 'highres' || 'standard';
       const cleanImgName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
       
+      // Known missing images - specialty/custom finishes not in RSR catalog
+      const knownMissingImages = [
+        'GLUX4350204FRNANIMGSCT',  // Anime Cerakote
+        'GLUX4350204FRNOUTYSCT',  // Outlaw Yellow Cerakote
+        'GLUX4350204FRNOUTBSCT',  // Outlaw Blue Cerakote
+        'GLUX4350204FRNTORN-SCT'  // Torn Camo Cerakote
+      ];
+      
+      if (knownMissingImages.includes(cleanImgName)) {
+        console.log(`❌ RSR image confirmed missing: ${cleanImgName} (custom finish not in catalog)`);
+        return res.status(404).json({ 
+          error: 'RSR image not available',
+          product: cleanImgName,
+          note: 'Custom finish not available in RSR catalog',
+          imageType: 'specialty-finish'
+        });
+      }
+      
       console.log(`🔍 Downloading RSR image: ${cleanImgName} (angle: ${angle}, size: ${size})`);
       
       // RSR image naming convention from PDF:
@@ -1516,6 +1534,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
       } catch (error: any) {
         ftpClient.close();
+        
+        // If specific image not found and it's a custom finish, try base model
+        if (error.message.includes('No such file') && cleanImgName.includes('SCT')) {
+          const baseModel = cleanImgName.replace(/[A-Z]+SCT$/, '');
+          if (baseModel !== cleanImgName) {
+            console.log(`🔄 Trying base model image: ${baseModel}`);
+            return res.redirect(`/api/rsr-image/${baseModel}.jpg?angle=${angle}&size=${size}`);
+          }
+        }
         
         // If specific image not found, try without angle suffix
         if (error.message.includes('No such file') && angle !== '1') {
