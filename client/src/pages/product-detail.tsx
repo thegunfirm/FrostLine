@@ -211,42 +211,58 @@ export default function ProductDetail() {
   const [imageError, setImageError] = useState(false);
   const [imageSrc, setImageSrc] = useState<string>('');
   
-  // Available angles for images
-  const availableAngles = [1];
+  // Available angles for images (RSR supports up to 3 angles)
+  const availableAngles = [1, 2, 3];
+  const [currentAngle, setCurrentAngle] = useState(1);
+  const [availableImages, setAvailableImages] = useState<number[]>([]);
+  const [showHighRes, setShowHighRes] = useState(false);
 
-  // Set image source on product load
+  // Check available images on product load
   useEffect(() => {
     if (product?.sku) {
       setImageLoading(true);
       setImageError(false);
       
-      // Check if image is available with a quick fetch
-      const imageUrl = getImageUrl(1);
-      console.log('Checking image availability for:', imageUrl);
-      
-      fetch(imageUrl)
-        .then(response => {
-          console.log('Image response status:', response.status);
-          if (response.ok) {
-            console.log('Image available, setting source');
-            setImageSrc(imageUrl);
-            setImageLoading(false);
-            setImageError(false);
-          } else {
-            // Image not available, show placeholder immediately
-            console.log('Image not available (404), showing placeholder');
-            setImageLoading(false);
-            setImageError(true);
+      // Check all available angles
+      const checkImages = async () => {
+        const available: number[] = [];
+        
+        for (const angle of availableAngles) {
+          try {
+            const response = await fetch(getImageUrl(angle));
+            if (response.ok) {
+              available.push(angle);
+            }
+          } catch (error) {
+            // Continue checking other angles
           }
-        })
-        .catch((error) => {
-          // Network error, show placeholder
-          console.log('Image fetch error:', error);
+        }
+        
+        setAvailableImages(available);
+        
+        if (available.length > 0) {
+          // Set first available image as current
+          setCurrentAngle(available[0]);
+          setImageSrc(getImageUrl(available[0]));
+          setImageLoading(false);
+          setImageError(false);
+        } else {
+          // No images available
           setImageLoading(false);
           setImageError(true);
-        });
+        }
+      };
+      
+      checkImages();
     }
   }, [product?.sku]);
+
+  // Update image source when angle changes
+  useEffect(() => {
+    if (availableImages.includes(currentAngle)) {
+      setImageSrc(getImageUrl(currentAngle));
+    }
+  }, [currentAngle, availableImages]);
 
   const handleImageLoad = () => {
     setImageLoading(false);
@@ -409,15 +425,105 @@ export default function ProductDetail() {
               ) : (
                 <img
                   src={imageSrc}
-                  alt={product.name}
-                  className="w-full h-full object-contain"
+                  alt={`${product.name} - View ${currentAngle}`}
+                  className="w-full h-full object-contain cursor-pointer"
                   onLoad={handleImageLoad}
                   onError={handleImageError}
                   style={{ display: imageLoading ? 'none' : 'block' }}
+                  onClick={() => setShowHighRes(true)}
                 />
               )}
             </div>
             
+            {/* Thumbnail Gallery - Only show if multiple images available */}
+            {availableImages.length > 1 && (
+              <div className="flex gap-2 justify-center">
+                {availableImages.map((angle) => (
+                  <button
+                    key={angle}
+                    onClick={() => setCurrentAngle(angle)}
+                    className={cn(
+                      "w-16 h-16 rounded-lg border-2 overflow-hidden",
+                      currentAngle === angle
+                        ? "border-blue-500 ring-2 ring-blue-200"
+                        : "border-gray-200 hover:border-gray-300"
+                    )}
+                  >
+                    <img
+                      src={getImageUrl(angle)}
+                      alt={`${product.name} - View ${angle}`}
+                      className="w-full h-full object-contain bg-white"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            {/* High Resolution View Modal */}
+            {showHighRes && availableImages.length > 0 && (
+              <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+                <div className="max-w-4xl max-h-[90vh] p-4">
+                  <div className="bg-white rounded-lg overflow-hidden">
+                    <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                      <h3 className="text-lg font-semibold">High Resolution View</h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowHighRes(false)}
+                      >
+                        ×
+                      </Button>
+                    </div>
+                    <div className="p-4">
+                      <img
+                        src={`/api/rsr-image/${product.sku}?angle=${currentAngle}&size=highres`}
+                        alt={`${product.name} - High Resolution View ${currentAngle}`}
+                        className="max-w-full max-h-[70vh] object-contain mx-auto"
+                      />
+                    </div>
+                    {availableImages.length > 1 && (
+                      <div className="p-4 border-t border-gray-200">
+                        <div className="flex gap-2 justify-center">
+                          {availableImages.map((angle) => (
+                            <button
+                              key={angle}
+                              onClick={() => setCurrentAngle(angle)}
+                              className={cn(
+                                "w-12 h-12 rounded border-2 overflow-hidden",
+                                currentAngle === angle
+                                  ? "border-blue-500 ring-2 ring-blue-200"
+                                  : "border-gray-200 hover:border-gray-300"
+                              )}
+                            >
+                              <img
+                                src={getImageUrl(angle)}
+                                alt={`View ${angle}`}
+                                className="w-full h-full object-contain bg-white"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* View High Resolution Link */}
+            {availableImages.length > 0 && (
+              <div className="text-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowHighRes(true)}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  View High Resolution
+                </Button>
+              </div>
+            )}
 
           </div>
 
