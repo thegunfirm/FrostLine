@@ -46,6 +46,7 @@ export interface IStorage {
   searchProducts(query: string, limit?: number): Promise<Product[]>;
   getProductsByCategory(category: string): Promise<Product[]>;
   getFeaturedProducts(limit?: number): Promise<Product[]>;
+  getRelatedProducts(productId: number, category: string, manufacturer: string): Promise<Product[]>;
   
   // Order operations
   getOrders(userId?: number): Promise<Order[]>;
@@ -202,6 +203,21 @@ export class DatabaseStorage implements IStorage {
       .where(eq(products.isActive, true))
       .orderBy(desc(products.createdAt))
       .limit(limit);
+  }
+
+  async getRelatedProducts(productId: number, category: string, manufacturer: string): Promise<Product[]> {
+    return await db.select().from(products)
+      .where(
+        and(
+          eq(products.isActive, true),
+          or(
+            eq(products.category, category),
+            eq(products.manufacturer, manufacturer)
+          )
+        )
+      )
+      .orderBy(desc(products.createdAt))
+      .limit(8);
   }
 
   // Order operations

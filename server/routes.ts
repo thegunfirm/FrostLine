@@ -193,10 +193,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Product not found" });
       }
       
+      // Add cache headers for product details
+      res.set('Cache-Control', 'public, max-age=600'); // 10 minutes
       res.json(product);
     } catch (error) {
       console.error("Get product error:", error);
       res.status(500).json({ message: "Failed to fetch product" });
+    }
+  });
+
+  // Related products endpoint
+  app.get("/api/products/related/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const product = await storage.getProduct(parseInt(id));
+      
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      // Get related products by category and manufacturer
+      const relatedProducts = await storage.getRelatedProducts(
+        parseInt(id),
+        product.category,
+        product.manufacturer
+      );
+      
+      res.set('Cache-Control', 'public, max-age=900'); // 15 minutes
+      res.json(relatedProducts);
+    } catch (error) {
+      console.error("Get related products error:", error);
+      res.status(500).json({ message: "Failed to fetch related products" });
     }
   });
 
@@ -266,11 +293,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const ffls = await storage.searchFFLsByZip(zip, parseInt(radius as string));
       
+      res.set('Cache-Control', 'public, max-age=1800'); // 30 minutes
       res.json(ffls);
     } catch (error) {
       console.error("Search FFLs error:", error);
       res.status(500).json({ message: "Failed to search FFLs" });
     }
+  });
+
+  // Add placeholder endpoint for missing routes
+  app.get("/api/placeholder/:width/:height", (req, res) => {
+    const { width, height } = req.params;
+    res.set('Cache-Control', 'public, max-age=86400'); // 24 hours
+    res.redirect(`https://via.placeholder.com/${width}x${height}/f3f4f6/9ca3af?text=No+Image`);
   });
 
   // User routes
