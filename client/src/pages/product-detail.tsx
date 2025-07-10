@@ -587,7 +587,7 @@ export default function ProductDetail() {
                   ) : (
                     /* Non-logged in user - show Bronze, Gold, and asterisked Platinum */
                     <div className="space-y-4">
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {/* Bronze Pricing */}
                         <div className="p-3 border border-gray-200 rounded-lg flex justify-between items-center">
                           <div className="text-sm text-gray-600">Bronze Members</div>
@@ -607,10 +607,14 @@ export default function ProductDetail() {
                         {/* Platinum Pricing */}
                         <div className="p-4 border-2 border-gray-400 rounded-lg bg-gradient-to-br from-gray-800 to-black relative overflow-hidden">
                           <div className="flex justify-between items-center">
-                            <div className="text-sm text-gray-300 font-medium">Platinum Members</div>
+                            <div className="text-lg text-gray-300 font-semibold">Platinum Members</div>
                             <div className="text-right relative z-10">
                               <div className="text-2xl font-bold text-gray-200 mb-1">
-                                ***
+                                ${(() => {
+                                  const bronzePrice = parseFloat(product.priceBronze || '0') || 0;
+                                  const priceStr = bronzePrice.toFixed(2);
+                                  return priceStr.replace(/\d/g, '*');
+                                })()}
                               </div>
                               <div className="text-xs text-gray-400">
                                 Add to Cart to See Price
