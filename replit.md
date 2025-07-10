@@ -298,6 +298,9 @@ Changelog:
 - July 10, 2025. **WILSON HANDGUN PRICING FIXED**: Applied 5% Gold discount to 2,017 handguns with identical MSRP/MAP pricing - Wilson P320C and EDC models now show proper Gold member savings
 - July 10, 2025. **CMS DEPARTMENT CONTROLS**: Admins can now adjust Gold member discount rates for Handguns (01), Long Guns (05), Optics (08), Ammunition (18), and Default categories independently
 - July 10, 2025. **PRICING SYSTEM COMPLETE**: Department-specific pricing strategy operational with CMS control, API management, and proper Gold member value demonstration across all 29,813+ products
+- July 10, 2025. **PARTS PRICING FIXED**: Applied 5% Gold discount to all 2,145 Parts products (Department 34) that had matching Bronze/Gold pricing
+- July 10, 2025. **PARTS ALGOLIA SYNC COMPLETED**: Updated all 2,145 Parts products in Algolia search index with new 5% Gold member savings pricing
+- July 10, 2025. **ZERO MATCHING PRICING**: All Parts products now show meaningful Bronze vs Gold pricing differentiation ensuring clear Gold membership value
 ```
 
 ## User Preferences

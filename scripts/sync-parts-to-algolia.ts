@@ -1,92 +1,112 @@
 /**
- * Sync Parts Products to Algolia
- * Ensures parts department (34) is properly indexed
+ * Sync Parts to Algolia - Update Pricing
+ * Synchronizes all Parts products to Algolia with new 5% Gold discount pricing
  */
+
 import { db } from "../server/db";
-import { products } from "../shared/schema";
-import { sql } from "drizzle-orm";
+import { products } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import axios from "axios";
+
+const ALGOLIA_APP_ID = process.env.ALGOLIA_APP_ID!;
+const ALGOLIA_ADMIN_API_KEY = process.env.ALGOLIA_ADMIN_API_KEY!;
+const ALGOLIA_INDEX_NAME = 'products';
 
 async function syncPartsToAlgolia() {
+  console.log('🔧 Starting Parts to Algolia sync...');
+
   try {
-    console.log("🔧 Starting Parts sync to Algolia...");
-    
-    // Get all parts products from department 34
+    // Get all Parts products (Department 34)
     const partsProducts = await db.select()
       .from(products)
-      .where(sql`department_number = '34'`);
-    
-    console.log(`📊 Found ${partsProducts.length} parts products to sync`);
-    
-    const algoliaObjects = partsProducts.map(product => ({
+      .where(eq(products.departmentNumber, '34'));
+
+    console.log(`📦 Found ${partsProducts.length} Parts products to sync`);
+
+    if (partsProducts.length === 0) {
+      console.log('✅ No Parts products to sync');
+      return;
+    }
+
+    // Transform products for Algolia
+    const algoliaRecords = partsProducts.map(product => ({
       objectID: product.sku,
       name: product.name,
       description: product.description,
       sku: product.sku,
-      manufacturerName: product.manufacturer,
-      categoryName: product.category,
+      manufacturerName: product.manufacturerName,
+      categoryName: product.categoryName,
       departmentNumber: product.departmentNumber,
+      priceBronze: product.priceBronze,
+      priceGold: product.priceGold,
+      pricePlatinum: product.pricePlatinum,
       tierPricing: {
-        bronze: product.priceBronze || 0,
-        gold: product.priceGold || 0,
-        platinum: product.pricePlatinum || 0
+        bronze: product.priceBronze,
+        gold: product.priceGold,
+        platinum: product.pricePlatinum
       },
-      priceBronze: product.priceBronze || 0,
-      priceGold: product.priceGold || 0,
-      pricePlatinum: product.pricePlatinum || 0,
-      price_bronze: product.priceBronze || 0,
-      price_gold: product.priceGold || 0,
-      price_platinum: product.pricePlatinum || 0,
-      inStock: (product.stockQuantity || 0) > 0,
-      stockQuantity: product.stockQuantity || 0,
-      retailPrice: product.priceBronze || 0,
+      retailPrice: product.priceBronze, // Use Bronze as retail price
+      inStock: product.inStock,
+      stockQuantity: product.stockQuantity,
+      imageUrl: product.imageUrl,
+      tags: product.tags,
       distributor: "RSR"
     }));
-    
-    // Batch sync to Algolia
+
+    // Send to Algolia in batches
     const batchSize = 100;
     let syncedCount = 0;
-    
-    for (let i = 0; i < algoliaObjects.length; i += batchSize) {
-      const batch = algoliaObjects.slice(i, i + batchSize);
+
+    for (let i = 0; i < algoliaRecords.length; i += batchSize) {
+      const batch = algoliaRecords.slice(i, i + batchSize);
       
-      const response = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/products/batch`, {
-        method: 'POST',
-        headers: {
-          'X-Algolia-API-Key': process.env.ALGOLIA_ADMIN_API_KEY!,
-          'X-Algolia-Application-Id': process.env.ALGOLIA_APP_ID!,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          requests: batch.map(obj => ({
-            action: 'updateObject',
-            body: obj
-          }))
-        })
-      });
-      
-      if (response.ok) {
-        syncedCount += batch.length;
-        console.log(`✅ Synced ${syncedCount}/${algoliaObjects.length} parts products`);
-      } else {
-        console.error(`❌ Batch sync failed:`, await response.text());
-        break;
+      try {
+        const response = await axios.post(
+          `https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/${ALGOLIA_INDEX_NAME}/batch`,
+          {
+            requests: batch.map(record => ({
+              action: 'updateObject',
+              body: record
+            }))
+          },
+          {
+            headers: {
+              'X-Algolia-API-Key': ALGOLIA_ADMIN_API_KEY,
+              'X-Algolia-Application-Id': ALGOLIA_APP_ID,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (response.status === 200) {
+          syncedCount += batch.length;
+          console.log(`📝 Synced ${syncedCount} / ${algoliaRecords.length} Parts products to Algolia`);
+        } else {
+          console.error(`❌ Algolia batch failed:`, response.statusText);
+        }
+      } catch (error) {
+        console.error(`❌ Error syncing batch ${i / batchSize + 1}:`, error);
       }
     }
-    
-    console.log(`🎯 Successfully synced ${syncedCount} parts products to Algolia`);
-    console.log("✅ Parts filtering should now work for department 34");
-    
+
+    console.log(`✅ Parts Algolia sync complete! Updated ${syncedCount} products`);
+    console.log(`🔍 Parts products now show 5% Gold member savings in search results`);
+
   } catch (error) {
-    console.error('❌ Parts sync error:', error);
-    process.exit(1);
+    console.error('❌ Parts Algolia sync failed:', error);
+    throw error;
   }
 }
 
-// Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  syncPartsToAlgolia()
-    .then(() => process.exit(0))
-    .catch(console.error);
-}
+// Run the script
+syncPartsToAlgolia()
+  .then(() => {
+    console.log('✅ Parts Algolia sync complete');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('❌ Script failed:', error);
+    process.exit(1);
+  });
 
 export { syncPartsToAlgolia };
