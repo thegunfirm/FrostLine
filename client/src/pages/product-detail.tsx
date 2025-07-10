@@ -617,14 +617,14 @@ export default function ProductDetail() {
                       {/* CTA Section */}
                       <div className="text-center p-4 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border-2 border-yellow-600">
                         <p className="text-yellow-300 mb-3">
-                          Add to Cart or Login to view the price
+                          Sign up to unlock Platinum dealer pricing and add to cart
                         </p>
                         <Link href="/register">
                           <Button 
                             size="lg" 
                             className="bg-gradient-to-r from-gray-700 to-black hover:from-gray-600 hover:to-gray-800 text-yellow-300 font-semibold px-8 py-3 relative overflow-hidden"
                           >
-                            <span className="relative z-10">Sign up for Free to view membership pricing</span>
+                            <span className="relative z-10">Get Free Access to Platinum Pricing</span>
                             <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/20 to-amber-500/20 animate-pulse"></div>
                           </Button>
                         </Link>
