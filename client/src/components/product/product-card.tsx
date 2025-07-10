@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Product } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
+import { ImageIcon } from "lucide-react";
 
 interface ProductCardProps {
   product: Product;
@@ -21,6 +22,31 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
   const altText = product.name || 'Product Image';
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [validImageUrl, setValidImageUrl] = useState<string | null>(null);
+
+  // Proactively check if image is available
+  useEffect(() => {
+    if (product.sku) {
+      const checkImageUrl = `/api/rsr-image/${product.sku}`;
+      fetch(checkImageUrl)
+        .then(response => {
+          if (response.ok) {
+            setValidImageUrl(checkImageUrl);
+            setImageLoading(false);
+          } else {
+            setImageLoading(false);
+            setImageError(true);
+          }
+        })
+        .catch(() => {
+          setImageLoading(false);
+          setImageError(true);
+        });
+    } else {
+      setImageLoading(false);
+      setImageError(true);
+    }
+  }, [product.sku]);
 
   const onLoad = () => setImageLoading(false);
   const onError = () => {
@@ -70,24 +96,31 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
   return (
     <Card className="group cursor-pointer hover:shadow-xl transition-shadow duration-300 h-fit">
       <div className="aspect-square relative overflow-hidden">
-        {imageUrl ? (
+        {imageLoading ? (
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-gun-gold border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : imageError ? (
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            <div className="text-center text-gray-500">
+              <ImageIcon className="w-12 h-12 mx-auto mb-2" />
+              <p className="text-xs">No Image</p>
+            </div>
+          </div>
+        ) : validImageUrl ? (
           <img 
-            src={imageUrl}
+            src={validImageUrl}
             alt={altText || product.name}
-            className={cn(
-              "w-full h-full object-contain group-hover:scale-105 transition-transform duration-300",
-              imageLoading && "opacity-50"
-            )}
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
             onLoad={onLoad}
             onError={onError}
           />
         ) : (
-          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-            {imageLoading ? (
-              <div className="w-8 h-8 border-4 border-gun-gold border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <span className="text-gray-400">No Image</span>
-            )}
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            <div className="text-center text-gray-500">
+              <ImageIcon className="w-12 h-12 mx-auto mb-2" />
+              <p className="text-xs">No Image</p>
+            </div>
           </div>
         )}
         

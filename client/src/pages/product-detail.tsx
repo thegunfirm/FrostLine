@@ -219,7 +219,23 @@ export default function ProductDetail() {
     if (product?.sku) {
       setImageLoading(true);
       setImageError(false);
-      setImageSrc(getImageUrl(1));
+      
+      // Check if image is available with a quick fetch
+      fetch(getImageUrl(1))
+        .then(response => {
+          if (response.ok) {
+            setImageSrc(getImageUrl(1));
+          } else {
+            // Image not available, show placeholder immediately
+            setImageLoading(false);
+            setImageError(true);
+          }
+        })
+        .catch(() => {
+          // Network error, show placeholder
+          setImageLoading(false);
+          setImageError(true);
+        });
     }
   }, [product?.sku]);
 
