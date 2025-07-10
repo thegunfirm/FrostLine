@@ -2109,10 +2109,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           algoliaFilters.push(`categoryName:"${filters.category}"`);
           console.log(`Applied category filter: categoryName:"${filters.category}"`);
         } else if (department === "18") {
-          // For ammunition (department 18), show only products with inventory (matches RSR behavior - they don't display zero-stock items)
+          // For ammunition (department 18), show all products including zero inventory (matches RSR behavior)
           algoliaFilters.push(`departmentNumber:"18"`);
-          algoliaFilters.push(`stockQuantity > 0`);
-          console.log(`Applied RSR department 18 filter (RSR only displays ammunition with actual inventory)`);
+          console.log(`Applied RSR department 18 filter (showing all ammunition like RSR)`);
         } else if (department) {
           // Use authentic RSR department number filtering for other departments
           algoliaFilters.push(`departmentNumber:"${department}"`);
