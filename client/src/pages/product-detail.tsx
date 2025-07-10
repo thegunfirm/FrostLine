@@ -205,18 +205,28 @@ export default function ProductDetail() {
     return `/api/rsr-image/${product.sku}?angle=${angle}&size=thumbnail`;
   };
 
-  // Available image angles (RSR typically provides 1-3 angles)
-  const availableAngles = [1, 2, 3];
+  // Only show main image (angle 1) initially to avoid multiple FTP timeouts
+  const [imageLoadStates, setImageLoadStates] = useState<{[key: number]: 'loading' | 'loaded' | 'error'}>({});
+  const [showThumbnails, setShowThumbnails] = useState(false);
 
-  // Track which thumbnail images failed to load
-  const [failedThumbnails, setFailedThumbnails] = useState<Set<number>>(new Set());
+  // Start with just the main image
+  const availableAngles = [1];
+  
+  // Load additional angles only after main image loads successfully
+  useEffect(() => {
+    if (imageLoadStates[1] === 'loaded' && product?.sku) {
+      // Give main image time to load, then enable thumbnails
+      setTimeout(() => setShowThumbnails(true), 2000);
+    }
+  }, [imageLoadStates, product?.sku]);
 
-  const handleThumbnailError = (angle: number) => {
-    setFailedThumbnails(prev => new Set(prev).add(angle));
+  const handleImageLoad = (angle: number) => {
+    setImageLoadStates(prev => ({ ...prev, [angle]: 'loaded' }));
   };
 
-  // Only show thumbnails that haven't failed to load
-  const validAngles = availableAngles.filter(angle => !failedThumbnails.has(angle));
+  const handleImageError = (angle: number) => {
+    setImageLoadStates(prev => ({ ...prev, [angle]: 'error' }));
+  };
 
   // Handlers
   const handleQuantityChange = (delta: number) => {
@@ -362,29 +372,9 @@ export default function ProductDetail() {
               />
             </div>
             
-            {/* Thumbnail Gallery */}
-            <div className="flex gap-2 justify-center">
-              {availableAngles.map((angle, index) => (
-                <button
-                  key={angle}
-                  onClick={() => setSelectedImageIndex(index)}
-                  className={cn(
-                    "w-20 h-20 rounded-lg border-2 bg-white p-2 transition-all hover:shadow-md",
-                    selectedImageIndex === index 
-                      ? "border-blue-500 shadow-lg" 
-                      : "border-gray-200 hover:border-gray-300"
-                  )}
-                >
-                  <img
-                    src={getThumbnailUrl(angle)}
-                    alt={`${product.name} - Angle ${angle}`}
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      e.currentTarget.src = "/api/placeholder/80/80";
-                    }}
-                  />
-                </button>
-              ))}
+            {/* Image Note */}
+            <div className="text-center text-sm text-gray-500">
+              Product image provided by RSR Group
             </div>
           </div>
 
