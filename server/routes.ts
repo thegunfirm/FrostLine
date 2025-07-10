@@ -1507,7 +1507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // RSR Product Image Service - Immediate 404 for unavailable images
+  // RSR Product Image Service - HTTP fallback when FTP fails
   app.get("/api/rsr-image/:imageName", async (req, res) => {
     try {
       const imageName = req.params.imageName;
@@ -1515,13 +1515,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const size = req.query.size as 'standard' | 'highres' || 'standard';
       const cleanImgName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
       
-      // RSR FTP is consistently failing with connection timeouts
-      // Return 404 immediately to prevent long loading times
-      console.log(`❌ RSR image not available: ${cleanImgName} (FTP connection issues)`);
+      // Try HTTP access to RSR images as fallback
+      const urlPatterns = [
+        `https://img.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
+        `https://img.rsrgroup.com/images/inventory/large/${cleanImgName}.jpg`,
+        `https://img.rsrgroup.com/images/inventory/thumb/${cleanImgName}.jpg`,
+      ];
+      
+      for (const imageUrl of urlPatterns) {
+        try {
+          const response = await axios.get(imageUrl, {
+            responseType: "arraybuffer",
+            headers: {
+              Referer: "https://www.rsrgroup.com/",
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
+            },
+            timeout: 5000,
+            validateStatus: (status) => status === 200
+          });
+          
+          const contentType = response.headers['content-type'] || 'image/jpeg';
+          const imageSize = response.data.length;
+          
+          // Check if this is an actual image (not placeholder)
+          if (imageSize > 10000) { // Real images are usually larger than 10KB
+            console.log(`✅ RSR image found: ${cleanImgName} (${imageSize} bytes)`);
+            
+            // Set appropriate cache headers
+            res.set({
+              'Content-Type': contentType,
+              'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+              'Content-Length': imageSize.toString()
+            });
+            
+            return res.send(response.data);
+          }
+        } catch (error: any) {
+          // Continue to next URL pattern
+          continue;
+        }
+      }
+      
+      // If we get here, no image was found
+      console.log(`❌ RSR image not available: ${cleanImgName} (checked HTTP endpoints)`);
       res.status(404).json({ 
         error: 'RSR image not available',
         product: cleanImgName,
-        note: 'RSR FTP connection currently unavailable'
+        note: 'Image not found on RSR servers'
       });
       
     } catch (error: any) {

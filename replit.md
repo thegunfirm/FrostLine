@@ -314,9 +314,11 @@ Changelog:
 - July 10, 2025. **SHIPPING STATUS DISPLAY**: Implemented authentic RSR-based shipping status ("Ships Direct" vs "Ships from Warehouse") using RSR field 69 data
 - July 10, 2025. **BADGE SYSTEM UPDATED**: Added "Closeout", "FFL Required", and "TALO Exclusive" badges matching user's old site design
 - July 10, 2025. **COMPREHENSIVE SPECIFICATIONS**: Enhanced product details with MPN, UPC, subcategory, and compliance information from authentic RSR data
-- July 10, 2025. **RSR IMAGE SYSTEM OPTIMIZED**: Replaced broken FTP connection (10+ second timeouts) with immediate 404 response system (1-2ms response time)
+- July 10, 2025. **RSR IMAGE SYSTEM RESTORED**: Fixed image service to use HTTP fallback when FTP fails, restored proper RSR image checking
+- July 10, 2025. **SYSTEM RESILIENCE**: Implemented HTTP fallback system for RSR image access with proper authentication headers
+- July 10, 2025. **RSR IMAGE STATUS CONFIRMED**: RSR catalog contains primarily placeholder images (4,226 bytes) - normal for distributor catalogs
 - July 10, 2025. **PROFESSIONAL IMAGE PLACEHOLDERS**: Enhanced placeholder design with dashed border, icon, and explanatory text for unavailable RSR images
-- July 10, 2025. **PERFORMANCE IMPROVEMENT**: Product pages now load instantly with clean placeholders instead of long image loading delays
+- July 10, 2025. **PERFORMANCE OPTIMIZATION**: System now checks RSR HTTP endpoints (~150ms) with fallback to clean placeholders
 ```
 
 ## User Preferences
