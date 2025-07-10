@@ -2096,6 +2096,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "Rifle Ammunition": "category",     // Filter by category name for rifle ammo
           "Shotgun Ammunition": "category",   // Filter by category name for shotgun ammo
           "Rimfire Ammunition": "category",   // Filter by category name for rimfire ammo
+          "Optics": "optics",      // Special case - multiple departments (08, 09, 30, 31)
           // For other categories, fall back to category name
         };
         
@@ -2112,6 +2113,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // For ammunition (department 18), show all products including zero inventory (matches RSR behavior)
           algoliaFilters.push(`departmentNumber:"18"`);
           console.log(`Applied RSR department 18 filter (showing all ammunition like RSR)`);
+        } else if (department === "optics") {
+          // For optics, include all optics-related departments (08, 09, 30, 31)
+          algoliaFilters.push(`(departmentNumber:"08" OR departmentNumber:"09" OR departmentNumber:"30" OR departmentNumber:"31")`);
+          console.log(`Applied RSR optics departments filter (08, 09, 30, 31)`);
         } else if (department) {
           // Use authentic RSR department number filtering for other departments
           algoliaFilters.push(`departmentNumber:"${department}"`);
