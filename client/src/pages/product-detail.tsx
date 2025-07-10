@@ -605,25 +605,27 @@ export default function ProductDetail() {
                         </div>
                         
                         {/* Platinum Pricing */}
-                        <div className="p-3 border border-gray-300 rounded-lg bg-gray-50">
-                          <div className="text-sm text-gray-600 mb-1 font-medium">Platinum</div>
-                          <div className="text-2xl font-bold text-gray-900">
+                        <div className="p-3 border-2 border-purple-300 rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 relative overflow-hidden">
+                          <div className="text-sm text-purple-700 mb-1 font-medium">Platinum</div>
+                          <div className="text-2xl font-bold text-purple-900 relative z-10">
                             ***
                           </div>
+                          <div className="absolute inset-0 bg-gradient-to-r from-purple-200/30 to-blue-200/30 animate-pulse"></div>
                         </div>
                       </div>
                       
                       {/* CTA Section */}
-                      <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <p className="text-gray-700 mb-3">
+                      <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border-2 border-purple-200">
+                        <p className="text-purple-700 mb-3">
                           Add to Cart or Login to view the price
                         </p>
                         <Link href="/register">
                           <Button 
                             size="lg" 
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3"
+                            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-8 py-3 relative overflow-hidden"
                           >
-                            Sign up for Free to view membership pricing
+                            <span className="relative z-10">Sign up for Free to view membership pricing</span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-purple-400/30 to-blue-400/30 animate-pulse"></div>
                           </Button>
                         </Link>
                       </div>
