@@ -2096,7 +2096,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "Rifle Ammunition": "category",     // Filter by category name for rifle ammo
           "Shotgun Ammunition": "category",   // Filter by category name for shotgun ammo
           "Rimfire Ammunition": "category",   // Filter by category name for rimfire ammo
-          "Optics": "optics",      // Special case - multiple departments (08, 09, 30, 31)
+          "Optics": "08",          // Department 08 - Optics only
+          "Optical Accessories": "optical_accessories", // Departments 09 + 31 combined
+          "Sights": "30",          // Department 30 - Sights only
           // For other categories, fall back to category name
         };
         
