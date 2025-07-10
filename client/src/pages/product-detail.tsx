@@ -52,12 +52,12 @@ interface Product {
   manufacturer: string;
   manufacturerPartNumber: string;
   sku: string;
-  priceWholesale: number;
-  priceMAP: number;
-  priceMSRP: number;
-  priceBronze: number;
-  priceGold: number;
-  pricePlatinum: number;
+  priceWholesale: string;
+  priceMAP: string;
+  priceMSRP: string;
+  priceBronze: string;
+  priceGold: string;
+  pricePlatinum: string;
   inStock: boolean;
   stockQuantity: number;
   allocated: string;
@@ -87,9 +87,9 @@ interface RelatedProduct {
   id: number;
   name: string;
   manufacturer: string;
-  priceBronze: number;
-  priceGold: number;
-  pricePlatinum: number;
+  priceBronze: string;
+  priceGold: string;
+  pricePlatinum: string;
   inStock: boolean;
   requiresFFL: boolean;
   category: string;
@@ -158,30 +158,40 @@ export default function ProductDetail() {
     if (!product) return 0;
     if (!user) {
       // For non-authenticated users: show MSRP if present, else dealerPrice
-      return product.priceMSRP || product.priceBronze;
+      const price = parseFloat(product.priceMSRP || product.priceBronze || '0');
+      return isNaN(price) ? 0 : price;
     }
     
     switch (user.subscriptionTier) {
       case "Bronze":
-        return product.priceMSRP || product.priceBronze;
+        const bronzePrice = parseFloat(product.priceMSRP || product.priceBronze || '0');
+        return isNaN(bronzePrice) ? 0 : bronzePrice;
       case "Gold":
-        return product.priceGold;
+        const goldPrice = parseFloat(product.priceGold || '0');
+        return isNaN(goldPrice) ? 0 : goldPrice;
       case "Platinum":
-        return product.pricePlatinum;
+        const platinumPrice = parseFloat(product.pricePlatinum || '0');
+        return isNaN(platinumPrice) ? 0 : platinumPrice;
       default:
-        return product.priceMSRP || product.priceBronze;
+        const defaultPrice = parseFloat(product.priceMSRP || product.priceBronze || '0');
+        return isNaN(defaultPrice) ? 0 : defaultPrice;
     }
   };
 
   const getSavings = () => {
     if (!product) return 0;
-    return product.priceBronze - getCurrentPrice();
+    const basePrice = parseFloat(product.priceBronze || '0');
+    const currentPrice = getCurrentPrice();
+    const savings = (isNaN(basePrice) ? 0 : basePrice) - currentPrice;
+    return Math.max(0, savings);
   };
 
   const getTierSavings = (tier: string) => {
     if (!product) return 0;
-    const tierPrice = tier === "Gold" ? product.priceGold : product.pricePlatinum;
-    return product.priceBronze - tierPrice;
+    const tierPrice = tier === "Gold" ? parseFloat(product.priceGold || '0') : parseFloat(product.pricePlatinum || '0');
+    const basePrice = parseFloat(product.priceBronze || '0');
+    const savings = (isNaN(basePrice) ? 0 : basePrice) - (isNaN(tierPrice) ? 0 : tierPrice);
+    return Math.max(0, savings);
   };
 
   // Image handling
@@ -395,7 +405,7 @@ export default function ProductDetail() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-2xl font-bold text-gray-900">
-                        ${getCurrentPrice().toFixed(2)}
+                        ${(getCurrentPrice() || 0).toFixed(2)}
                       </div>
                       {user && (
                         <div className="text-sm text-gray-600">
@@ -405,14 +415,14 @@ export default function ProductDetail() {
                     </div>
                     <div className="text-right">
                       {/* Show MSRP with retailMap strikethrough if retailMap is lower */}
-                      {product.priceMSRP && product.priceMAP && product.priceMAP < product.priceMSRP && (
+                      {product.priceMSRP && product.priceMAP && !isNaN(parseFloat(product.priceMAP || '0')) && !isNaN(parseFloat(product.priceMSRP || '0')) && parseFloat(product.priceMAP || '0') < parseFloat(product.priceMSRP || '0') && (
                         <div className="text-sm text-gray-500 line-through">
-                          MSRP: ${product.priceMSRP.toFixed(2)}
+                          MSRP: ${(parseFloat(product.priceMSRP || '0') || 0).toFixed(2)}
                         </div>
                       )}
                       {getSavings() > 0 && (
                         <div className="text-sm font-medium text-green-600">
-                          You Save ${getSavings().toFixed(2)}
+                          You Save ${(getSavings() || 0).toFixed(2)}
                         </div>
                       )}
                     </div>
@@ -426,8 +436,8 @@ export default function ProductDetail() {
                         <span className="text-sm font-medium text-yellow-800">Upgrade & Save More</span>
                       </div>
                       <div className="text-sm text-yellow-700">
-                        <div>Gold: ${product.priceGold.toFixed(2)} (Save ${getTierSavings("Gold").toFixed(2)})</div>
-                        <div>Platinum: ${product.pricePlatinum.toFixed(2)} (Save ${getTierSavings("Platinum").toFixed(2)})</div>
+                        <div>Gold: ${(parseFloat(product.priceGold || '0') || 0).toFixed(2)} (Save ${(getTierSavings("Gold") || 0).toFixed(2)})</div>
+                        <div>Platinum: ${(parseFloat(product.pricePlatinum || '0') || 0).toFixed(2)} (Save ${(getTierSavings("Platinum") || 0).toFixed(2)})</div>
                       </div>
                       <Link href="/membership">
                         <Button size="sm" variant="outline" className="w-full">
@@ -774,9 +784,9 @@ export default function ProductDetail() {
                       <div className="text-xs text-gray-600">{related.manufacturer}</div>
                       <div className="flex items-center justify-between">
                         <div className="text-sm font-bold">
-                          ${(user?.subscriptionTier === "Gold" ? related.priceGold : 
+                          ${(parseFloat(user?.subscriptionTier === "Gold" ? related.priceGold : 
                              user?.subscriptionTier === "Platinum" ? related.pricePlatinum : 
-                             related.priceBronze).toFixed(2)}
+                             related.priceBronze) || 0).toFixed(2)}
                         </div>
                         <div className="flex items-center gap-1">
                           {related.inStock ? (
