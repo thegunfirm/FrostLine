@@ -615,14 +615,14 @@ export default function ProductDetail() {
                       </div>
                       
                       {/* CTA Section */}
-                      <div className="text-center p-4 bg-gradient-to-r from-gray-300 to-gray-400 rounded-lg border border-gray-400">
+                      <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
                         <p className="text-gray-700 mb-3">
                           Add to Cart or Login to view the price
                         </p>
                         <Link href="/register">
                           <Button 
                             size="lg" 
-                            className="bg-gun-black hover:bg-gray-800 text-gray-300 font-semibold px-8 py-3 relative overflow-hidden"
+                            className="bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 text-gray-800 font-semibold px-8 py-3 relative overflow-hidden"
                             style={{
                               animation: 'platinumGlintCTA 5s ease-in-out infinite'
                             }}
