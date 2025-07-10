@@ -590,7 +590,7 @@ export default function ProductDetail() {
                       <div className="grid grid-cols-3 gap-4 text-center">
                         {/* Bronze Pricing */}
                         <div className="p-3 border border-gray-200 rounded-lg">
-                          <div className="text-sm text-gray-600 mb-1">Bronze</div>
+                          <div className="text-sm text-gray-600 mb-1">Bronze Members</div>
                           <div className="text-xl font-bold text-gray-900">
                             ${(parseFloat(product.priceBronze || '0') || 0).toFixed(2)}
                           </div>
@@ -598,17 +598,20 @@ export default function ProductDetail() {
                         
                         {/* Gold Pricing */}
                         <div className="p-3 border border-yellow-400 rounded-lg bg-yellow-50">
-                          <div className="text-sm text-yellow-700 mb-1 font-medium">Gold</div>
+                          <div className="text-sm text-yellow-700 mb-1 font-medium">Gold Members</div>
                           <div className="text-xl font-bold text-yellow-700">
                             ${(parseFloat(product.priceGold || '0') || 0).toFixed(2)}
                           </div>
                         </div>
                         
                         {/* Platinum Pricing */}
-                        <div className="p-3 border-2 border-gray-400 rounded-lg bg-gradient-to-br from-gray-800 to-black relative overflow-hidden">
-                          <div className="text-sm text-gray-300 mb-1 font-medium">Platinum</div>
-                          <div className="text-2xl font-bold text-gray-200 relative z-10">
+                        <div className="p-4 border-2 border-gray-400 rounded-lg bg-gradient-to-br from-gray-800 to-black relative overflow-hidden">
+                          <div className="text-sm text-gray-300 mb-1 font-medium">Platinum Members</div>
+                          <div className="text-2xl font-bold text-gray-200 relative z-10 mb-2">
                             ***
+                          </div>
+                          <div className="text-xs text-gray-400 relative z-10">
+                            Add to Cart to See Price
                           </div>
                           <div className="absolute inset-0 bg-gradient-to-r from-gray-400/20 to-gray-300/20 animate-pulse"></div>
                         </div>
@@ -624,7 +627,7 @@ export default function ProductDetail() {
                             size="lg" 
                             className="bg-gradient-to-r from-gray-700 to-black hover:from-gray-600 hover:to-gray-800 text-yellow-300 font-semibold px-8 py-3 relative overflow-hidden"
                           >
-                            <span className="relative z-10">Get Free Access to Platinum Pricing</span>
+                            <span className="relative z-10">Sign Up for Free to View Member Savings</span>
                             <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/20 to-amber-500/20 animate-pulse"></div>
                           </Button>
                         </Link>
