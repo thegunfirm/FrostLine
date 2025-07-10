@@ -1,6 +1,6 @@
 /**
  * Sync Optics Products to Algolia
- * Ensures optics departments (08, 09, 30, 31) are properly indexed
+ * Applies 5% Gold member discount for optics that have identical Bronze/Gold pricing
  */
 import { db } from "../server/db";
 import { products } from "../shared/schema";
@@ -10,42 +10,56 @@ async function syncOpticsToAlgolia() {
   try {
     console.log("🔍 Starting Optics sync to Algolia...");
     
-    // Get all optics products from departments 08, 09, 30, 31
+    // Get all optics products from department 08
     const opticsProducts = await db.select()
       .from(products)
-      .where(sql`department_number IN ('08', '09', '30', '31')`);
+      .where(sql`department_number = '08'`);
     
     console.log(`📊 Found ${opticsProducts.length} optics products to sync`);
-    console.log("Department breakdown:");
-    console.log(`  Dept 08 (Optics): ${opticsProducts.filter(p => p.departmentNumber === "08").length}`);
-    console.log(`  Dept 09 (Optical Accessories): ${opticsProducts.filter(p => p.departmentNumber === "09").length}`);
-    console.log(`  Dept 30 (Sights): ${opticsProducts.filter(p => p.departmentNumber === "30").length}`);
-    console.log(`  Dept 31 (Optical Accessories): ${opticsProducts.filter(p => p.departmentNumber === "31").length}`);
     
-    const algoliaObjects = opticsProducts.map(product => ({
-      objectID: product.sku,
-      name: product.name,
-      description: product.description,
-      sku: product.sku,
-      manufacturerName: product.manufacturer,
-      categoryName: product.category,
-      departmentNumber: product.departmentNumber,
-      tierPricing: {
-        bronze: product.priceBronze || 0,
-        gold: product.priceGold || 0,
-        platinum: product.pricePlatinum || 0
-      },
-      priceBronze: product.priceBronze || 0,
-      priceGold: product.priceGold || 0,
-      pricePlatinum: product.pricePlatinum || 0,
-      price_bronze: product.priceBronze || 0,
-      price_gold: product.priceGold || 0,
-      price_platinum: product.pricePlatinum || 0,
-      inStock: (product.stockQuantity || 0) > 0,
-      stockQuantity: product.stockQuantity || 0,
-      retailPrice: product.priceBronze || 0,
-      distributor: "RSR"
-    }));
+    // Check how many have identical Bronze/Gold pricing
+    const identicalPricing = opticsProducts.filter(p => 
+      p.priceBronze === p.priceGold && p.priceBronze > 0
+    ).length;
+    
+    console.log(`💰 ${identicalPricing} optics have identical Bronze/Gold pricing - applying 5% Gold discount`);
+    console.log(`💰 ${opticsProducts.length - identicalPricing} optics already have different MAP pricing from RSR`);
+    
+    const algoliaObjects = opticsProducts.map(product => {
+      // For optics, if Bronze equals Gold, apply 5% Gold discount for member savings
+      let goldPrice = product.priceGold || 0;
+      const bronzePrice = product.priceBronze || 0;
+      
+      // If Gold price equals Bronze price, apply 5% discount for Gold members
+      if (goldPrice === bronzePrice && bronzePrice > 0) {
+        goldPrice = Math.round((bronzePrice * 0.95) * 100) / 100; // 5% discount, rounded to cents
+      }
+      
+      return {
+        objectID: product.sku,
+        name: product.name,
+        description: product.description,
+        sku: product.sku,
+        manufacturerName: product.manufacturer,
+        categoryName: product.category,
+        departmentNumber: product.departmentNumber,
+        tierPricing: {
+          bronze: bronzePrice,
+          gold: goldPrice,
+          platinum: product.pricePlatinum || 0
+        },
+        priceBronze: bronzePrice,
+        priceGold: goldPrice,
+        pricePlatinum: product.pricePlatinum || 0,
+        price_bronze: bronzePrice,
+        price_gold: goldPrice,
+        price_platinum: product.pricePlatinum || 0,
+        inStock: (product.stockQuantity || 0) > 0,
+        stockQuantity: product.stockQuantity || 0,
+        retailPrice: bronzePrice,
+        distributor: "RSR"
+      };
+    });
     
     // Batch sync to Algolia
     const batchSize = 100;
@@ -79,7 +93,33 @@ async function syncOpticsToAlgolia() {
     }
     
     console.log(`🎯 Successfully synced ${syncedCount} optics products to Algolia`);
-    console.log("✅ Optics filtering should now work for all departments (08, 09, 30, 31)");
+    console.log("✅ Optics filtering should now work with proper MAP pricing + Gold member discounts where needed");
+    
+    // Show examples of both authentic MAP pricing and 5% discounts
+    const authMapExamples = algoliaObjects.filter(product => 
+      product.tierPricing.bronze !== product.tierPricing.gold &&
+      // This wasn't a 5% discount (authentic MAP from RSR)
+      product.tierPricing.gold !== Math.round((product.tierPricing.bronze * 0.95) * 100) / 100
+    ).slice(0, 3);
+    
+    const discountExamples = algoliaObjects.filter(product => 
+      product.tierPricing.gold === Math.round((product.tierPricing.bronze * 0.95) * 100) / 100
+    ).slice(0, 3);
+    
+    if (authMapExamples.length > 0) {
+      console.log("\n💰 Optics with authentic RSR MAP pricing:");
+      authMapExamples.forEach(product => {
+        const savings = ((1 - product.tierPricing.gold / product.tierPricing.bronze) * 100).toFixed(1);
+        console.log(`  ${product.name}: Bronze $${product.tierPricing.bronze} → Gold $${product.tierPricing.gold} (${savings}% RSR MAP savings)`);
+      });
+    }
+    
+    if (discountExamples.length > 0) {
+      console.log("\n💰 Optics with 5% Gold member discount applied:");
+      discountExamples.forEach(product => {
+        console.log(`  ${product.name}: Bronze $${product.tierPricing.bronze} → Gold $${product.tierPricing.gold} (5.0% member discount)`);
+      });
+    }
     
   } catch (error) {
     console.error('❌ Optics sync error:', error);
