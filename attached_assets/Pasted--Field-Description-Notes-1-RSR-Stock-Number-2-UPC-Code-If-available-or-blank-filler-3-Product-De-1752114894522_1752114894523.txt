@@ -1,0 +1,152 @@
+	Field Description	Notes
+1	RSR Stock Number	
+2	UPC Code	If available or blank filler
+3	Product Description	
+4	Department Number
+       1 - Handguns
+       2 - Used Handguns
+       3 - Used Long Guns
+       4 - Tasers
+       5 - Long Guns
+       6 - NFA Products
+       7 - Black Powder
+       8 - Optics
+       9 - Optical Accessories
+     10 - Magazines
+     11 - Grips, Pads, Stocks, Bipods
+     12 - Soft Gun Cases, Packs, Bags
+     13 - Misc. Accessories
+     14 - Holsters & Pouches
+     15 - Reloading Equipment
+     16 - Black Powder Accessories
+     17 - Closeout Accessories
+     18 - Ammunition
+     19 - Survival & Camping Supplies
+     20 - Lights, Lasers & Batteries
+     21 - Cleaning Equipment
+     22 - Airguns
+     23 - Knives & Tools
+     24 - High Capacity Magazines
+     25 - Safes & Security
+     26 - Safety & Protection
+     27 - Non-Lethal Defense
+     28 - Binoculars
+     29 - Spotting Scopes
+     30 - Sights
+     31 - Optical Accessories
+     32 - Barrels, Choke Tubes & Muzzle Devices
+     33 - Clothing
+     34 - Parts
+     35 - Slings & Swivels
+     36 - Electronics
+     37 - Not Used
+     38 - Books, Software & DVD’s
+     39 - Targets
+     40 - Hard Gun Cases
+     41 - Upper Receivers & Conversion Kits
+     42 - SBR Barrels & Upper Receivers
+     43 - Upper Receivers & Conversion Kits - High Capacity	
+5	Manufacturer Id	
+6	Retail Price	MSRP provided by Mfr
+7	RSR Pricing	
+8	Product Weight	In ounces
+9	Inventory Quantity	Deleted SKU’s will have a 0 in this field and remain in the file for two weeks
+10	Model	
+11	Full Manufacturer Name	
+12	Manufacturer Part Number	
+13	Allocated/Closeout/Deleted	Indicates if the item is “Allocated”, “Closeout” or “Deleted”; otherwise, the field is blank
+14	Expanded Product Description	
+15	Image Name	If image is available, name composed of the RSRStockNumber_1.jpg
+
+	Fields 16-56 are indicators of state restrictions on this RSR Stock Number (in alphabetical order, by the two letter state abbreviation).	Values:
+
+    “Y” - Item is restricted
+    Blank - Item is not state restricted but may still be city or county restricted. Please refer to the rsr-ship-restrictions.txt file to verify city and county restrictions for this item.
+
+16	AK - Alaska	
+17	AL - Alabama	
+18	AR - Arkansas	
+19	AZ - Arizona	
+20	CA - California	
+21	CO - Colorado	
+22	CT - Connecticut	
+23	DC - District of Columbia	
+24	DE - Deleware	
+25	FL - Florida	
+26	GA - Georgia	
+27	HI - Hawaii	
+28	IA - Iowa	
+29	ID - Idaho	
+30	IL - Illinois	
+31	IN - Indiana	
+32	KS - Kansas	
+33	KY - Kentucky	
+34	LA - Louisiana	
+35	MA - Massachusetts	
+36	MD - Maryland	
+37	ME - Maine	
+38	MI - Michigan	
+39	MN - Minnesota	
+40	MO - Missouri	
+41	MS - Mississippi	
+42	MT - Montana	
+43	NC - North Carolina	
+44	ND - North Dakota	
+45	NE - Nebraska	
+46	NH - New Hampshire	
+47	NJ - New Jersey	
+48	NM - New Mexico	
+49	NV - Nevada	
+50	NY - New York	
+51	OH - Ohio	
+52	OK - Oklahoma	
+53	OR - Oregon	
+54	PA - Pennsylvania	
+55	RI - Rhode Island	
+56	SC - South Carolina	
+57	SD - South Dakota	
+58	TN - Tennessee	
+59	TX - Texas	
+60	UT - Utah	
+61	VA - Virginia	
+62	VT - Vermont	
+63	WA - Washington	
+64	WI - Wisconsin	
+65	WV - West Virginia	
+66	WY - Wyoming	
+67	Ground Shipments Only	Values:
+
+    “Y” - Item is classified as Limited Quantity and can only be shipped ground
+    Blank
+
+68	Adult Signature Required	Values:
+
+    “Y” - Item requires adult signature
+    Blank
+
+69	Blocked from Drop Ship	Values:
+
+    “Y” - Product cannot be shipped directly from RSR to an end consumer or unaffiliated transfer dealer.  Product is not restricted to BOPIS (Buy Online Pickup In-Store) orders.
+    Blank
+
+70	Date Entered	Date item added to RSR’s inventory
+Format: YYYYMMDD
+71	Retail MAP	
+72	Image Disclaimer	Values:
+
+    “Y” - Picture may not represent the actual product
+    Blank
+
+73	Shipping Length	In inches
+74	Shipping Width	In inches
+75	Shipping Height	In inches
+76	Prop 65	Values:
+
+    “Y” - Item is subject to Prop 65. Please refer to the rsr-product-message.txt file.
+    Blank
+
+77	Vendor Approval Required	Values:
+
+    “Y” - Approval Required - All purchases require approval
+    “F” - Approval Required - Only Fulfillment/Drop Ship require approval
+    Blank
