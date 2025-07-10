@@ -22,6 +22,11 @@ import { syncHealthMonitor } from "./services/sync-health-monitor";
 import axios from "axios";
 import multer from "multer";
 
+// In-memory cache for category ribbons
+let categoryRibbonCache: any = null;
+let categoryRibbonCacheTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 function getDepartmentName(department: string): string {
   const departmentNames: { [key: string]: string } = {
     '01': 'Handguns',
@@ -2461,14 +2466,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== CATEGORY RIBBON MANAGEMENT (CMS) =====
   
-  // Get active category ribbons for frontend display
+  // Get active category ribbons for frontend display (with caching)
   app.get("/api/category-ribbons/active", async (req, res) => {
     try {
+      // Check cache first
+      const now = Date.now();
+      if (categoryRibbonCache && (now - categoryRibbonCacheTime < CACHE_DURATION)) {
+        res.set('Cache-Control', 'public, max-age=300'); // 5 minutes
+        return res.json(categoryRibbonCache);
+      }
+
+      // Fetch from database
       const { categoryRibbons } = await import("../shared/schema");
       const ribbons = await db.select()
         .from(categoryRibbons)
         .where(eq(categoryRibbons.isActive, true))
         .orderBy(categoryRibbons.displayOrder);
+      
+      // Update cache
+      categoryRibbonCache = ribbons;
+      categoryRibbonCacheTime = now;
+      
+      res.set('Cache-Control', 'public, max-age=300'); // 5 minutes
       res.json(ribbons);
     } catch (error) {
       console.error('Active category ribbons error:', error);
@@ -2508,6 +2527,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }).returning();
       
+      // Clear cache when ribbons are updated
+      categoryRibbonCache = null;
+      categoryRibbonCacheTime = 0;
+      
       res.json(ribbon[0]);
     } catch (error) {
       console.error('Category ribbon save error:', error);
@@ -2522,6 +2545,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       
       await db.delete(categoryRibbons).where(eq(categoryRibbons.id, parseInt(id)));
+      
+      // Clear cache when ribbons are deleted
+      categoryRibbonCache = null;
+      categoryRibbonCacheTime = 0;
+      
       res.json({ message: 'Category ribbon deleted successfully' });
     } catch (error) {
       console.error('Category ribbon delete error:', error);
@@ -2714,21 +2742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get active ribbon mappings for frontend
-  app.get("/api/category-ribbons/active", async (req, res) => {
-    try {
-      const { categoryRibbons } = await import("../shared/schema");
-      const activeRibbons = await db.select()
-        .from(categoryRibbons)
-        .where(eq(categoryRibbons.isActive, true))
-        .orderBy(categoryRibbons.displayOrder);
-      
-      res.json(activeRibbons);
-    } catch (error) {
-      console.error('Active ribbons error:', error);
-      res.status(500).json({ error: 'Failed to load active ribbons' });
-    }
-  });
+  // Duplicate route removed - using cached version above
 
   // Record user interaction for AI learning
   app.post("/api/search/interaction", async (req, res) => {
