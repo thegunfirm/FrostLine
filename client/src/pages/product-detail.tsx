@@ -605,30 +605,30 @@ export default function ProductDetail() {
                         </div>
                         
                         {/* Platinum Pricing */}
-                        <div className="p-3 border border-purple-400 rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 relative overflow-hidden platinum-glint">
-                          <div className="text-sm text-purple-700 mb-1 font-medium">Platinum</div>
-                          <div className="text-2xl font-bold text-purple-700 relative">
+                        <div className="p-3 border border-gun-black rounded-lg bg-gradient-to-r from-gun-gray to-gun-black relative overflow-hidden platinum-glint">
+                          <div className="text-sm text-gun-gold mb-1 font-medium">Platinum</div>
+                          <div className="text-2xl font-bold text-gun-gold relative">
                             ***
-                            <div className="glint-animation"></div>
+                            <div className="platinum-spark-animation"></div>
                           </div>
                         </div>
                       </div>
                       
                       {/* CTA Section */}
-                      <div className="text-center p-4 bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg border border-purple-200">
-                        <p className="text-gray-700 mb-3">
+                      <div className="text-center p-4 bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg border border-gun-gray-light">
+                        <p className="text-gun-gray mb-3">
                           Add to Cart or Login to view the price
                         </p>
                         <Link href="/register">
                           <Button 
                             size="lg" 
-                            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-8 py-3 relative overflow-hidden"
+                            className="bg-gradient-to-r from-gun-black to-gun-gray hover:from-gun-gray hover:to-gun-black text-gun-gold font-semibold px-8 py-3 relative overflow-hidden"
                             style={{
                               animation: 'platinumGlintCTA 5s ease-in-out infinite'
                             }}
                           >
                             Sign up for Free to view membership pricing
-                            <div className="glint-animation"></div>
+                            <div className="platinum-spark-animation"></div>
                           </Button>
                         </Link>
                       </div>
