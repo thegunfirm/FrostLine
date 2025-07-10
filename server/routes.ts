@@ -2091,7 +2091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "Long Guns": "05",       // Department 05 (rifles and shotguns)
           "Rifles": "category",    // Filter by category name for rifles
           "Shotguns": "category",  // Filter by category name for shotguns
-          "Ammunition": "18",      // Department 18 for all ammunition
+          "Ammunition": "18",      // Department 18 for all ammunition (shows all subcategories)
           "Handgun Ammunition": "category",   // Filter by category name for handgun ammo
           "Rifle Ammunition": "category",     // Filter by category name for rifle ammo
           "Shotgun Ammunition": "category",   // Filter by category name for shotgun ammo
@@ -2222,6 +2222,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Ammunition-specific filters
+      if (filters.ammunitionType) {
+        algoliaFilters.push(`categoryName:"${filters.ammunitionType}"`);
+      }
+      
+      if (filters.ammunitionManufacturer) {
+        algoliaFilters.push(`manufacturerName:"${filters.ammunitionManufacturer}"`);
+      }
+      
       // Build sort parameter for Algolia
       let sortParam = undefined;
       switch (sort) {
@@ -2270,6 +2279,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           capacityQuery = `${capacity}R OR ${capacity}RD`;
         }
         searchQuery = searchQuery ? `${searchQuery} (${capacityQuery})` : `(${capacityQuery})`;
+      }
+      
+      // Add ammunition caliber to search query if specified
+      if (filters.ammunitionCaliber) {
+        // For ammunition caliber, search in the product name for better matching
+        const caliberQuery = filters.ammunitionCaliber;
+        searchQuery = searchQuery ? `${searchQuery} ${caliberQuery}` : caliberQuery;
       }
       
       const searchParams: any = {

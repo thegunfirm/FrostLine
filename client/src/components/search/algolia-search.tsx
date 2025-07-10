@@ -89,10 +89,15 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   
   // Handgun subcategory filter - default to "all" to avoid hidden filter confusion
   const [handgunSubcategory, setHandgunSubcategory] = useState("all");
+  
+  // Ammunition-specific filter states
+  const [ammunitionType, setAmmunitionType] = useState("all");
+  const [ammunitionCaliber, setAmmunitionCaliber] = useState("all");
+  const [ammunitionManufacturer, setAmmunitionManufacturer] = useState("all");
 
   // Get search results from Algolia
   const { data: searchResults, isLoading, error } = useQuery({
-    queryKey: ['algolia-search', searchQuery, category, manufacturer, sortBy, currentPage, resultsPerPage, priceMin, priceMax, inStockOnly, newItemsOnly, caliber, actionType, barrelLength, capacity, stateRestriction, priceTier, handgunSubcategory, handgunManufacturer, handgunCaliber, handgunPriceRange, handgunCapacity, handgunStockStatus],
+    queryKey: ['algolia-search', searchQuery, category, manufacturer, sortBy, currentPage, resultsPerPage, priceMin, priceMax, inStockOnly, newItemsOnly, caliber, actionType, barrelLength, capacity, stateRestriction, priceTier, handgunSubcategory, handgunManufacturer, handgunCaliber, handgunPriceRange, handgunCapacity, handgunStockStatus, ammunitionType, ammunitionCaliber, ammunitionManufacturer],
     queryFn: async () => {
       const response = await apiRequest('POST', '/api/search/algolia', {
         query: searchQuery,
@@ -116,7 +121,11 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           handgunCaliber: handgunCaliber && handgunCaliber !== "all" ? handgunCaliber : undefined,
           handgunPriceRange: handgunPriceRange && handgunPriceRange !== "all" ? handgunPriceRange : undefined,
           handgunCapacity: handgunCapacity && handgunCapacity !== "all" ? handgunCapacity : undefined,
-          handgunStockStatus: handgunStockStatus && handgunStockStatus !== "all" ? handgunStockStatus : undefined
+          handgunStockStatus: handgunStockStatus && handgunStockStatus !== "all" ? handgunStockStatus : undefined,
+          // Ammunition-specific filters
+          ammunitionType: ammunitionType && ammunitionType !== "all" ? ammunitionType : undefined,
+          ammunitionCaliber: ammunitionCaliber && ammunitionCaliber !== "all" ? ammunitionCaliber : undefined,
+          ammunitionManufacturer: ammunitionManufacturer && ammunitionManufacturer !== "all" ? ammunitionManufacturer : undefined
         },
         sort: sortBy,
         page: currentPage,
@@ -216,6 +225,58 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     { value: "out-of-stock", label: "Out of Stock" }
   ];
 
+  // Ammunition-specific filter options
+  const ammunitionTypes = [
+    { value: "Handgun Ammunition", label: "Handgun Ammo" },
+    { value: "Rifle Ammunition", label: "Rifle Ammo" },
+    { value: "Shotgun Ammunition", label: "Shotgun Ammo" },
+    { value: "Rimfire Ammunition", label: "Rimfire Ammo" },
+    { value: "General Ammunition", label: "General Ammo" }
+  ];
+
+  const ammunitionCalibers = [
+    // Handgun calibers
+    { value: "9MM", label: "9mm" },
+    { value: "45 ACP", label: "45 ACP" },
+    { value: "40 S&W", label: "40 S&W" },
+    { value: "380 ACP", label: "380 ACP" },
+    { value: "38 SPL", label: "38 Special" },
+    { value: "357 MAG", label: "357 Magnum" },
+    { value: "10MM", label: "10mm" },
+    { value: "44 MAG", label: "44 Magnum" },
+    // Rifle calibers
+    { value: "223", label: ".223 Rem" },
+    { value: "5.56", label: "5.56 NATO" },
+    { value: "308", label: ".308 Win" },
+    { value: "7.62", label: "7.62x39" },
+    { value: "30-06", label: ".30-06" },
+    { value: "300 BLK", label: ".300 Blackout" },
+    { value: "6.5 CREED", label: "6.5 Creedmoor" },
+    // Shotgun gauges
+    { value: "12GA", label: "12 Gauge" },
+    { value: "20GA", label: "20 Gauge" },
+    { value: "410", label: ".410 Bore" },
+    // Rimfire
+    { value: "22 LR", label: ".22 LR" },
+    { value: "22 WMR", label: ".22 WMR" },
+    { value: "17 HMR", label: ".17 HMR" }
+  ];
+
+  const ammunitionManufacturers = [
+    { value: "Federal", label: "Federal" },
+    { value: "Winchester", label: "Winchester" },
+    { value: "Remington", label: "Remington" },
+    { value: "Hornady", label: "Hornady" },
+    { value: "CCI", label: "CCI" },
+    { value: "PMC", label: "PMC" },
+    { value: "Blazer", label: "Blazer" },
+    { value: "Speer", label: "Speer" },
+    { value: "Sellier & Bellot", label: "Sellier & Bellot" },
+    { value: "Norma", label: "Norma" },
+    { value: "Nosler", label: "Nosler" },
+    { value: "Barnes", label: "Barnes" }
+  ];
+
   const resultsPerPageOptions = [24, 28, 96];
 
   const handleSearch = (e: React.FormEvent) => {
@@ -239,6 +300,10 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     setHandgunPriceRange("all");
     setHandgunCapacity("all");
     setHandgunStockStatus("all");
+    // Clear ammunition-specific filters
+    setAmmunitionType("all");
+    setAmmunitionCaliber("all");
+    setAmmunitionManufacturer("all");
   };
 
   const handleAddToCart = (product: any) => {
@@ -772,6 +837,68 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                             {handgunStockStatuses.map((status) => (
                               <SelectItem key={status.value} value={status.value}>
                                 {status.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Ammunition-Specific Filters */}
+                {category === "Ammunition" && (
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold text-gun-black mb-4">🎯 Ammunition Filters</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Ammunition Type */}
+                      <div className="space-y-2">
+                        <Label htmlFor="ammunition-type">Type</Label>
+                        <Select value={ammunitionType} onValueChange={setAmmunitionType}>
+                          <SelectTrigger id="ammunition-type">
+                            <SelectValue placeholder="All Types" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            {ammunitionTypes.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Ammunition Caliber */}
+                      <div className="space-y-2">
+                        <Label htmlFor="ammunition-caliber">Caliber</Label>
+                        <Select value={ammunitionCaliber} onValueChange={setAmmunitionCaliber}>
+                          <SelectTrigger id="ammunition-caliber">
+                            <SelectValue placeholder="All Calibers" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Calibers</SelectItem>
+                            {ammunitionCalibers.map((cal) => (
+                              <SelectItem key={cal.value} value={cal.value}>
+                                {cal.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Ammunition Manufacturer */}
+                      <div className="space-y-2">
+                        <Label htmlFor="ammunition-manufacturer">Manufacturer</Label>
+                        <Select value={ammunitionManufacturer} onValueChange={setAmmunitionManufacturer}>
+                          <SelectTrigger id="ammunition-manufacturer">
+                            <SelectValue placeholder="All Manufacturers" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Manufacturers</SelectItem>
+                            {ammunitionManufacturers.map((mfg) => (
+                              <SelectItem key={mfg.value} value={mfg.value}>
+                                {mfg.label}
                               </SelectItem>
                             ))}
                           </SelectContent>

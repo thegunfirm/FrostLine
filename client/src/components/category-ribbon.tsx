@@ -39,11 +39,11 @@ export function CategoryRibbon() {
       { text: "Handguns", category: "Handguns" },
       { text: "Rifles", category: "Rifles" },
       { text: "Shotguns", category: "Shotguns" },
-      { text: "Handgun Ammo", category: "Handgun Ammunition" },
-      { text: "Rifle Ammo", category: "Rifle Ammunition" },
-      { text: "Shotgun Ammo", category: "Shotgun Ammunition" },
-      { text: "Rimfire Ammo", category: "Rimfire Ammunition" },
-      { text: "Optics", category: "Optics" }
+      { text: "Ammo", category: "Ammunition" },
+      { text: "Optics", category: "Optics" },
+      { text: "Parts", category: "Parts" },
+      { text: "NFA", category: "NFA" },
+      { text: "Accessories", category: "Accessories" }
     ];
 
     return (
