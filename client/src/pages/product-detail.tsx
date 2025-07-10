@@ -392,10 +392,7 @@ export default function ProductDetail() {
               )}
             </div>
             
-            {/* Image Note */}
-            <div className="text-center text-sm text-gray-500">
-              Product image provided by RSR Group
-            </div>
+
           </div>
 
           {/* Product Info */}
