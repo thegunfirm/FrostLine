@@ -1450,15 +1450,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔍 Downloading RSR image: ${cleanImgName} (angle: ${angle}, size: ${size})`);
       
-      // For now, return a consistent response indicating image service is being developed
-      console.log(`📋 RSR image service under development for ${cleanImgName}`);
+      // RSR image naming convention from PDF:
+      // Standard: RSRSKU_imagenumber.jpg (e.g., GLOCK19GEN5_1.jpg)
+      // High-res: RSRSKU_imagenumber_HR.jpg (e.g., GLOCK19GEN5_1_HR.jpg)
+      const fileName = size === 'highres' 
+        ? `${cleanImgName}_${angle}_HR.jpg`
+        : `${cleanImgName}_${angle}.jpg`;
       
+      // Use Node.js FTP client for more reliable connection
+      const { Client } = await import('basic-ftp');
+      const ftpClient = new Client();
+      ftpClient.ftp.verbose = false;
+      
+      try {
+        await ftpClient.access({
+          host: 'ftps.rsrgroup.com',
+          user: '60742',
+          password: '2SSinQ58',
+          port: 2222,
+          secure: true,
+          secureOptions: {
+            rejectUnauthorized: false,
+            requestCert: false
+          }
+        });
+        
+        // RSR FTP images are organized by first letter of stock number
+        const firstLetter = cleanImgName.charAt(0).toLowerCase();
+        const ftpPath = size === 'highres' 
+          ? `/ftp_highres_images/rsr_number/${firstLetter}/${fileName}`
+          : `/ftp_images/rsr_number/${firstLetter}/${fileName}`;
+        
+        console.log(`📥 Downloading from RSR FTP: ${ftpPath}`);
+        
+        // Use filesystem temp approach for reliable download
+        const fs = await import('fs');
+        const path = await import('path');
+        const tempFile = path.join(process.cwd(), `temp_${Date.now()}.jpg`);
+        
+        await ftpClient.downloadTo(tempFile, ftpPath);
+        
+        // Read downloaded file
+        const imageBuffer = fs.readFileSync(tempFile);
+        
+        // Clean up temp file
+        fs.unlinkSync(tempFile);
+        ftpClient.close();
+        
+        if (imageBuffer && imageBuffer.length > 1000) {
+          console.log(`✅ RSR image downloaded: ${fileName} (${imageBuffer.length} bytes)`);
+          
+          res.set({
+            'Content-Type': 'image/jpeg',
+            'Cache-Control': 'public, max-age=86400',
+            'Content-Length': imageBuffer.length,
+            'X-Image-Source': 'RSR-FTP',
+            'X-Image-Angle': angle,
+            'X-Image-Size': size
+          });
+          
+          return res.send(imageBuffer);
+        } else {
+          console.log(`❌ RSR image too small: ${fileName} (${imageBuffer.length} bytes)`);
+        }
+        
+      } catch (error: any) {
+        ftpClient.close();
+        
+        // If specific image not found, try without angle suffix
+        if (error.message.includes('No such file') && angle !== '1') {
+          console.log(`🔄 Retrying RSR image without angle: ${cleanImgName}`);
+          return res.redirect(`/api/rsr-image/${cleanImgName}.jpg?angle=1&size=${size}`);
+        }
+        
+        throw error;
+      }
+      
+      console.log(`❌ RSR image not available: ${fileName}`);
       res.status(404).json({ 
-        error: 'RSR image service temporarily unavailable',
+        error: 'RSR image not found',
         product: imageName,
         angle,
         size,
-        note: 'RSR FTP image integration in progress - using placeholder until resolved'
+        note: 'Image may not exist in RSR catalog'
       });
       
     } catch (error: any) {
