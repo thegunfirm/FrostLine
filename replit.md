@@ -304,6 +304,9 @@ Changelog:
 - July 10, 2025. **NFA CATEGORY PRICING FIXED**: Applied 5% Gold discount to 178 NFA products (Department 06) with matching Bronze/Gold pricing
 - July 10, 2025. **NFA ALGOLIA SYNC COMPLETED**: Updated all 652 NFA products in Algolia search index with correct category name and Gold member savings pricing
 - July 10, 2025. **NFA SEARCH OPERATIONAL**: All 652 NFA products now searchable with proper category filtering and meaningful Bronze vs Gold pricing differentiation
+- July 10, 2025. **ACCESSORIES PRICING FIXED**: Applied 5% Gold discount across 14 accessory departments (09, 11, 12, 13, 14, 17, 20, 21, 25, 26, 27, 30, 31, 35)
+- July 10, 2025. **MASSIVE ACCESSORIES UPDATE**: Fixed 5,654 accessory products with matching Bronze/Gold pricing across holsters, optics, grips, cases, lights, cleaning equipment
+- July 10, 2025. **ACCESSORIES ALGOLIA SYNC**: Updated 9,973 accessory products in Algolia search index with unified "Accessories" category name and Gold member savings pricing
 ```
 
 ## User Preferences
