@@ -50,8 +50,8 @@ class RSRFTPClient {
       secure: true,
       syncSchedule: '2hours', // RSR updates every 2 hours
       autoProcessFiles: true,
-      downloadImages: false,
-      downloadHighRes: false,
+      downloadImages: true,  // Enable image caching
+      downloadHighRes: true, // Cache high-res images too
       enabled: true
     };
 
