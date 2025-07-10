@@ -605,30 +605,25 @@ export default function ProductDetail() {
                         </div>
                         
                         {/* Platinum Pricing */}
-                        <div className="p-3 border border-gun-black rounded-lg bg-gun-black relative overflow-hidden platinum-glint">
-                          <div className="text-sm text-gray-300 mb-1 font-medium">Platinum</div>
-                          <div className="text-2xl font-bold text-gray-300 relative">
+                        <div className="p-3 border border-gray-300 rounded-lg bg-gray-50">
+                          <div className="text-sm text-gray-600 mb-1 font-medium">Platinum</div>
+                          <div className="text-2xl font-bold text-gray-900">
                             ***
-                            <div className="platinum-spark-animation"></div>
                           </div>
                         </div>
                       </div>
                       
                       {/* CTA Section */}
-                      <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
+                      <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
                         <p className="text-gray-700 mb-3">
                           Add to Cart or Login to view the price
                         </p>
                         <Link href="/register">
                           <Button 
                             size="lg" 
-                            className="bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 text-gray-800 font-semibold px-8 py-3 relative overflow-hidden"
-                            style={{
-                              animation: 'platinumGlintCTA 5s ease-in-out infinite'
-                            }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3"
                           >
                             Sign up for Free to view membership pricing
-                            <div className="platinum-spark-animation"></div>
                           </Button>
                         </Link>
                       </div>
