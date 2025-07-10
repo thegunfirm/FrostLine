@@ -481,30 +481,6 @@ export default function ProductDetail() {
                         className="max-w-full max-h-[70vh] object-contain mx-auto"
                       />
                     </div>
-                    {availableImages.length > 1 && (
-                      <div className="p-4 border-t border-gray-200">
-                        <div className="flex gap-2 justify-center">
-                          {availableImages.map((angle) => (
-                            <button
-                              key={angle}
-                              onClick={() => setCurrentAngle(angle)}
-                              className={cn(
-                                "w-12 h-12 rounded border-2 overflow-hidden",
-                                currentAngle === angle
-                                  ? "border-blue-500 ring-2 ring-blue-200"
-                                  : "border-gray-200 hover:border-gray-300"
-                              )}
-                            >
-                              <img
-                                src={getImageUrl(angle)}
-                                alt={`View ${angle}`}
-                                className="w-full h-full object-contain bg-white"
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -583,34 +559,84 @@ export default function ProductDetail() {
             <Card>
               <CardContent className="pt-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-2xl font-bold text-gray-900">
-                        ${(getCurrentPrice() || 0).toFixed(2)}
-                      </div>
-                      {user && (
+                  {user ? (
+                    /* Logged in user - show their current tier price */
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-2xl font-bold text-gray-900">
+                          ${(getCurrentPrice() || 0).toFixed(2)}
+                        </div>
                         <div className="text-sm text-gray-600">
                           {user.subscriptionTier} Member Price
                         </div>
-                      )}
+                      </div>
+                      <div className="text-right">
+                        {/* Show MSRP with retailMap strikethrough if retailMap is lower */}
+                        {product.priceMSRP && product.priceMAP && !isNaN(parseFloat(product.priceMAP || '0')) && !isNaN(parseFloat(product.priceMSRP || '0')) && parseFloat(product.priceMAP || '0') < parseFloat(product.priceMSRP || '0') && (
+                          <div className="text-sm text-gray-500 line-through">
+                            MSRP: ${(parseFloat(product.priceMSRP || '0') || 0).toFixed(2)}
+                          </div>
+                        )}
+                        {getSavings() > 0 && (
+                          <div className="text-sm font-medium text-green-600">
+                            You Save ${(getSavings() || 0).toFixed(2)}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      {/* Show MSRP with retailMap strikethrough if retailMap is lower */}
-                      {product.priceMSRP && product.priceMAP && !isNaN(parseFloat(product.priceMAP || '0')) && !isNaN(parseFloat(product.priceMSRP || '0')) && parseFloat(product.priceMAP || '0') < parseFloat(product.priceMSRP || '0') && (
-                        <div className="text-sm text-gray-500 line-through">
-                          MSRP: ${(parseFloat(product.priceMSRP || '0') || 0).toFixed(2)}
+                  ) : (
+                    /* Non-logged in user - show Bronze, Gold, and asterisked Platinum */
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        {/* Bronze Pricing */}
+                        <div className="p-3 border border-gray-200 rounded-lg">
+                          <div className="text-sm text-gray-600 mb-1">Bronze</div>
+                          <div className="text-xl font-bold text-gray-900">
+                            ${(parseFloat(product.priceBronze || '0') || 0).toFixed(2)}
+                          </div>
                         </div>
-                      )}
-                      {getSavings() > 0 && (
-                        <div className="text-sm font-medium text-green-600">
-                          You Save ${(getSavings() || 0).toFixed(2)}
+                        
+                        {/* Gold Pricing */}
+                        <div className="p-3 border border-yellow-400 rounded-lg bg-yellow-50">
+                          <div className="text-sm text-yellow-700 mb-1 font-medium">Gold</div>
+                          <div className="text-xl font-bold text-yellow-700">
+                            ${(parseFloat(product.priceGold || '0') || 0).toFixed(2)}
+                          </div>
                         </div>
-                      )}
+                        
+                        {/* Platinum Pricing */}
+                        <div className="p-3 border border-purple-400 rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 relative overflow-hidden platinum-glint">
+                          <div className="text-sm text-purple-700 mb-1 font-medium">Platinum</div>
+                          <div className="text-2xl font-bold text-purple-700 relative">
+                            ***
+                            <div className="glint-animation"></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* CTA Section */}
+                      <div className="text-center p-4 bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg border border-purple-200">
+                        <p className="text-gray-700 mb-3">
+                          Add to Cart or Login to view the price
+                        </p>
+                        <Link href="/register">
+                          <Button 
+                            size="lg" 
+                            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-8 py-3 relative overflow-hidden"
+                            style={{
+                              animation: 'platinumGlintCTA 5s ease-in-out infinite'
+                            }}
+                          >
+                            Sign up for Free to view membership pricing
+                            <div className="glint-animation"></div>
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Tier Upgrade Incentives */}
-                  {(!user || user.subscriptionTier === "Bronze") && (
+                  {/* Tier Upgrade Incentives for logged in Bronze users */}
+                  {user && user.subscriptionTier === "Bronze" && (
                     <div className="space-y-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                       <div className="flex items-center gap-2">
                         <TrendingUp className="w-4 h-4 text-yellow-600" />
@@ -630,54 +656,6 @@ export default function ProductDetail() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* FFL Selection */}
-            {product.requiresFFL && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="w-5 h-5" />
-                    FFL Required
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-gray-600">
-                    This firearm must be shipped to a licensed FFL dealer.
-                  </p>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="zip">Enter ZIP code to find FFLs</Label>
-                      <Input
-                        id="zip"
-                        placeholder="12345"
-                        value={userZip}
-                        onChange={(e) => setUserZip(e.target.value)}
-                        maxLength={5}
-                      />
-                    </div>
-                    
-                    {nearbyFFLs && nearbyFFLs.length > 0 && (
-                      <div>
-                        <Label htmlFor="ffl">Select FFL Dealer</Label>
-                        <Select value={selectedFFL} onValueChange={setSelectedFFL}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose an FFL dealer" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {nearbyFFLs.map((ffl: any) => (
-                              <SelectItem key={ffl.id} value={ffl.id.toString()}>
-                                {ffl.businessName} - {ffl.address.city}, {ffl.address.state}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Add to Cart */}
             <Card>
@@ -738,6 +716,54 @@ export default function ProductDetail() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* FFL Selection */}
+            {product.requiresFFL && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="w-5 h-5" />
+                    FFL Required
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-gray-600">
+                    This firearm must be shipped to a licensed FFL dealer.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="zip">Enter ZIP code to find FFLs</Label>
+                      <Input
+                        id="zip"
+                        placeholder="12345"
+                        value={userZip}
+                        onChange={(e) => setUserZip(e.target.value)}
+                        maxLength={5}
+                      />
+                    </div>
+                    
+                    {nearbyFFLs && nearbyFFLs.length > 0 && (
+                      <div>
+                        <Label htmlFor="ffl">Select FFL Dealer</Label>
+                        <Select value={selectedFFL} onValueChange={setSelectedFFL}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose an FFL dealer" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {nearbyFFLs.map((ffl: any) => (
+                              <SelectItem key={ffl.id} value={ffl.id.toString()}>
+                                {ffl.businessName} - {ffl.address.city}, {ffl.address.state}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Key Features */}
             <div className="grid grid-cols-2 gap-4 text-sm">
