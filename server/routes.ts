@@ -2664,6 +2664,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add validation endpoint for manual RSR file validation
+  app.post("/api/admin/rsr/validate-file", async (req, res) => {
+    try {
+      const { rsrFileProcessor } = await import('./services/distributors/rsr/rsr-file-processor');
+      const filePath = 'server/data/rsr/downloads/rsrinventory-new.txt';
+      
+      const validation = await rsrFileProcessor.validateDatabaseIntegrity(filePath);
+      
+      res.json({
+        success: true,
+        validation: {
+          isValid: validation.isValid,
+          totalDiscrepancies: validation.discrepancies.length,
+          sampleDiscrepancies: validation.discrepancies.slice(0, 10),
+          message: validation.isValid 
+            ? "Database perfectly matches RSR file"
+            : `Found ${validation.discrepancies.length} discrepancies`
+        }
+      });
+    } catch (error: any) {
+      console.error("RSR validation error:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message,
+        validation: {
+          isValid: false,
+          totalDiscrepancies: 0,
+          sampleDiscrepancies: [],
+          message: "Validation failed due to error"
+        }
+      });
+    }
+  });
+
+  // Add discrepancy fix endpoint
+  app.post("/api/admin/rsr/fix-discrepancies", async (req, res) => {
+    try {
+      const { rsrFileProcessor } = await import('./services/distributors/rsr/rsr-file-processor');
+      const filePath = 'server/data/rsr/downloads/rsrinventory-new.txt';
+      
+      const fixResult = await rsrFileProcessor.fixDatabaseDiscrepancies(filePath);
+      
+      res.json({
+        success: true,
+        fixResult: {
+          fixed: fixResult.fixed,
+          errors: fixResult.errors,
+          message: `Fixed ${fixResult.fixed} discrepancies with ${fixResult.errors} errors`
+        }
+      });
+    } catch (error: any) {
+      console.error("RSR fix discrepancies error:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message,
+        fixResult: {
+          fixed: 0,
+          errors: 1,
+          message: "Fix operation failed"
+        }
+      });
+    }
+  });
+
   app.post("/api/admin/trigger-rsr-sync", async (req, res) => {
     try {
       await syncHealthMonitor.triggerRSRSync();

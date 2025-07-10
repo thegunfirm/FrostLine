@@ -35,10 +35,24 @@ interface SyncStatus {
   };
 }
 
+interface ValidationResult {
+  isValid: boolean;
+  totalDiscrepancies: number;
+  sampleDiscrepancies: Array<{
+    sku: string;
+    rsrQuantity: number;
+    dbQuantity: number;
+    difference: number;
+  }>;
+  message: string;
+}
+
 export default function AdminSyncHealth() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [validationLoading, setValidationLoading] = useState(false);
   const { toast } = useToast();
 
   const fetchSyncStatus = async () => {
@@ -112,6 +126,46 @@ export default function AdminSyncHealth() {
       toast({
         title: "Error",
         description: "Failed to start Algolia sync",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const validateRSRFile = async () => {
+    setValidationLoading(true);
+    try {
+      const response = await apiRequest('POST', '/api/admin/rsr/validate-file');
+      setValidationResult(response.validation);
+      toast({
+        title: response.validation.isValid ? "Validation Passed" : "Validation Issues Found",
+        description: response.validation.message,
+        variant: response.validation.isValid ? "default" : "destructive",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to validate RSR file",
+        variant: "destructive",
+      });
+    } finally {
+      setValidationLoading(false);
+    }
+  };
+
+  const fixDiscrepancies = async () => {
+    try {
+      const response = await apiRequest('POST', '/api/admin/rsr/fix-discrepancies');
+      toast({
+        title: "Fix Complete",
+        description: response.fixResult.message,
+      });
+      // Re-validate after fixing
+      await validateRSRFile();
+      fetchSyncStatus();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fix discrepancies",
         variant: "destructive",
       });
     }
@@ -303,6 +357,71 @@ export default function AdminSyncHealth() {
           </CardContent>
         </Card>
       </div>
+
+      {/* RSR File Validation Section */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <CheckCircle className="w-5 h-5 mr-2" />
+            RSR File Validation
+            {validationResult && (
+              <Badge variant={validationResult.isValid ? "default" : "destructive"} className="ml-2">
+                {validationResult.isValid ? "Valid" : "Issues Found"}
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex space-x-2">
+              <Button 
+                onClick={validateRSRFile}
+                disabled={validationLoading}
+                variant="outline"
+              >
+                {validationLoading ? 'Validating...' : 'Validate RSR File vs Database'}
+              </Button>
+              {validationResult && !validationResult.isValid && (
+                <Button 
+                  onClick={fixDiscrepancies}
+                  variant="destructive"
+                >
+                  Fix Discrepancies
+                </Button>
+              )}
+            </div>
+
+            {validationResult && (
+              <div className="space-y-3">
+                <Alert variant={validationResult.isValid ? "default" : "destructive"}>
+                  <AlertTriangle className="w-4 h-4" />
+                  <AlertDescription>
+                    {validationResult.message}
+                  </AlertDescription>
+                </Alert>
+
+                {validationResult.totalDiscrepancies > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      Found {validationResult.totalDiscrepancies} discrepancies:
+                    </p>
+                    <div className="bg-muted p-3 rounded-md">
+                      <div className="text-xs font-mono space-y-1">
+                        {validationResult.sampleDiscrepancies.map((item, index) => (
+                          <div key={index} className="flex justify-between">
+                            <span>{item.sku}</span>
+                            <span>RSR: {item.rsrQuantity} | DB: {item.dbQuantity} | Diff: {item.difference}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* System Health */}
       <Card className="mt-6">

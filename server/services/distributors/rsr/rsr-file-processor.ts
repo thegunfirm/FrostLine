@@ -2,6 +2,9 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { storage } from '../../../storage';
 import type { InsertProduct } from '@shared/schema';
+import { products } from '@shared/schema';
+import { db } from '../../../db';
+import { eq } from 'drizzle-orm';
 
 /**
  * RSR File Processing Service
@@ -62,7 +65,7 @@ class RSRFileProcessor {
    * Process main RSR inventory file (rsrinventory-new.txt)
    * 77 fields, semicolon delimited
    */
-  async processInventoryFile(filePath: string): Promise<{ processed: number; errors: number }> {
+  async processInventoryFile(filePath: string): Promise<{ processed: number; errors: number; validation: any }> {
     console.log('Processing RSR inventory file:', filePath);
     
     if (!existsSync(filePath)) {
@@ -95,7 +98,32 @@ class RSRFileProcessor {
     }
 
     console.log(`RSR inventory processing complete: ${processed} processed, ${errors} errors`);
-    return { processed, errors };
+    
+    // Validate database integrity after processing
+    const validation = await this.validateDatabaseIntegrity(filePath);
+    
+    if (!validation.isValid) {
+      console.log('⚠️  Database integrity validation failed!');
+      console.log('🔧 Attempting to fix discrepancies...');
+      
+      const fixResult = await this.fixDatabaseDiscrepancies(filePath);
+      
+      // Re-validate after fixes
+      const revalidation = await this.validateDatabaseIntegrity(filePath);
+      
+      return { 
+        processed, 
+        errors, 
+        validation: {
+          ...validation,
+          fixAttempted: true,
+          fixResult,
+          revalidation
+        }
+      };
+    }
+    
+    return { processed, errors, validation };
   }
 
   private parseInventoryRecord(line: string): RSRInventoryRecord | null {
@@ -381,6 +409,119 @@ class RSRFileProcessor {
     tags.push('RSR');
     
     return tags;
+  }
+
+  /**
+   * Validate database matches RSR file after processing
+   */
+  async validateDatabaseIntegrity(filePath: string): Promise<{ isValid: boolean; discrepancies: any[] }> {
+    console.log('🔍 Validating database integrity against RSR file...');
+    
+    const fileContent = readFileSync(filePath, 'utf-8');
+    const lines = fileContent.split('\n').filter(line => line.trim());
+    
+    // Build RSR file inventory
+    const rsrInventory = new Map<string, number>();
+    let rsrTotalQuantity = 0;
+    
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const fields = line.split(';');
+      if (fields.length < 9) continue;
+      
+      const stockNo = fields[0];
+      const quantity = parseInt(fields[8]) || 0;
+      
+      if (stockNo) {
+        rsrInventory.set(stockNo, quantity);
+        rsrTotalQuantity += quantity;
+      }
+    }
+    
+    // Get database inventory
+    const dbProducts = await db.select().from(products);
+    const dbInventory = new Map<string, number>();
+    let dbTotalQuantity = 0;
+    
+    for (const product of dbProducts) {
+      dbInventory.set(product.sku, product.stockQuantity || 0);
+      dbTotalQuantity += product.stockQuantity || 0;
+    }
+    
+    console.log(`📂 RSR File: ${rsrInventory.size.toLocaleString()} products, ${rsrTotalQuantity.toLocaleString()} total units`);
+    console.log(`🗄️  Database: ${dbInventory.size.toLocaleString()} products, ${dbTotalQuantity.toLocaleString()} total units`);
+    
+    // Find discrepancies
+    const discrepancies = [];
+    
+    for (const [sku, rsrQty] of rsrInventory) {
+      const dbQty = dbInventory.get(sku) || 0;
+      if (rsrQty !== dbQty) {
+        discrepancies.push({
+          sku,
+          rsrQuantity: rsrQty,
+          dbQuantity: dbQty,
+          difference: rsrQty - dbQty
+        });
+      }
+    }
+    
+    const isValid = discrepancies.length === 0 && rsrTotalQuantity === dbTotalQuantity;
+    
+    if (isValid) {
+      console.log('✅ Database integrity validated - perfect match with RSR file');
+    } else {
+      console.log(`❌ Database integrity issues found:`);
+      console.log(`   - ${discrepancies.length} product quantity mismatches`);
+      console.log(`   - Total quantity difference: ${rsrTotalQuantity - dbTotalQuantity} units`);
+      
+      if (discrepancies.length > 0) {
+        console.log('📋 Sample discrepancies:');
+        discrepancies.slice(0, 5).forEach((item, index) => {
+          console.log(`   ${index + 1}. ${item.sku}: RSR=${item.rsrQuantity}, DB=${item.dbQuantity} (diff: ${item.difference})`);
+        });
+      }
+    }
+    
+    return { isValid, discrepancies };
+  }
+
+  /**
+   * Fix database discrepancies found during validation
+   */
+  async fixDatabaseDiscrepancies(filePath: string): Promise<{ fixed: number; errors: number }> {
+    console.log('🔧 Fixing database discrepancies...');
+    
+    const validation = await this.validateDatabaseIntegrity(filePath);
+    
+    if (validation.isValid) {
+      console.log('✅ No discrepancies to fix');
+      return { fixed: 0, errors: 0 };
+    }
+    
+    let fixed = 0;
+    let errors = 0;
+    
+    for (const discrepancy of validation.discrepancies) {
+      try {
+        const [product] = await db.select().from(products).where(eq(products.sku, discrepancy.sku));
+        if (product) {
+          await db.update(products)
+            .set({
+              stockQuantity: discrepancy.rsrQuantity,
+              inStock: discrepancy.rsrQuantity > 0
+            })
+            .where(eq(products.id, product.id));
+          fixed++;
+        }
+      } catch (error) {
+        console.error(`Error fixing ${discrepancy.sku}:`, error);
+        errors++;
+      }
+    }
+    
+    console.log(`✅ Fixed ${fixed} discrepancies, ${errors} errors`);
+    return { fixed, errors };
   }
 
   /**
