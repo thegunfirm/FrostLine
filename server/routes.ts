@@ -1507,7 +1507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // RSR Product Image Service - Downloads images from RSR FTP server
+  // RSR Product Image Service - Immediate 404 for unavailable images
   app.get("/api/rsr-image/:imageName", async (req, res) => {
     try {
       const imageName = req.params.imageName;
@@ -1515,124 +1515,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const size = req.query.size as 'standard' | 'highres' || 'standard';
       const cleanImgName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
       
-      // Known missing images - specialty/custom finishes not in RSR catalog
-      const knownMissingImages = [
-        'GLUX4350204FRNANIMGSCT',  // Anime Cerakote
-        'GLUX4350204FRNOUTYSCT',  // Outlaw Yellow Cerakote
-        'GLUX4350204FRNOUTBSCT',  // Outlaw Blue Cerakote
-        'GLUX4350204FRNTORN-SCT'  // Torn Camo Cerakote
-      ];
-      
-      if (knownMissingImages.includes(cleanImgName)) {
-        console.log(`❌ RSR image confirmed missing: ${cleanImgName} (custom finish not in catalog)`);
-        return res.status(404).json({ 
-          error: 'RSR image not available',
-          product: cleanImgName,
-          note: 'Custom finish not available in RSR catalog',
-          imageType: 'specialty-finish'
-        });
-      }
-      
-      console.log(`🔍 Downloading RSR image: ${cleanImgName} (angle: ${angle}, size: ${size})`);
-      
-      // RSR image naming convention from PDF:
-      // Standard: RSRSKU_imagenumber.jpg (e.g., GLOCK19GEN5_1.jpg)
-      // High-res: RSRSKU_imagenumber_HR.jpg (e.g., GLOCK19GEN5_1_HR.jpg)
-      const fileName = size === 'highres' 
-        ? `${cleanImgName}_${angle}_HR.jpg`
-        : `${cleanImgName}_${angle}.jpg`;
-      
-      // Use Node.js FTP client for more reliable connection
-      const { Client } = await import('basic-ftp');
-      const ftpClient = new Client();
-      ftpClient.ftp.verbose = false;
-      
-      try {
-        await ftpClient.access({
-          host: 'ftps.rsrgroup.com',
-          user: '60742',
-          password: '2SSinQ58',
-          port: 2222,
-          secure: true,
-          secureOptions: {
-            rejectUnauthorized: false,
-            requestCert: false
-          }
-        });
-        
-        // RSR FTP images are organized by first letter of stock number
-        const firstLetter = cleanImgName.charAt(0).toLowerCase();
-        const ftpPath = size === 'highres' 
-          ? `/ftp_highres_images/rsr_number/${firstLetter}/${fileName}`
-          : `/ftp_images/rsr_number/${firstLetter}/${fileName}`;
-        
-        console.log(`📥 Downloading from RSR FTP: ${ftpPath}`);
-        
-        // Use filesystem temp approach for reliable download
-        const fs = await import('fs');
-        const path = await import('path');
-        const tempFile = path.join(process.cwd(), `temp_${Date.now()}.jpg`);
-        
-        await ftpClient.downloadTo(tempFile, ftpPath);
-        
-        // Read downloaded file
-        const imageBuffer = fs.readFileSync(tempFile);
-        
-        // Clean up temp file
-        fs.unlinkSync(tempFile);
-        ftpClient.close();
-        
-        if (imageBuffer && imageBuffer.length > 1000) {
-          console.log(`✅ RSR image downloaded: ${fileName} (${imageBuffer.length} bytes)`);
-          
-          res.set({
-            'Content-Type': 'image/jpeg',
-            'Cache-Control': 'public, max-age=86400',
-            'Content-Length': imageBuffer.length,
-            'X-Image-Source': 'RSR-FTP',
-            'X-Image-Angle': angle,
-            'X-Image-Size': size
-          });
-          
-          return res.send(imageBuffer);
-        } else {
-          console.log(`❌ RSR image too small: ${fileName} (${imageBuffer.length} bytes)`);
-        }
-        
-      } catch (error: any) {
-        ftpClient.close();
-        
-        // If specific image not found and it's a custom finish, try base model
-        if (error.message.includes('No such file') && cleanImgName.includes('SCT')) {
-          const baseModel = cleanImgName.replace(/[A-Z]+SCT$/, '');
-          if (baseModel !== cleanImgName) {
-            console.log(`🔄 Trying base model image: ${baseModel}`);
-            return res.redirect(`/api/rsr-image/${baseModel}.jpg?angle=${angle}&size=${size}`);
-          }
-        }
-        
-        // If specific image not found, try without angle suffix
-        if (error.message.includes('No such file') && angle !== '1') {
-          console.log(`🔄 Retrying RSR image without angle: ${cleanImgName}`);
-          return res.redirect(`/api/rsr-image/${cleanImgName}.jpg?angle=1&size=${size}`);
-        }
-        
-        throw error;
-      }
-      
-      console.log(`❌ RSR image not available: ${fileName}`);
+      // RSR FTP is consistently failing with connection timeouts
+      // Return 404 immediately to prevent long loading times
+      console.log(`❌ RSR image not available: ${cleanImgName} (FTP connection issues)`);
       res.status(404).json({ 
-        error: 'RSR image not found',
-        product: imageName,
-        angle,
-        size,
-        note: 'Image may not exist in RSR catalog'
+        error: 'RSR image not available',
+        product: cleanImgName,
+        note: 'RSR FTP connection currently unavailable'
       });
       
     } catch (error: any) {
-      console.error(`❌ RSR image download error:`, error.message);
+      console.error(`❌ RSR image service error:`, error.message);
       res.status(500).json({ 
-        error: 'RSR image download failed',
+        error: 'RSR image service error',
         product: req.params.imageName,
         message: error.message
       });
