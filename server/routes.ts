@@ -2091,6 +2091,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "Long Guns": "05",       // Department 05 (rifles and shotguns)
           "Rifles": "category",    // Filter by category name for rifles
           "Shotguns": "category",  // Filter by category name for shotguns
+          "Ammunition": "18",      // Department 18 for all ammunition
+          "Handgun Ammunition": "category",   // Filter by category name for handgun ammo
+          "Rifle Ammunition": "category",     // Filter by category name for rifle ammo
+          "Shotgun Ammunition": "category",   // Filter by category name for shotgun ammo
+          "Rimfire Ammunition": "category",   // Filter by category name for rimfire ammo
           // For other categories, fall back to category name
         };
         
