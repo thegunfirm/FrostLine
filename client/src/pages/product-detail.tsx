@@ -399,10 +399,11 @@ export default function ProductDetail() {
                 </div>
               )}
               {imageError ? (
-                <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded">
+                <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded border-2 border-dashed border-gray-300">
                   <div className="text-center text-gray-500">
-                    <ImageIcon className="w-16 h-16 mx-auto mb-2" />
-                    <p className="text-sm">Product image not available</p>
+                    <ImageIcon className="w-16 h-16 mx-auto mb-2 text-gray-400" />
+                    <p className="text-sm font-medium">Product image not available</p>
+                    <p className="text-xs text-gray-400 mt-1">RSR image server unavailable</p>
                   </div>
                 </div>
               ) : (
