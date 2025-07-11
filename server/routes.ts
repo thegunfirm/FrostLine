@@ -2584,6 +2584,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       async function getFacetValues(facetName: string, excludeFilter?: string) {
         const facetFilters = baseFilters.filter(f => f !== excludeFilter);
         
+        const requestBody = {
+          query: '',
+          hitsPerPage: 0,
+          facets: [facetName],
+          filters: facetFilters.join(' AND ') || undefined
+        };
+        
+        console.log(`🔍 Getting facet values for ${facetName} with filters:`, requestBody);
+        
         const response = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/products/query`, {
           method: 'POST',
           headers: {
@@ -2591,15 +2600,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             'X-Algolia-Application-Id': process.env.ALGOLIA_APP_ID!,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            query: '',
-            hitsPerPage: 0,
-            facets: [facetName],
-            filters: facetFilters.join(' AND ') || undefined
-          })
+          body: JSON.stringify(requestBody)
         });
         
         const result = await response.json();
+        console.log(`📊 Facet result for ${facetName}:`, result.facets?.[facetName] || {});
+        
+        if (!response.ok) {
+          console.error(`❌ Algolia facet error for ${facetName}:`, result);
+        }
+        
         return result.facets?.[facetName] || {};
       }
       
