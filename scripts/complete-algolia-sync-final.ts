@@ -81,22 +81,22 @@ async function transformProductsForAlgolia(dbProducts: any[]) {
   console.log('🔄 Transforming products for Algolia...');
   
   const algoliaProducts: AlgoliaProduct[] = dbProducts.map((product) => ({
-    objectID: product.stockNumber,
+    objectID: product.sku,
     name: product.name,
-    manufacturerName: product.manufacturerName,
-    categoryName: product.categoryName,
+    manufacturerName: product.manufacturer,
+    categoryName: product.category,
     departmentNumber: product.departmentNumber?.toString() || '',
-    stockNumber: product.stockNumber,
+    stockNumber: product.sku,
     description: product.description,
-    inventoryQuantity: product.inventoryQuantity,
-    inStock: product.inventoryQuantity > 0,
+    inventoryQuantity: product.stockQuantity,
+    inStock: product.stockQuantity > 0 && product.inStock,
     dropShippable: product.dropShippable,
-    upc: product.upc || '',
+    upc: product.upcCode || '',
     weight: product.weight,
     tierPricing: {
-      bronze: product.tierPricing?.bronze || product.msrp,
-      gold: product.tierPricing?.gold || product.retailMap || product.msrp,
-      platinum: product.tierPricing?.platinum || product.dealerPrice
+      bronze: parseFloat(product.priceBronze) || parseFloat(product.priceMSRP) || 0,
+      gold: parseFloat(product.priceGold) || parseFloat(product.priceMAP) || parseFloat(product.priceBronze) || 0,
+      platinum: parseFloat(product.pricePlatinum) || parseFloat(product.priceWholesale) || 0
     },
     caliber: product.caliber,
     capacity: product.capacity,
@@ -108,13 +108,13 @@ async function transformProductsForAlgolia(dbProducts: any[]) {
     tags: product.tags || [],
     newItem: product.newItem,
     internalSpecial: product.internalSpecial,
-    retailPrice: product.retailPrice,
-    retailMap: product.retailMap,
-    msrp: product.msrp,
-    dealerPrice: product.dealerPrice,
-    price: product.tierPricing?.gold || product.retailMap || product.msrp,
-    fflRequired: product.fflRequired,
-    mpn: product.mpn || ''
+    retailPrice: parseFloat(product.priceMSRP) || 0,
+    retailMap: parseFloat(product.priceMAP) || 0,
+    msrp: parseFloat(product.priceMSRP) || 0,
+    dealerPrice: parseFloat(product.priceWholesale) || 0,
+    price: parseFloat(product.priceGold) || parseFloat(product.priceMAP) || parseFloat(product.priceMSRP) || 0,
+    fflRequired: product.requiresFFL,
+    mpn: product.manufacturerPartNumber || ''
   }));
   
   console.log(`✅ Transformed ${algoliaProducts.length} products for Algolia`);

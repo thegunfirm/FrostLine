@@ -2142,8 +2142,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const categoryToDepartment = {
           "Handguns": "01",        // Department 01 (pistols and revolvers only)
           "Long Guns": "05",       // Department 05 (rifles and shotguns)
-          "Rifles": "category",    // Filter by category name for rifles
-          "Shotguns": "category",  // Filter by category name for shotguns
+          "Rifles": "05",          // Department 05 - rifles are in Long Guns department
+          "Shotguns": "05",        // Department 05 - shotguns are in Long Guns department  
           "Ammunition": "18",      // Department 18 for all ammunition (shows all subcategories)
           "Handgun Ammunition": "category",   // Filter by category name for handgun ammo
           "Rifle Ammunition": "category",     // Filter by category name for rifle ammo
@@ -2153,6 +2153,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "Optical Accessories": "optical_accessories", // Departments 09 + 31 combined
           "Sights": "30",          // Department 30 - Sights only
           "Parts": "34",           // Department 34 - Parts
+          "NFA": "06",             // Department 06 - NFA Products
+          "Accessories": "accessories_multi", // Multiple departments for accessories
           // For other categories, fall back to category name
         };
         
@@ -2161,10 +2163,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // For handguns, use department 01 only (authentic RSR categorization)
           algoliaFilters.push(`departmentNumber:"01"`);
           console.log(`Applied RSR department 01 filter for all handgun products`);
+        } else if (department === "05") {
+          // For Long Guns, Rifles, and Shotguns - use department 05 with category filtering
+          if (cleanedFilters.category === "Rifles") {
+            algoliaFilters.push(`departmentNumber:"05" AND categoryName:"Rifles"`);
+            console.log(`Applied RSR department 05 filter for Rifles`);
+          } else if (cleanedFilters.category === "Shotguns") {
+            algoliaFilters.push(`departmentNumber:"05" AND categoryName:"Shotguns"`);
+            console.log(`Applied RSR department 05 filter for Shotguns`);
+          } else {
+            algoliaFilters.push(`departmentNumber:"05"`);
+            console.log(`Applied RSR department 05 filter for Long Guns`);
+          }
         } else if (department === "category") {
-          // For rifles and shotguns, use category name filtering
+          // For ammunition subcategories, use category name filtering
           algoliaFilters.push(`categoryName:"${cleanedFilters.category}"`);
           console.log(`Applied category filter: categoryName:"${cleanedFilters.category}"`);
+        } else if (department === "accessories_multi") {
+          // For accessories, combine multiple departments (09, 11, 12, 13, 14, 17, 20, 21, 25, 26, 27, 30, 31, 35)
+          algoliaFilters.push(`(departmentNumber:"09" OR departmentNumber:"11" OR departmentNumber:"12" OR departmentNumber:"13" OR departmentNumber:"14" OR departmentNumber:"17" OR departmentNumber:"20" OR departmentNumber:"21" OR departmentNumber:"25" OR departmentNumber:"26" OR departmentNumber:"27" OR departmentNumber:"30" OR departmentNumber:"31" OR departmentNumber:"35")`);
+          console.log(`Applied RSR accessories filter (multiple departments)`);
         } else if (department === "18") {
           // For ammunition (department 18), show all products including zero inventory (matches RSR behavior)
           algoliaFilters.push(`departmentNumber:"18"`);
@@ -2381,7 +2399,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchParams.filters = algoliaFilters.join(' AND ');
       }
       
-      // Note: Custom sorting disabled for now - using Algolia's default relevance
+      // Note: Stock priority sorting would require index replica configuration
+      // For now, using default relevance ranking
 
       console.log('Algolia search params:', JSON.stringify(searchParams, null, 2));
 
@@ -2405,7 +2424,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const searchResults = await response.json();
 
-      res.json(searchResults);
+      // Transform search results to match frontend expectations
+      const transformedResults = {
+        ...searchResults,
+        hits: searchResults.hits.map((hit: any) => ({
+          objectID: hit.objectID,
+          title: hit.name || hit.title,
+          description: hit.description || hit.fullDescription,
+          sku: hit.stockNumber || hit.sku,
+          manufacturerName: hit.manufacturerName || hit.manufacturer,
+          categoryName: hit.categoryName || hit.category,
+          tierPricing: hit.tierPricing || {
+            bronze: hit.retailPrice || hit.price,
+            gold: hit.dealerPrice || hit.price,
+            platinum: hit.dealerPrice || hit.price
+          },
+          inventory: {
+            onHand: hit.inventoryQuantity || hit.quantity || 0,
+            allocated: hit.allocated || false
+          },
+          images: hit.images || [{
+            image: `/api/rsr-image/${hit.stockNumber || hit.sku}`,
+            id: hit.objectID
+          }],
+          inStock: hit.inStock || false,
+          distributor: hit.distributor || "RSR",
+          caliber: hit.caliber,
+          capacity: hit.capacity,
+          price: hit.tierPricing?.platinum || hit.dealerPrice || hit.price,
+          name: hit.name || hit.title,
+          stockNumber: hit.stockNumber || hit.sku,
+          weight: hit.weight,
+          mpn: hit.mpn,
+          upc: hit.upc,
+          retailPrice: hit.retailPrice,
+          dealerPrice: hit.dealerPrice,
+          msrp: hit.msrp,
+          retailMap: hit.retailMap,
+          fflRequired: hit.fflRequired,
+          departmentNumber: hit.departmentNumber,
+          newItem: hit.newItem,
+          internalSpecial: hit.internalSpecial,
+          dropShippable: hit.dropShippable
+        }))
+      };
+
+      res.json(transformedResults);
     } catch (error) {
       console.error('Algolia search error:', error);
       res.status(500).json({ error: 'Search temporarily unavailable' });
