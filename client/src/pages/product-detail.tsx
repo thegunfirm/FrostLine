@@ -123,9 +123,9 @@ export default function ProductDetail() {
     retry: 2,
   });
 
-  // Fetch related products with no caching during development
+  // Fetch related products with minimal caching
   const { data: relatedProducts, isLoading: relatedLoading, error: relatedError } = useQuery({
-    queryKey: ['related-products', product?.id, Date.now()], // Add timestamp to force fresh queries
+    queryKey: ['related-products', product?.id],
     queryFn: async () => {
       if (!product) return [];
       console.log('Fetching related products for product:', product.id, product.name);
@@ -135,8 +135,8 @@ export default function ProductDetail() {
       return data;
     },
     enabled: !!product,
-    staleTime: 0, // No cache - always fetch fresh data
-    cacheTime: 0, // No cache storage
+    staleTime: 10 * 1000, // 10 seconds
+    cacheTime: 30 * 1000, // 30 seconds
   });
 
   // Fetch FFLs if required
@@ -981,10 +981,16 @@ export default function ProductDetail() {
         </Tabs>
 
         {/* Related Products */}
-        {console.log('Related products debug:', { relatedProducts, relatedLoading, relatedError, hasProducts: relatedProducts && relatedProducts.length > 0 })}
-        {relatedProducts && relatedProducts.length > 0 && (
-          <div className="animate-in fade-in slide-in-from-bottom duration-500 delay-700">
-            <h2 className="text-xl font-bold mb-6">Related Products</h2>
+        <div className="mt-12">
+          <h2 className="text-xl font-bold mb-6">Related Products</h2>
+          {relatedLoading && (
+            <div className="text-center py-8">
+              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+              <p className="mt-2 text-gray-600">Loading related products...</p>
+            </div>
+          )}
+          {relatedProducts && Array.isArray(relatedProducts) && relatedProducts.length > 0 && (
+            <div className="animate-in fade-in slide-in-from-bottom duration-500 delay-700">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.slice(0, 4).map((related, index) => (
                 <Card key={related.id} className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-in fade-in slide-in-from-bottom"
@@ -1039,8 +1045,9 @@ export default function ProductDetail() {
                 </Card>
               ))}
             </div>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
