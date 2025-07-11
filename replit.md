@@ -332,6 +332,7 @@ Changelog:
 - July 11, 2025. **SMOOTH ON-LOAD ANIMATIONS**: Added comprehensive fade-in and slide animations to product detail page sections with staggered timing for professional loading experience
 - July 11, 2025. **RELATED PRODUCTS OPTIMIZATION**: Fixed image loading by using RSR stock numbers instead of generic IDs, improved similarity algorithm to prioritize same manufacturer + category combinations
 - July 11, 2025. **ROLLBACK POINT**: Stable state achieved with complete product detail page enhancements, smooth animations, fixed compliance section, and optimized related products functionality
+- July 11, 2025. **INTELLIGENT RELATED PRODUCTS ALGORITHM**: Enhanced similarity matching to prioritize caliber and firearm type compatibility - 1911 9mm now shows other 9mm firearms instead of unrelated .22 LR pistols
 ```
 
 ## User Preferences

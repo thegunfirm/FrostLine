@@ -206,38 +206,114 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getRelatedProducts(productId: number, category: string, manufacturer: string): Promise<Product[]> {
-    // Priority 1: Same manufacturer AND same category (most relevant)
-    const sameManufacturerAndCategory = await db.select().from(products)
-      .where(
-        and(
-          eq(products.isActive, true),
-          eq(products.manufacturer, manufacturer),
-          eq(products.category, category),
-          // Exclude the current product
-          ne(products.id, productId)
-        )
-      )
-      .orderBy(desc(products.inStock), desc(products.createdAt))
-      .limit(4);
+    // Get the current product to extract caliber and firearm type
+    const [currentProduct] = await db.select().from(products).where(eq(products.id, productId));
+    if (!currentProduct) return [];
 
-    // Priority 2: Same category, different manufacturer (fill remaining slots)
-    const sameCategoryDifferentManufacturer = await db.select().from(products)
+    // Extract caliber and firearm type from product name and tags
+    const { caliber, firearmType } = this.extractFirearmAttributes(currentProduct.name, currentProduct.tags);
+
+    // Get more candidate products to improve matching
+    const candidateProducts = await db.select().from(products)
       .where(
         and(
           eq(products.isActive, true),
           eq(products.category, category),
-          ne(products.manufacturer, manufacturer),
-          // Exclude the current product
           ne(products.id, productId)
         )
       )
       .orderBy(desc(products.inStock), desc(products.createdAt))
-      .limit(4);
+      .limit(100); // Get more candidates to score for better matches
 
-    // Combine results, prioritizing same manufacturer + category
-    const relatedProducts = [...sameManufacturerAndCategory, ...sameCategoryDifferentManufacturer].slice(0, 8);
+    // Score and sort products by similarity
+    const scoredProducts = candidateProducts.map(product => {
+      const score = this.calculateSimilarityScore(
+        product,
+        { caliber, firearmType, manufacturer }
+      );
+      return {
+        ...product,
+        similarityScore: score
+      };
+    });
+
+    // Sort by similarity score (highest first) and return top 8
+    return scoredProducts
+      .sort((a, b) => b.similarityScore - a.similarityScore)
+      .slice(0, 8)
+      .map(({ similarityScore, ...product }) => product);
+  }
+
+  // Extract caliber and firearm type from product name and tags
+  private extractFirearmAttributes(name: string, tags: any): { caliber: string | null, firearmType: string | null } {
+    const nameUpper = name.toUpperCase();
+    const tagsList = Array.isArray(tags) ? tags.map(tag => tag.toUpperCase()) : [];
+    const searchText = (nameUpper + ' ' + tagsList.join(' ')).toUpperCase();
+
+    // Common calibers
+    const calibers = ['9MM', '9 MM', '.45', '45ACP', '45 ACP', '.40', '40SW', '40 S&W', '.357', '357', '.38', '.380', 
+                      '10MM', '10 MM', '.22', '22LR', '22 LR', '.223', '223', '5.56', '.308', '308', '.300', '300', 
+                      '.270', '270', '.243', '243', '.30-06', '30-06', '.50', '50', '7.62', '6.5'];
     
-    return relatedProducts;
+    // Common firearm types (prioritized by specificity)
+    const firearmTypes = ['1911', 'SR1911', 'ULTRA CARRY', 'COMMANDER', 'OFFICER', 'GOVERNMENT', 'GLOCK', 'STRIKER', 
+                          'REVOLVER', 'SINGLE ACTION', 'DOUBLE ACTION', 'HAMMER', 'AR-15', 'AR15', 'AK-47', 'AK47', 
+                          'BOLT ACTION', 'SEMI-AUTO', 'PUMP', 'LEVER'];
+
+    let caliber: string | null = null;
+    let firearmType: string | null = null;
+
+    // Find caliber (prioritize more specific matches)
+    for (const cal of calibers) {
+      if (searchText.includes(cal)) {
+        caliber = cal;
+        break;
+      }
+    }
+
+    // Find firearm type (prioritize more specific matches)
+    for (const type of firearmTypes) {
+      if (searchText.includes(type)) {
+        firearmType = type;
+        break;
+      }
+    }
+
+    return { caliber, firearmType };
+  }
+
+  // Calculate similarity score between products
+  private calculateSimilarityScore(product: Product, reference: { caliber: string | null, firearmType: string | null, manufacturer: string }): number {
+    let score = 0;
+    const { caliber: productCaliber, firearmType: productFirearmType } = this.extractFirearmAttributes(product.name, product.tags);
+
+    // Same manufacturer gets high score
+    if (product.manufacturer === reference.manufacturer) {
+      score += 40;
+    }
+
+    // Matching caliber gets very high score
+    if (reference.caliber && productCaliber === reference.caliber) {
+      score += 50;
+    }
+
+    // Matching firearm type gets high score  
+    if (reference.firearmType && productFirearmType === reference.firearmType) {
+      score += 35;
+    }
+    
+    // Bonus for both caliber AND firearm type match (perfect match)
+    if (reference.caliber && productCaliber === reference.caliber && 
+        reference.firearmType && productFirearmType === reference.firearmType) {
+      score += 20;
+    }
+
+    // In stock products get bonus
+    if (product.inStock) {
+      score += 10;
+    }
+
+    return score;
   }
 
   // Order operations
