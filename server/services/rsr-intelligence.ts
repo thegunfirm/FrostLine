@@ -200,7 +200,7 @@ export class RSRIntelligenceService {
     // More specific patterns first for better accuracy
     const specificPatterns = [
       // Revolver calibers - most specific first
-      { pattern: /357\s*MAG|\.357\s*MAG|357\s*MAGNUM/i, caliber: '357MAG' },
+      { pattern: /357\s*MAG|\.357\s*MAG|357\s*MAGNUM|\b357\s|\s357\b|\b357\b/i, caliber: '357MAG' },
       { pattern: /38\s*SPEC|\.38\s*SPEC|38\s*SPL|\.38\s*SPL/i, caliber: '38SPEC' },
       { pattern: /357\s*SIG|\.357\s*SIG/i, caliber: '357SIG' },
       { pattern: /44\s*MAG|\.44\s*MAG|44\s*MAGNUM/i, caliber: '44MAG' },

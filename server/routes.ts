@@ -258,6 +258,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // RSR Intelligence cache refresh endpoint
+  app.post("/api/rsr-intelligence/refresh-cache", async (req, res) => {
+    try {
+      const { rsrIntelligence } = await import('./services/rsr-intelligence');
+      
+      // Force reload of intelligence cache
+      await rsrIntelligence.loadProductIntelligence();
+      
+      const stats = rsrIntelligence.getIntelligenceStats();
+      res.json({
+        message: "RSR Intelligence cache refreshed successfully",
+        stats
+      });
+    } catch (error) {
+      console.error("Refresh RSR intelligence cache error:", error);
+      res.status(500).json({ message: "Failed to refresh RSR intelligence cache" });
+    }
+  });
+
   // Debug related products endpoint - shows scoring
   app.get("/api/products/related-debug/:id", async (req, res) => {
     try {
