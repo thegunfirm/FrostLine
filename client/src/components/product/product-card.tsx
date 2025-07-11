@@ -17,36 +17,11 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCardProps) {
   const { user } = useAuth();
-  // For Algolia search results, use the SKU directly for RSR images
+  // Use RSR image service for product images
   const imageUrl = product.sku ? `/api/rsr-image/${product.sku}` : '/api/placeholder-image.jpg';
   const altText = product.name || 'Product Image';
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
-  const [validImageUrl, setValidImageUrl] = useState<string | null>(null);
-
-  // Proactively check if image is available
-  useEffect(() => {
-    if (product.sku) {
-      const checkImageUrl = `/api/rsr-image/${product.sku}`;
-      fetch(checkImageUrl)
-        .then(response => {
-          if (response.ok) {
-            setValidImageUrl(checkImageUrl);
-            setImageLoading(false);
-          } else {
-            setImageLoading(false);
-            setImageError(true);
-          }
-        })
-        .catch(() => {
-          setImageLoading(false);
-          setImageError(true);
-        });
-    } else {
-      setImageLoading(false);
-      setImageError(true);
-    }
-  }, [product.sku]);
 
   const onLoad = () => setImageLoading(false);
   const onError = () => {
@@ -110,21 +85,14 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
               <p className="text-xs">No Image</p>
             </div>
           </div>
-        ) : validImageUrl ? (
+        ) : (
           <img 
-            src={validImageUrl}
-            alt={altText || product.name}
+            src={imageUrl}
+            alt={altText}
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
             onLoad={onLoad}
             onError={onError}
           />
-        ) : (
-          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-            <div className="text-center text-gray-500">
-              <ImageIcon className="w-12 h-12 mx-auto mb-2" />
-              <p className="text-xs">No Image</p>
-            </div>
-          </div>
         )}
         
 
