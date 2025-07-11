@@ -123,10 +123,13 @@ class SyncHealthMonitor {
             process.env.ALGOLIA_API_KEY
           );
           
-          const index = client.initIndex('products');
-          const searchResult = await index.search('', {
-            hitsPerPage: 0,
-            attributesToRetrieve: []
+          const searchResult = await client.searchSingleIndex({
+            indexName: 'products',
+            searchParams: {
+              query: '',
+              hitsPerPage: 0,
+              attributesToRetrieve: []
+            }
           });
           indexedProducts = searchResult.nbHits;
           
