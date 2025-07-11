@@ -176,9 +176,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Search Header */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {/* Filter Toggle Button */}
         <Button
           variant="outline"
@@ -221,7 +221,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
             className="flex items-center gap-2 text-gun-gold hover:text-gun-gold/80"
           >
             <X className="h-4 w-4" />
-            Clear
+            Clear Filters
           </Button>
         )}
       </div>
@@ -250,58 +250,16 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       {/* Loading State */}
       {isLoading && (
         <ProductGrid 
-          products={[]} 
-          loading={true}
+          products={Array(12).fill(null)} 
+          isLoading={true}
         />
       )}
 
       {/* Results Grid */}
       {searchResults && !isLoading && (
         <ProductGrid 
-          products={searchResults.hits.map(hit => ({
-            ...hit,
-            id: parseInt(hit.objectID) || Date.now() + Math.random(),
-            priceWholesale: hit.tierPricing.platinum,
-            priceMAP: hit.tierPricing.gold,
-            priceMSRP: hit.tierPricing.bronze,
-            priceBronze: hit.tierPricing.bronze,
-            priceGold: hit.tierPricing.gold,
-            pricePlatinum: hit.tierPricing.platinum,
-            stockQuantity: hit.inventory?.onHand || 0,
-            allocated: hit.inventory?.allocated ? 'Y' : 'N',
-            requiresFFL: hit.categoryName === 'Handguns' || hit.categoryName === 'Long Guns',
-            category: hit.categoryName,
-            manufacturer: hit.manufacturerName,
-            name: hit.title,
-            description: hit.description,
-            createdAt: new Date(),
-            isActive: true,
-            tags: [],
-            images: hit.images || [],
-            upcCode: null,
-            weight: 0,
-            dimensions: null,
-            restrictions: null,
-            stateRestrictions: null,
-            groundShipOnly: false,
-            adultSignatureRequired: false,
-            dropShippable: true,
-            prop65: false,
-            returnPolicyDays: 30,
-            subcategoryName: null,
-            departmentNumber: null,
-            departmentDesc: null,
-            subDepartmentDesc: null,
-            manufacturerPartNumber: null,
-            newItem: false,
-            promo: null,
-            accessories: null,
-            distributor: hit.distributor || 'RSR',
-            mustRouteThroughGunFirm: false,
-            firearmType: null,
-            compatibilityTags: null
-          }))}
-          loading={false}
+          products={searchResults.hits}
+          isLoading={false}
         />
       )}
 
@@ -323,7 +281,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
       {/* Pagination */}
       {searchResults && searchResults.nbPages > 1 && (
-        <div className="flex justify-center items-center gap-2 py-6">
+        <div className="flex justify-center items-center gap-2 py-8">
           <Button
             variant="outline"
             size="sm"
@@ -373,12 +331,12 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         filters={filters}
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
-        filterOptions={{
-          manufacturers: filterOptions?.manufacturers || [],
-          calibers: filterOptions?.calibers || [],
-          capacities: filterOptions?.capacities || [],
-          priceRanges: filterOptions?.priceRanges || [],
-          stockStatus: filterOptions?.stockStatus || []
+        filterOptions={filterOptions || {
+          manufacturers: [],
+          calibers: [],
+          capacities: [],
+          priceRanges: [],
+          stockStatus: []
         }}
         category={category}
         totalResults={searchResults?.nbHits || 0}

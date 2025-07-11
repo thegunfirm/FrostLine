@@ -2532,28 +2532,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get dynamic filter options based on current selections
   app.post("/api/search/filter-options", async (req, res) => {
     try {
-      const { filters } = req.body;
+      const { category, query, filters } = req.body;
       
       // Build base Algolia filter from current selections
       const baseFilters = [];
       
-      if (filters.category && filters.category !== "all") {
-        if (filters.category === "Handguns") {
+      if (category && category !== "all") {
+        if (category === "Handguns") {
           baseFilters.push('departmentNumber:"01"');
         } else {
-          baseFilters.push(`categoryName:"${filters.category}"`);
+          baseFilters.push(`categoryName:"${category}"`);
         }
       }
       
-      if (filters.handgunManufacturer && filters.handgunManufacturer !== "all") {
-        baseFilters.push(`manufacturerName:"${filters.handgunManufacturer}"`);
+      if (filters.manufacturer && filters.manufacturer !== "all") {
+        baseFilters.push(`manufacturerName:"${filters.manufacturer}"`);
       }
       
-      if (filters.handgunCaliber && filters.handgunCaliber !== "all") {
-        baseFilters.push(`caliber:"${filters.handgunCaliber}"`);
+      if (filters.caliber && filters.caliber !== "all") {
+        baseFilters.push(`caliber:"${filters.caliber}"`);
       }
       
-      if (filters.handgunPriceRange && filters.handgunPriceRange !== "all") {
+      if (filters.priceRange && filters.priceRange !== "all") {
         const priceRangeMap = {
           "Under $300": "tierPricing.platinum < 300",
           "$300-$500": "tierPricing.platinum >= 300 AND tierPricing.platinum < 500",
@@ -2563,21 +2563,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "Over $1500": "tierPricing.platinum >= 1500"
         };
         
-        if (priceRangeMap[filters.handgunPriceRange]) {
-          baseFilters.push(priceRangeMap[filters.handgunPriceRange]);
+        if (priceRangeMap[filters.priceRange]) {
+          baseFilters.push(priceRangeMap[filters.priceRange]);
         }
       }
       
-      if (filters.handgunCapacity && filters.handgunCapacity !== "all") {
-        baseFilters.push(`capacity:${filters.handgunCapacity}`);
+      if (filters.capacity && filters.capacity !== "all") {
+        baseFilters.push(`capacity:${filters.capacity}`);
       }
       
-      if (filters.handgunStockStatus && filters.handgunStockStatus !== "all") {
-        if (filters.handgunStockStatus === 'in-stock') {
-          baseFilters.push('inStock:true');
-        } else if (filters.handgunStockStatus === 'out-of-stock') {
-          baseFilters.push('inStock:false');
-        }
+      if (filters.inStock !== null) {
+        baseFilters.push(`inStock:${filters.inStock}`);
       }
       
       // Function to get facet values from Algolia
@@ -2615,9 +2611,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get available values for each filter
       const [manufacturers, calibers, capacities, priceRanges, stockStatuses] = await Promise.all([
-        getFacetValues('manufacturerName', filters.handgunManufacturer && filters.handgunManufacturer !== "all" ? `manufacturerName:"${filters.handgunManufacturer}"` : undefined),
-        getFacetValues('caliber', filters.handgunCaliber && filters.handgunCaliber !== "all" ? `caliber:"${filters.handgunCaliber}"` : undefined),
-        getFacetValues('capacity', filters.handgunCapacity && filters.handgunCapacity !== "all" ? `capacity:"${filters.handgunCapacity}"` : undefined),
+        getFacetValues('manufacturerName', filters.manufacturer && filters.manufacturer !== "all" ? `manufacturerName:"${filters.manufacturer}"` : undefined),
+        getFacetValues('caliber', filters.caliber && filters.caliber !== "all" ? `caliber:"${filters.caliber}"` : undefined),
+        getFacetValues('capacity', filters.capacity && filters.capacity !== "all" ? `capacity:"${filters.capacity}"` : undefined),
         // For price ranges, we need to get actual products and calculate ranges
         getFacetValues('tierPricing.platinum'),
         getFacetValues('inStock')
@@ -2626,21 +2622,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process manufacturers
       const availableManufacturers = Object.keys(manufacturers).map(name => ({
         value: name,
-        label: name,
         count: manufacturers[name]
       })).sort((a, b) => b.count - a.count);
       
       // Process calibers
       const availableCalibers = Object.keys(calibers).filter(cal => cal && cal !== 'null').map(cal => ({
         value: cal,
-        label: cal.toUpperCase(),
         count: calibers[cal]
       })).sort((a, b) => b.count - a.count);
       
       // Process capacities
       const availableCapacities = Object.keys(capacities).filter(cap => cap && cap !== 'null').map(cap => ({
         value: cap,
-        label: `${cap}-Round`,
         count: capacities[cap]
       })).sort((a, b) => parseInt(a.value) - parseInt(b.value));
       
@@ -2677,15 +2670,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const availableStockStatuses = [];
       if (stockStatuses.true) {
         availableStockStatuses.push({
-          value: "in-stock",
-          label: "In Stock",
+          value: "true",
           count: stockStatuses.true
         });
       }
       if (stockStatuses.false) {
         availableStockStatuses.push({
-          value: "out-of-stock", 
-          label: "Out of Stock",
+          value: "false",
           count: stockStatuses.false
         });
       }
@@ -2694,8 +2685,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         manufacturers: availableManufacturers,
         calibers: availableCalibers,
         capacities: availableCapacities,
-        priceRanges: availablePriceRanges,
-        stockStatuses: availableStockStatuses
+        priceRanges: availablePriceRanges.map(range => ({
+          value: range.value,
+          count: range.count
+        })),
+        stockStatus: availableStockStatuses
       });
       
     } catch (error) {
