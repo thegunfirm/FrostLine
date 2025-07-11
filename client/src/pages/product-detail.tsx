@@ -46,53 +46,53 @@ interface Product {
   name: string;
   description: string;
   category: string;
-  subcategory_name: string;
-  department_number: string;
-  department_desc: string;
-  sub_department_desc: string;
+  subcategoryName: string;
+  departmentNumber: string;
+  departmentDesc: string;
+  subDepartmentDesc: string;
   manufacturer: string;
-  manufacturer_part_number: string;
+  manufacturerPartNumber: string;
   sku: string;
-  price_wholesale: string;
-  price_map: string;
-  price_msrp: string;
-  price_bronze: string;
-  price_gold: string;
-  price_platinum: string;
-  in_stock: boolean;
-  stock_quantity: number;
+  priceWholesale: string;
+  priceMAP: string;
+  priceMSRP: string;
+  priceBronze: string;
+  priceGold: string;
+  pricePlatinum: string;
+  inStock: boolean;
+  stockQuantity: number;
   allocated: string;
-  new_item: boolean;
+  newItem: boolean;
   promo: string;
   accessories: string;
   distributor: string;
-  requires_ffl: boolean;
-  must_route_through_gun_firm: boolean;
+  requiresFFL: boolean;
+  mustRouteThroughGunFirm: boolean;
   tags: string[];
   images: any[];
-  upc_code: string;
+  upcCode: string;
   weight: number;
   dimensions: any;
   restrictions: any;
-  state_restrictions: string[];
-  ground_ship_only: boolean;
-  adult_signature_required: boolean;
-  drop_shippable: boolean;
+  stateRestrictions: string[];
+  groundShipOnly: boolean;
+  adultSignatureRequired: boolean;
+  dropShippable: boolean;
   prop65: boolean;
-  return_policy_days: number;
-  is_active: boolean;
-  created_at: string;
+  returnPolicyDays: number;
+  isActive: boolean;
+  createdAt: string;
 }
 
 interface RelatedProduct {
   id: number;
   name: string;
   manufacturer: string;
-  price_bronze: string;
-  price_gold: string;
-  price_platinum: string;
-  in_stock: boolean;
-  requires_ffl: boolean;
+  priceBronze: string;
+  priceGold: string;
+  pricePlatinum: string;
+  inStock: boolean;
+  requiresFFL: boolean;
   category: string;
 }
 
@@ -143,7 +143,7 @@ export default function ProductDetail() {
       const response = await apiRequest('GET', `/api/ffls/search/${userZip}`);
       return response.json();
     },
-    enabled: !!(product?.requires_ffl && userZip && userZip.length === 5),
+    enabled: !!(product?.requiresFFL && userZip && userZip.length === 5),
     staleTime: 30 * 60 * 1000, // 30 minutes
   });
 
@@ -159,29 +159,29 @@ export default function ProductDetail() {
     if (!product) return 0;
     if (!user) {
       // For non-authenticated users: show MSRP if present, else dealerPrice
-      const price = parseFloat(product.price_msrp || product.price_bronze || '0');
+      const price = parseFloat(product.priceMSRP || product.priceBronze || '0');
       return isNaN(price) ? 0 : price;
     }
     
     switch (user.subscriptionTier) {
       case "Bronze":
-        const bronzePrice = parseFloat(product.price_msrp || product.price_bronze || '0');
+        const bronzePrice = parseFloat(product.priceMSRP || product.priceBronze || '0');
         return isNaN(bronzePrice) ? 0 : bronzePrice;
       case "Gold":
-        const goldPrice = parseFloat(product.price_gold || '0');
+        const goldPrice = parseFloat(product.priceGold || '0');
         return isNaN(goldPrice) ? 0 : goldPrice;
       case "Platinum":
-        const platinumPrice = parseFloat(product.price_platinum || '0');
+        const platinumPrice = parseFloat(product.pricePlatinum || '0');
         return isNaN(platinumPrice) ? 0 : platinumPrice;
       default:
-        const defaultPrice = parseFloat(product.price_msrp || product.price_bronze || '0');
+        const defaultPrice = parseFloat(product.priceMSRP || product.priceBronze || '0');
         return isNaN(defaultPrice) ? 0 : defaultPrice;
     }
   };
 
   const getSavings = () => {
     if (!product) return 0;
-    const basePrice = parseFloat(product.price_bronze || '0');
+    const basePrice = parseFloat(product.priceBronze || '0');
     const currentPrice = getCurrentPrice();
     const savings = (isNaN(basePrice) ? 0 : basePrice) - currentPrice;
     return Math.max(0, savings);
@@ -189,8 +189,8 @@ export default function ProductDetail() {
 
   const getTierSavings = (tier: string) => {
     if (!product) return 0;
-    const tierPrice = tier === "Gold" ? parseFloat(product.price_gold || '0') : parseFloat(product.price_platinum || '0');
-    const basePrice = parseFloat(product.price_bronze || '0');
+    const tierPrice = tier === "Gold" ? parseFloat(product.priceGold || '0') : parseFloat(product.pricePlatinum || '0');
+    const basePrice = parseFloat(product.priceBronze || '0');
     const savings = (isNaN(basePrice) ? 0 : basePrice) - (isNaN(tierPrice) ? 0 : tierPrice);
     return Math.max(0, savings);
   };
@@ -521,23 +521,23 @@ export default function ProductDetail() {
             {/* SKU and Details */}
             <div className="flex flex-wrap gap-4 text-sm text-gray-600">
               <div>SKU: <span className="font-medium">{product.sku}</span></div>
-              {product.manufacturer_part_number && (
-                <div>MPN: <span className="font-medium">{product.manufacturer_part_number}</span></div>
+              {product.manufacturerPartNumber && (
+                <div>MPN: <span className="font-medium">{product.manufacturerPartNumber}</span></div>
               )}
-              {product.upc_code && (
-                <div>UPC: <span className="font-medium">{product.upc_code}</span></div>
+              {product.upcCode && (
+                <div>UPC: <span className="font-medium">{product.upcCode}</span></div>
               )}
             </div>
 
             {/* Stock and Shipping Status */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                {product.in_stock ? (
+                {product.inStock ? (
                   <>
                     <CheckCircle className="w-5 h-5 text-green-500" />
                     <span className="text-green-600 font-medium">In Stock</span>
-                    {product.stock_quantity > 0 && (
-                      <span className="text-gray-500">({product.stock_quantity} available)</span>
+                    {product.stockQuantity > 0 && (
+                      <span className="text-gray-500">({product.stockQuantity} available)</span>
                     )}
                   </>
                 ) : (
@@ -550,7 +550,7 @@ export default function ProductDetail() {
               <div className="flex items-center gap-2">
                 <Package className="w-4 h-4 text-blue-500" />
                 <span className="text-sm text-gray-600">
-                  {product.drop_shippable ? "Ships Direct" : "Ships from Warehouse"}
+                  {product.dropShippable ? "Ships Direct" : "Ships from Warehouse"}
                 </span>
               </div>
             </div>
@@ -572,9 +572,9 @@ export default function ProductDetail() {
                       </div>
                       <div className="text-right">
                         {/* Show MSRP with retailMap strikethrough if retailMap is lower */}
-                        {product.price_msrp && product.price_map && !isNaN(parseFloat(product.price_map || '0')) && !isNaN(parseFloat(product.price_msrp || '0')) && parseFloat(product.price_map || '0') < parseFloat(product.price_msrp || '0') && (
+                        {product.priceMSRP && product.priceMAP && !isNaN(parseFloat(product.priceMAP || '0')) && !isNaN(parseFloat(product.priceMSRP || '0')) && parseFloat(product.priceMAP || '0') < parseFloat(product.priceMSRP || '0') && (
                           <div className="text-sm text-gray-500 line-through">
-                            MSRP: ${(parseFloat(product.price_msrp || '0') || 0).toFixed(2)}
+                            MSRP: ${(parseFloat(product.priceMSRP || '0') || 0).toFixed(2)}
                           </div>
                         )}
                         {getSavings() > 0 && (
@@ -592,7 +592,7 @@ export default function ProductDetail() {
                         <div className="p-3 border border-gray-200 rounded-lg flex justify-between items-center">
                           <div className="text-sm text-gray-600">Bronze Members</div>
                           <div className="text-xl font-bold text-gray-900">
-                            ${(parseFloat(product.price_bronze || '0') || 0).toFixed(2)}
+                            ${(parseFloat(product.priceBronze || '0') || 0).toFixed(2)}
                           </div>
                         </div>
                         
@@ -600,7 +600,7 @@ export default function ProductDetail() {
                         <div className="p-3 border border-yellow-400 rounded-lg bg-yellow-50 flex justify-between items-center">
                           <div className="text-sm text-yellow-700 font-medium">Gold Members</div>
                           <div className="text-xl font-bold text-yellow-700">
-                            ${(parseFloat(product.price_gold || '0') || 0).toFixed(2)}
+                            ${(parseFloat(product.priceGold || '0') || 0).toFixed(2)}
                           </div>
                         </div>
                         
@@ -611,7 +611,7 @@ export default function ProductDetail() {
                             <div className="text-right relative z-10">
                               <div className="text-2xl font-bold text-gray-200 mb-1">
                                 ${(() => {
-                                  const bronzePrice = parseFloat(product.price_bronze || '0') || 0;
+                                  const bronzePrice = parseFloat(product.priceBronze || '0') || 0;
                                   const priceStr = bronzePrice.toFixed(2);
                                   return priceStr.replace(/\d/g, '*');
                                 })()}
@@ -651,8 +651,8 @@ export default function ProductDetail() {
                         <span className="text-sm font-medium text-yellow-800">Upgrade & Save More</span>
                       </div>
                       <div className="text-sm text-yellow-700">
-                        <div>Gold: ${(parseFloat(product.price_gold || '0') || 0).toFixed(2)} (Save ${(getTierSavings("Gold") || 0).toFixed(2)})</div>
-                        <div>Platinum: ${(parseFloat(product.price_platinum || '0') || 0).toFixed(2)} (Save ${(getTierSavings("Platinum") || 0).toFixed(2)})</div>
+                        <div>Gold: ${(parseFloat(product.priceGold || '0') || 0).toFixed(2)} (Save ${(getTierSavings("Gold") || 0).toFixed(2)})</div>
+                        <div>Platinum: ${(parseFloat(product.pricePlatinum || '0') || 0).toFixed(2)} (Save ${(getTierSavings("Platinum") || 0).toFixed(2)})</div>
                       </div>
                       <Link href="/membership">
                         <Button size="sm" variant="outline" className="w-full">
@@ -695,12 +695,12 @@ export default function ProductDetail() {
                   <div className="grid grid-cols-2 gap-3">
                     <Button
                       onClick={handleAddToCart}
-                      disabled={!product.in_stock}
+                      disabled={!product.inStock}
                       className="flex items-center gap-2"
                       size="lg"
                     >
                       <ShoppingCart className="w-4 h-4" />
-                      {product.in_stock ? "Add to Cart" : "Out of Stock"}
+                      {product.inStock ? "Add to Cart" : "Out of Stock"}
                     </Button>
                     <Button
                       variant="outline"
