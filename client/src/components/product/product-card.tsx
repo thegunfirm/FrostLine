@@ -74,26 +74,34 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
     <Link href={`/product/${product.sku || product.id}`} className="block">
       <Card className="group cursor-pointer hover:shadow-xl transition-shadow duration-300 h-fit">
         <div className="aspect-square relative overflow-hidden">
-        {imageLoading ? (
-          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-            <div className="w-8 h-8 border-4 border-gun-gold border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : imageError ? (
-          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-            <div className="text-center text-gray-500">
-              <ImageIcon className="w-12 h-12 mx-auto mb-2" />
-              <p className="text-xs">No Image</p>
-            </div>
-          </div>
-        ) : (
+          {/* Always render image, show loading overlay when needed */}
           <img 
             src={imageUrl}
             alt={altText}
-            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+            className={cn(
+              "w-full h-full object-contain group-hover:scale-105 transition-transform duration-300",
+              imageLoading && "opacity-0"
+            )}
             onLoad={onLoad}
             onError={onError}
           />
-        )}
+          
+          {/* Loading overlay */}
+          {imageLoading && (
+            <div className="absolute inset-0 w-full h-full bg-gray-100 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-gun-gold border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+          
+          {/* Error overlay */}
+          {imageError && (
+            <div className="absolute inset-0 w-full h-full bg-gray-100 flex items-center justify-center">
+              <div className="text-center text-gray-500">
+                <ImageIcon className="w-12 h-12 mx-auto mb-2" />
+                <p className="text-xs">No Image</p>
+              </div>
+            </div>
+          )}
         
 
       </div>
