@@ -2327,16 +2327,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Firearm-specific filters (check tags) - Skip if using handgun-specific caliber filter
       if (filters.caliber && !filters.handgunCaliber) {
-        algoliaFilters.push(`tags:"${filters.caliber}"`);
-      }
-      if (filters.actionType) {
-        algoliaFilters.push(`tags:"${filters.actionType}"`);
-      }
-      if (filters.barrelLength) {
-        algoliaFilters.push(`tags:"${filters.barrelLength}"`);
+        algoliaFilters.push(`caliber:"${filters.caliber}"`);
       }
       if (filters.capacity) {
-        algoliaFilters.push(`tags:"${filters.capacity}"`);
+        algoliaFilters.push(`capacity:${filters.capacity}`);
+      }
+      
+      // New filter parameters
+      if (filters.barrelLength) {
+        algoliaFilters.push(`barrelLength:"${filters.barrelLength}"`);
+      }
+      if (filters.finish) {
+        algoliaFilters.push(`finish:"${filters.finish}"`);
+      }
+      if (filters.frameSize) {
+        algoliaFilters.push(`frameSize:"${filters.frameSize}"`);
+      }
+      if (filters.actionType) {
+        algoliaFilters.push(`actionType:"${filters.actionType}"`);
+      }
+      if (filters.sightType) {
+        algoliaFilters.push(`sightType:"${filters.sightType}"`);
+      }
+      if (filters.newItem !== null) {
+        algoliaFilters.push(`newItem:${filters.newItem}`);
+      }
+      if (filters.internalSpecial !== null) {
+        algoliaFilters.push(`internalSpecial:${filters.internalSpecial}`);
+      }
+      if (filters.shippingMethod) {
+        algoliaFilters.push(`dropShippable:${filters.shippingMethod === "drop-ship" ? "true" : "false"}`);
+      }
+      
+      // Price range filter
+      if (filters.priceRange) {
+        const priceRangeMap = {
+          "Under $300": "tierPricing.platinum < 300",
+          "$300-$500": "tierPricing.platinum >= 300 AND tierPricing.platinum < 500",
+          "$500-$750": "tierPricing.platinum >= 500 AND tierPricing.platinum < 750",
+          "$750-$1000": "tierPricing.platinum >= 750 AND tierPricing.platinum < 1000",
+          "$1000-$1500": "tierPricing.platinum >= 1000 AND tierPricing.platinum < 1500",
+          "Over $1500": "tierPricing.platinum >= 1500"
+        };
+        
+        if (priceRangeMap[filters.priceRange]) {
+          algoliaFilters.push(priceRangeMap[filters.priceRange]);
+        }
       }
       
       // Price range filters
@@ -2576,6 +2612,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         baseFilters.push(`inStock:${filters.inStock}`);
       }
       
+      if (filters.barrelLength && filters.barrelLength !== "all") {
+        baseFilters.push(`barrelLength:"${filters.barrelLength}"`);
+      }
+      
+      if (filters.finish && filters.finish !== "all") {
+        baseFilters.push(`finish:"${filters.finish}"`);
+      }
+      
+      if (filters.frameSize && filters.frameSize !== "all") {
+        baseFilters.push(`frameSize:"${filters.frameSize}"`);
+      }
+      
+      if (filters.actionType && filters.actionType !== "all") {
+        baseFilters.push(`actionType:"${filters.actionType}"`);
+      }
+      
+      if (filters.sightType && filters.sightType !== "all") {
+        baseFilters.push(`sightType:"${filters.sightType}"`);
+      }
+      
+      if (filters.newItem !== null) {
+        baseFilters.push(`newItem:${filters.newItem}`);
+      }
+      
+      if (filters.internalSpecial !== null) {
+        baseFilters.push(`internalSpecial:${filters.internalSpecial}`);
+      }
+      
+      if (filters.shippingMethod && filters.shippingMethod !== "all") {
+        baseFilters.push(`dropShippable:${filters.shippingMethod === "drop-ship" ? "true" : "false"}`);
+      }
+      
       // Function to get facet values from Algolia
       async function getFacetValues(facetName: string, excludeFilter?: string) {
         const facetFilters = baseFilters.filter(f => f !== excludeFilter);
@@ -2610,13 +2678,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get available values for each filter
-      const [manufacturers, calibers, capacities, priceRanges, stockStatuses] = await Promise.all([
+      const [manufacturers, calibers, capacities, priceRanges, stockStatuses, barrelLengths, finishes, frameSizes, actionTypes, sightTypes, newItems, internalSpecials, shippingMethods] = await Promise.all([
         getFacetValues('manufacturerName', filters.manufacturer && filters.manufacturer !== "all" ? `manufacturerName:"${filters.manufacturer}"` : undefined),
         getFacetValues('caliber', filters.caliber && filters.caliber !== "all" ? `caliber:"${filters.caliber}"` : undefined),
         getFacetValues('capacity', filters.capacity && filters.capacity !== "all" ? `capacity:"${filters.capacity}"` : undefined),
         // For price ranges, we need to get actual products and calculate ranges
         getFacetValues('tierPricing.platinum'),
-        getFacetValues('inStock')
+        getFacetValues('inStock'),
+        getFacetValues('barrelLength', filters.barrelLength && filters.barrelLength !== "all" ? `barrelLength:"${filters.barrelLength}"` : undefined),
+        getFacetValues('finish', filters.finish && filters.finish !== "all" ? `finish:"${filters.finish}"` : undefined),
+        getFacetValues('frameSize', filters.frameSize && filters.frameSize !== "all" ? `frameSize:"${filters.frameSize}"` : undefined),
+        getFacetValues('actionType', filters.actionType && filters.actionType !== "all" ? `actionType:"${filters.actionType}"` : undefined),
+        getFacetValues('sightType', filters.sightType && filters.sightType !== "all" ? `sightType:"${filters.sightType}"` : undefined),
+        getFacetValues('newItem', filters.newItem !== null ? `newItem:${filters.newItem}` : undefined),
+        getFacetValues('internalSpecial', filters.internalSpecial !== null ? `internalSpecial:${filters.internalSpecial}` : undefined),
+        getFacetValues('dropShippable', filters.shippingMethod && filters.shippingMethod !== "all" ? `dropShippable:${filters.shippingMethod === "drop-ship" ? "true" : "false"}` : undefined)
       ]);
       
       // Process manufacturers
@@ -2681,6 +2757,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Process new filter options
+      const availableBarrelLengths = Object.keys(barrelLengths).filter(bl => bl && bl !== 'null').map(bl => ({
+        value: bl,
+        count: barrelLengths[bl]
+      })).sort((a, b) => parseFloat(a.value) - parseFloat(b.value));
+      
+      const availableFinishes = Object.keys(finishes).filter(f => f && f !== 'null').map(f => ({
+        value: f,
+        count: finishes[f]
+      })).sort((a, b) => a.value.localeCompare(b.value));
+      
+      const availableFrameSizes = Object.keys(frameSizes).filter(fs => fs && fs !== 'null').map(fs => ({
+        value: fs,
+        count: frameSizes[fs]
+      })).sort((a, b) => a.value.localeCompare(b.value));
+      
+      const availableActionTypes = Object.keys(actionTypes).filter(at => at && at !== 'null').map(at => ({
+        value: at,
+        count: actionTypes[at]
+      })).sort((a, b) => a.value.localeCompare(b.value));
+      
+      const availableSightTypes = Object.keys(sightTypes).filter(st => st && st !== 'null').map(st => ({
+        value: st,
+        count: sightTypes[st]
+      })).sort((a, b) => a.value.localeCompare(b.value));
+      
+      const availableNewItems = [];
+      if (newItems.true) {
+        availableNewItems.push({ value: "true", count: newItems.true });
+      }
+      if (newItems.false) {
+        availableNewItems.push({ value: "false", count: newItems.false });
+      }
+      
+      const availableInternalSpecials = [];
+      if (internalSpecials.true) {
+        availableInternalSpecials.push({ value: "true", count: internalSpecials.true });
+      }
+      if (internalSpecials.false) {
+        availableInternalSpecials.push({ value: "false", count: internalSpecials.false });
+      }
+      
+      const availableShippingMethods = [];
+      if (shippingMethods.true) {
+        availableShippingMethods.push({ value: "drop-ship", count: shippingMethods.true });
+      }
+      if (shippingMethods.false) {
+        availableShippingMethods.push({ value: "warehouse", count: shippingMethods.false });
+      }
+
       res.json({
         manufacturers: availableManufacturers,
         calibers: availableCalibers,
@@ -2689,7 +2815,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           value: range.value,
           count: range.count
         })),
-        stockStatus: availableStockStatuses
+        stockStatus: availableStockStatuses,
+        barrelLengths: availableBarrelLengths,
+        finishes: availableFinishes,
+        frameSizes: availableFrameSizes,
+        actionTypes: availableActionTypes,
+        sightTypes: availableSightTypes,
+        newItems: availableNewItems,
+        internalSpecials: availableInternalSpecials,
+        shippingMethods: availableShippingMethods
       });
       
     } catch (error) {

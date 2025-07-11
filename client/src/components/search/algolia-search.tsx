@@ -54,6 +54,14 @@ interface FilterOptions {
   capacities: Array<{ value: string; count: number }>;
   priceRanges: Array<{ value: string; count: number }>;
   stockStatus: Array<{ value: string; count: number }>;
+  barrelLengths: Array<{ value: string; count: number }>;
+  finishes: Array<{ value: string; count: number }>;
+  frameSizes: Array<{ value: string; count: number }>;
+  actionTypes: Array<{ value: string; count: number }>;
+  sightTypes: Array<{ value: string; count: number }>;
+  newItems: Array<{ value: string; count: number }>;
+  internalSpecials: Array<{ value: string; count: number }>;
+  shippingMethods: Array<{ value: string; count: number }>;
 }
 
 export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initialManufacturer = "" }: AlgoliaSearchProps) {
@@ -72,7 +80,15 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     caliber: "",
     capacity: "",
     priceRange: "",
-    inStock: null as boolean | null
+    inStock: null as boolean | null,
+    barrelLength: "",
+    finish: "",
+    frameSize: "",
+    actionType: "",
+    sightType: "",
+    newItem: null as boolean | null,
+    internalSpecial: null as boolean | null,
+    shippingMethod: ""
   });
 
   // Update category when initialCategory changes
@@ -85,7 +101,15 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         caliber: "",
         capacity: "",
         priceRange: "",
-        inStock: null
+        inStock: null,
+        barrelLength: "",
+        finish: "",
+        frameSize: "",
+        actionType: "",
+        sightType: "",
+        newItem: null,
+        internalSpecial: null,
+        shippingMethod: ""
       });
       setCurrentPage(0);
     }
@@ -105,7 +129,15 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           caliber: "",
           capacity: "",
           priceRange: "",
-          inStock: null
+          inStock: null,
+          barrelLength: "",
+          finish: "",
+          frameSize: "",
+          actionType: "",
+          sightType: "",
+          newItem: null,
+          internalSpecial: null,
+          shippingMethod: ""
         }
       });
       return response.json();
@@ -150,7 +182,15 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       caliber: "",
       capacity: "",
       priceRange: "",
-      inStock: null
+      inStock: null,
+      barrelLength: "",
+      finish: "",
+      frameSize: "",
+      actionType: "",
+      sightType: "",
+      newItem: null,
+      internalSpecial: null,
+      shippingMethod: ""
     });
     setCurrentPage(0);
   };
@@ -378,7 +418,15 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           calibers: filterOptions?.calibers || [],
           capacities: filterOptions?.capacities || [],
           priceRanges: filterOptions?.priceRanges || [],
-          stockStatus: filterOptions?.stockStatus || []
+          stockStatus: filterOptions?.stockStatus || [],
+          barrelLengths: filterOptions?.barrelLengths || [],
+          finishes: filterOptions?.finishes || [],
+          frameSizes: filterOptions?.frameSizes || [],
+          actionTypes: filterOptions?.actionTypes || [],
+          sightTypes: filterOptions?.sightTypes || [],
+          newItems: filterOptions?.newItems || [],
+          internalSpecials: filterOptions?.internalSpecials || [],
+          shippingMethods: filterOptions?.shippingMethods || []
         }}
         category={category}
         totalResults={searchResults?.nbHits || 0}

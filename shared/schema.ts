@@ -43,6 +43,8 @@ export const products = pgTable("products", {
   allocated: text("allocated"), // RSR allocation status (Y/N)
   newItem: boolean("new_item").default(false), // Whether it's a new product
   promo: text("promo"), // Promotional information
+  internalSpecial: boolean("internal_special").default(false), // Internal special pricing/promotion
+  specialDescription: text("special_description"), // Description of internal special
   accessories: text("accessories"), // What accessories come with the product
   distributor: text("distributor").default("RSR"),
   requiresFFL: boolean("requires_ffl").default(false),
@@ -51,6 +53,11 @@ export const products = pgTable("products", {
   caliber: text("caliber"), // Extracted caliber (9mm, .45ACP, .223, etc.)
   capacity: integer("capacity"), // Magazine capacity for handguns/rifles
   firearmType: text("firearm_type"), // Extracted firearm type (1911, Glock, AR-15, etc.)
+  barrelLength: text("barrel_length"), // Extracted barrel length (4", 3.9", etc.)
+  finish: text("finish"), // Extracted finish/color (FDE, Black, Stainless, etc.)
+  frameSize: text("frame_size"), // Extracted frame size (Compact, Full Size, Subcompact, etc.)
+  actionType: text("action_type"), // Extracted action type (DA/SA, Striker, etc.)
+  sightType: text("sight_type"), // Extracted sight type (Night Sights, Fiber Optic, etc.)
   compatibilityTags: json("compatibility_tags"), // Array of compatibility tags for related products
   images: json("images"), // Array of image objects with multiple resolutions
   upcCode: text("upc_code"),

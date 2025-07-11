@@ -11,6 +11,14 @@ interface FilterOptions {
   capacities: Array<{ value: string; count: number }>;
   priceRanges: Array<{ value: string; count: number }>;
   stockStatus: Array<{ value: string; count: number }>;
+  barrelLengths: Array<{ value: string; count: number }>;
+  finishes: Array<{ value: string; count: number }>;
+  frameSizes: Array<{ value: string; count: number }>;
+  actionTypes: Array<{ value: string; count: number }>;
+  sightTypes: Array<{ value: string; count: number }>;
+  newItems: Array<{ value: string; count: number }>;
+  internalSpecials: Array<{ value: string; count: number }>;
+  shippingMethods: Array<{ value: string; count: number }>;
 }
 
 interface FilterPanelProps {
@@ -22,6 +30,14 @@ interface FilterPanelProps {
     capacity: string;
     priceRange: string;
     inStock: boolean | null;
+    barrelLength: string;
+    finish: string;
+    frameSize: string;
+    actionType: string;
+    sightType: string;
+    newItem: boolean | null;
+    internalSpecial: boolean | null;
+    shippingMethod: string;
   };
   onFilterChange: (key: string, value: any) => void;
   onClearFilters: () => void;
@@ -74,24 +90,24 @@ export function FilterPanel({
     
     switch (category.toLowerCase()) {
       case 'handguns':
-        return [...baseFilters, 'caliber', 'capacity'];
+        return [...baseFilters, 'caliber', 'capacity', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType', 'newItem', 'internalSpecial', 'shippingMethod'];
       case 'rifles':
       case 'long guns':
-        return [...baseFilters, 'caliber'];
+        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'newItem', 'internalSpecial', 'shippingMethod'];
       case 'shotguns':
-        return [...baseFilters, 'caliber'];
+        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'newItem', 'internalSpecial', 'shippingMethod'];
       case 'ammunition':
       case 'handgun ammo':
       case 'rifle ammo':
       case 'shotgun ammo':
       case 'rimfire ammo':
-        return [...baseFilters, 'caliber'];
+        return [...baseFilters, 'caliber', 'newItem', 'internalSpecial', 'shippingMethod'];
       case 'optics':
-        return [...baseFilters];
+        return [...baseFilters, 'newItem', 'internalSpecial', 'shippingMethod'];
       case 'accessories':
       case 'parts':
       case 'nfa products':
-        return [...baseFilters];
+        return [...baseFilters, 'newItem', 'internalSpecial', 'shippingMethod'];
       default:
         return baseFilters;
     }
@@ -284,6 +300,206 @@ export function FilterPanel({
                   {filterOptions.stockStatus.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.value === 'true' ? 'In Stock' : 'Out of Stock'} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Barrel Length Filter */}
+          {relevantFilters.includes('barrelLength') && filterOptions.barrelLengths.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Barrel Length ({filterOptions.barrelLengths.length})
+              </label>
+              <Select
+                value={filters.barrelLength}
+                onValueChange={(value) => onFilterChange('barrelLength', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Barrel Lengths" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Barrel Lengths</SelectItem>
+                  {filterOptions.barrelLengths.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Finish Filter */}
+          {relevantFilters.includes('finish') && filterOptions.finishes.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Finish ({filterOptions.finishes.length})
+              </label>
+              <Select
+                value={filters.finish}
+                onValueChange={(value) => onFilterChange('finish', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Finishes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Finishes</SelectItem>
+                  {filterOptions.finishes.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Frame Size Filter */}
+          {relevantFilters.includes('frameSize') && filterOptions.frameSizes.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Frame Size ({filterOptions.frameSizes.length})
+              </label>
+              <Select
+                value={filters.frameSize}
+                onValueChange={(value) => onFilterChange('frameSize', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Frame Sizes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Frame Sizes</SelectItem>
+                  {filterOptions.frameSizes.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Action Type Filter */}
+          {relevantFilters.includes('actionType') && filterOptions.actionTypes.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Action Type ({filterOptions.actionTypes.length})
+              </label>
+              <Select
+                value={filters.actionType}
+                onValueChange={(value) => onFilterChange('actionType', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Action Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Action Types</SelectItem>
+                  {filterOptions.actionTypes.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Sight Type Filter */}
+          {relevantFilters.includes('sightType') && filterOptions.sightTypes.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Sight Type ({filterOptions.sightTypes.length})
+              </label>
+              <Select
+                value={filters.sightType}
+                onValueChange={(value) => onFilterChange('sightType', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Sight Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sight Types</SelectItem>
+                  {filterOptions.sightTypes.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* New Item Filter */}
+          {relevantFilters.includes('newItem') && filterOptions.newItems.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                New Items ({filterOptions.newItems.length})
+              </label>
+              <Select
+                value={filters.newItem === null ? 'all' : filters.newItem ? 'true' : 'false'}
+                onValueChange={(value) => onFilterChange('newItem', value === 'all' ? null : value === 'true')}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Items" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Items</SelectItem>
+                  {filterOptions.newItems.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value === 'true' ? 'New Items Only' : 'Regular Items'} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Internal Special Filter */}
+          {relevantFilters.includes('internalSpecial') && filterOptions.internalSpecials.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Special Offers ({filterOptions.internalSpecials.length})
+              </label>
+              <Select
+                value={filters.internalSpecial === null ? 'all' : filters.internalSpecial ? 'true' : 'false'}
+                onValueChange={(value) => onFilterChange('internalSpecial', value === 'all' ? null : value === 'true')}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Products" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Products</SelectItem>
+                  {filterOptions.internalSpecials.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value === 'true' ? 'Special Offers Only' : 'Regular Products'} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Shipping Method Filter */}
+          {relevantFilters.includes('shippingMethod') && filterOptions.shippingMethods.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Shipping Method ({filterOptions.shippingMethods.length})
+              </label>
+              <Select
+                value={filters.shippingMethod}
+                onValueChange={(value) => onFilterChange('shippingMethod', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Shipping Methods" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Shipping Methods</SelectItem>
+                  {filterOptions.shippingMethods.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
                     </SelectItem>
                   ))}
                 </SelectContent>
