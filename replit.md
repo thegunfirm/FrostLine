@@ -326,6 +326,9 @@ Changelog:
 - July 11, 2025. **PRICING DISPLAY CORRECTIONS**: Fixed asterisk format to match Platinum pricing ($767.04 = $***.** ) instead of Bronze pricing
 - July 11, 2025. **PRODUCT GRID ENHANCEMENT**: Made entire product tiles clickable while maintaining "View Details" button functionality
 - July 11, 2025. **PLATINUM CART ACTIVATION**: Added active "Add to Cart" button to Platinum pricing section for seamless user experience
+- July 11, 2025. **PRODUCT PAGE LAYOUT OPTIMIZATION**: Moved "Add to Cart" functionality to right side of stock information, relocated "Share" to top right corner
+- July 11, 2025. **WISHLIST INTEGRATION**: Added subtle "Add to Wishlist" button next to "Add to Cart" for improved user experience
+- July 11, 2025. **COMPLIANCE SECTION ENHANCEMENT**: Removed FFL search functionality, streamlined to show FFL requirement and California Prop 65 warnings in unified compliance section
 ```
 
 ## User Preferences

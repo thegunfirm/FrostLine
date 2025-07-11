@@ -736,50 +736,39 @@ export default function ProductDetail() {
 
 
 
-            {/* FFL Selection */}
-            {product.requiresFFL && (
+            {/* Compliance Information */}
+            {(product.requiresFFL || product.prop65) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Shield className="w-5 h-5" />
-                    FFL Required
+                    Compliance Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-sm text-gray-600">
-                    This firearm must be shipped to a licensed FFL dealer.
-                  </p>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="zip">Enter ZIP code to find FFLs</Label>
-                      <Input
-                        id="zip"
-                        placeholder="12345"
-                        value={userZip}
-                        onChange={(e) => setUserZip(e.target.value)}
-                        maxLength={5}
-                      />
-                    </div>
-                    
-                    {nearbyFFLs && nearbyFFLs.length > 0 && (
+                  {product.requiresFFL && (
+                    <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                      <Shield className="w-5 h-5 text-red-600 mt-0.5" />
                       <div>
-                        <Label htmlFor="ffl">Select FFL Dealer</Label>
-                        <Select value={selectedFFL} onValueChange={setSelectedFFL}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose an FFL dealer" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {nearbyFFLs.map((ffl: any) => (
-                              <SelectItem key={ffl.id} value={ffl.id.toString()}>
-                                {ffl.businessName} - {ffl.address.city}, {ffl.address.state}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <h4 className="font-medium text-red-800 mb-1">FFL Required</h4>
+                        <p className="text-sm text-red-700">
+                          This firearm must be shipped to a licensed FFL dealer. FFL dealer selection will be handled during checkout.
+                        </p>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                  
+                  {product.prop65 && (
+                    <div className="flex items-start gap-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-yellow-800 mb-1">California Prop 65 Warning</h4>
+                        <p className="text-sm text-yellow-700">
+                          This product may contain chemicals known to the State of California to cause cancer, birth defects, or other reproductive harm.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
