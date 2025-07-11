@@ -2388,14 +2388,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (filters.handgunPriceRange) {
-        // Convert price range to numeric filter
+        // Convert price range to numeric filter using Platinum pricing
         const priceRangeMap = {
-          "Under $300": "tierPricing.bronze < 300",
-          "$300-$500": "tierPricing.bronze >= 300 AND tierPricing.bronze < 500",
-          "$500-$750": "tierPricing.bronze >= 500 AND tierPricing.bronze < 750",
-          "$750-$1000": "tierPricing.bronze >= 750 AND tierPricing.bronze < 1000",
-          "$1000-$1500": "tierPricing.bronze >= 1000 AND tierPricing.bronze < 1500",
-          "Over $1500": "tierPricing.bronze >= 1500"
+          "Under $300": "tierPricing.platinum < 300",
+          "$300-$500": "tierPricing.platinum >= 300 AND tierPricing.platinum < 500",
+          "$500-$750": "tierPricing.platinum >= 500 AND tierPricing.platinum < 750",
+          "$750-$1000": "tierPricing.platinum >= 750 AND tierPricing.platinum < 1000",
+          "$1000-$1500": "tierPricing.platinum >= 1000 AND tierPricing.platinum < 1500",
+          "Over $1500": "tierPricing.platinum >= 1500"
         };
         
         if (priceRangeMap[filters.handgunPriceRange]) {
@@ -2432,10 +2432,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let sortParam = undefined;
       switch (sort) {
         case 'price_asc':
-          sortParam = 'tierPricing.bronze:asc';
+          sortParam = 'tierPricing.platinum:asc';
           break;
         case 'price_desc':
-          sortParam = 'tierPricing.bronze:desc';
+          sortParam = 'tierPricing.platinum:desc';
           break;
         case 'name_asc':
           sortParam = 'name:asc';
