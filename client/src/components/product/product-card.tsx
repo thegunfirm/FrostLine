@@ -94,8 +94,9 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
 
 
   return (
-    <Card className="group cursor-pointer hover:shadow-xl transition-shadow duration-300 h-fit">
-      <div className="aspect-square relative overflow-hidden">
+    <Link href={`/product/${product.sku || product.id}`} className="block">
+      <Card className="group cursor-pointer hover:shadow-xl transition-shadow duration-300 h-fit">
+        <div className="aspect-square relative overflow-hidden">
         {imageLoading ? (
           <div className="w-full h-full bg-gray-100 flex items-center justify-center">
             <div className="w-8 h-8 border-4 border-gun-gold border-t-transparent rounded-full animate-spin" />
@@ -191,19 +192,26 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
         </div>
         
         <div className="flex gap-2">
-          <Link href={`/product/${product.sku || product.id}`} className="flex-1">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-xs"
-            >
-              View Details
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-xs flex-1"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // Link functionality is handled by the parent Link component
+            }}
+          >
+            View Details
+          </Button>
           
           {user && product.inStock && (
             <Button
-              onClick={() => onAddToCart?.(product)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onAddToCart?.(product);
+              }}
               size="sm"
               className="flex-1 bg-gun-gold hover:bg-gun-gold-bright text-gun-black text-xs"
             >
@@ -213,5 +221,6 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
         </div>
       </CardContent>
     </Card>
+    </Link>
   );
 }
