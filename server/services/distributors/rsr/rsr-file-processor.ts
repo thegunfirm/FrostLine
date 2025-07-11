@@ -220,6 +220,7 @@ class RSRFileProcessor {
       requiresFFL: this.requiresFFL(record.departmentNumber),
       images: record.imageName ? [record.imageName] : [],
       tags: this.generateTags(record),
+      caliber: this.extractCaliber(record.description), // CRITICAL: Add caliber field
       weight: record.productWeight || "0",
       dimensions: {
         length: parseFloat(record.shippingLength) || 0,
@@ -386,14 +387,27 @@ class RSRFileProcessor {
   private generateTags(record: RSRInventoryRecord): string[] {
     const tags: string[] = [];
     
+    // Extract caliber from product name for filtering
+    const caliber = this.extractCaliber(record.description);
+    if (caliber) {
+      tags.push(caliber);
+    }
+    
+    // Category-based tags
+    const category = this.mapDepartmentToCategory(record.departmentNumber);
+    tags.push(category);
+    
+    // Manufacturer
     if (record.fullManufacturerName) {
       tags.push(record.fullManufacturerName);
     }
     
+    // Model
     if (record.model) {
       tags.push(record.model);
     }
     
+    // Special status tags
     if (record.allocatedCloseoutDeleted === 'Allocated') {
       tags.push('Allocated');
     }
@@ -406,9 +420,77 @@ class RSRFileProcessor {
       tags.push('Prop65');
     }
     
+    // FFL requirement
+    if (this.requiresFFL(record.departmentNumber)) {
+      tags.push('FFL Required');
+    }
+    
+    // Drop ship status
+    if (record.blockedFromDropShip === 'Y') {
+      tags.push('Warehouse Only');
+    } else {
+      tags.push('Drop Shippable');
+    }
+    
+    // Distributor
     tags.push('RSR');
     
     return tags;
+  }
+
+  private extractCaliber(productName: string): string | null {
+    const name = productName.toUpperCase();
+    
+    // Comprehensive caliber patterns - most specific first
+    const caliberPatterns = [
+      // Rifle calibers
+      { pattern: /5\.56\s*NATO|5\.56\s*MM|556NATO|556MM|\b5\.56\b/i, caliber: '5.56' },
+      { pattern: /223\s*REM|\.223\s*REM|223REM|\b223\b/i, caliber: '223' },
+      { pattern: /308\s*WIN|\.308\s*WIN|308WIN|\b308\b/i, caliber: '308' },
+      { pattern: /7\.62\s*NATO|7\.62\s*X\s*51|762NATO|762X51/i, caliber: '7.62x51' },
+      { pattern: /7\.62\s*X\s*39|762X39/i, caliber: '7.62x39' },
+      { pattern: /6\.5\s*CREEDMOOR|6\.5\s*CM|65CREEDMOOR|65CM/i, caliber: '6.5 Creedmoor' },
+      { pattern: /300\s*BLK|300\s*BLACKOUT|300BLK|300BLACKOUT/i, caliber: '300 BLK' },
+      { pattern: /7MM\s*REM|7MM\s*MAG|7MMREM|7MMMAG/i, caliber: '7mm Rem Mag' },
+      { pattern: /30-06|3006|30\.06/i, caliber: '30-06' },
+      { pattern: /270\s*WIN|\.270\s*WIN|270WIN|\b270\b/i, caliber: '270' },
+      
+      // Handgun calibers
+      { pattern: /9MM|9\s*MM|\b9\b/i, caliber: '9mm' },
+      { pattern: /45\s*ACP|\.45\s*ACP|45ACP/i, caliber: '45 ACP' },
+      { pattern: /40\s*S&W|\.40\s*S&W|40SW|40CAL/i, caliber: '40 S&W' },
+      { pattern: /357\s*MAG|\.357\s*MAG|357MAG|357\s*MAGNUM|\b357\b/i, caliber: '357 Magnum' },
+      { pattern: /38\s*SPEC|\.38\s*SPEC|38SPL|38\s*SPL|38SPEC/i, caliber: '38 Special' },
+      { pattern: /380\s*ACP|\.380\s*ACP|380ACP|\b380\b/i, caliber: '380 ACP' },
+      { pattern: /32\s*ACP|\.32\s*ACP|32ACP|\b32\b/i, caliber: '32 ACP' },
+      { pattern: /25\s*ACP|\.25\s*ACP|25ACP|\b25\b/i, caliber: '25 ACP' },
+      { pattern: /44\s*MAG|\.44\s*MAG|44MAG|44\s*MAGNUM/i, caliber: '44 Magnum' },
+      { pattern: /41\s*MAG|\.41\s*MAG|41MAG/i, caliber: '41 Magnum' },
+      { pattern: /357\s*SIG|\.357\s*SIG|357SIG/i, caliber: '357 SIG' },
+      { pattern: /10MM|10\s*MM|\b10\b/i, caliber: '10mm' },
+      
+      // Shotgun calibers
+      { pattern: /12\s*GA|12\s*GAUGE|12GA|12GAUGE/i, caliber: '12 GA' },
+      { pattern: /20\s*GA|20\s*GAUGE|20GA|20GAUGE/i, caliber: '20 GA' },
+      { pattern: /410\s*BORE|\.410|410BORE/i, caliber: '410' },
+      { pattern: /16\s*GA|16\s*GAUGE|16GA|16GAUGE/i, caliber: '16 GA' },
+      { pattern: /28\s*GA|28\s*GAUGE|28GA|28GAUGE/i, caliber: '28 GA' },
+      
+      // Rimfire calibers
+      { pattern: /22\s*LR|\.22\s*LR|22LR/i, caliber: '22 LR' },
+      { pattern: /22\s*MAG|\.22\s*MAG|22MAG|22WMR/i, caliber: '22 Mag' },
+      { pattern: /17\s*HMR|\.17\s*HMR|17HMR/i, caliber: '17 HMR' },
+      { pattern: /22\s*SHORT|\.22\s*SHORT|22SHORT/i, caliber: '22 Short' }
+    ];
+    
+    // Find the first matching pattern
+    for (const { pattern, caliber } of caliberPatterns) {
+      if (pattern.test(name)) {
+        return caliber;
+      }
+    }
+    
+    return null;
   }
 
   /**
