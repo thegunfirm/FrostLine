@@ -611,9 +611,8 @@ export default function ProductDetail() {
                             <div className="text-right relative z-10">
                               <div className="text-2xl font-bold text-gray-200 mb-1">
                                 ${(() => {
-                                  const bronzePrice = parseFloat(product.priceBronze || '0') || 0;
-                                  const priceStr = bronzePrice.toFixed(2);
-                                  console.log('Bronze price for asterisk:', bronzePrice, 'formatted:', priceStr, 'asterisk:', priceStr.replace(/\d/g, '*'));
+                                  const dealerPrice = parseFloat(product.priceWholesale || '0') || 0;
+                                  const priceStr = dealerPrice.toFixed(2);
                                   return priceStr.replace(/\d/g, '*');
                                 })()}
                               </div>
