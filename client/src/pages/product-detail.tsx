@@ -613,6 +613,7 @@ export default function ProductDetail() {
                                 ${(() => {
                                   const bronzePrice = parseFloat(product.priceBronze || '0') || 0;
                                   const priceStr = bronzePrice.toFixed(2);
+                                  console.log('Bronze price for asterisk:', bronzePrice, 'formatted:', priceStr, 'asterisk:', priceStr.replace(/\d/g, '*'));
                                   return priceStr.replace(/\d/g, '*');
                                 })()}
                               </div>
