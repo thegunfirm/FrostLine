@@ -243,6 +243,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug related products endpoint - shows scoring
+  app.get("/api/products/related-debug/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      let product: Product | undefined;
+      
+      if (/^\d+$/.test(id)) {
+        product = await storage.getProduct(parseInt(id));
+      } else {
+        product = await storage.getProductBySku(id);
+      }
+      
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      // Get debug version with scores
+      const debugResults = await storage.getRelatedProductsDebug(
+        product.id,
+        product.category,
+        product.manufacturer
+      );
+      
+      res.json(debugResults);
+    } catch (error) {
+      console.error("Get related products debug error:", error);
+      res.status(500).json({ message: "Failed to fetch related products debug" });
+    }
+  });
+
   // Order routes
   app.get("/api/orders", async (req, res) => {
     try {

@@ -20,7 +20,7 @@ import {
   type InsertHeroCarouselSlide
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, ilike, and, or, desc, asc, ne } from "drizzle-orm";
+import { eq, like, ilike, and, or, desc, asc, ne, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -47,6 +47,7 @@ export interface IStorage {
   getProductsByCategory(category: string): Promise<Product[]>;
   getFeaturedProducts(limit?: number): Promise<Product[]>;
   getRelatedProducts(productId: number, category: string, manufacturer: string): Promise<Product[]>;
+  getRelatedProductsDebug(productId: number, category: string, manufacturer: string): Promise<any[]>;
   
   // Order operations
   getOrders(userId?: number): Promise<Order[]>;
@@ -210,8 +211,9 @@ export class DatabaseStorage implements IStorage {
     const [currentProduct] = await db.select().from(products).where(eq(products.id, productId));
     if (!currentProduct) return [];
 
-    // Extract caliber and firearm type from product name and tags
-    const { caliber, firearmType } = this.extractFirearmAttributes(currentProduct.name, currentProduct.tags);
+    // Extract caliber and firearm type using the enhanced extractors
+    const caliber = this.extractCaliber(currentProduct.name);
+    const firearmType = this.extractFirearmType(currentProduct.name);
 
     // Use Algolia search with intelligent filtering for related products
     return await this.searchRelatedProductsViaAlgolia(productId, category, manufacturer, caliber, firearmType);
@@ -228,13 +230,16 @@ export class DatabaseStorage implements IStorage {
     // For now, use simple database query with metadata-based scoring
     // Once metadata enrichment completes, we'll use the new fields
     try {
+      // Get a diverse set of candidates to ensure we find matches
+      // Use ORDER BY RANDOM() to get a diverse sample across the entire catalog
       const candidates = await db.select().from(products)
         .where(and(
           eq(products.isActive, true),
           eq(products.category, category),
           ne(products.id, productId)
         ))
-        .limit(50);
+        .orderBy(sql`RANDOM()`)
+        .limit(200); // Random sample to ensure diverse products
       
       // Score products based on available metadata
       const scoredProducts = candidates.map(product => {
@@ -264,6 +269,14 @@ export class DatabaseStorage implements IStorage {
           score += 25;
         }
         
+        // Compatible calibers for revolvers get medium points
+        if (firearmType === 'REVOLVER' && productFirearmType === 'REVOLVER') {
+          if ((caliber === '357MAG' && productCaliber === '38SPEC') || 
+              (caliber === '38SPEC' && productCaliber === '357MAG')) {
+            score += 40; // 357 MAG revolvers can shoot 38 SPEC
+          }
+        }
+        
         // In stock products get small bonus
         if (product.inStock) {
           score += 5;
@@ -291,27 +304,134 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Simple caliber extraction for scoring
+  async getRelatedProductsDebug(
+    productId: number,
+    category: string,
+    manufacturer: string
+  ): Promise<any[]> {
+    // Get the reference product for caliber/firearm type extraction
+    const referenceProduct = await db.select().from(products).where(eq(products.id, productId)).limit(1);
+    if (!referenceProduct.length) return [];
+    
+    const caliber = this.extractCaliber(referenceProduct[0].name);
+    const firearmType = this.extractFirearmType(referenceProduct[0].name);
+    
+    // Get diverse candidates using random sampling
+    const candidates = await db.select().from(products)
+      .where(and(
+        eq(products.isActive, true),
+        eq(products.category, category),
+        ne(products.id, productId)
+      ))
+      .orderBy(sql`RANDOM()`)
+      .limit(200);
+    
+    // Score products and return with debug info
+    const scoredProducts = candidates.map(product => {
+      let score = 0;
+      const scoreBreakdown: any = {};
+      
+      // Same manufacturer gets points
+      if (product.manufacturer === manufacturer) {
+        score += 30;
+        scoreBreakdown.manufacturer = 30;
+      }
+      
+      // Extract caliber and firearm type for scoring
+      const productCaliber = this.extractCaliber(product.name);
+      const productFirearmType = this.extractFirearmType(product.name);
+      
+      // Same caliber gets high points
+      if (caliber && productCaliber === caliber) {
+        score += 50;
+        scoreBreakdown.caliber = 50;
+      }
+      
+      // Same firearm type gets high points
+      if (firearmType && productFirearmType === firearmType) {
+        score += 60;
+        scoreBreakdown.firearmType = 60;
+      }
+      
+      // Both caliber and firearm type match = perfect match
+      if (caliber && firearmType && productCaliber === caliber && productFirearmType === firearmType) {
+        score += 25;
+        scoreBreakdown.perfectMatch = 25;
+      }
+      
+      // Compatible calibers for revolvers get medium points
+      if (firearmType === 'REVOLVER' && productFirearmType === 'REVOLVER') {
+        if ((caliber === '357MAG' && productCaliber === '38SPEC') || 
+            (caliber === '38SPEC' && productCaliber === '357MAG')) {
+          score += 40;
+          scoreBreakdown.compatibleCaliber = 40;
+        }
+      }
+      
+      // In stock products get small bonus
+      if (product.inStock) {
+        score += 5;
+        scoreBreakdown.inStock = 5;
+      }
+      
+      return {
+        ...product,
+        score,
+        scoreBreakdown,
+        detectedCaliber: productCaliber,
+        detectedFirearmType: productFirearmType,
+        referenceCaliber: caliber,
+        referenceFirearmType: firearmType
+      };
+    });
+    
+    return scoredProducts
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20); // Return top 20 for debugging
+  }
+
+  // Enhanced caliber extraction for accurate scoring
   private extractCaliber(name: string): string | null {
-    if (name.match(/9\s*mm|9mm/i)) return '9MM';
-    if (name.match(/\.45\s*acp|45\s*acp/i)) return '45ACP';
-    if (name.match(/\.40\s*s&w|40\s*s&w/i)) return '40SW';
-    if (name.match(/\.357\s*mag|357\s*mag/i)) return '357MAG';
-    if (name.match(/\.22\s*lr|22\s*lr/i)) return '22LR';
-    if (name.match(/\.223|223(?!\w)/i)) return '223REM';
+    // Most specific patterns first
+    if (name.match(/357\s*SIG/i)) return '357SIG';
+    if (name.match(/357\s*MAG|\.357\s*MAG|357\/38/i)) return '357MAG';
+    if (name.match(/38\s*SPEC|\.38\s*SPEC|38\s*SPL|\.38\s*SPL/i)) return '38SPEC';
+    if (name.match(/44\s*MAG|\.44\s*MAG/i)) return '44MAG';
+    if (name.match(/45\s*ACP|\.45\s*ACP/i)) return '45ACP';
+    if (name.match(/40\s*S&W|\.40\s*S&W/i)) return '40SW';
+    if (name.match(/380\s*ACP|\.380\s*ACP/i)) return '380ACP';
+    if (name.match(/9\s*MM|9MM/i)) return '9MM';
+    if (name.match(/10\s*MM|10MM/i)) return '10MM';
+    if (name.match(/22\s*LR|\.22\s*LR/i)) return '22LR';
+    if (name.match(/223\s*REM|\.223/i)) return '223REM';
     if (name.match(/5\.56|556/i)) return '5.56NATO';
-    if (name.match(/\.308|308(?!\w)/i)) return '308WIN';
+    if (name.match(/308\s*WIN|\.308/i)) return '308WIN';
+    if (name.match(/30-06|\.30-06/i)) return '30-06';
+    if (name.match(/12\s*GA|12\s*GAUGE/i)) return '12GA';
+    if (name.match(/20\s*GA|20\s*GAUGE/i)) return '20GA';
     return null;
   }
 
-  // Simple firearm type extraction for scoring
+  // Enhanced firearm type extraction for accurate scoring
   private extractFirearmType(name: string): string | null {
+    // Check for revolvers first (more specific)
+    if (name.match(/revolver/i) || name.match(/357\s*MAG|44\s*MAG|38\s*SPEC|38\s*SPL|357\/38/i)) return 'REVOLVER';
+    
+    // Specific firearm patterns
+    if (name.match(/ultra\s*carry/i)) return 'ULTRA_CARRY';
+    if (name.match(/commander/i)) return 'COMMANDER';
+    if (name.match(/government/i)) return 'GOVERNMENT';
     if (name.match(/1911/i)) return '1911';
     if (name.match(/glock/i)) return 'GLOCK';
     if (name.match(/ar-15|ar15/i)) return 'AR15';
-    if (name.match(/revolver/i)) return 'REVOLVER';
+    if (name.match(/ar-10|ar10/i)) return 'AR10';
+    if (name.match(/ak-47|ak47/i)) return 'AK47';
+    
+    // General types
     if (name.match(/shotgun/i)) return 'SHOTGUN';
     if (name.match(/rifle/i)) return 'RIFLE';
+    if (name.match(/pistol/i)) return 'PISTOL';
+    
     return null;
   }
 
