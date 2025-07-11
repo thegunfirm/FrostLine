@@ -507,11 +507,22 @@ export default function ProductDetail() {
           <div className="space-y-6">
             {/* Product Header */}
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="outline">{product.manufacturer}</Badge>
-                {product.newItem && <Badge variant="secondary">New</Badge>}
-                {product.promo && <Badge variant="destructive">Closeout</Badge>}
-                {product.requiresFFL && <Badge variant="default">FFL Required</Badge>}
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">{product.manufacturer}</Badge>
+                  {product.newItem && <Badge variant="secondary">New</Badge>}
+                  {product.promo && <Badge variant="destructive">Closeout</Badge>}
+                  {product.requiresFFL && <Badge variant="default">FFL Required</Badge>}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShare}
+                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+                >
+                  <Share2 className="w-3 h-3" />
+                  Share
+                </Button>
               </div>
               <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
               <h2 className="text-lg text-gray-600 mb-2">{product.manufacturer}</h2>
@@ -529,30 +540,77 @@ export default function ProductDetail() {
               )}
             </div>
 
-            {/* Stock and Shipping Status */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                {product.inStock ? (
-                  <>
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    <span className="text-green-600 font-medium">In Stock</span>
-                    {product.stockQuantity > 0 && (
-                      <span className="text-gray-500">({product.stockQuantity} available)</span>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="w-5 h-5 text-red-500" />
-                    <span className="text-red-600 font-medium">Out of Stock</span>
-                  </>
-                )}
+            {/* Stock and Shipping Status with Add to Cart */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  {product.inStock ? (
+                    <>
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <span className="text-green-600 font-medium">In Stock</span>
+                      {product.stockQuantity > 0 && (
+                        <span className="text-gray-500">({product.stockQuantity} available)</span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="w-5 h-5 text-red-500" />
+                      <span className="text-red-600 font-medium">Out of Stock</span>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Package className="w-4 h-4 text-blue-500" />
+                  <span className="text-sm text-gray-600">
+                    {product.dropShippable ? "Ships Direct" : "Ships from Warehouse"}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Package className="w-4 h-4 text-blue-500" />
-                <span className="text-sm text-gray-600">
-                  {product.dropShippable ? "Ships Direct" : "Ships from Warehouse"}
-                </span>
-              </div>
+              
+              {/* Add to Cart section */}
+              {user && (
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuantityChange(-1)}
+                      disabled={quantity <= 1}
+                      className="w-8 h-8 p-0"
+                    >
+                      <Minus className="w-3 h-3" />
+                    </Button>
+                    <span className="w-8 text-center text-sm">{quantity}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuantityChange(1)}
+                      disabled={quantity >= 10}
+                      className="w-8 h-8 p-0"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  <Button
+                    onClick={handleAddToCart}
+                    disabled={!product.inStock}
+                    className="flex items-center gap-2 bg-gun-gold hover:bg-gun-gold-bright text-gun-black font-medium"
+                    size="sm"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    {product.inStock ? "Add to Cart" : "Out of Stock"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleWishlist}
+                    className="flex items-center gap-1 text-xs"
+                    size="sm"
+                  >
+                    <Heart className={cn("w-3 h-3", isWishlist && "fill-current")} />
+                    Wishlist
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Pricing */}
@@ -676,65 +734,7 @@ export default function ProductDetail() {
               </CardContent>
             </Card>
 
-            {/* Add to Cart */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Label htmlFor="quantity">Quantity:</Label>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleQuantityChange(-1)}
-                        disabled={quantity <= 1}
-                      >
-                        <Minus className="w-4 h-4" />
-                      </Button>
-                      <span className="w-8 text-center">{quantity}</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleQuantityChange(1)}
-                        disabled={quantity >= 10}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      onClick={handleAddToCart}
-                      disabled={!product.inStock}
-                      className="flex items-center gap-2"
-                      size="lg"
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      {product.inStock ? "Add to Cart" : "Out of Stock"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleWishlist}
-                      className="flex items-center gap-2"
-                      size="lg"
-                    >
-                      <Heart className={cn("w-4 h-4", isWishlist && "fill-current")} />
-                      Wishlist
-                    </Button>
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    onClick={handleShare}
-                    className="w-full flex items-center gap-2"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    Share Product
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
 
             {/* FFL Selection */}
             {product.requiresFFL && (
