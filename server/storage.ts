@@ -20,7 +20,7 @@ import {
   type InsertHeroCarouselSlide
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, and, or, desc, asc, ne } from "drizzle-orm";
+import { eq, like, ilike, and, or, desc, asc, ne } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -213,17 +213,57 @@ export class DatabaseStorage implements IStorage {
     // Extract caliber and firearm type from product name and tags
     const { caliber, firearmType } = this.extractFirearmAttributes(currentProduct.name, currentProduct.tags);
 
-    // Get more candidate products to improve matching
-    const candidateProducts = await db.select().from(products)
-      .where(
-        and(
-          eq(products.isActive, true),
-          eq(products.category, category),
-          ne(products.id, productId)
+
+
+    // Get candidate products for matching - prioritize 1911s when appropriate
+    let candidateProducts: Product[] = [];
+    
+    // If this is a 1911-type firearm, get 1911s first
+    if (firearmType && (firearmType.includes('1911') || firearmType.includes('ULTRA CARRY') || firearmType.includes('COMMANDER') || firearmType.includes('OFFICER'))) {
+      // Get 1911 products first
+      const direct1911s = await db.select().from(products)
+        .where(
+          and(
+            eq(products.isActive, true),
+            eq(products.category, category),
+            ne(products.id, productId),
+            or(
+              ilike(products.name, '%1911%'),
+              ilike(products.name, '%ULTRA CARRY%'),
+              ilike(products.name, '%COMMANDER%'),
+              ilike(products.name, '%OFFICER%'),
+              ilike(products.name, '%GOVERNMENT%')
+            )
+          )
         )
-      )
-      .orderBy(desc(products.inStock), desc(products.createdAt))
-      .limit(100); // Get more candidates to score for better matches
+        .limit(100);
+      
+
+      candidateProducts = direct1911s;
+    }
+    
+    // Fill remaining slots with general category products
+    const remainingSlots = 200 - candidateProducts.length;
+    if (remainingSlots > 0) {
+      const generalProducts = await db.select().from(products)
+        .where(
+          and(
+            eq(products.isActive, true),
+            eq(products.category, category),
+            ne(products.id, productId)
+          )
+        )
+        .orderBy(desc(products.inStock), desc(products.createdAt))
+        .limit(remainingSlots);
+      
+      // Merge and deduplicate
+      const allCandidates = [...candidateProducts, ...generalProducts];
+      candidateProducts = allCandidates.filter((product, index, self) => 
+        index === self.findIndex(p => p.id === product.id)
+      );
+    }
+    
+
 
     // Score and sort products by similarity
     const scoredProducts = candidateProducts.map(product => {
@@ -238,10 +278,11 @@ export class DatabaseStorage implements IStorage {
     });
 
     // Sort by similarity score (highest first) and return top 8
-    return scoredProducts
+    const sortedProducts = scoredProducts
       .sort((a, b) => b.similarityScore - a.similarityScore)
-      .slice(0, 8)
-      .map(({ similarityScore, ...product }) => product);
+      .slice(0, 8);
+
+    return sortedProducts.map(({ similarityScore, ...product }) => product);
   }
 
   // Extract caliber and firearm type from product name and tags
@@ -250,20 +291,30 @@ export class DatabaseStorage implements IStorage {
     const tagsList = Array.isArray(tags) ? tags.map(tag => tag.toUpperCase()) : [];
     const searchText = (nameUpper + ' ' + tagsList.join(' ')).toUpperCase();
 
-    // Common calibers
-    const calibers = ['9MM', '9 MM', '.45', '45ACP', '45 ACP', '.40', '40SW', '40 S&W', '.357', '357', '.38', '.380', 
-                      '10MM', '10 MM', '.22', '22LR', '22 LR', '.223', '223', '5.56', '.308', '308', '.300', '300', 
-                      '.270', '270', '.243', '243', '.30-06', '30-06', '.50', '50', '7.62', '6.5'];
+    // Common calibers (prioritized by specificity)
+    const calibers = ['9MM', '9 MM', '.45ACP', '45ACP', '45 ACP', '.45', '.40SW', '40SW', '40 S&W', '.40', '.357MAG', '357MAG', '.357', '357', '.38SPEC', '38SPEC', '.38', '.380ACP', '380ACP', '.380', 
+                      '10MM', '10 MM', '.22LR', '22LR', '22 LR', '.22', '.223REM', '223REM', '.223', '223', '5.56NATO', '5.56', '.308WIN', '308WIN', '.308', '308', '.300', '300', 
+                      '.270WIN', '270WIN', '.270', '270', '.243WIN', '243WIN', '.243', '243', '.30-06', '30-06', '.50AE', '50AE', '.50', '50', '7.62X39', '7.62', '6.5CREED', '6.5'];
     
-    // Common firearm types (prioritized by specificity)
-    const firearmTypes = ['1911', 'SR1911', 'ULTRA CARRY', 'COMMANDER', 'OFFICER', 'GOVERNMENT', 'GLOCK', 'STRIKER', 
-                          'REVOLVER', 'SINGLE ACTION', 'DOUBLE ACTION', 'HAMMER', 'AR-15', 'AR15', 'AK-47', 'AK47', 
-                          'BOLT ACTION', 'SEMI-AUTO', 'PUMP', 'LEVER'];
+    // Specific firearm types (prioritized by specificity - most specific first)
+    const firearmTypes = [
+      // 1911 specific variants (highest priority)
+      'ULTRA CARRY II', 'ULTRA CARRY', 'COMMANDER', 'OFFICER', 'GOVERNMENT', 'FULL SIZE 1911', 'COMPACT 1911', 
+      '1911A1', '1911', 'SR1911', 'STAINLESS II', 'STAINLESS TARGET II', 'GOLD MATCH II', 'CUSTOM II', 'PRO CARRY',
+      // Glock variants
+      'GLOCK 17', 'GLOCK 19', 'GLOCK 21', 'GLOCK 22', 'GLOCK 23', 'GLOCK 26', 'GLOCK 27', 'GLOCK 29', 'GLOCK 30', 'GLOCK 34', 'GLOCK 35', 'GLOCK 43', 'GLOCK 48', 'GLOCK',
+      // Revolver types
+      'SINGLE ACTION REVOLVER', 'DOUBLE ACTION REVOLVER', 'REVOLVER', 'SINGLE ACTION', 'DOUBLE ACTION', 
+      // Rifle types
+      'AR-15', 'AR15', 'AK-47', 'AK47', 'BOLT ACTION', 'LEVER ACTION', 'SEMI-AUTO RIFLE',
+      // General action types
+      'STRIKER FIRED', 'HAMMER FIRED', 'STRIKER', 'HAMMER', 'SEMI-AUTO', 'PUMP', 'LEVER'
+    ];
 
     let caliber: string | null = null;
     let firearmType: string | null = null;
 
-    // Find caliber (prioritize more specific matches)
+    // Find caliber (prioritize more specific matches first)
     for (const cal of calibers) {
       if (searchText.includes(cal)) {
         caliber = cal;
@@ -271,7 +322,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    // Find firearm type (prioritize more specific matches)
+    // Find firearm type (prioritize more specific matches first)
     for (const type of firearmTypes) {
       if (searchText.includes(type)) {
         firearmType = type;
@@ -287,9 +338,22 @@ export class DatabaseStorage implements IStorage {
     let score = 0;
     const { caliber: productCaliber, firearmType: productFirearmType } = this.extractFirearmAttributes(product.name, product.tags);
 
-    // Same manufacturer gets high score
-    if (product.manufacturer === reference.manufacturer) {
-      score += 40;
+    // Matching firearm type gets highest priority (especially for 1911s)
+    if (reference.firearmType && productFirearmType === reference.firearmType) {
+      // 1911s get extra high priority when matching other 1911s
+      if (reference.firearmType.includes('1911') || reference.firearmType.includes('ULTRA CARRY') || reference.firearmType.includes('COMMANDER')) {
+        score += 70; // Very high score for 1911 matches
+      } else {
+        score += 60; // High score for other firearm type matches
+      }
+    }
+    
+    // Special case: If this is a 1911 product and the reference is also a 1911, give partial match bonus
+    else if (reference.firearmType && 
+             (reference.firearmType.includes('1911') || reference.firearmType.includes('ULTRA CARRY') || reference.firearmType.includes('COMMANDER')) &&
+             productFirearmType && 
+             (productFirearmType.includes('1911') || productFirearmType.includes('ULTRA CARRY') || productFirearmType.includes('COMMANDER'))) {
+      score += 50; // Partial 1911 match bonus
     }
 
     // Matching caliber gets very high score
@@ -297,20 +361,20 @@ export class DatabaseStorage implements IStorage {
       score += 50;
     }
 
-    // Matching firearm type gets high score  
-    if (reference.firearmType && productFirearmType === reference.firearmType) {
-      score += 35;
+    // Same manufacturer gets moderate score (less than firearm type/caliber)
+    if (product.manufacturer === reference.manufacturer) {
+      score += 30;
     }
     
     // Bonus for both caliber AND firearm type match (perfect match)
     if (reference.caliber && productCaliber === reference.caliber && 
         reference.firearmType && productFirearmType === reference.firearmType) {
-      score += 20;
+      score += 25; // Extra bonus for perfect match
     }
 
-    // In stock products get bonus
+    // In stock products get small bonus
     if (product.inStock) {
-      score += 10;
+      score += 5;
     }
 
     return score;

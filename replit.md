@@ -333,6 +333,10 @@ Changelog:
 - July 11, 2025. **RELATED PRODUCTS OPTIMIZATION**: Fixed image loading by using RSR stock numbers instead of generic IDs, improved similarity algorithm to prioritize same manufacturer + category combinations
 - July 11, 2025. **ROLLBACK POINT**: Stable state achieved with complete product detail page enhancements, smooth animations, fixed compliance section, and optimized related products functionality
 - July 11, 2025. **INTELLIGENT RELATED PRODUCTS ALGORITHM**: Enhanced similarity matching to prioritize caliber and firearm type compatibility - 1911 9mm now shows other 9mm firearms instead of unrelated .22 LR pistols
+- July 11, 2025. **MAJOR RELATED PRODUCTS FIX COMPLETED**: Successfully resolved algorithm issue where Kimber Ultra Carry II 9mm showed unrelated Zenith SBR-style firearms instead of similar 1911s
+- July 11, 2025. **1911 PRIORITIZATION SYSTEM**: Implemented intelligent candidate selection that prioritizes 1911-type firearms when the source product is a 1911 variant (Ultra Carry, Commander, Officer, Government)
+- July 11, 2025. **FIREARM TYPE SCORING ENHANCEMENT**: Added partial match scoring for 1911 variants ensuring any 1911 product shows other 1911s in same caliber with 105+ point scores vs generic 55 point scores
+- July 11, 2025. **RELATED PRODUCTS PRODUCTION READY**: Kimber Ultra Carry II 9mm now correctly shows Rock Island 1911 9mm, Auto Ordnance 1911A1 9mm, and Girsan MC1911 9mm as related products
 ```
 
 ## User Preferences
