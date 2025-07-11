@@ -123,17 +123,17 @@ export default function ProductDetail() {
     retry: 2,
   });
 
-  // Fetch related products
+  // Fetch related products with SKU and ID for more accurate caching
   const { data: relatedProducts } = useQuery({
-    queryKey: ['related-products', product?.category, product?.manufacturer],
+    queryKey: ['related-products', product?.sku, product?.id],
     queryFn: async () => {
       if (!product) return [];
       const response = await apiRequest('GET', `/api/products/related/${product.id}`);
       return response.json() as Promise<RelatedProduct[]>;
     },
     enabled: !!product,
-    staleTime: 15 * 60 * 1000, // 15 minutes
-    cacheTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes - shorter cache for better responsiveness
+    cacheTime: 15 * 60 * 1000, // 15 minutes
   });
 
   // Fetch FFLs if required

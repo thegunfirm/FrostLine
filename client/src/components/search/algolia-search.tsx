@@ -96,7 +96,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   const [ammunitionManufacturer, setAmmunitionManufacturer] = useState("all");
 
   // Get search results from Algolia
-  const { data: searchResults, isLoading, error } = useQuery({
+  const { data: searchResults, isLoading, error, refetch } = useQuery({
     queryKey: ['algolia-search', searchQuery, category, manufacturer, sortBy, currentPage, resultsPerPage, priceMin, priceMax, inStockOnly, newItemsOnly, caliber, actionType, barrelLength, capacity, stateRestriction, priceTier, handgunSubcategory, handgunManufacturer, handgunCaliber, handgunPriceRange, handgunCapacity, handgunStockStatus, ammunitionType, ammunitionCaliber, ammunitionManufacturer],
     queryFn: async () => {
       const response = await apiRequest('POST', '/api/search/algolia', {
@@ -133,7 +133,11 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       });
       return response.json() as Promise<SearchResponse>;
     },
-    enabled: true
+    enabled: true,
+    staleTime: 2 * 60 * 1000, // 2 minutes - shorter cache for better responsiveness
+    cacheTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
+    refetchOnWindowFocus: false, // Prevent unnecessary refetches
   });
 
   // Get available categories and manufacturers
@@ -1059,9 +1063,32 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           <div className="text-red-600 text-lg mb-4">
             Error loading search results
           </div>
-          <p className="text-gun-gray-light">
+          <p className="text-gun-gray-light mb-4">
             Please try again later or contact support if the problem persists.
           </p>
+          <Button onClick={() => refetch()} variant="outline">
+            Try Again
+          </Button>
+        </div>
+      )}
+
+      {/* No Results State */}
+      {!isLoading && !error && searchResults && searchResults.nbHits === 0 && (
+        <div className="text-center py-12">
+          <div className="text-gun-gray-dark text-lg mb-4">
+            No products found
+          </div>
+          <p className="text-gun-gray-light mb-4">
+            Try adjusting your search terms or filters to find what you're looking for.
+          </p>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={handleClearFilters} variant="outline">
+              Clear Filters
+            </Button>
+            <Button onClick={() => refetch()} variant="outline">
+              Refresh Search
+            </Button>
+          </div>
         </div>
       )}
 
