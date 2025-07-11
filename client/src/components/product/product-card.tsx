@@ -126,8 +126,8 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
         )}
         
         {!product.inStock && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <Badge variant="destructive" className="text-lg">
+          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center p-2">
+            <Badge variant="destructive" className="text-sm">
               Out of Stock
             </Badge>
           </div>

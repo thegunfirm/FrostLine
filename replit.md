@@ -364,6 +364,8 @@ Changelog:
 - July 11, 2025. **COMPLETE HANDGUN FILTERING**: All 5 handgun filters operational - Manufacturer (94 options), Caliber (14 options), Capacity (33 options), Price Range (6 options), Stock Status (2 options)
 - July 11, 2025. **SMART FILTER UX**: Filter dropdowns now show only valid combinations with live product counts, preventing user frustration from empty result sets
 - July 11, 2025. **PRODUCTION READY**: Complete dynamic multi-filter search infrastructure operational with intelligent UX across entire RSR catalog
+- July 11, 2025. **FILTER UX IMPROVEMENTS**: Fixed filter count display issue showing incorrect count on page load, added conditional clear filters button in top right
+- July 11, 2025. **OUT-OF-STOCK DISPLAY ENHANCED**: Moved "Out of Stock" badge to bottom of product image, removed filtered overlay to keep products visible and identifiable
 ```
 
 ## User Preferences
