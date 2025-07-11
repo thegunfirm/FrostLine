@@ -235,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         product.manufacturer
       );
       
-      res.set('Cache-Control', 'public, max-age=900'); // 15 minutes
+      res.set('Cache-Control', 'no-cache'); // Disable cache temporarily during development
       res.json(relatedProducts);
     } catch (error) {
       console.error("Get related products error:", error);

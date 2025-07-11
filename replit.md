@@ -340,6 +340,10 @@ Changelog:
 - July 11, 2025. **HANDGUN PRICING OPTIMIZATION COMPLETED**: Applied 5% Gold discount to 2,016 handgun products that lacked authentic RSR MAP pricing data
 - July 11, 2025. **RSR MAP DATA ANALYSIS**: Confirmed most handgun products in RSR catalog don't include MAP pricing, requiring strategic Gold member discount approach
 - July 11, 2025. **COMPREHENSIVE HANDGUN VALUE**: 100% of handgun products now offer meaningful Bronze vs Gold pricing differentiation for Gold member savings
+- July 11, 2025. **REVOLVER RELATED PRODUCTS ALGORITHM FIXED**: Completely resolved algorithm issue where revolver products showed unrelated pistols instead of compatible revolvers
+- July 11, 2025. **ENHANCED CALIBER DETECTION**: Improved extraction patterns for 357MAG, 38SPEC, 357SIG variations and compatible caliber scoring (357MAG/38SPEC compatibility)
+- July 11, 2025. **RANDOM SAMPLING IMPLEMENTATION**: Fixed candidate selection using random sampling instead of sequential ID ordering to ensure diverse product matching across entire catalog
+- July 11, 2025. **UNIVERSAL SCORING SYSTEM**: Perfect firearm matches (same manufacturer + caliber + type) score 170 points, compatible revolvers score 140 points, ensuring accurate related product recommendations
 ```
 
 ## User Preferences
