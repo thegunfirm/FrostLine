@@ -125,16 +125,17 @@ export function FilterPanel({
         />
       )}
 
-      {/* Filter Panel - Now slides down from top */}
+      {/* Filter Panel - Slides out from left below logo and ribbon */}
       <div className={cn(
         "fixed z-50 bg-white border border-gray-200 shadow-2xl transition-all duration-300 ease-in-out",
         isMobile ? [
-          "top-0 left-4 right-4 max-h-[75vh] rounded-b-lg",
+          "top-24 left-0 right-0 max-h-[75vh] rounded-r-lg",
           "transform",
-          isOpen ? "translate-y-0" : "-translate-y-full"
+          isOpen ? "translate-x-0" : "-translate-x-full"
         ] : [
-          "top-0 left-1/2 transform -translate-x-1/2 w-96 max-w-[90vw] max-h-[70vh] rounded-b-lg",
-          isOpen ? "translate-y-0" : "-translate-y-full"
+          "top-32 left-0 w-96 max-w-[90vw] max-h-[70vh] rounded-r-lg",
+          "transform",
+          isOpen ? "translate-x-0" : "-translate-x-full"
         ]
       )}>
         {/* Header */}
