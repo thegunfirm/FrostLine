@@ -74,6 +74,21 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
     return false;
   };
 
+  const getAvailabilityBadge = () => {
+    if (!product.inStock) {
+      return (
+        <Badge variant="destructive">
+          Out of Stock
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
+        In Stock
+      </Badge>
+    );
+  };
+
 
 
 
@@ -112,13 +127,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
           </div>
         )}
         
-        {!product.inStock && (
-          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center p-2">
-            <Badge variant="destructive" className="text-sm">
-              Out of Stock
-            </Badge>
-          </div>
-        )}
+
       </div>
       
       <CardContent className="p-4">
@@ -174,7 +183,9 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
           )}
         </div>
         
-
+        <div className="flex items-center justify-between mb-3">
+          {getAvailabilityBadge()}
+        </div>
         
         <div className="flex gap-2">
           <Button
