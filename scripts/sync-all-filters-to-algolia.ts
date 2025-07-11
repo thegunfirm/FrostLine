@@ -1,6 +1,6 @@
 /**
  * Sync All Filter Data to Algolia
- * Updates all products with filter fields and promotional flags
+ * Updates all products with extracted filter data to Algolia search index
  */
 
 import { algoliasearch } from 'algoliasearch';
@@ -17,8 +17,8 @@ async function syncAllFiltersToAlgolia() {
   try {
     console.log('🔄 Starting comprehensive filter sync to Algolia...');
     
-    // Get all products with any filter data or promotional flags
-    const allProducts = await db.execute(sql`
+    // Get all products with filter data
+    const productsWithFilters = await db.execute(sql`
       SELECT 
         sku,
         barrel_length,
@@ -32,17 +32,41 @@ async function syncAllFiltersToAlgolia() {
         department_number
       FROM products 
       WHERE sku IS NOT NULL
-      ORDER BY department_number, id
+      AND (
+        barrel_length IS NOT NULL OR 
+        finish IS NOT NULL OR 
+        frame_size IS NOT NULL OR 
+        action_type IS NOT NULL OR 
+        sight_type IS NOT NULL
+      )
+      ORDER BY department_number, sku
     `);
     
-    console.log(`📊 Found ${allProducts.rows.length} products to sync`);
+    console.log(`📊 Found ${productsWithFilters.rows.length} products with filter data to sync`);
     
-    // Update Algolia in batches
+    if (productsWithFilters.rows.length === 0) {
+      console.log('⚠️  No products with filter data found');
+      return;
+    }
+    
+    // Show breakdown by department
+    const departmentCounts = {};
+    productsWithFilters.rows.forEach(product => {
+      const dept = product.department_number || 'Unknown';
+      departmentCounts[dept] = (departmentCounts[dept] || 0) + 1;
+    });
+    
+    console.log('\n📋 Products by department:');
+    Object.entries(departmentCounts).forEach(([dept, count]) => {
+      console.log(`   - Dept ${dept}: ${count} products`);
+    });
+    
+    // Process in batches to avoid overwhelming Algolia
     const batchSize = 100;
-    let updated = 0;
+    let processed = 0;
     
-    for (let i = 0; i < allProducts.rows.length; i += batchSize) {
-      const batch = allProducts.rows.slice(i, i + batchSize);
+    for (let i = 0; i < productsWithFilters.rows.length; i += batchSize) {
+      const batch = productsWithFilters.rows.slice(i, i + batchSize);
       
       // Prepare batch update objects
       const updates = batch.map(product => ({
@@ -54,95 +78,41 @@ async function syncAllFiltersToAlgolia() {
         sightType: product.sight_type || null,
         newItem: product.new_item || false,
         internalSpecial: product.internal_special || false,
-        dropShippable: product.drop_shippable !== false // Default to true unless explicitly false
+        dropShippable: product.drop_shippable !== false
       }));
       
       // Send batch update to Algolia
-      const response = await client.partialUpdateObjects({
+      await client.partialUpdateObjects({
         indexName: 'products',
         objects: updates
       });
       
-      updated += batch.length;
+      processed += batch.length;
       
-      console.log(`✅ Updated batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(allProducts.rows.length / batchSize)}: ${updated}/${allProducts.rows.length} products`);
+      console.log(`   ✅ Synced batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(productsWithFilters.rows.length / batchSize)} (${processed}/${productsWithFilters.rows.length} products)`);
       
-      // Wait a bit between batches to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Small delay to be respectful to Algolia API
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
     
-    console.log(`\n🎉 Successfully synced ${updated} products to Algolia`);
+    console.log(`\n🎉 Successfully synced ${processed} products with filter data to Algolia!`);
     
-    // Get filter statistics
-    const filterStats = await db.execute(sql`
-      SELECT 
-        COUNT(*) as total_products,
-        COUNT(barrel_length) as with_barrel_length,
-        COUNT(finish) as with_finish,
-        COUNT(frame_size) as with_frame_size,
-        COUNT(action_type) as with_action_type,
-        COUNT(sight_type) as with_sight_type,
-        SUM(CASE WHEN new_item = true THEN 1 ELSE 0 END) as new_items,
-        SUM(CASE WHEN internal_special = true THEN 1 ELSE 0 END) as internal_specials,
-        SUM(CASE WHEN drop_shippable = false THEN 1 ELSE 0 END) as warehouse_only
-      FROM products
-    `);
+    // Show some sample data
+    const sampleProducts = productsWithFilters.rows.slice(0, 10);
+    console.log('\n📋 Sample filter data synced:');
+    sampleProducts.forEach((product, i) => {
+      const filters = [];
+      if (product.barrel_length) filters.push(`Barrel: ${product.barrel_length}`);
+      if (product.finish) filters.push(`Finish: ${product.finish}`);
+      if (product.frame_size) filters.push(`Frame: ${product.frame_size}`);
+      if (product.action_type) filters.push(`Action: ${product.action_type}`);
+      if (product.sight_type) filters.push(`Sight: ${product.sight_type}`);
+      
+      console.log(`   ${i + 1}. ${product.sku} (Dept ${product.department_number}): ${filters.join(', ')}`);
+    });
     
-    const stats = filterStats.rows[0];
-    console.log(`\n📈 Filter data coverage:`);
-    console.log(`   - Total products: ${stats.total_products}`);
-    console.log(`   - With barrel length: ${stats.with_barrel_length}`);
-    console.log(`   - With finish: ${stats.with_finish}`);
-    console.log(`   - With frame size: ${stats.with_frame_size}`);
-    console.log(`   - With action type: ${stats.with_action_type}`);
-    console.log(`   - With sight type: ${stats.with_sight_type}`);
-    console.log(`   - New items: ${stats.new_items}`);
-    console.log(`   - Internal specials: ${stats.internal_specials}`);
-    console.log(`   - Warehouse only: ${stats.warehouse_only}`);
-    
-    // Test facets for different departments
-    console.log('\n🔍 Testing facets by department...');
-    
-    const deptTests = [
-      { dept: '01', name: 'Handguns' },
-      { dept: '05', name: 'Long Guns' },
-      { dept: '08', name: 'Optics' },
-      { dept: '06', name: 'NFA Products' }
-    ];
-    
-    for (const dept of deptTests) {
-      try {
-        const testResponse = await client.search({
-          requests: [
-            {
-              indexName: 'products',
-              params: {
-                query: '',
-                facets: ['barrelLength', 'finish', 'frameSize', 'actionType', 'sightType'],
-                filters: `departmentNumber:"${dept.dept}"`,
-                maxFacetHits: 5
-              }
-            }
-          ]
-        });
-        
-        const facets = testResponse.results[0].facets;
-        console.log(`   📊 ${dept.name} (Dept ${dept.dept}):`);
-        console.log(`      - Barrel lengths: ${Object.keys(facets?.barrelLength || {}).length}`);
-        console.log(`      - Finishes: ${Object.keys(facets?.finish || {}).length}`);
-        console.log(`      - Frame sizes: ${Object.keys(facets?.frameSize || {}).length}`);
-        console.log(`      - Action types: ${Object.keys(facets?.actionType || {}).length}`);
-        console.log(`      - Sight types: ${Object.keys(facets?.sightType || {}).length}`);
-        
-      } catch (error) {
-        console.log(`   ❌ Error testing ${dept.name}: ${error.message}`);
-      }
-    }
-    
-    console.log('\n🎯 Comprehensive filter sync completed successfully!');
-    
-  } catch (error) {
-    console.error('❌ Error syncing filters:', error);
+  } catch (error: any) {
+    console.error('❌ Error during comprehensive filter sync:', error);
     throw error;
   }
 }

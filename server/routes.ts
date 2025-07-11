@@ -2333,21 +2333,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         algoliaFilters.push(`capacity:${filters.capacity}`);
       }
       
-      // New filter parameters
+      // New filter parameters - clean values to avoid double quotes
       if (filters.barrelLength) {
-        algoliaFilters.push(`barrelLength:"${filters.barrelLength}"`);
+        const cleanValue = filters.barrelLength.replace(/"/g, '');
+        algoliaFilters.push(`barrelLength:"${cleanValue}"`);
       }
       if (filters.finish) {
-        algoliaFilters.push(`finish:"${filters.finish}"`);
+        const cleanValue = filters.finish.replace(/"/g, '');
+        algoliaFilters.push(`finish:"${cleanValue}"`);
       }
       if (filters.frameSize) {
-        algoliaFilters.push(`frameSize:"${filters.frameSize}"`);
+        const cleanValue = filters.frameSize.replace(/"/g, '');
+        algoliaFilters.push(`frameSize:"${cleanValue}"`);
       }
       if (filters.actionType) {
-        algoliaFilters.push(`actionType:"${filters.actionType}"`);
+        const cleanValue = filters.actionType.replace(/"/g, '');
+        algoliaFilters.push(`actionType:"${cleanValue}"`);
       }
       if (filters.sightType) {
-        algoliaFilters.push(`sightType:"${filters.sightType}"`);
+        const cleanValue = filters.sightType.replace(/"/g, '');
+        algoliaFilters.push(`sightType:"${cleanValue}"`);
       }
       if (filters.newItem !== null) {
         algoliaFilters.push(`newItem:${filters.newItem}`);
@@ -2613,23 +2618,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (filters.barrelLength && filters.barrelLength !== "all") {
-        baseFilters.push(`barrelLength:"${filters.barrelLength}"`);
+        const cleanValue = filters.barrelLength.replace(/"/g, '');
+        baseFilters.push(`barrelLength:"${cleanValue}"`);
       }
       
       if (filters.finish && filters.finish !== "all") {
-        baseFilters.push(`finish:"${filters.finish}"`);
+        const cleanValue = filters.finish.replace(/"/g, '');
+        baseFilters.push(`finish:"${cleanValue}"`);
       }
       
       if (filters.frameSize && filters.frameSize !== "all") {
-        baseFilters.push(`frameSize:"${filters.frameSize}"`);
+        const cleanValue = filters.frameSize.replace(/"/g, '');
+        baseFilters.push(`frameSize:"${cleanValue}"`);
       }
       
       if (filters.actionType && filters.actionType !== "all") {
-        baseFilters.push(`actionType:"${filters.actionType}"`);
+        const cleanValue = filters.actionType.replace(/"/g, '');
+        baseFilters.push(`actionType:"${cleanValue}"`);
       }
       
       if (filters.sightType && filters.sightType !== "all") {
-        baseFilters.push(`sightType:"${filters.sightType}"`);
+        const cleanValue = filters.sightType.replace(/"/g, '');
+        baseFilters.push(`sightType:"${cleanValue}"`);
       }
       
       if (filters.newItem !== null) {
