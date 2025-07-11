@@ -20,6 +20,7 @@ interface ProductIntelligence {
   category: string;
   departmentNumber: string;
   weight?: number;
+  magnification?: string;
 }
 
 interface CaliberCompatibility {
@@ -196,17 +197,58 @@ export class RSRIntelligenceService {
   private extractCaliber(name: string): string | null {
     const normalizedName = name.toUpperCase();
     
-    for (const pattern of this.patterns.calibers) {
-      const match = normalizedName.match(pattern);
-      if (match) {
-        // Handle different caliber formats
-        if (match[1] && match[2]) {
-          // Format like "6.5" or "300" with suffix
-          return `${match[1]}.${match[2]}`;
-        } else if (match[1]) {
-          // Single number with suffix
-          return match[0].trim();
-        }
+    // More specific patterns first for better accuracy
+    const specificPatterns = [
+      // Revolver calibers - most specific first
+      { pattern: /357\s*MAG|\.357\s*MAG|357\s*MAGNUM/i, caliber: '357MAG' },
+      { pattern: /38\s*SPEC|\.38\s*SPEC|38\s*SPL|\.38\s*SPL/i, caliber: '38SPEC' },
+      { pattern: /357\s*SIG|\.357\s*SIG/i, caliber: '357SIG' },
+      { pattern: /44\s*MAG|\.44\s*MAG|44\s*MAGNUM/i, caliber: '44MAG' },
+      { pattern: /327\s*FED|\.327\s*FED/i, caliber: '327FED' },
+      { pattern: /500\s*SW|\.500\s*SW/i, caliber: '500SW' },
+      
+      // Handgun calibers
+      { pattern: /9\s*MM|9MM/i, caliber: '9MM' },
+      { pattern: /45\s*ACP|\.45\s*ACP/i, caliber: '45ACP' },
+      { pattern: /40\s*S&W|\.40\s*S&W|40\s*SW/i, caliber: '40SW' },
+      { pattern: /380\s*ACP|\.380\s*ACP/i, caliber: '380ACP' },
+      { pattern: /10\s*MM|10MM/i, caliber: '10MM' },
+      { pattern: /32\s*ACP|\.32\s*ACP/i, caliber: '32ACP' },
+      
+      // Rifle calibers
+      { pattern: /223\s*REM|\.223\s*REM|223\s*REMINGTON/i, caliber: '223REM' },
+      { pattern: /5\.56\s*NATO|556\s*NATO/i, caliber: '556NATO' },
+      { pattern: /308\s*WIN|\.308\s*WIN|308\s*WINCHESTER/i, caliber: '308WIN' },
+      { pattern: /7\.62\s*NATO|762\s*NATO/i, caliber: '762NATO' },
+      { pattern: /30-06|\.30-06|3006/i, caliber: '30-06' },
+      { pattern: /300\s*WIN|\.300\s*WIN|300\s*WINCHESTER/i, caliber: '300WIN' },
+      { pattern: /270\s*WIN|\.270\s*WIN/i, caliber: '270WIN' },
+      { pattern: /6\.5\s*CREEDMOOR|65\s*CREEDMOOR/i, caliber: '6.5CREEDMOOR' },
+      { pattern: /243\s*WIN|\.243\s*WIN/i, caliber: '243WIN' },
+      { pattern: /7MM\s*REM|7MM\s*REMINGTON/i, caliber: '7MMREM' },
+      { pattern: /22\s*LR|\.22\s*LR|22\s*LONG\s*RIFLE/i, caliber: '22LR' },
+      { pattern: /22\s*WMR|\.22\s*WMR|22\s*MAGNUM/i, caliber: '22WMR' },
+      { pattern: /17\s*HMR|\.17\s*HMR/i, caliber: '17HMR' },
+      { pattern: /204\s*RUGER|\.204\s*RUGER/i, caliber: '204RUGER' },
+      { pattern: /350\s*LEG|\.350\s*LEG|350\s*LEGEND/i, caliber: '350LEG' },
+      { pattern: /450\s*BUSH|\.450\s*BUSH|450\s*BUSHMASTER/i, caliber: '450BUSH' },
+      { pattern: /300\s*BLK|\.300\s*BLK|300\s*BLACKOUT/i, caliber: '300BLK' },
+      { pattern: /545\s*X\s*39|545X39|5\.45\s*X\s*39/i, caliber: '545X39' },
+      { pattern: /762\s*X\s*39|762X39|7\.62\s*X\s*39/i, caliber: '762X39' },
+      { pattern: /762\s*X\s*51|762X51|7\.62\s*X\s*51/i, caliber: '762X51' },
+      { pattern: /762\s*X\s*54|762X54|7\.62\s*X\s*54/i, caliber: '762X54' },
+      
+      // Shotgun calibers
+      { pattern: /12\s*GA|12\s*GAUGE/i, caliber: '12GA' },
+      { pattern: /20\s*GA|20\s*GAUGE/i, caliber: '20GA' },
+      { pattern: /16\s*GA|16\s*GAUGE/i, caliber: '16GA' },
+      { pattern: /28\s*GA|28\s*GAUGE/i, caliber: '28GA' },
+      { pattern: /410\s*BORE|\.410\s*BORE|410\s*GA/i, caliber: '410BORE' },
+    ];
+    
+    for (const { pattern, caliber } of specificPatterns) {
+      if (pattern.test(normalizedName)) {
+        return caliber;
       }
     }
     
@@ -273,10 +315,106 @@ export class RSRIntelligenceService {
   private extractFirearmType(name: string): string | null {
     const normalizedName = name.toUpperCase();
     
-    for (const pattern of this.patterns.firearmTypes) {
+    // Revolver identification - most specific first
+    if (normalizedName.includes('REVOLVER') || 
+        normalizedName.includes(' REV ') || 
+        normalizedName.includes('PYTHON') ||
+        normalizedName.includes('ANACONDA') ||
+        normalizedName.includes('KING COBRA') ||
+        normalizedName.includes('COBRA') ||
+        normalizedName.includes('DETECTIVE') ||
+        normalizedName.includes('TROOPER') ||
+        normalizedName.includes('PEACEMAKER') ||
+        normalizedName.includes('VAQUERO') ||
+        normalizedName.includes('BLACKHAWK') ||
+        normalizedName.includes('REDHAWK') ||
+        normalizedName.includes('SUPER REDHAWK') ||
+        normalizedName.includes('SECURITY SIX') ||
+        normalizedName.includes('SPEED SIX') ||
+        normalizedName.includes('SERVICE SIX') ||
+        normalizedName.includes('GP100') ||
+        normalizedName.includes('SP101') ||
+        normalizedName.includes('LCR') ||
+        normalizedName.includes('CHIAPPA') ||
+        normalizedName.includes('RHINO') ||
+        normalizedName.includes('JUDGE') ||
+        normalizedName.includes('GOVERNOR') ||
+        normalizedName.includes('RAGING') ||
+        normalizedName.includes('TRACKER') ||
+        normalizedName.includes('PROTECTOR') ||
+        normalizedName.includes('DEFENDER') ||
+        normalizedName.includes('ULTRALITE') ||
+        normalizedName.includes('HERITAGE') ||
+        normalizedName.includes('ROUGH RIDER') ||
+        normalizedName.includes('SINGLE ACTION') ||
+        normalizedName.includes('SINGLE-ACTION') ||
+        normalizedName.includes('SAA') ||
+        normalizedName.includes('CHARTER ARMS') ||
+        normalizedName.includes('ROSSI') ||
+        normalizedName.includes('EAA WINDICATOR') ||
+        /\b(686|629|627|625|624|617|610|586|581|547|520|500|460|442|438|432|351|340|317|296|242)\b/.test(normalizedName)) {
+      return 'revolver';
+    }
+    
+    // 1911 identification
+    if (normalizedName.includes('1911') || 
+        normalizedName.includes('GOVERNMENT') && normalizedName.includes('45') ||
+        normalizedName.includes('COMMANDER') && normalizedName.includes('45') ||
+        normalizedName.includes('OFFICER') && normalizedName.includes('45') ||
+        normalizedName.includes('ULTRA CARRY') ||
+        normalizedName.includes('COMPACT CARRY') ||
+        normalizedName.includes('CUSTOM') && normalizedName.includes('SHOP') ||
+        normalizedName.includes('STAINLESS') && normalizedName.includes('II')) {
+      return '1911';
+    }
+    
+    // Generic pistol identification
+    if (normalizedName.includes('PISTOL') || 
+        normalizedName.includes('PSTL') ||
+        normalizedName.includes('HANDGUN') ||
+        normalizedName.includes('SEMI-AUTO') ||
+        normalizedName.includes('SEMIAUTO')) {
+      return 'pistol';
+    }
+    
+    // Long gun types
+    if (normalizedName.includes('RIFLE') || normalizedName.includes('RFL')) {
+      return 'rifle';
+    }
+    if (normalizedName.includes('SHOTGUN') || normalizedName.includes('SHOT')) {
+      return 'shotgun';
+    }
+    if (normalizedName.includes('CARBINE') || normalizedName.includes('CARB')) {
+      return 'carbine';
+    }
+    
+    return null;
+  }
+
+  /**
+   * Extract magnification from optic product name
+   */
+  private extractMagnification(name: string): string | null {
+    const normalizedName = name.toUpperCase();
+    
+    // Look for magnification patterns like "1-4X", "3-9X", "6-24X", "10X", etc.
+    const magnificationPatterns = [
+      /(\d+)-(\d+)X/,  // Variable magnification like "3-9X"
+      /(\d+)X(\d+)/,   // Fixed magnification like "10X42"
+      /(\d+\.?\d*)X/,  // Simple magnification like "4X" or "2.5X"
+      /(\d+)-(\d+)/,   // Range without X like "1-4"
+    ];
+    
+    for (const pattern of magnificationPatterns) {
       const match = normalizedName.match(pattern);
       if (match) {
-        return match[1].toUpperCase();
+        if (match[1] && match[2]) {
+          // Variable magnification
+          return `${match[1]}-${match[2]}X`;
+        } else if (match[1]) {
+          // Fixed magnification
+          return `${match[1]}X`;
+        }
       }
     }
     
@@ -299,6 +437,7 @@ export class RSRIntelligenceService {
       capacity: this.extractCapacity(product.name),
       action: this.extractAction(product.name),
       firearmType: this.extractFirearmType(product.name),
+      magnification: this.extractMagnification(product.name),
     };
 
     return intelligence;
@@ -423,6 +562,38 @@ export class RSRIntelligenceService {
       reasons.push('Compatible caliber');
     }
 
+    // Magnification matching for optics
+    if (product1.magnification && product2.magnification) {
+      if (product1.magnification === product2.magnification) {
+        score += 60;
+        reasons.push('Same magnification');
+      } else {
+        // Check for similar magnification ranges
+        const mag1 = product1.magnification.toLowerCase();
+        const mag2 = product2.magnification.toLowerCase();
+        
+        // Extract base magnification for comparison
+        const extractBaseMag = (mag: string) => {
+          const match = mag.match(/(\d+)(?:-\d+)?x?/);
+          return match ? parseInt(match[1]) : null;
+        };
+        
+        const base1 = extractBaseMag(mag1);
+        const base2 = extractBaseMag(mag2);
+        
+        if (base1 && base2) {
+          const diff = Math.abs(base1 - base2);
+          if (diff <= 1) {
+            score += 35;
+            reasons.push('Similar magnification');
+          } else if (diff <= 2) {
+            score += 20;
+            reasons.push('Similar magnification');
+          }
+        }
+      }
+    }
+
     // Firearm type match
     if (product1.firearmType === product2.firearmType) {
       score += 60;
@@ -481,6 +652,16 @@ export class RSRIntelligenceService {
       if (percentDiff <= 20) {
         score += 10;
         reasons.push('Similar weight');
+      }
+    }
+
+    // Penalty for mismatched firearm types (prevents revolver/pistol confusion)
+    if (product1.firearmType && product2.firearmType && 
+        product1.firearmType !== product2.firearmType) {
+      if ((product1.firearmType === 'revolver' && product2.firearmType === 'pistol') ||
+          (product1.firearmType === 'pistol' && product2.firearmType === 'revolver')) {
+        score -= 40; // Strong penalty for revolver/pistol confusion
+        reasons.push('Firearm type mismatch penalty');
       }
     }
 
