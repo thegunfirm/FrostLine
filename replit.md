@@ -330,6 +330,7 @@ Changelog:
 - July 11, 2025. **WISHLIST INTEGRATION**: Added subtle "Add to Wishlist" button next to "Add to Cart" for improved user experience
 - July 11, 2025. **COMPLIANCE SECTION ENHANCEMENT**: Removed FFL search functionality, streamlined to show FFL requirement and California Prop 65 warnings in unified compliance section
 - July 11, 2025. **SMOOTH ON-LOAD ANIMATIONS**: Added comprehensive fade-in and slide animations to product detail page sections with staggered timing for professional loading experience
+- July 11, 2025. **RELATED PRODUCTS OPTIMIZATION**: Fixed image loading by using RSR stock numbers instead of generic IDs, improved similarity algorithm to prioritize same manufacturer + category combinations
 ```
 
 ## User Preferences

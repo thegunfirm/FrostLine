@@ -20,7 +20,7 @@ import {
   type InsertHeroCarouselSlide
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, and, or, desc, asc } from "drizzle-orm";
+import { eq, like, and, or, desc, asc, ne } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -206,18 +206,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getRelatedProducts(productId: number, category: string, manufacturer: string): Promise<Product[]> {
-    return await db.select().from(products)
+    // Priority 1: Same manufacturer AND same category (most relevant)
+    const sameManufacturerAndCategory = await db.select().from(products)
       .where(
         and(
           eq(products.isActive, true),
-          or(
-            eq(products.category, category),
-            eq(products.manufacturer, manufacturer)
-          )
+          eq(products.manufacturer, manufacturer),
+          eq(products.category, category),
+          // Exclude the current product
+          ne(products.id, productId)
         )
       )
-      .orderBy(desc(products.createdAt))
-      .limit(8);
+      .orderBy(desc(products.inStock), desc(products.createdAt))
+      .limit(4);
+
+    // Priority 2: Same category, different manufacturer (fill remaining slots)
+    const sameCategoryDifferentManufacturer = await db.select().from(products)
+      .where(
+        and(
+          eq(products.isActive, true),
+          eq(products.category, category),
+          ne(products.manufacturer, manufacturer),
+          // Exclude the current product
+          ne(products.id, productId)
+        )
+      )
+      .orderBy(desc(products.inStock), desc(products.createdAt))
+      .limit(4);
+
+    // Combine results, prioritizing same manufacturer + category
+    const relatedProducts = [...sameManufacturerAndCategory, ...sameCategoryDifferentManufacturer].slice(0, 8);
+    
+    return relatedProducts;
   }
 
   // Order operations

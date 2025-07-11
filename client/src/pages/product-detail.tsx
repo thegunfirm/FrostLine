@@ -88,6 +88,7 @@ interface RelatedProduct {
   id: number;
   name: string;
   manufacturer: string;
+  sku: string;
   priceBronze: string;
   priceGold: string;
   pricePlatinum: string;
@@ -987,13 +988,22 @@ export default function ProductDetail() {
                   <CardContent className="p-4">
                     <div className="aspect-square bg-gray-100 rounded-lg mb-3">
                       <img
-                        src={`/api/rsr-image/${related.id}`}
+                        src={`/api/rsr-image/${related.sku}`}
                         alt={related.name}
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain transition-opacity duration-300"
                         onError={(e) => {
-                          e.currentTarget.src = "/api/placeholder/200/200";
+                          // Show professional placeholder for missing RSR images
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling.style.display = 'flex';
                         }}
                       />
+                      <div className="w-full h-full hidden items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded">
+                        <div className="text-center text-gray-500">
+                          <ImageIcon className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                          <p className="text-xs font-medium">Product image not available</p>
+                          <p className="text-xs text-gray-400 mt-1">RSR image pending</p>
+                        </div>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <h3 className="font-medium text-sm leading-tight">{related.name}</h3>
