@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, ChevronLeft } from 'lucide-react';
+import { X, ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FilterOptions {
@@ -57,6 +57,9 @@ export function FilterPanel({
   totalResults
 }: FilterPanelProps) {
   const [isMobile, setIsMobile] = useState(false);
+  const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
+  const [isScrolledToTop, setIsScrolledToTop] = useState(true);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -67,6 +70,31 @@ export function FilterPanel({
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Handle scroll position tracking
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+      const isTop = scrollTop === 0;
+      const isBottom = scrollTop + clientHeight >= scrollHeight - 1;
+      
+      setIsScrolledToTop(isTop);
+      setIsScrolledToBottom(isBottom);
+    }
+  };
+
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll);
+      // Initial check
+      handleScroll();
+      
+      return () => {
+        scrollContainer.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, [isOpen]);
 
   const hasActiveFilters = Object.values(filters).some(value => 
     value !== '' && value !== null && value !== false
@@ -176,16 +204,39 @@ export function FilterPanel({
         {relevantFilters.length > 5 && (
           <div className="flex justify-center py-2 bg-gray-50 border-b">
             <div className="flex items-center gap-2 text-xs text-gray-500">
-              <span>Scroll for more filters</span>
-              <div className="animate-bounce">
-                <ChevronLeft className="h-3 w-3 rotate-90" />
-              </div>
+              {isScrolledToTop && !isScrolledToBottom && (
+                <>
+                  <span>Scroll down for more filters</span>
+                  <div className="animate-bounce">
+                    <ChevronDown className="h-3 w-3" />
+                  </div>
+                </>
+              )}
+              {isScrolledToBottom && !isScrolledToTop && (
+                <>
+                  <span>Scroll up for more filters</span>
+                  <div className="animate-bounce">
+                    <ChevronUp className="h-3 w-3" />
+                  </div>
+                </>
+              )}
+              {!isScrolledToTop && !isScrolledToBottom && (
+                <>
+                  <span>Scroll for more filters</span>
+                  <div className="animate-bounce">
+                    <ChevronDown className="h-3 w-3" />
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
 
         {/* Filter Content */}
-        <div className="p-3 space-y-3 overflow-y-auto max-h-[50vh]">
+        <div 
+          ref={scrollContainerRef}
+          className="p-3 space-y-3 overflow-y-auto max-h-[50vh]"
+        >
           {/* Manufacturer Filter */}
           {relevantFilters.includes('manufacturer') && filterOptions.manufacturers.length > 0 && (
             <div>
