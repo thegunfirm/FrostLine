@@ -121,9 +121,9 @@ export function FilterPanel({
         return [...baseFilters, 'caliber', 'capacity', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType', 'newItem', 'internalSpecial', 'shippingMethod'];
       case 'rifles':
       case 'long guns':
-        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'newItem', 'internalSpecial', 'shippingMethod'];
+        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType', 'newItem', 'internalSpecial', 'shippingMethod'];
       case 'shotguns':
-        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'newItem', 'internalSpecial', 'shippingMethod'];
+        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType', 'newItem', 'internalSpecial', 'shippingMethod'];
       case 'ammunition':
       case 'handgun ammo':
       case 'rifle ammo':
@@ -131,13 +131,14 @@ export function FilterPanel({
       case 'rimfire ammo':
         return [...baseFilters, 'caliber', 'newItem', 'internalSpecial', 'shippingMethod'];
       case 'optics':
-        return [...baseFilters, 'newItem', 'internalSpecial', 'shippingMethod'];
+        return [...baseFilters, 'finish', 'sightType', 'newItem', 'internalSpecial', 'shippingMethod'];
       case 'accessories':
       case 'parts':
+        return [...baseFilters, 'finish', 'newItem', 'internalSpecial', 'shippingMethod'];
       case 'nfa products':
-        return [...baseFilters, 'newItem', 'internalSpecial', 'shippingMethod'];
+        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'actionType', 'sightType', 'newItem', 'internalSpecial', 'shippingMethod'];
       default:
-        return baseFilters;
+        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'newItem', 'internalSpecial', 'shippingMethod'];
     }
   };
 
