@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { ProductGrid } from "@/components/product/product-grid";
-import { Search, Filter, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
+import { Search, Filter, ChevronLeft, ChevronRight, HelpCircle, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -251,12 +251,12 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
   const handleClearFilters = () => {
     setSearchQuery("");
-    setCategory("all");
+    // Don't clear category as it's the main navigation state
     setManufacturer("all");
     setSortBy("relevance");
     setPriceMin("");
     setPriceMax("");
-    setInStockOnly(true);
+    setInStockOnly(false);
     setNewItemsOnly(false);
     setCurrentPage(0);
     // Clear handgun-specific filters
@@ -269,6 +269,14 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     setAmmunitionType("all");
     setAmmunitionCaliber("all");
     setAmmunitionManufacturer("all");
+    // Clear other filters
+    setCaliber("all");
+    setActionType("all");
+    setBarrelLength("all");
+    setCapacity("all");
+    setStateRestriction("all");
+    setPriceTier("all");
+    setHandgunSubcategory("all");
   };
 
   const handleAddToCart = (product: any) => {
@@ -399,13 +407,23 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
   const activeFiltersCount = [
     searchQuery,
-    category !== "all" ? category : null,
+    category !== "all" && category !== "" ? category : null,
     manufacturer !== "all" ? manufacturer : null,
     priceMin,
     priceMax,
-    !inStockOnly ? "all-items" : null,
+    inStockOnly ? "in-stock" : null,
     newItemsOnly ? "new-items" : null,
-    handgunSubcategory !== "all" ? handgunSubcategory : null
+    handgunSubcategory !== "all" ? handgunSubcategory : null,
+    // Enhanced handgun-specific filters
+    handgunManufacturer !== "all" ? handgunManufacturer : null,
+    handgunCaliber !== "all" ? handgunCaliber : null,
+    handgunPriceRange !== "all" ? handgunPriceRange : null,
+    handgunCapacity !== "all" ? handgunCapacity : null,
+    handgunStockStatus !== "all" ? handgunStockStatus : null,
+    // Ammunition-specific filters
+    ammunitionType !== "all" ? ammunitionType : null,
+    ammunitionCaliber !== "all" ? ammunitionCaliber : null,
+    ammunitionManufacturer !== "all" ? ammunitionManufacturer : null
   ].filter(Boolean).length;
 
   return (
@@ -463,6 +481,19 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Clear Filters Button */}
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearFilters}
+                className="flex items-center gap-2 text-gun-gray-light hover:text-gun-black"
+              >
+                <X className="h-4 w-4" />
+                Clear Filters
+              </Button>
+            )}
+
             <div className="flex items-center gap-2">
               <Label htmlFor="results-per-page" className="text-sm font-medium">
                 Show:
