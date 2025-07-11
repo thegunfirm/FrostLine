@@ -1235,115 +1235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // RSR Image Proxy - With caching and sophisticated age verification bypass
-  app.get("/api/images/rsr-proxy/:stockNo/:size", async (req, res) => {
-    try {
-      const { stockNo, size } = req.params;
-      
-      if (!['thumb', 'standard', 'large'].includes(size)) {
-        return res.status(400).json({ error: "Invalid size parameter" });
-      }
-
-      // Import cache service
-      const { rsrImageCache } = await import('./services/rsr-image-cache');
-      
-      // Check if image is already cached
-      const cachedImagePath = rsrImageCache.getCachedImagePath(stockNo, size as any);
-      if (cachedImagePath) {
-        console.log(`Serving cached RSR image: ${stockNo}_${size}`);
-        return res.sendFile(cachedImagePath);
-      }
-
-      // Check if we should attempt to fetch
-      if (!rsrImageCache.shouldAttemptFetch(stockNo, size as any)) {
-        console.log(`Skipping RSR image fetch (too recent): ${stockNo}_${size}`);
-        return res.status(404).json({ 
-          error: "Image not available",
-          message: "RSR image access blocked by age verification" 
-        });
-      }
-
-      // Map size to correct RSR URL structure using authentic patterns
-      const view = req.query.view || '1'; // Default to first image
-      let rsrImageUrl = '';
-      
-      switch (size) {
-        case 'thumb':
-          rsrImageUrl = `https://img.rsrgroup.com/pimages/${stockNo}_${view}_thumb.jpg`;
-          break;
-        case 'standard':
-          rsrImageUrl = `https://img.rsrgroup.com/pimages/${stockNo}_${view}.jpg`;
-          break;
-        case 'highres':
-        case 'large':
-          rsrImageUrl = `https://img.rsrgroup.com/highres-pimages/${stockNo}_${view}_HR.jpg`;
-          break;
-        default:
-          rsrImageUrl = `https://img.rsrgroup.com/pimages/${stockNo}_${view}.jpg`;
-      }
-
-      console.log(`Attempting to fetch RSR image: ${rsrImageUrl}`);
-
-      // Use sophisticated RSR session manager with age verification bypass
-      const { rsrSessionManager } = await import('./services/rsr-session');
-      const session = await rsrSessionManager.getAuthenticatedSession();
-      
-      // Fetch image with authenticated session
-      const imageResponse = await fetch(rsrImageUrl, {
-        headers: {
-          'Cookie': session.cookies.join('; '),
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Referer': 'https://www.rsrgroup.com/',
-          'Cache-Control': 'no-cache'
-        }
-      });
-      
-      console.log(`RSR image response: ${imageResponse.status} ${imageResponse.statusText}`);
-      
-      if (imageResponse.ok) {
-        const imageBuffer = await imageResponse.arrayBuffer();
-        const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
-        
-        // Check if we actually got an image (not HTML)
-        const bufferStart = Buffer.from(imageBuffer).toString('utf8', 0, 100);
-        if (bufferStart.includes('<!DOCTYPE') || bufferStart.includes('<html')) {
-          console.log(`RSR returned HTML instead of image for ${stockNo}_${size} - age verification still blocking`);
-          rsrImageCache.markAttempted(stockNo, size as any, false);
-          return res.status(404).json({ 
-            error: "Age verification required",
-            message: "RSR is still requiring age verification for this image" 
-          });
-        }
-        
-        // Successfully got an image - cache it and serve it
-        const imageBufferNode = Buffer.from(imageBuffer);
-        rsrImageCache.markAttempted(stockNo, size as any, true, imageBufferNode);
-        
-        res.set({
-          'Content-Type': contentType,
-          'Cache-Control': 'public, max-age=3600',
-          'Access-Control-Allow-Origin': '*'
-        });
-        
-        console.log(`Successfully served and cached RSR image: ${stockNo}_${size}`);
-        res.send(imageBufferNode);
-      } else {
-        console.log(`RSR image request failed: ${rsrImageUrl} - Status: ${imageResponse.status}`);
-        rsrImageCache.markAttempted(stockNo, size as any, false);
-        res.status(404).json({ 
-          error: "Image not found",
-          message: "RSR image not available" 
-        });
-      }
-    } catch (error: any) {
-      console.error("Error fetching RSR image:", error);
-      const { rsrImageCache } = await import('./services/rsr-image-cache');
-      rsrImageCache.markAttempted(req.params.stockNo, req.params.size as any, false);
-      res.status(404).json({ error: "Image not available", details: error.message });
-    }
-  });
+  // REMOVED: Complex RSR Image Proxy - Using simple /api/rsr-image endpoint instead
 
   // Test RSR API connection via server proxy
   app.get("/api/test-rsr-connection", async (req, res) => {
@@ -2441,27 +2333,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         algoliaFilters.push(`manufacturerName:"${filters.ammunitionManufacturer}"`);
       }
       
-      // Build sort parameter for Algolia
+      // Note: Custom sorting disabled - using Algolia's default relevance ranking
       let sortParam = undefined;
-      switch (sort) {
-        case 'price_asc':
-          sortParam = 'tierPricing.platinum:asc';
-          break;
-        case 'price_desc':
-          sortParam = 'tierPricing.platinum:desc';
-          break;
-        case 'name_asc':
-          sortParam = 'name:asc';
-          break;
-        case 'name_desc':
-          sortParam = 'name:desc';
-          break;
-        case 'newest':
-          sortParam = 'newItem:desc';
-          break;
-        default:
-          sortParam = undefined; // Use relevance
-      }
       
       // Build search params
       let searchQuery = query || "";
@@ -2508,10 +2381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchParams.filters = algoliaFilters.join(' AND ');
       }
       
-      // Temporarily disable sorting until Algolia index is properly configured
-      // if (sortParam) {
-      //   searchParams.sort = [sortParam];
-      // }
+      // Note: Custom sorting disabled for now - using Algolia's default relevance
 
       console.log('Algolia search params:', JSON.stringify(searchParams, null, 2));
 
