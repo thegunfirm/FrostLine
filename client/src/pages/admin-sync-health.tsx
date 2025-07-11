@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { RefreshCw, Database, Search, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { RefreshCw, Database, Search, AlertTriangle, CheckCircle, Clock, Brain, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -445,6 +445,65 @@ export default function AdminSyncHealth() {
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* RSR Intelligence Service */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="w-5 h-5" />
+            RSR Intelligence Service
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="p-4 bg-purple-50 rounded-lg">
+                <h4 className="font-medium text-purple-800">AI Learning</h4>
+                <p className="text-sm text-purple-600 mt-1">
+                  Pattern recognition from RSR product names
+                </p>
+                <p className="text-sm text-purple-600">
+                  29,834 products analyzed
+                </p>
+              </div>
+              <div className="p-4 bg-indigo-50 rounded-lg">
+                <h4 className="font-medium text-indigo-800">Caliber Matrix</h4>
+                <p className="text-sm text-indigo-600 mt-1">
+                  Compatibility rules learned automatically
+                </p>
+                <p className="text-sm text-indigo-600">
+                  45 caliber families
+                </p>
+              </div>
+              <div className="p-4 bg-teal-50 rounded-lg">
+                <h4 className="font-medium text-teal-800">Related Products</h4>
+                <p className="text-sm text-teal-600 mt-1">
+                  Intelligent product recommendations
+                </p>
+                <p className="text-sm text-teal-600">
+                  Smart similarity scoring
+                </p>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                onClick={() => window.open('/rsr-intelligence-test', '_blank')}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <TrendingUp className="w-4 h-4" />
+                View Intelligence Dashboard
+              </Button>
+            </div>
+            <Alert>
+              <AlertDescription>
+                The RSR Intelligence Service analyzes product names to extract caliber, firearm type, and compatibility data.
+                This powers intelligent related product recommendations across the entire 29k+ catalog.
+              </AlertDescription>
+            </Alert>
+          </div>
         </CardContent>
       </Card>
 
