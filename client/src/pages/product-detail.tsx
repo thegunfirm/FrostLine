@@ -590,26 +590,26 @@ export default function ProductDetail() {
                     <Plus className="w-3 h-3" />
                   </Button>
                 </div>
-                <Button
-                  onClick={handleAddToCart}
-                  disabled={!product.inStock}
-                  className="flex items-center gap-2 bg-gun-gold hover:bg-gun-gold-bright text-gun-black font-medium"
-                  size="sm"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  {product.inStock ? "Add to Cart" : "Out of Stock"}
-                </Button>
-                {user && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={handleAddToCart}
+                    disabled={!product.inStock}
+                    className="flex items-center gap-2 bg-gun-gold hover:bg-gun-gold-bright text-gun-black font-medium"
+                    size="sm"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    {product.inStock ? "Add to Cart" : "Out of Stock"}
+                  </Button>
                   <Button
                     variant="outline"
                     onClick={handleWishlist}
-                    className="flex items-center gap-1 text-xs"
+                    className="flex items-center gap-1 text-xs px-2"
                     size="sm"
                   >
                     <Heart className={cn("w-3 h-3", isWishlist && "fill-current")} />
                     Wishlist
                   </Button>
-                )}
+                </div>
               </div>
             </div>
 
