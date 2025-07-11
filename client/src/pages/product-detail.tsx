@@ -568,38 +568,38 @@ export default function ProductDetail() {
               </div>
               
               {/* Add to Cart section */}
-              {user && (
-                <div className="flex flex-col items-end gap-2">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuantityChange(-1)}
-                      disabled={quantity <= 1}
-                      className="w-8 h-8 p-0"
-                    >
-                      <Minus className="w-3 h-3" />
-                    </Button>
-                    <span className="w-8 text-center text-sm">{quantity}</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuantityChange(1)}
-                      disabled={quantity >= 10}
-                      className="w-8 h-8 p-0"
-                    >
-                      <Plus className="w-3 h-3" />
-                    </Button>
-                  </div>
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center gap-2">
                   <Button
-                    onClick={handleAddToCart}
-                    disabled={!product.inStock}
-                    className="flex items-center gap-2 bg-gun-gold hover:bg-gun-gold-bright text-gun-black font-medium"
+                    variant="outline"
                     size="sm"
+                    onClick={() => handleQuantityChange(-1)}
+                    disabled={quantity <= 1}
+                    className="w-8 h-8 p-0"
                   >
-                    <ShoppingCart className="w-4 h-4" />
-                    {product.inStock ? "Add to Cart" : "Out of Stock"}
+                    <Minus className="w-3 h-3" />
                   </Button>
+                  <span className="w-8 text-center text-sm">{quantity}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleQuantityChange(1)}
+                    disabled={quantity >= 10}
+                    className="w-8 h-8 p-0"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </Button>
+                </div>
+                <Button
+                  onClick={handleAddToCart}
+                  disabled={!product.inStock}
+                  className="flex items-center gap-2 bg-gun-gold hover:bg-gun-gold-bright text-gun-black font-medium"
+                  size="sm"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  {product.inStock ? "Add to Cart" : "Out of Stock"}
+                </Button>
+                {user && (
                   <Button
                     variant="outline"
                     onClick={handleWishlist}
@@ -609,8 +609,8 @@ export default function ProductDetail() {
                     <Heart className={cn("w-3 h-3", isWishlist && "fill-current")} />
                     Wishlist
                   </Button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Pricing */}
