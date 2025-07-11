@@ -611,8 +611,9 @@ export default function ProductDetail() {
                             <div className="text-right relative z-10">
                               <div className="text-2xl font-bold text-gray-200 mb-1">
                                 ${(() => {
-                                  const dealerPrice = parseFloat(product.priceWholesale || '0') || 0;
-                                  const priceStr = dealerPrice.toFixed(2);
+                                  // Use actual Platinum pricing from pricing engine (with markup applied)
+                                  const platinumPrice = parseFloat(product.pricePlatinum || '0') || 0;
+                                  const priceStr = platinumPrice.toFixed(2);
                                   return priceStr.replace(/\d/g, '*');
                                 })()}
                               </div>
