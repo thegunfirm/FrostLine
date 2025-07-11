@@ -226,6 +226,7 @@ export class RSRIntelligenceService {
       { pattern: /6\.5\s*CREEDMOOR|65\s*CREEDMOOR/i, caliber: '6.5CREEDMOOR' },
       { pattern: /243\s*WIN|\.243\s*WIN/i, caliber: '243WIN' },
       { pattern: /7MM\s*REM|7MM\s*REMINGTON/i, caliber: '7MMREM' },
+      { pattern: /7MM-08|7MM\s*08/i, caliber: '7MM-08' },
       { pattern: /22\s*LR|\.22\s*LR|22\s*LONG\s*RIFLE/i, caliber: '22LR' },
       { pattern: /22\s*WMR|\.22\s*WMR|22\s*MAGNUM/i, caliber: '22WMR' },
       { pattern: /17\s*HMR|\.17\s*HMR/i, caliber: '17HMR' },
@@ -504,6 +505,11 @@ export class RSRIntelligenceService {
       '7.62NATO': ['308WIN', '308 WIN', '308 WINCHESTER', '762NATO', '762 NATO', '7.62NATO', '7.62 NATO'],
       '7.62 NATO': ['308WIN', '308 WIN', '308 WINCHESTER', '762NATO', '762 NATO', '7.62NATO', '7.62 NATO'],
       
+      // 7MM family
+      '7MM-08': ['7MM-08', '7MM 08', '7MM08'],
+      '7MM 08': ['7MM-08', '7MM 08', '7MM08'],
+      '7MM08': ['7MM-08', '7MM 08', '7MM08'],
+      
       // 12 gauge family
       '12GA': ['12GA', '12 GA', '12 GAUGE'],
       '12 GA': ['12GA', '12 GA', '12 GAUGE'],
@@ -546,7 +552,7 @@ export class RSRIntelligenceService {
     if (product1.manufacturer === product2.manufacturer && 
         this.areCalibersCompatible(product1.caliber, product2.caliber) && 
         product1.firearmType === product2.firearmType) {
-      score += 170;
+      score += 250; // Massively increased from 170 to 250
       reasons.push('Perfect match (manufacturer + caliber + type)');
     }
 
@@ -556,9 +562,9 @@ export class RSRIntelligenceService {
       reasons.push('Same manufacturer');
     }
 
-    // Caliber compatibility
+    // Caliber compatibility - HIGHEST PRIORITY
     if (this.areCalibersCompatible(product1.caliber, product2.caliber)) {
-      score += 80;
+      score += 150; // Massively increased from 80 to 150
       reasons.push('Compatible caliber');
     }
 
@@ -660,7 +666,10 @@ export class RSRIntelligenceService {
         product1.firearmType !== product2.firearmType) {
       if ((product1.firearmType === 'revolver' && product2.firearmType === 'pistol') ||
           (product1.firearmType === 'pistol' && product2.firearmType === 'revolver')) {
-        score -= 40; // Strong penalty for revolver/pistol confusion
+        score -= 80; // Massive penalty for revolver/pistol confusion (doubled from 40)
+        reasons.push('Firearm type mismatch penalty');
+      } else {
+        score -= 60; // General penalty for any firearm type mismatch
         reasons.push('Firearm type mismatch penalty');
       }
     }
