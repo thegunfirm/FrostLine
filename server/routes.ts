@@ -2569,7 +2569,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (filters.handgunCapacity && filters.handgunCapacity !== "all") {
-        // Add capacity filter logic here
+        baseFilters.push(`capacity:${filters.handgunCapacity}`);
       }
       
       if (filters.handgunStockStatus && filters.handgunStockStatus !== "all") {
@@ -2614,9 +2614,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get available values for each filter
-      const [manufacturers, calibers, priceRanges, stockStatuses] = await Promise.all([
+      const [manufacturers, calibers, capacities, priceRanges, stockStatuses] = await Promise.all([
         getFacetValues('manufacturerName', filters.handgunManufacturer && filters.handgunManufacturer !== "all" ? `manufacturerName:"${filters.handgunManufacturer}"` : undefined),
         getFacetValues('caliber', filters.handgunCaliber && filters.handgunCaliber !== "all" ? `caliber:"${filters.handgunCaliber}"` : undefined),
+        getFacetValues('capacity', filters.handgunCapacity && filters.handgunCapacity !== "all" ? `capacity:"${filters.handgunCapacity}"` : undefined),
         // For price ranges, we need to get actual products and calculate ranges
         getFacetValues('tierPricing.platinum'),
         getFacetValues('inStock')
@@ -2635,6 +2636,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         label: cal.toUpperCase(),
         count: calibers[cal]
       })).sort((a, b) => b.count - a.count);
+      
+      // Process capacities
+      const availableCapacities = Object.keys(capacities).filter(cap => cap && cap !== 'null').map(cap => ({
+        value: cap,
+        label: `${cap}-Round`,
+        count: capacities[cap]
+      })).sort((a, b) => parseInt(a.value) - parseInt(b.value));
       
       // Calculate available price ranges based on actual products
       const availablePriceRanges = [];
@@ -2685,9 +2693,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         manufacturers: availableManufacturers,
         calibers: availableCalibers,
+        capacities: availableCapacities,
         priceRanges: availablePriceRanges,
-        stockStatuses: availableStockStatuses,
-        capacities: [] // TODO: Implement capacity filtering
+        stockStatuses: availableStockStatuses
       });
       
     } catch (error) {

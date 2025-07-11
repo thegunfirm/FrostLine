@@ -49,6 +49,7 @@ export const products = pgTable("products", {
   mustRouteThroughGunFirm: boolean("must_route_through_gun_firm").default(false),
   tags: json("tags"),
   caliber: text("caliber"), // Extracted caliber (9mm, .45ACP, .223, etc.)
+  capacity: integer("capacity"), // Magazine capacity for handguns/rifles
   firearmType: text("firearm_type"), // Extracted firearm type (1911, Glock, AR-15, etc.)
   compatibilityTags: json("compatibility_tags"), // Array of compatibility tags for related products
   images: json("images"), // Array of image objects with multiple resolutions

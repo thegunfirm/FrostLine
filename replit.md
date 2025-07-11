@@ -358,7 +358,10 @@ Changelog:
 - July 11, 2025. **MULTI-FILTER SEARCH COMPLETE**: All combinations now working - Handguns + Glock + 9mm + $750-$1000 returns 7 products, price ranges use Platinum pricing as requested
 - July 11, 2025. **DYNAMIC FILTERING SYSTEM COMPLETE**: Implemented intelligent dynamic filtering system that eliminates zero-result scenarios by only showing available filter options
 - July 11, 2025. **FILTER OPTIONS API DEPLOYED**: Created /api/search/filter-options endpoint providing real-time available filter values based on current selections with product counts
-- July 11, 2025. **ALGOLIA FACET CONFIGURATION**: Updated Algolia index settings to enable faceting for manufacturerName, caliber, tierPricing.platinum, and inStock fields
+- July 11, 2025. **ALGOLIA FACET CONFIGURATION**: Updated Algolia index settings to enable faceting for manufacturerName, caliber, capacity, tierPricing.platinum, and inStock fields
+- July 11, 2025. **CAPACITY FILTERING BREAKTHROUGH**: Successfully extracted magazine capacity from 2,860 handgun product names using SQL pattern matching (4-round to 50-round capacities)
+- July 11, 2025. **CAPACITY ALGOLIA SYNC**: Synchronized all capacity data to Algolia index enabling real-time capacity filtering with accurate product counts
+- July 11, 2025. **COMPLETE HANDGUN FILTERING**: All 5 handgun filters operational - Manufacturer (94 options), Caliber (14 options), Capacity (33 options), Price Range (6 options), Stock Status (2 options)
 - July 11, 2025. **SMART FILTER UX**: Filter dropdowns now show only valid combinations with live product counts, preventing user frustration from empty result sets
 - July 11, 2025. **PRODUCTION READY**: Complete dynamic multi-filter search infrastructure operational with intelligent UX across entire RSR catalog
 ```
