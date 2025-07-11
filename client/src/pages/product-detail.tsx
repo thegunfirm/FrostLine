@@ -110,7 +110,7 @@ export default function ProductDetail() {
   const [selectedFFL, setSelectedFFL] = useState<string>("");
   const [userZip, setUserZip] = useState("");
 
-  // Fetch product data with caching
+  // Fetch product data with minimal caching to ensure fresh pricing
   const { data: product, isLoading, error } = useQuery({
     queryKey: ['product', id],
     queryFn: async () => {
@@ -118,8 +118,8 @@ export default function ProductDetail() {
       return response.json() as Promise<Product>;
     },
     enabled: !!id,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    cacheTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 30 * 1000, // 30 seconds - fresh pricing data
+    cacheTime: 60 * 1000, // 1 minute
     retry: 2,
   });
 
