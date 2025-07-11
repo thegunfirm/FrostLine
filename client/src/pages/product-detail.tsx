@@ -606,7 +606,7 @@ export default function ProductDetail() {
                         
                         {/* Platinum Pricing */}
                         <div className="p-4 border-2 border-gray-400 rounded-lg bg-gradient-to-br from-gray-800 to-black relative overflow-hidden">
-                          <div className="flex justify-between items-center">
+                          <div className="flex justify-between items-center mb-3">
                             <div className="text-lg text-gray-300 font-semibold">Platinum Members</div>
                             <div className="text-right relative z-10">
                               <div className="text-2xl font-bold text-gray-200 mb-1">
@@ -621,6 +621,16 @@ export default function ProductDetail() {
                                 Add to Cart to See Price
                               </div>
                             </div>
+                          </div>
+                          <div className="relative z-10">
+                            <Button
+                              onClick={handleAddToCart}
+                              disabled={!product.inStock}
+                              className="w-full bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-500 hover:to-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                            >
+                              <ShoppingCart className="w-4 h-4" />
+                              {product.inStock ? "Add to Cart" : "Out of Stock"}
+                            </Button>
                           </div>
                           <div className="absolute inset-0 bg-gradient-to-r from-gray-400/20 to-gray-300/20 animate-pulse"></div>
                         </div>
