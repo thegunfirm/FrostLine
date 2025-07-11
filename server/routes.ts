@@ -2529,6 +2529,163 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get dynamic filter options based on current selections
+  app.post("/api/search/filter-options", async (req, res) => {
+    try {
+      const { filters } = req.body;
+      
+      // Build base Algolia filter from current selections
+      const baseFilters = [];
+      
+      if (filters.category && filters.category !== "all") {
+        if (filters.category === "Handguns") {
+          baseFilters.push('departmentNumber:"01"');
+        } else {
+          baseFilters.push(`categoryName:"${filters.category}"`);
+        }
+      }
+      
+      if (filters.handgunManufacturer && filters.handgunManufacturer !== "all") {
+        baseFilters.push(`manufacturerName:"${filters.handgunManufacturer}"`);
+      }
+      
+      if (filters.handgunCaliber && filters.handgunCaliber !== "all") {
+        baseFilters.push(`caliber:"${filters.handgunCaliber}"`);
+      }
+      
+      if (filters.handgunPriceRange && filters.handgunPriceRange !== "all") {
+        const priceRangeMap = {
+          "Under $300": "tierPricing.platinum < 300",
+          "$300-$500": "tierPricing.platinum >= 300 AND tierPricing.platinum < 500",
+          "$500-$750": "tierPricing.platinum >= 500 AND tierPricing.platinum < 750",
+          "$750-$1000": "tierPricing.platinum >= 750 AND tierPricing.platinum < 1000",
+          "$1000-$1500": "tierPricing.platinum >= 1000 AND tierPricing.platinum < 1500",
+          "Over $1500": "tierPricing.platinum >= 1500"
+        };
+        
+        if (priceRangeMap[filters.handgunPriceRange]) {
+          baseFilters.push(priceRangeMap[filters.handgunPriceRange]);
+        }
+      }
+      
+      if (filters.handgunCapacity && filters.handgunCapacity !== "all") {
+        // Add capacity filter logic here
+      }
+      
+      if (filters.handgunStockStatus && filters.handgunStockStatus !== "all") {
+        if (filters.handgunStockStatus === 'in-stock') {
+          baseFilters.push('inStock:true');
+        } else if (filters.handgunStockStatus === 'out-of-stock') {
+          baseFilters.push('inStock:false');
+        }
+      }
+      
+      // Function to get facet values from Algolia
+      async function getFacetValues(facetName: string, excludeFilter?: string) {
+        const facetFilters = baseFilters.filter(f => f !== excludeFilter);
+        
+        const response = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/products/query`, {
+          method: 'POST',
+          headers: {
+            'X-Algolia-API-Key': process.env.ALGOLIA_API_KEY!,
+            'X-Algolia-Application-Id': process.env.ALGOLIA_APP_ID!,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            query: '',
+            hitsPerPage: 0,
+            facets: [facetName],
+            filters: facetFilters.join(' AND ') || undefined
+          })
+        });
+        
+        const result = await response.json();
+        return result.facets?.[facetName] || {};
+      }
+      
+      // Get available values for each filter
+      const [manufacturers, calibers, priceRanges, stockStatuses] = await Promise.all([
+        getFacetValues('manufacturerName', filters.handgunManufacturer && filters.handgunManufacturer !== "all" ? `manufacturerName:"${filters.handgunManufacturer}"` : undefined),
+        getFacetValues('caliber', filters.handgunCaliber && filters.handgunCaliber !== "all" ? `caliber:"${filters.handgunCaliber}"` : undefined),
+        // For price ranges, we need to get actual products and calculate ranges
+        getFacetValues('tierPricing.platinum'),
+        getFacetValues('inStock')
+      ]);
+      
+      // Process manufacturers
+      const availableManufacturers = Object.keys(manufacturers).map(name => ({
+        value: name,
+        label: name,
+        count: manufacturers[name]
+      })).sort((a, b) => b.count - a.count);
+      
+      // Process calibers
+      const availableCalibers = Object.keys(calibers).filter(cal => cal && cal !== 'null').map(cal => ({
+        value: cal,
+        label: cal.toUpperCase(),
+        count: calibers[cal]
+      })).sort((a, b) => b.count - a.count);
+      
+      // Calculate available price ranges based on actual products
+      const availablePriceRanges = [];
+      if (Object.keys(priceRanges).length > 0) {
+        const prices = Object.keys(priceRanges).map(p => parseFloat(p)).filter(p => !isNaN(p));
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        
+        const ranges = [
+          { value: "Under $300", label: "Under $300", min: 0, max: 300 },
+          { value: "$300-$500", label: "$300-$500", min: 300, max: 500 },
+          { value: "$500-$750", label: "$500-$750", min: 500, max: 750 },
+          { value: "$750-$1000", label: "$750-$1000", min: 750, max: 1000 },
+          { value: "$1000-$1500", label: "$1000-$1500", min: 1000, max: 1500 },
+          { value: "Over $1500", label: "Over $1500", min: 1500, max: 99999 }
+        ];
+        
+        ranges.forEach(range => {
+          const hasProductsInRange = prices.some(p => p >= range.min && (range.max === 99999 ? true : p < range.max));
+          if (hasProductsInRange) {
+            const count = prices.filter(p => p >= range.min && (range.max === 99999 ? true : p < range.max)).length;
+            availablePriceRanges.push({
+              value: range.value,
+              label: range.label,
+              count: count
+            });
+          }
+        });
+      }
+      
+      // Process stock status
+      const availableStockStatuses = [];
+      if (stockStatuses.true) {
+        availableStockStatuses.push({
+          value: "in-stock",
+          label: "In Stock",
+          count: stockStatuses.true
+        });
+      }
+      if (stockStatuses.false) {
+        availableStockStatuses.push({
+          value: "out-of-stock", 
+          label: "Out of Stock",
+          count: stockStatuses.false
+        });
+      }
+      
+      res.json({
+        manufacturers: availableManufacturers,
+        calibers: availableCalibers,
+        priceRanges: availablePriceRanges,
+        stockStatuses: availableStockStatuses,
+        capacities: [] // TODO: Implement capacity filtering
+      });
+      
+    } catch (error) {
+      console.error('Filter options error:', error);
+      res.status(500).json({ error: 'Failed to get filter options' });
+    }
+  });
+
   // Get search options (categories, manufacturers)
   app.get("/api/search/options", async (req, res) => {
     try {

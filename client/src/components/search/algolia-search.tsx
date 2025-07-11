@@ -95,6 +95,25 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   const [ammunitionCaliber, setAmmunitionCaliber] = useState("all");
   const [ammunitionManufacturer, setAmmunitionManufacturer] = useState("all");
 
+  // Get dynamic filter options based on current selections
+  const { data: filterOptions, isLoading: filtersLoading } = useQuery({
+    queryKey: ['filter-options', category, handgunManufacturer, handgunCaliber, handgunPriceRange, handgunCapacity, handgunStockStatus],
+    queryFn: async () => {
+      const response = await apiRequest('POST', '/api/search/filter-options', {
+        filters: {
+          category: category && category !== "all" ? category : undefined,
+          handgunManufacturer: handgunManufacturer && handgunManufacturer !== "all" ? handgunManufacturer : undefined,
+          handgunCaliber: handgunCaliber && handgunCaliber !== "all" ? handgunCaliber : undefined,
+          handgunPriceRange: handgunPriceRange && handgunPriceRange !== "all" ? handgunPriceRange : undefined,
+          handgunCapacity: handgunCapacity && handgunCapacity !== "all" ? handgunCapacity : undefined,
+          handgunStockStatus: handgunStockStatus && handgunStockStatus !== "all" ? handgunStockStatus : undefined,
+        }
+      });
+      return response.json();
+    },
+    enabled: category === "Handguns" // Only fetch when handgun category is selected
+  });
+
   // Get search results from Algolia
   const { data: searchResults, isLoading, error, refetch } = useQuery({
     queryKey: ['algolia-search', searchQuery, category, manufacturer, sortBy, currentPage, resultsPerPage, priceMin, priceMax, inStockOnly, newItemsOnly, caliber, actionType, barrelLength, capacity, stateRestriction, priceTier, handgunSubcategory, handgunManufacturer, handgunCaliber, handgunPriceRange, handgunCapacity, handgunStockStatus, ammunitionType, ammunitionCaliber, ammunitionManufacturer],
@@ -169,65 +188,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     "Winchester"
   ];
 
-  // Handgun-specific filter options - Use actual manufacturer names from Algolia index
-  const handgunManufacturers = [
-    { value: "Smith & Wesson", label: "Smith & Wesson" },
-    { value: "SPGFLD", label: "Springfield" },
-    { value: "GLOCK", label: "Glock" },
-    { value: "SIG", label: "Sig Sauer" },
-    { value: "BERETA", label: "Beretta" },
-    { value: "RUGER", label: "Ruger" },
-    { value: "ROCK", label: "Rock Island" },
-    { value: "BERSA", label: "Bersa" },
-    { value: "WALTHR", label: "Walther" },
-    { value: "HERTG", label: "Heritage" },
-    { value: "COLT", label: "Colt" },
-    { value: "FN", label: "FN" },
-    { value: "KIMBER", label: "Kimber" },
-    { value: "SHDWSY", label: "Shadow Systems" }
-  ];
-
-  const handgunCalibers = [
-    { value: "9MM", label: "9mm" },
-    { value: "45 ACP", label: "45 ACP" },
-    { value: "38 SPL", label: "38 Special" },
-    { value: "22 LR", label: "22 LR" },
-    { value: "357 MAG", label: "357 Magnum" },
-    { value: "380 ACP", label: "380 ACP" },
-    { value: "10MM", label: "10mm" },
-    { value: "32 ACP", label: "32 ACP" },
-    { value: "44 MAG", label: "44 Magnum" },
-    { value: "40 S&W", label: "40 S&W" },
-    { value: "22 WMR", label: "22 WMR" },
-    { value: "25 ACP", label: "25 ACP" }
-  ];
-
-  const handgunPriceRanges = [
-    { value: "Under $300", label: "Under $300", min: 0, max: 300 },
-    { value: "$300-$500", label: "$300-$500", min: 300, max: 500 },
-    { value: "$500-$750", label: "$500-$750", min: 500, max: 750 },
-    { value: "$750-$1000", label: "$750-$1000", min: 750, max: 1000 },
-    { value: "$1000-$1500", label: "$1000-$1500", min: 1000, max: 1500 },
-    { value: "Over $1500", label: "Over $1500", min: 1500, max: 99999 }
-  ];
-
-  const handgunCapacities = [
-    { value: "6", label: "6 rounds" },
-    { value: "7", label: "7 rounds" },
-    { value: "8", label: "8 rounds" },
-    { value: "10", label: "10 rounds" },
-    { value: "12", label: "12 rounds" },
-    { value: "15", label: "15 rounds" },
-    { value: "17", label: "17 rounds" },
-    { value: "20", label: "20 rounds" },
-    { value: "30", label: "30 rounds" }
-  ];
-
-  const handgunStockStatuses = [
-    { value: "in-stock", label: "In Stock" },
-    { value: "low-stock", label: "Low Stock" },
-    { value: "out-of-stock", label: "Out of Stock" }
-  ];
+  // Dynamic filter options are now loaded from the API
 
   // Ammunition-specific filter options
   const ammunitionTypes = [
@@ -760,15 +721,15 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                       {/* Handgun Manufacturer */}
                       <div className="space-y-2">
                         <Label htmlFor="handgun-manufacturer">Manufacturer</Label>
-                        <Select value={handgunManufacturer} onValueChange={setHandgunManufacturer}>
+                        <Select value={handgunManufacturer} onValueChange={setHandgunManufacturer} disabled={filtersLoading}>
                           <SelectTrigger id="handgun-manufacturer">
-                            <SelectValue placeholder="All Manufacturers" />
+                            <SelectValue placeholder={filtersLoading ? "Loading..." : "All Manufacturers"} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Manufacturers</SelectItem>
-                            {handgunManufacturers.map((mfg) => (
+                            {(filterOptions?.manufacturers || []).map((mfg) => (
                               <SelectItem key={mfg.value} value={mfg.value}>
-                                {mfg.label}
+                                {mfg.label} ({mfg.count})
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -778,15 +739,15 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                       {/* Handgun Caliber */}
                       <div className="space-y-2">
                         <Label htmlFor="handgun-caliber">Caliber</Label>
-                        <Select value={handgunCaliber} onValueChange={setHandgunCaliber}>
+                        <Select value={handgunCaliber} onValueChange={setHandgunCaliber} disabled={filtersLoading}>
                           <SelectTrigger id="handgun-caliber">
-                            <SelectValue placeholder="All Calibers" />
+                            <SelectValue placeholder={filtersLoading ? "Loading..." : "All Calibers"} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Calibers</SelectItem>
-                            {handgunCalibers.map((cal) => (
+                            {(filterOptions?.calibers || []).map((cal) => (
                               <SelectItem key={cal.value} value={cal.value}>
-                                {cal.label}
+                                {cal.label} ({cal.count})
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -796,15 +757,15 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                       {/* Handgun Price Range */}
                       <div className="space-y-2">
                         <Label htmlFor="handgun-price-range">Price Range</Label>
-                        <Select value={handgunPriceRange} onValueChange={setHandgunPriceRange}>
+                        <Select value={handgunPriceRange} onValueChange={setHandgunPriceRange} disabled={filtersLoading}>
                           <SelectTrigger id="handgun-price-range">
-                            <SelectValue placeholder="All Prices" />
+                            <SelectValue placeholder={filtersLoading ? "Loading..." : "All Prices"} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Prices</SelectItem>
-                            {handgunPriceRanges.map((range) => (
+                            {(filterOptions?.priceRanges || []).map((range) => (
                               <SelectItem key={range.value} value={range.value}>
-                                {range.label}
+                                {range.label} ({range.count})
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -814,15 +775,15 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                       {/* Handgun Capacity */}
                       <div className="space-y-2">
                         <Label htmlFor="handgun-capacity">Capacity</Label>
-                        <Select value={handgunCapacity} onValueChange={setHandgunCapacity}>
+                        <Select value={handgunCapacity} onValueChange={setHandgunCapacity} disabled={filtersLoading}>
                           <SelectTrigger id="handgun-capacity">
-                            <SelectValue placeholder="All Capacities" />
+                            <SelectValue placeholder={filtersLoading ? "Loading..." : "All Capacities"} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Capacities</SelectItem>
-                            {handgunCapacities.map((cap) => (
+                            {(filterOptions?.capacities || []).map((cap) => (
                               <SelectItem key={cap.value} value={cap.value}>
-                                {cap.label}
+                                {cap.label} ({cap.count})
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -832,15 +793,15 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                       {/* Handgun Stock Status */}
                       <div className="space-y-2">
                         <Label htmlFor="handgun-stock-status">Stock Status</Label>
-                        <Select value={handgunStockStatus} onValueChange={setHandgunStockStatus}>
+                        <Select value={handgunStockStatus} onValueChange={setHandgunStockStatus} disabled={filtersLoading}>
                           <SelectTrigger id="handgun-stock-status">
-                            <SelectValue placeholder="All Stock" />
+                            <SelectValue placeholder={filtersLoading ? "Loading..." : "All Stock"} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Stock</SelectItem>
-                            {handgunStockStatuses.map((status) => (
+                            {(filterOptions?.stockStatuses || []).map((status) => (
                               <SelectItem key={status.value} value={status.value}>
-                                {status.label}
+                                {status.label} ({status.count})
                               </SelectItem>
                             ))}
                           </SelectContent>
