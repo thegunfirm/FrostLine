@@ -215,9 +215,9 @@ export class RSRIntelligenceService {
       { pattern: /10\s*MM|10MM/i, caliber: '10MM' },
       { pattern: /32\s*ACP|\.32\s*ACP/i, caliber: '32ACP' },
       
-      // Rifle calibers
+      // Rifle calibers - 5.56 patterns first (most specific)
+      { pattern: /\b5\.56\b|\b556\b|5\.56\s*NATO|556\s*NATO|5\.56MM|\bZF-56\b/i, caliber: '556NATO' },
       { pattern: /223\s*REM|\.223\s*REM|223\s*REMINGTON/i, caliber: '223REM' },
-      { pattern: /5\.56\s*NATO|556\s*NATO/i, caliber: '556NATO' },
       { pattern: /308\s*WIN|\.308\s*WIN|308\s*WINCHESTER/i, caliber: '308WIN' },
       { pattern: /7\.62\s*NATO|762\s*NATO/i, caliber: '762NATO' },
       { pattern: /30-06|\.30-06|3006/i, caliber: '30-06' },
@@ -552,7 +552,7 @@ export class RSRIntelligenceService {
     if (product1.manufacturer === product2.manufacturer && 
         this.areCalibersCompatible(product1.caliber, product2.caliber) && 
         product1.firearmType === product2.firearmType) {
-      score += 250; // Massively increased from 170 to 250
+      score += 400; // Massively increased from 250 to 400 - ULTIMATE PRIORITY
       reasons.push('Perfect match (manufacturer + caliber + type)');
     }
 
@@ -562,9 +562,9 @@ export class RSRIntelligenceService {
       reasons.push('Same manufacturer');
     }
 
-    // Caliber compatibility - HIGHEST PRIORITY
+    // Caliber compatibility - ABSOLUTE HIGHEST PRIORITY
     if (this.areCalibersCompatible(product1.caliber, product2.caliber)) {
-      score += 150; // Massively increased from 80 to 150
+      score += 300; // Massively increased from 150 to 300 - DOMINATES everything else
       reasons.push('Compatible caliber');
     }
 
