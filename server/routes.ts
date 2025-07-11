@@ -210,36 +210,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Related products endpoint
+  // Related products endpoint with RSR Intelligence Service
   app.get("/api/products/related/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      let product: Product | undefined;
+      let productId: number;
       
       // Try to parse as numeric ID first
       if (/^\d+$/.test(id)) {
-        product = await storage.getProduct(parseInt(id));
+        productId = parseInt(id);
       } else {
-        // If not numeric, treat as SKU
-        product = await storage.getProductBySku(id);
+        // If not numeric, treat as SKU and get the product ID
+        const product = await storage.getProductBySku(id);
+        if (!product) {
+          return res.status(404).json({ message: "Product not found" });
+        }
+        productId = product.id;
       }
       
-      if (!product) {
-        return res.status(404).json({ message: "Product not found" });
-      }
+      // Use RSR Intelligence Service for AI-powered recommendations
+      const { rsrIntelligence } = await import('./services/rsr-intelligence');
+      const relatedProducts = await rsrIntelligence.findRelatedProducts(productId, 8);
       
-      // Get related products by category and manufacturer
-      const relatedProducts = await storage.getRelatedProducts(
-        product.id,
-        product.category,
-        product.manufacturer
-      );
-      
-      res.set('Cache-Control', 'no-cache'); // Disable cache temporarily during development
+      res.set('Cache-Control', 'public, max-age=300'); // 5 minutes cache
       res.json(relatedProducts);
     } catch (error) {
       console.error("Get related products error:", error);
       res.status(500).json({ message: "Failed to fetch related products" });
+    }
+  });
+
+  // RSR Intelligence statistics endpoint
+  app.get("/api/rsr-intelligence/stats", async (req, res) => {
+    try {
+      const { rsrIntelligence } = await import('./services/rsr-intelligence');
+      
+      // Ensure intelligence is loaded
+      if (rsrIntelligence.getIntelligenceStats().totalProducts === 0) {
+        await rsrIntelligence.loadProductIntelligence();
+      }
+      
+      const stats = rsrIntelligence.getIntelligenceStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Get RSR intelligence stats error:", error);
+      res.status(500).json({ message: "Failed to fetch RSR intelligence stats" });
     }
   });
 

@@ -22,6 +22,7 @@ import AdminCategoryRibbons from "@/pages/admin-category-ribbons";
 import AdminFilterSettings from "@/pages/admin-filter-settings";
 import AdminSyncHealth from "@/pages/admin-sync-health";
 import AdminDepartmentPricing from "@/pages/admin-department-pricing";
+import RSRIntelligenceTest from "@/pages/rsr-intelligence-test";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/admin-filter-settings" component={AdminFilterSettings} />
       <Route path="/admin-sync-health" component={AdminSyncHealth} />
       <Route path="/admin-department-pricing" component={AdminDepartmentPricing} />
+      <Route path="/rsr-intelligence-test" component={RSRIntelligenceTest} />
       <Route component={NotFound} />
     </Switch>
   );
