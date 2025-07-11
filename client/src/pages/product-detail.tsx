@@ -390,9 +390,9 @@ export default function ProductDetail() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
+        <div className="flex items-center gap-2 text-sm text-gray-600 mb-6 animate-in fade-in slide-in-from-top duration-500">
           <Link href="/products" className="hover:text-gray-900">
-            <Button variant="ghost" size="sm" className="p-0 h-auto">
+            <Button variant="ghost" size="sm" className="p-0 h-auto transition-all duration-200 hover:scale-105">
               <ArrowLeft className="w-4 h-4 mr-1" />
               Back to Products
             </Button>
@@ -406,7 +406,7 @@ export default function ProductDetail() {
         {/* Main Product Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Product Images */}
-          <div className="space-y-4">
+          <div className="space-y-4 animate-in fade-in slide-in-from-left duration-700">
             {/* Main Image */}
             <div className="aspect-square bg-white rounded-lg border border-gray-200 p-4 relative">
               {imageLoading && (
@@ -426,7 +426,7 @@ export default function ProductDetail() {
                 <img
                   src={imageSrc}
                   alt={`${product.name} - View ${currentAngle}`}
-                  className="w-full h-full object-contain cursor-pointer"
+                  className="w-full h-full object-contain cursor-pointer transition-all duration-300 hover:scale-105"
                   onLoad={handleImageLoad}
                   onError={handleImageError}
                   style={{ display: imageLoading ? 'none' : 'block' }}
@@ -504,7 +504,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Product Info */}
-          <div className="space-y-6">
+          <div className="space-y-6 animate-in fade-in slide-in-from-right duration-700 delay-200">
             {/* Product Header */}
             <div>
               <div className="flex items-start justify-between mb-2">
@@ -518,7 +518,7 @@ export default function ProductDetail() {
                   variant="ghost"
                   size="sm"
                   onClick={handleShare}
-                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-all duration-200 hover:scale-105"
                 >
                   <Share2 className="w-3 h-3" />
                   Share
@@ -575,7 +575,7 @@ export default function ProductDetail() {
                     size="sm"
                     onClick={() => handleQuantityChange(-1)}
                     disabled={quantity <= 1}
-                    className="w-8 h-8 p-0"
+                    className="w-8 h-8 p-0 transition-all duration-200 hover:scale-110"
                   >
                     <Minus className="w-3 h-3" />
                   </Button>
@@ -585,7 +585,7 @@ export default function ProductDetail() {
                     size="sm"
                     onClick={() => handleQuantityChange(1)}
                     disabled={quantity >= 10}
-                    className="w-8 h-8 p-0"
+                    className="w-8 h-8 p-0 transition-all duration-200 hover:scale-110"
                   >
                     <Plus className="w-3 h-3" />
                   </Button>
@@ -594,7 +594,7 @@ export default function ProductDetail() {
                   <Button
                     onClick={handleAddToCart}
                     disabled={!product.inStock}
-                    className="flex items-center gap-2 bg-gun-gold hover:bg-gun-gold-bright text-gun-black font-medium"
+                    className="flex items-center gap-2 bg-gun-gold hover:bg-gun-gold-bright text-gun-black font-medium transition-all duration-200 hover:scale-[1.02]"
                     size="sm"
                   >
                     <ShoppingCart className="w-4 h-4" />
@@ -603,7 +603,7 @@ export default function ProductDetail() {
                   <Button
                     variant="outline"
                     onClick={handleWishlist}
-                    className="flex items-center gap-1 text-xs px-2"
+                    className="flex items-center gap-1 text-xs px-2 transition-all duration-200 hover:scale-[1.02]"
                     size="sm"
                   >
                     <Heart className={cn("w-3 h-3", isWishlist && "fill-current")} />
@@ -614,7 +614,7 @@ export default function ProductDetail() {
             </div>
 
             {/* Pricing */}
-            <Card>
+            <Card className="animate-in fade-in slide-in-from-bottom duration-500 delay-300">
               <CardContent className="pt-6">
                 <div className="space-y-4">
                   {user ? (
@@ -684,7 +684,7 @@ export default function ProductDetail() {
                             <Button
                               onClick={handleAddToCart}
                               disabled={!product.inStock}
-                              className="w-full bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-500 hover:to-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                              className="w-full bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-500 hover:to-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2"
                             >
                               <ShoppingCart className="w-4 h-4" />
                               {product.inStock ? "Add to Cart" : "Out of Stock"}
@@ -702,7 +702,7 @@ export default function ProductDetail() {
                         <Link href="/register">
                           <Button 
                             size="lg" 
-                            className="bg-gradient-to-r from-gray-700 to-black hover:from-gray-600 hover:to-gray-800 text-yellow-300 font-semibold px-8 py-3 relative overflow-hidden"
+                            className="bg-gradient-to-r from-gray-700 to-black hover:from-gray-600 hover:to-gray-800 text-yellow-300 font-semibold px-8 py-3 relative overflow-hidden transition-all duration-200 hover:scale-[1.02]"
                           >
                             <span className="relative z-10">Sign Up for Free to View Member Savings</span>
                             <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/20 to-amber-500/20 animate-pulse"></div>
@@ -724,7 +724,7 @@ export default function ProductDetail() {
                         <div>Platinum: ${(parseFloat(product.pricePlatinum || '0') || 0).toFixed(2)} (Save ${(getTierSavings("Platinum") || 0).toFixed(2)})</div>
                       </div>
                       <Link href="/membership">
-                        <Button size="sm" variant="outline" className="w-full">
+                        <Button size="sm" variant="outline" className="w-full transition-all duration-200 hover:scale-[1.02]">
                           Upgrade Membership
                         </Button>
                       </Link>
@@ -738,7 +738,7 @@ export default function ProductDetail() {
 
             {/* Compliance Information */}
             {(product.requiresFFL || product.prop65) && (
-              <Card>
+              <Card className="animate-in fade-in slide-in-from-bottom duration-500 delay-400">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Shield className="w-5 h-5" />
@@ -796,7 +796,7 @@ export default function ProductDetail() {
         </div>
 
         {/* Product Details Tabs */}
-        <Tabs defaultValue="details" className="mb-12">
+        <Tabs defaultValue="details" className="mb-12 animate-in fade-in slide-in-from-bottom duration-500 delay-500">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="specifications">Specifications</TabsTrigger>
@@ -978,11 +978,12 @@ export default function ProductDetail() {
 
         {/* Related Products */}
         {relatedProducts && relatedProducts.length > 0 && (
-          <div>
+          <div className="animate-in fade-in slide-in-from-bottom duration-500 delay-700">
             <h2 className="text-xl font-bold mb-6">Related Products</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.slice(0, 4).map((related) => (
-                <Card key={related.id} className="group hover:shadow-lg transition-shadow">
+              {relatedProducts.slice(0, 4).map((related, index) => (
+                <Card key={related.id} className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-in fade-in slide-in-from-bottom"
+                      style={{animationDelay: `${800 + index * 100}ms`}}>
                   <CardContent className="p-4">
                     <div className="aspect-square bg-gray-100 rounded-lg mb-3">
                       <img
@@ -1015,7 +1016,7 @@ export default function ProductDetail() {
                         </div>
                       </div>
                       <Link href={`/product/${related.id}`}>
-                        <Button size="sm" variant="outline" className="w-full">
+                        <Button size="sm" variant="outline" className="w-full transition-all duration-200 hover:scale-[1.02]">
                           View Product
                         </Button>
                       </Link>
