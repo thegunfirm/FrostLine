@@ -124,12 +124,15 @@ export default function ProductDetail() {
   });
 
   // Fetch related products with no caching during development
-  const { data: relatedProducts } = useQuery({
+  const { data: relatedProducts, isLoading: relatedLoading, error: relatedError } = useQuery({
     queryKey: ['related-products', product?.id, Date.now()], // Add timestamp to force fresh queries
     queryFn: async () => {
       if (!product) return [];
+      console.log('Fetching related products for product:', product.id, product.name);
       const response = await apiRequest('GET', `/api/products/related/${product.id}`);
-      return response.json() as Promise<RelatedProduct[]>;
+      const data = await response.json() as RelatedProduct[];
+      console.log('Related products received:', data.length, 'products');
+      return data;
     },
     enabled: !!product,
     staleTime: 0, // No cache - always fetch fresh data
@@ -978,6 +981,7 @@ export default function ProductDetail() {
         </Tabs>
 
         {/* Related Products */}
+        {console.log('Related products debug:', { relatedProducts, relatedLoading, relatedError, hasProducts: relatedProducts && relatedProducts.length > 0 })}
         {relatedProducts && relatedProducts.length > 0 && (
           <div className="animate-in fade-in slide-in-from-bottom duration-500 delay-700">
             <h2 className="text-xl font-bold mb-6">Related Products</h2>
