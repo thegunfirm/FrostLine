@@ -165,7 +165,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { category } = req.params;
       const products = await storage.getProductsByCategory(category);
       
-      res.json(products);
+      // Format products with proper tierPricing structure
+      const formattedProducts = products.map(product => ({
+        ...product,
+        tierPricing: {
+          bronze: parseFloat(product.priceBronze) || 0,
+          gold: parseFloat(product.priceGold) || 0,
+          platinum: parseFloat(product.pricePlatinum) || 0
+        }
+      }));
+      
+      res.json(formattedProducts);
     } catch (error) {
       console.error("Get products by category error:", error);
       res.status(500).json({ message: "Failed to fetch products" });
@@ -177,7 +187,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { limit = "8" } = req.query;
       const products = await storage.getFeaturedProducts(parseInt(limit as string));
       
-      res.json(products);
+      // Format products with proper tierPricing structure
+      const formattedProducts = products.map(product => ({
+        ...product,
+        tierPricing: {
+          bronze: parseFloat(product.priceBronze) || 0,
+          gold: parseFloat(product.priceGold) || 0,
+          platinum: parseFloat(product.pricePlatinum) || 0
+        }
+      }));
+      
+      res.json(formattedProducts);
     } catch (error) {
       console.error("Get featured products error:", error);
       res.status(500).json({ message: "Failed to fetch featured products" });
@@ -1571,36 +1591,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // RSR Product Image Service - Simplified working version
+  // RSR Product Image Service - Authentic RSR Image Access
   app.get("/api/rsr-image/:imageName", async (req, res) => {
     try {
       const imageName = req.params.imageName;
+      const { size = 'standard', view = '1' } = req.query;
       
-      // Return a simple SVG placeholder for now to fix the UI
-      const placeholderSVG = `
+      let rsrImageUrl = '';
+      
+      switch (size) {
+        case 'thumb':
+          rsrImageUrl = `https://img.rsrgroup.com/pimages/${imageName}_${view}_thumb.jpg`;
+          break;
+        case 'standard':
+          rsrImageUrl = `https://img.rsrgroup.com/pimages/${imageName}_${view}.jpg`;
+          break;
+        case 'highres':
+        case 'large':
+          rsrImageUrl = `https://img.rsrgroup.com/highres-pimages/${imageName}_${view}_HR.jpg`;
+          break;
+      }
+      
+      // Fetch image from RSR with proper authentication
+      const response = await axios.get(rsrImageUrl, {
+        responseType: "arraybuffer",
+        timeout: 10000,
+        headers: {
+          Referer: "https://www.rsrgroup.com/",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
+        }
+      });
+
+      if (response.status === 200) {
+        const contentType = response.headers['content-type'] || 'image/jpeg';
+        const imageBuffer = response.data;
+        
+        // Set proper caching headers
+        res.set({
+          'Content-Type': contentType,
+          'Cache-Control': 'public, max-age=86400', // 24 hours
+          'Content-Length': imageBuffer.length.toString()
+        });
+        
+        res.send(imageBuffer);
+      } else {
+        throw new Error(`RSR returned status ${response.status}`);
+      }
+    } catch (error: any) {
+      console.error(`RSR Image Error for ${req.params.imageName}:`, error.message);
+      
+      // Return clean SVG placeholder for missing images
+      const svgPlaceholder = `
         <svg width="300" height="300" xmlns="http://www.w3.org/2000/svg">
           <rect width="300" height="300" fill="#f3f4f6" stroke="#d1d5db" stroke-width="2" stroke-dasharray="5,5"/>
           <text x="150" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">
             RSR Product Image
           </text>
           <text x="150" y="160" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#9ca3af">
-            ${imageName}
+            ${req.params.imageName}
           </text>
-          <text x="150" y="180" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#9ca3af">
-            Image system being restored
+          <text x="150" y="180" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#d1d5db">
+            Image Not Available
           </text>
         </svg>
       `;
       
       res.set({
         'Content-Type': 'image/svg+xml',
-        'Cache-Control': 'public, max-age=3600'
+        'Cache-Control': 'public, max-age=3600' // 1 hour for errors
       });
       
-      res.send(placeholderSVG);
-    } catch (error: any) {
-      console.error(`❌ RSR image service error: ${error.message}`);
-      res.status(500).json({ error: "Image service error" });
+      res.send(svgPlaceholder);
     }
   });
 
