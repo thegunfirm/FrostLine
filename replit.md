@@ -415,6 +415,7 @@ Changelog:
 - July 12, 2025. **GAUGE FORMAT STANDARDIZATION ACHIEVED**: Unified all gauge formats (12 GA/12 Gauge/12GA → "12 Gauge") for 540 products across all gauges (12, 20, 410, 28, 16 Gauge)
 - July 12, 2025. **ALGOLIA CALIBER SYNC COMPLETED**: Successfully synchronized all 4,156 long guns to Algolia with correct categorization - rifles (3,564) now contain only rifle calibers, shotguns (598) contain only gauge calibers
 - July 12, 2025. **CALIBER FILTERING SYSTEM OPERATIONAL**: All three firearm categories now have clean, accurate caliber filtering - handguns (15 calibers), rifles (65+ calibers), shotguns (5 gauge types) - zero cross-contamination verified
+- July 12, 2025. **COMPLETE FILTER RESTORATION ACHIEVED**: Successfully restored all category filters using proper RSR department-based filtering - Ammunition (41 manufacturers), Optics (39 manufacturers), Parts (100 manufacturers), NFA (54 manufacturers), Accessories (100 manufacturers)
 ```
 
 ## User Preferences
@@ -464,11 +465,20 @@ Code preservation: Always maintain working solutions - never overwrite functioni
 **Location**: `server/routes.ts` lines 2500-2600+
 **Function**: Dynamic filter options endpoint that returns category-specific filter values
 **Key Components**:
-- Base filter building with category-specific logic (lines 2514-2523)
+- Base filter building with category-specific logic (lines 2511-2534)
+- RSR department-based filtering for all categories:
+  - Handguns: departmentNumber:"01"
+  - Rifles: departmentNumber:"05" AND categoryName:"Rifles"
+  - Shotguns: departmentNumber:"05" AND categoryName:"Shotguns"
+  - Ammunition: departmentNumber:"18"
+  - Optics: departmentNumber:"08"
+  - NFA: departmentNumber:"06"
+  - Parts: departmentNumber:"34"
+  - Accessories: Multiple departments (09,11,12,13,14,17,20,21,25,26,27,30,31,35)
 - Algolia facet search for each filter type (manufacturerName, caliber, tierPricing.platinum, etc.)
 - Returns only available options with counts for current category/filters
 **Frontend Integration**: `client/src/components/search/algolia-search.tsx` passes current filters to get relevant options
-**Status**: WORKING - Prevents zero-result scenarios, shows only valid filter combinations
+**Status**: WORKING - All categories operational with full manufacturer and filter options
 
 ## RSR Department Structure
 

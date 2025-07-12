@@ -2516,6 +2516,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           baseFilters.push('categoryName:"Shotguns"');
         } else if (category === "Long Guns") {
           baseFilters.push('departmentNumber:"05"');
+        } else if (category === "Ammunition") {
+          baseFilters.push('departmentNumber:"18"');
+        } else if (category === "Optics") {
+          baseFilters.push('departmentNumber:"08"');
+        } else if (category === "NFA") {
+          baseFilters.push('departmentNumber:"06"');
+        } else if (category === "Parts") {
+          baseFilters.push('departmentNumber:"34"');
+        } else if (category === "Accessories") {
+          // Multiple departments for accessories: 09, 11, 12, 13, 14, 17, 20, 21, 25, 26, 27, 30, 31, 35
+          baseFilters.push('(departmentNumber:"09" OR departmentNumber:"11" OR departmentNumber:"12" OR departmentNumber:"13" OR departmentNumber:"14" OR departmentNumber:"17" OR departmentNumber:"20" OR departmentNumber:"21" OR departmentNumber:"25" OR departmentNumber:"26" OR departmentNumber:"27" OR departmentNumber:"30" OR departmentNumber:"31" OR departmentNumber:"35")');
         } else {
           baseFilters.push(`categoryName:"${category}"`);
         }
