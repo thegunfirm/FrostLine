@@ -2508,8 +2508,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (category && category !== "all") {
         if (category === "Handguns") {
           baseFilters.push('departmentNumber:"01"');
-        } else if (category === "Rifles" || category === "Shotguns" || category === "Long Guns") {
-          // Use department 05 for all long guns since categoryName isn't properly synced
+        } else if (category === "Rifles") {
+          baseFilters.push('departmentNumber:"05"');
+          baseFilters.push('categoryName:"Rifles"');
+        } else if (category === "Shotguns") {
+          baseFilters.push('departmentNumber:"05"');
+          baseFilters.push('categoryName:"Shotguns"');
+        } else if (category === "Long Guns") {
           baseFilters.push('departmentNumber:"05"');
         } else {
           baseFilters.push(`categoryName:"${category}"`);

@@ -125,12 +125,12 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
   // Get filter options based on current search
   const { data: filterOptions } = useQuery<FilterOptions>({
-    queryKey: ["/api/search/filter-options", category, searchQuery],
+    queryKey: ["/api/search/filter-options", category, searchQuery, filters],
     queryFn: async () => {
       const response = await apiRequest("POST", "/api/search/filter-options", {
         category: category === "all" ? "" : category,
         query: searchQuery,
-        filters: {}
+        filters: filters
       });
       return response.json();
     },
