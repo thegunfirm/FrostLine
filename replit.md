@@ -391,6 +391,9 @@ Changelog:
 - July 12, 2025. **COMPLETE RESTORATION ACHIEVED**: Successfully restored full 29,836 product catalog from backup using intelligent restore process that avoids duplicates
 - July 12, 2025. **ALGOLIA INDEX CONFIGURATION**: Properly configured index settings for faceting, searching, and filtering with comprehensive attribute mapping
 - July 12, 2025. **SEARCH FUNCTIONALITY ISSUE IDENTIFIED**: Browse API returns all 29,836 products correctly, but search API returns 0 results - indexing vs search configuration mismatch
+- July 12, 2025. **RIFLE/SHOTGUN CATEGORIZATION RESTORED**: Successfully re-implemented rifle/shotgun subcategorization using existing sync script (3,710 rifles, 452 shotguns)
+- July 12, 2025. **BACKEND FILTERING LOGIC FIXED**: Updated search filtering to use proper category names (categoryName:"Rifles"/"Shotguns") instead of department-only filtering
+- July 12, 2025. **SUBCATEGORY SEARCH OPERATIONAL**: Rifles, Shotguns, and Long Guns now return distinct results - no more identical product sets between subcategories
 ```
 
 ## User Preferences

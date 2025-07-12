@@ -2164,10 +2164,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           algoliaFilters.push(`departmentNumber:"01"`);
           console.log(`Applied RSR department 01 filter for all handgun products`);
         } else if (department === "05") {
-          // For Long Guns, Rifles, and Shotguns - use department 05 with category filtering
-          // For now, just use department 05 for all long guns since categoryName isn't properly synced
-          algoliaFilters.push(`departmentNumber:"05"`);
-          console.log(`Applied RSR department 05 filter for ${cleanedFilters.category}`);
+          // For Long Guns, Rifles, and Shotguns - now use proper category filtering since it's synced
+          if (cleanedFilters.category === "Rifles") {
+            algoliaFilters.push(`categoryName:"Rifles"`);
+            console.log(`Applied category filter for Rifles`);
+          } else if (cleanedFilters.category === "Shotguns") {
+            algoliaFilters.push(`categoryName:"Shotguns"`);
+            console.log(`Applied category filter for Shotguns`);
+          } else {
+            // For "Long Guns" - show both rifles and shotguns
+            algoliaFilters.push(`(categoryName:"Rifles" OR categoryName:"Shotguns")`);
+            console.log(`Applied category filter for Long Guns (rifles + shotguns)`);
+          }
         } else if (department === "category") {
           // For ammunition subcategories, use category name filtering
           algoliaFilters.push(`categoryName:"${cleanedFilters.category}"`);
