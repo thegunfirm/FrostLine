@@ -65,6 +65,9 @@ interface FilterOptions {
   shippingMethods: Array<{ value: string; count: number }>;
   platformCategories: Array<{ value: string; count: number }>;
   partTypeCategories: Array<{ value: string; count: number }>;
+  nfaItemTypes: Array<{ value: string; count: number }>;
+  nfaBarrelLengths: Array<{ value: string; count: number }>;
+  nfaFinishes: Array<{ value: string; count: number }>;
 }
 
 export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initialManufacturer = "" }: AlgoliaSearchProps) {
@@ -100,7 +103,10 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     internalSpecial: null as boolean | null,
     shippingMethod: "",
     platformCategory: "",
-    partTypeCategory: ""
+    partTypeCategory: "",
+    nfaItemType: "",
+    nfaBarrelLength: "",
+    nfaFinish: ""
   });
 
   // Update category when initialCategory changes
@@ -123,7 +129,10 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         internalSpecial: null,
         shippingMethod: "",
         platformCategory: "",
-        partTypeCategory: ""
+        partTypeCategory: "",
+        nfaItemType: "",
+        nfaBarrelLength: "",
+        nfaFinish: ""
       });
       setCurrentPage(0);
     }
@@ -190,7 +199,10 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       internalSpecial: null,
       shippingMethod: "",
       platformCategory: "",
-      partTypeCategory: ""
+      partTypeCategory: "",
+      nfaItemType: "",
+      nfaBarrelLength: "",
+      nfaFinish: ""
     });
     setCurrentPage(0);
   };
@@ -486,7 +498,10 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           internalSpecials: filterOptions?.internalSpecials || [],
           shippingMethods: filterOptions?.shippingMethods || [],
           platformCategories: filterOptions?.platformCategories || [],
-          partTypeCategories: filterOptions?.partTypeCategories || []
+          partTypeCategories: filterOptions?.partTypeCategories || [],
+          nfaItemTypes: filterOptions?.nfaItemTypes || [],
+          nfaBarrelLengths: filterOptions?.nfaBarrelLengths || [],
+          nfaFinishes: filterOptions?.nfaFinishes || []
         }}
         category={category}
         totalResults={searchResults?.nbHits || 0}

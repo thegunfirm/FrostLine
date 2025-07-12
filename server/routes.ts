@@ -2572,6 +2572,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const cleanValue = filters.finish.replace(/"/g, '');
         baseFilters.push(`finish:"${cleanValue}"`);
       }
+
+      // NFA-specific filters
+      if (filters.nfaItemType && filters.nfaItemType !== "all") {
+        baseFilters.push(`nfaItemType:"${filters.nfaItemType}"`);
+      }
+      
+      if (filters.barrelLengthNFA && filters.barrelLengthNFA !== "all") {
+        baseFilters.push(`barrelLengthNFA:"${filters.barrelLengthNFA}"`);
+      }
+      
+      if (filters.finishNFA && filters.finishNFA !== "all") {
+        baseFilters.push(`finishNFA:"${filters.finishNFA}"`);
+      }
       
       if (filters.frameSize && filters.frameSize !== "all") {
         const cleanValue = filters.frameSize.replace(/"/g, '');
@@ -2642,7 +2655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get available values for each filter
-      const [manufacturers, calibers, capacities, priceRanges, stockStatuses, barrelLengths, finishes, frameSizes, actionTypes, sightTypes, newItems, internalSpecials, shippingMethods, platformCategories, partTypeCategories] = await Promise.all([
+      const [manufacturers, calibers, capacities, priceRanges, stockStatuses, barrelLengths, finishes, frameSizes, actionTypes, sightTypes, newItems, internalSpecials, shippingMethods, platformCategories, partTypeCategories, nfaItemTypes, nfaBarrelLengths, nfaFinishes] = await Promise.all([
         getFacetValues('manufacturerName', filters.manufacturer && filters.manufacturer !== "all" ? `manufacturerName:"${filters.manufacturer}"` : undefined),
         getFacetValues('caliber', filters.caliber && filters.caliber !== "all" ? `caliber:"${filters.caliber}"` : undefined),
         getFacetValues('capacity', filters.capacity && filters.capacity !== "all" ? `capacity:"${filters.capacity}"` : undefined),
@@ -2658,7 +2671,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         getFacetValues('internalSpecial', filters.internalSpecial !== null ? `internalSpecial:${filters.internalSpecial}` : undefined),
         getFacetValues('dropShippable', filters.shippingMethod && filters.shippingMethod !== "all" ? `dropShippable:${filters.shippingMethod === "drop-ship" ? "true" : "false"}` : undefined),
         getFacetValues('platformCategory', filters.platformCategory && filters.platformCategory !== "all" ? `platformCategory:"${filters.platformCategory}"` : undefined),
-        getFacetValues('partTypeCategory', filters.partTypeCategory && filters.partTypeCategory !== "all" ? `partTypeCategory:"${filters.partTypeCategory}"` : undefined)
+        getFacetValues('partTypeCategory', filters.partTypeCategory && filters.partTypeCategory !== "all" ? `partTypeCategory:"${filters.partTypeCategory}"` : undefined),
+        // NFA-specific filters
+        getFacetValues('nfaItemType', filters.nfaItemType && filters.nfaItemType !== "all" ? `nfaItemType:"${filters.nfaItemType}"` : undefined),
+        getFacetValues('barrelLengthNFA', filters.barrelLengthNFA && filters.barrelLengthNFA !== "all" ? `barrelLengthNFA:"${filters.barrelLengthNFA}"` : undefined),
+        getFacetValues('finishNFA', filters.finishNFA && filters.finishNFA !== "all" ? `finishNFA:"${filters.finishNFA}"` : undefined)
       ]);
       
       // Process manufacturers
@@ -2785,6 +2802,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         count: partTypeCategories[ptc]
       })).sort((a, b) => b.count - a.count);
 
+      // Process NFA filters
+      const availableNFAItemTypes = Object.keys(nfaItemTypes).filter(nit => nit && nit !== 'null').map(nit => ({
+        value: nit,
+        count: nfaItemTypes[nit]
+      })).sort((a, b) => b.count - a.count);
+
+      const availableNFABarrelLengths = Object.keys(nfaBarrelLengths).filter(nbl => nbl && nbl !== 'null').map(nbl => ({
+        value: nbl,
+        count: nfaBarrelLengths[nbl]
+      })).sort((a, b) => b.count - a.count);
+
+      const availableNFAFinishes = Object.keys(nfaFinishes).filter(nf => nf && nf !== 'null').map(nf => ({
+        value: nf,
+        count: nfaFinishes[nf]
+      })).sort((a, b) => b.count - a.count);
+
       res.json({
         manufacturers: availableManufacturers,
         calibers: availableCalibers,
@@ -2803,7 +2836,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         internalSpecials: availableInternalSpecials,
         shippingMethods: availableShippingMethods,
         platformCategories: availablePlatformCategories,
-        partTypeCategories: availablePartTypeCategories
+        partTypeCategories: availablePartTypeCategories,
+        nfaItemTypes: availableNFAItemTypes,
+        nfaBarrelLengths: availableNFABarrelLengths,
+        nfaFinishes: availableNFAFinishes
       });
       
     } catch (error) {

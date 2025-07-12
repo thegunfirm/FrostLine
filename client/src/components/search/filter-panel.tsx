@@ -19,6 +19,9 @@ interface FilterOptions {
   shippingMethods: Array<{ value: string; count: number }>;
   platformCategories: Array<{ value: string; count: number }>;
   partTypeCategories: Array<{ value: string; count: number }>;
+  nfaItemTypes: Array<{ value: string; count: number }>;
+  nfaBarrelLengths: Array<{ value: string; count: number }>;
+  nfaFinishes: Array<{ value: string; count: number }>;
 }
 
 interface FilterPanelProps {
@@ -38,6 +41,9 @@ interface FilterPanelProps {
     shippingMethod: string;
     platformCategory: string;
     partTypeCategory: string;
+    nfaItemType: string;
+    nfaBarrelLength: string;
+    nfaFinish: string;
   };
   onFilterChange: (key: string, value: any) => void;
   onClearFilters: () => void;
@@ -137,7 +143,8 @@ export function FilterPanel({
       case 'parts':
         return [...baseFilters, 'platformCategory', 'partTypeCategory', 'finish', 'shippingMethod'];
       case 'nfa products':
-        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'actionType', 'sightType', 'shippingMethod'];
+      case 'nfa':
+        return [...baseFilters, 'caliber', 'nfaItemType', 'nfaBarrelLength', 'nfaFinish', 'actionType', 'sightType', 'shippingMethod'];
       default:
         return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'shippingMethod'];
     }
@@ -580,6 +587,81 @@ export function FilterPanel({
                 <SelectContent className="z-[60]">
                   <SelectItem value="all">All Part Types</SelectItem>
                   {filterOptions.partTypeCategories.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* NFA Item Type Filter - NFA only */}
+          {relevantFilters.includes('nfaItemType') && filterOptions.nfaItemTypes.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-700">
+                NFA Item Type ({filterOptions.nfaItemTypes.length})
+              </label>
+              <Select
+                value={filters.nfaItemType}
+                onValueChange={(value) => onFilterChange('nfaItemType', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="All NFA Item Types" />
+                </SelectTrigger>
+                <SelectContent className="z-[60]">
+                  <SelectItem value="all">All NFA Item Types</SelectItem>
+                  {filterOptions.nfaItemTypes.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* NFA Barrel Length Filter - NFA only */}
+          {relevantFilters.includes('nfaBarrelLength') && filterOptions.nfaBarrelLengths.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-700">
+                NFA Barrel Length ({filterOptions.nfaBarrelLengths.length})
+              </label>
+              <Select
+                value={filters.nfaBarrelLength}
+                onValueChange={(value) => onFilterChange('nfaBarrelLength', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="All NFA Barrel Lengths" />
+                </SelectTrigger>
+                <SelectContent className="z-[60]">
+                  <SelectItem value="all">All NFA Barrel Lengths</SelectItem>
+                  {filterOptions.nfaBarrelLengths.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* NFA Finish Filter - NFA only */}
+          {relevantFilters.includes('nfaFinish') && filterOptions.nfaFinishes.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-700">
+                NFA Finish ({filterOptions.nfaFinishes.length})
+              </label>
+              <Select
+                value={filters.nfaFinish}
+                onValueChange={(value) => onFilterChange('nfaFinish', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="All NFA Finishes" />
+                </SelectTrigger>
+                <SelectContent className="z-[60]">
+                  <SelectItem value="all">All NFA Finishes</SelectItem>
+                  {filterOptions.nfaFinishes.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.value} ({option.count})
                     </SelectItem>
