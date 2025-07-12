@@ -394,6 +394,8 @@ Changelog:
 - July 12, 2025. **RIFLE/SHOTGUN CATEGORIZATION RESTORED**: Successfully re-implemented rifle/shotgun subcategorization using existing sync script (3,710 rifles, 452 shotguns)
 - July 12, 2025. **BACKEND FILTERING LOGIC FIXED**: Updated search filtering to use proper category names (categoryName:"Rifles"/"Shotguns") instead of department-only filtering
 - July 12, 2025. **SUBCATEGORY SEARCH OPERATIONAL**: Rifles, Shotguns, and Long Guns now return distinct results - no more identical product sets between subcategories
+- July 12, 2025. **RSR IMAGE ANGLES SYSTEM FIXED**: Resolved parameter mismatch between frontend (`angle`) and backend (`view`) - backend now accepts both parameters for compatibility
+- July 12, 2025. **MULTI-ANGLE IMAGE SUPPORT RESTORED**: RSR image endpoint now properly handles multiple image angles when available from RSR distributor
 ```
 
 ## User Preferences
@@ -401,7 +403,30 @@ Changelog:
 ```
 Preferred communication style: Simple, everyday language.
 Image policy: NEVER use Unsplash or any placeholder images. Only use authentic distributor images (RSR, etc.) even if they show "Image Coming Soon" placeholders.
+Code preservation: Always maintain working solutions - never overwrite functioning code without explicit user request.
 ```
+
+## CRITICAL WORKING SOLUTIONS - DO NOT OVERWRITE
+
+### RSR Image System (WORKING - DO NOT MODIFY)
+**Location**: `server/routes.ts` lines 1489-1558
+**Function**: `/api/rsr-image/:imageName` endpoint
+**Key Feature**: Handles both `angle` and `view` parameters for multi-angle RSR images
+**Frontend Integration**: `client/src/pages/product-detail.tsx` uses `angle` parameter
+**Status**: WORKING - handles multiple image angles when available from RSR
+
+### Rifle/Shotgun Categorization (WORKING - DO NOT MODIFY)
+**Location**: `server/routes.ts` lines 2167-2178  
+**Function**: Category-based filtering for rifles vs shotguns
+**Key Feature**: Uses `categoryName:"Rifles"` and `categoryName:"Shotguns"` instead of department-only filtering
+**Results**: 3,710 rifles, 452 shotguns, 4,162 total long guns
+**Status**: WORKING - maintains proper subcategorization
+
+### Algolia Search Integration (WORKING - DO NOT MODIFY)
+**Location**: `server/routes.ts` lines 2111-2300+
+**Function**: Complete search system with department and category filtering
+**Key Feature**: Handles all categories with proper RSR department mapping
+**Status**: WORKING - 29,836 products indexed and searchable
 
 ## RSR Department Structure
 
