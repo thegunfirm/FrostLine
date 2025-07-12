@@ -449,6 +449,27 @@ Code preservation: Always maintain working solutions - never overwrite functioni
 **Key Feature**: Handles all categories with proper RSR department mapping
 **Status**: WORKING - 29,836 products indexed and searchable
 
+### Category-Specific Caliber Filtering (WORKING - DO NOT MODIFY)
+**Location**: `server/routes.ts` lines 2514-2523
+**Function**: `/api/search/filter-options` endpoint with category-specific filtering
+**Key Feature**: Distinguishes between rifles and shotguns using both departmentNumber and categoryName filters
+**Filter Logic**: 
+- Rifles: `departmentNumber:"05"` AND `categoryName:"Rifles"`
+- Shotguns: `departmentNumber:"05"` AND `categoryName:"Shotguns"`
+**Result**: Rifles show rifle calibers (.308, .223, etc.), Shotguns show gauge calibers (12 Gauge, 20 Gauge, etc.)
+**Frontend Integration**: `client/src/components/search/algolia-search.tsx` lines 130-138 passes filters to backend
+**Status**: WORKING - Category-specific caliber filtering operational with zero cross-contamination
+
+### Filter Options API Architecture (WORKING - DO NOT MODIFY)
+**Location**: `server/routes.ts` lines 2500-2600+
+**Function**: Dynamic filter options endpoint that returns category-specific filter values
+**Key Components**:
+- Base filter building with category-specific logic (lines 2514-2523)
+- Algolia facet search for each filter type (manufacturerName, caliber, tierPricing.platinum, etc.)
+- Returns only available options with counts for current category/filters
+**Frontend Integration**: `client/src/components/search/algolia-search.tsx` passes current filters to get relevant options
+**Status**: WORKING - Prevents zero-result scenarios, shows only valid filter combinations
+
 ## RSR Department Structure
 
 **Authentic RSR Department Classifications**:
