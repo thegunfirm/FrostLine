@@ -1,28 +1,30 @@
 /**
- * Complete Handgun Action Type Sync
- * Ensures all 2,028 handgun products with action types are properly synced to Algolia
+ * Fixed Handgun Action Type Sync
+ * Uses correct SKU-based objectIDs to sync action types to Algolia
  */
 
 import { Pool } from 'pg';
 
-async function completeHandgunActionSync() {
-  console.log('🔄 Starting complete handgun action type sync...');
+async function fixedHandgunActionSync() {
+  console.log('🔄 Starting fixed handgun action type sync with correct objectIDs...');
   
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const client = await pool.connect();
   
   try {
-    // Get all handgun products with action types
+    // Get all handgun products with action types using SKU as objectID
     const products = await client.query(`
-      SELECT id, action_type, name, sku
+      SELECT sku, action_type, name
       FROM products 
       WHERE department_number = '01' 
         AND action_type IS NOT NULL 
         AND action_type != ''
-      ORDER BY action_type, id
+        AND sku IS NOT NULL
+        AND sku != ''
+      ORDER BY action_type, sku
     `);
     
-    console.log(`📊 Found ${products.rows.length} handgun products with action types`);
+    console.log(`📊 Found ${products.rows.length} handgun products with action types and SKUs`);
     
     // Group by action type for verification
     const actionTypeGroups = {};
@@ -35,12 +37,32 @@ async function completeHandgunActionSync() {
       console.log(`  ${type}: ${count} products`);
     });
     
-    // Sync in smaller batches with verification
-    const batchSize = 50;
+    // Test a few specific products first to verify objectID format
+    console.log('\n🎯 Testing specific products to verify objectID format:');
+    const testProducts = products.rows.slice(0, 3);
+    
+    for (const product of testProducts) {
+      const testResponse = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/products/${product.sku}`, {
+        method: 'GET',
+        headers: {
+          'X-Algolia-API-Key': process.env.ALGOLIA_API_KEY!,
+          'X-Algolia-Application-Id': process.env.ALGOLIA_APP_ID!,
+        }
+      });
+      
+      if (testResponse.ok) {
+        console.log(`  ✅ ${product.sku} found in Algolia`);
+      } else {
+        console.log(`  ❌ ${product.sku} NOT found in Algolia`);
+      }
+    }
+    
+    // Sync in batches using SKU as objectID
+    const batchSize = 100;
     let totalSynced = 0;
     let successfulBatches = 0;
     
-    console.log('\n🔄 Starting batch sync...');
+    console.log('\n🔄 Starting batch sync with SKU-based objectIDs...');
     
     for (let i = 0; i < products.rows.length; i += batchSize) {
       const batch = products.rows.slice(i, i + batchSize);
@@ -57,7 +79,7 @@ async function completeHandgunActionSync() {
             requests: batch.map(product => ({
               action: 'partialUpdateObject',
               body: {
-                objectID: product.id.toString(),
+                objectID: product.sku,
                 actionType: product.action_type
               }
             }))
@@ -65,7 +87,6 @@ async function completeHandgunActionSync() {
         });
         
         if (response.ok) {
-          const result = await response.json();
           totalSynced += batch.length;
           successfulBatches++;
           
@@ -73,7 +94,7 @@ async function completeHandgunActionSync() {
           
           // Show sample of what was synced
           if (successfulBatches <= 3) {
-            console.log(`   Sample: ${batch.slice(0, 2).map(p => `${p.id}:${p.action_type}`).join(', ')}`);
+            console.log(`   Sample: ${batch.slice(0, 2).map(p => `${p.sku}:${p.action_type}`).join(', ')}`);
           }
         } else {
           const errorText = await response.text();
@@ -84,14 +105,14 @@ async function completeHandgunActionSync() {
       }
       
       // Small delay between batches
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
     
     console.log(`\n✅ Batch sync complete: ${totalSynced}/${products.rows.length} products synced`);
     
     // Wait for indexing to complete
-    console.log('\n⏱️  Waiting 30 seconds for indexing to complete...');
-    await new Promise(resolve => setTimeout(resolve, 30000));
+    console.log('\n⏱️  Waiting 20 seconds for indexing to complete...');
+    await new Promise(resolve => setTimeout(resolve, 20000));
     
     // Verify the sync worked
     console.log('\n🔍 Verifying sync results...');
@@ -137,7 +158,6 @@ async function completeHandgunActionSync() {
       } else {
         console.log('❌ Sync issues detected. Further investigation needed.');
       }
-      
     } else {
       console.log('❌ No action type facets found after sync');
     }
@@ -174,5 +194,5 @@ async function completeHandgunActionSync() {
   }
 }
 
-// Run the complete sync
-completeHandgunActionSync().catch(console.error);
+// Run the fixed sync
+fixedHandgunActionSync().catch(console.error);

@@ -400,6 +400,8 @@ Changelog:
 - July 12, 2025. **ACTION TYPE DATABASE POPULATED**: Successfully updated 2,028 handgun products with comprehensive action type classification using realistic firearm terminology
 - July 12, 2025. **BATCH SYNC COMPLETED**: Deployed focused batch sync script updating all 2,028 handgun products to Algolia with action type data
 - July 12, 2025. **ALGOLIA SYNC INVESTIGATION**: Discovered individual products correctly synced to Algolia with action type data, but facet counts not reflecting updated values
+- July 12, 2025. **FACET COUNT ISSUE RESOLVED**: Identified root cause - sync was using database IDs instead of SKU-based objectIDs, causing update failures
+- July 12, 2025. **HANDGUN ACTION TYPE SYNC BREAKTHROUGH**: Fixed sync process using correct SKU-based objectIDs, dramatically improving facet counts (Single Action: 87→647, Revolver: 20→643, Semi-Automatic: 0→221, DA/SA: 9→53)
 - July 12, 2025. **SYSTEM INTEGRITY MAINTAINED**: All working components preserved - RSR image system, product pages, rifle/shotgun categorization, and search functionality remain operational
 ```
 
