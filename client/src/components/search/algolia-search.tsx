@@ -125,28 +125,12 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
   // Get filter options based on current search
   const { data: filterOptions } = useQuery<FilterOptions>({
-    queryKey: ["/api/search/filter-options", category, searchQuery, filters],
+    queryKey: ["/api/search/filter-options", category, searchQuery],
     queryFn: async () => {
       const response = await apiRequest("POST", "/api/search/filter-options", {
         category: category === "all" ? "" : category,
         query: searchQuery,
-        filters: {
-          ...filters,
-          // Don't include the filter we're getting options for
-          manufacturer: "",
-          caliber: "",
-          capacity: "",
-          priceRange: "",
-          inStock: null,
-          barrelLength: "",
-          finish: "",
-          frameSize: "",
-          actionType: "",
-          sightType: "",
-          newItem: null,
-          internalSpecial: null,
-          shippingMethod: ""
-        }
+        filters: {}
       });
       return response.json();
     },
