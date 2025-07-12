@@ -1487,20 +1487,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/rsr-image/:imageName", async (req, res) => {
     try {
       const imageName = req.params.imageName;
-      const { size = 'standard', view = '1' } = req.query;
+      const { size = 'standard', angle = '1', view } = req.query;
+      
+      // Use 'angle' parameter from frontend, fallback to 'view' for backward compatibility
+      const imageAngle = angle || view || '1';
       
       let rsrImageUrl = '';
       
       switch (size) {
         case 'thumb':
-          rsrImageUrl = `https://img.rsrgroup.com/pimages/${imageName}_${view}_thumb.jpg`;
+        case 'thumbnail':
+          rsrImageUrl = `https://img.rsrgroup.com/pimages/${imageName}_${imageAngle}_thumb.jpg`;
           break;
         case 'standard':
-          rsrImageUrl = `https://img.rsrgroup.com/pimages/${imageName}_${view}.jpg`;
+          rsrImageUrl = `https://img.rsrgroup.com/pimages/${imageName}_${imageAngle}.jpg`;
           break;
         case 'highres':
         case 'large':
-          rsrImageUrl = `https://img.rsrgroup.com/highres-pimages/${imageName}_${view}_HR.jpg`;
+          rsrImageUrl = `https://img.rsrgroup.com/highres-pimages/${imageName}_${imageAngle}_HR.jpg`;
           break;
       }
       
