@@ -73,6 +73,12 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   const [resultsPerPage] = useState(24);
   const [sortBy, setSortBy] = useState("relevance");
   
+  // Reset sort when category changes
+  useEffect(() => {
+    setSortBy("relevance");
+    setCurrentPage(0);
+  }, [category]);
+  
   console.log("AlgoliaSearch props:", { initialQuery, initialCategory, initialManufacturer });
   console.log("Current category state:", category);
   
