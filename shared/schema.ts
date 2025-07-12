@@ -74,6 +74,9 @@ export const products = pgTable("products", {
   createdAt: timestamp("created_at").defaultNow(),
   platformCategory: text("platform_category"), // Parts platform categorization (Glock, AR-15, AR-10, etc.)
   partTypeCategory: text("part_type_category"), // Parts type categorization (Magazine, Trigger, etc.)
+  nfaItemType: text("nfa_item_type"), // NFA item type (SBR, Suppressor, Destructive Device, etc.)
+  barrelLengthNfa: text("barrel_length_nfa"), // NFA-specific barrel length
+  finishNfa: text("finish_nfa"), // NFA-specific finish
 });
 
 export const orders = pgTable("orders", {
