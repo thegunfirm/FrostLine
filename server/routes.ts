@@ -2500,7 +2500,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get dynamic filter options based on current selections
   app.post("/api/search/filter-options", async (req, res) => {
     try {
-      const { category, query, filters } = req.body;
+      console.log('Request body:', req.body);
+      const { category, query, filters = {} } = req.body;
+      console.log('Parsed filters:', filters);
       
       // Build base Algolia filter from current selections
       const baseFilters = [];
