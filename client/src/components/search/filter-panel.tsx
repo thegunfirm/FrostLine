@@ -22,6 +22,10 @@ interface FilterOptions {
   nfaItemTypes: Array<{ value: string; count: number }>;
   nfaBarrelLengths: Array<{ value: string; count: number }>;
   nfaFinishes: Array<{ value: string; count: number }>;
+  accessoryTypes: Array<{ value: string; count: number }>;
+  compatibilities: Array<{ value: string; count: number }>;
+  materials: Array<{ value: string; count: number }>;
+  mountTypes: Array<{ value: string; count: number }>;
 }
 
 interface FilterPanelProps {
@@ -44,6 +48,10 @@ interface FilterPanelProps {
     nfaItemType: string;
     nfaBarrelLength: string;
     nfaFinish: string;
+    accessoryType: string;
+    compatibility: string;
+    material: string;
+    mountType: string;
   };
   onFilterChange: (key: string, value: any) => void;
   onClearFilters: () => void;
@@ -139,7 +147,7 @@ export function FilterPanel({
       case 'optics':
         return [...baseFilters, 'sightType', 'frameSize', 'shippingMethod'];
       case 'accessories':
-        return [...baseFilters, 'finish', 'shippingMethod'];
+        return [...baseFilters, 'accessoryType', 'compatibility', 'material', 'mountType', 'finish', 'shippingMethod'];
       case 'parts':
         return [...baseFilters, 'platformCategory', 'partTypeCategory', 'finish', 'shippingMethod'];
       case 'nfa products':
@@ -687,6 +695,106 @@ export function FilterPanel({
                 <SelectContent className="z-[60]">
                   <SelectItem value="all">All Shipping Methods</SelectItem>
                   {filterOptions.shippingMethods.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Accessory Type Filter - Accessories only */}
+          {relevantFilters.includes('accessoryType') && filterOptions.accessoryTypes && filterOptions.accessoryTypes.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-700">
+                Accessory Type ({filterOptions.accessoryTypes.length})
+              </label>
+              <Select
+                value={filters.accessoryType}
+                onValueChange={(value) => onFilterChange('accessoryType', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="All Accessory Types" />
+                </SelectTrigger>
+                <SelectContent className="z-[60]">
+                  <SelectItem value="all">All Accessory Types</SelectItem>
+                  {filterOptions.accessoryTypes.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Compatibility Filter - Accessories only */}
+          {relevantFilters.includes('compatibility') && filterOptions.compatibilities && filterOptions.compatibilities.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-700">
+                Compatibility ({filterOptions.compatibilities.length})
+              </label>
+              <Select
+                value={filters.compatibility}
+                onValueChange={(value) => onFilterChange('compatibility', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="All Compatibility" />
+                </SelectTrigger>
+                <SelectContent className="z-[60]">
+                  <SelectItem value="all">All Compatibility</SelectItem>
+                  {filterOptions.compatibilities.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Material Filter - Accessories only */}
+          {relevantFilters.includes('material') && filterOptions.materials && filterOptions.materials.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-700">
+                Material ({filterOptions.materials.length})
+              </label>
+              <Select
+                value={filters.material}
+                onValueChange={(value) => onFilterChange('material', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="All Materials" />
+                </SelectTrigger>
+                <SelectContent className="z-[60]">
+                  <SelectItem value="all">All Materials</SelectItem>
+                  {filterOptions.materials.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Mount Type Filter - Accessories only */}
+          {relevantFilters.includes('mountType') && filterOptions.mountTypes && filterOptions.mountTypes.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-700">
+                Mount Type ({filterOptions.mountTypes.length})
+              </label>
+              <Select
+                value={filters.mountType}
+                onValueChange={(value) => onFilterChange('mountType', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="All Mount Types" />
+                </SelectTrigger>
+                <SelectContent className="z-[60]">
+                  <SelectItem value="all">All Mount Types</SelectItem>
+                  {filterOptions.mountTypes.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.value} ({option.count})
                     </SelectItem>

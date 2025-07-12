@@ -68,6 +68,10 @@ interface FilterOptions {
   nfaItemTypes: Array<{ value: string; count: number }>;
   nfaBarrelLengths: Array<{ value: string; count: number }>;
   nfaFinishes: Array<{ value: string; count: number }>;
+  accessoryTypes: Array<{ value: string; count: number }>;
+  compatibilities: Array<{ value: string; count: number }>;
+  materials: Array<{ value: string; count: number }>;
+  mountTypes: Array<{ value: string; count: number }>;
 }
 
 export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initialManufacturer = "" }: AlgoliaSearchProps) {
@@ -106,7 +110,11 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     partTypeCategory: "",
     nfaItemType: "",
     nfaBarrelLength: "",
-    nfaFinish: ""
+    nfaFinish: "",
+    accessoryType: "",
+    compatibility: "",
+    material: "",
+    mountType: ""
   });
 
   // Update category when initialCategory changes
@@ -132,7 +140,11 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         partTypeCategory: "",
         nfaItemType: "",
         nfaBarrelLength: "",
-        nfaFinish: ""
+        nfaFinish: "",
+        accessoryType: "",
+        compatibility: "",
+        material: "",
+        mountType: ""
       });
       setCurrentPage(0);
     }
@@ -202,7 +214,11 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       partTypeCategory: "",
       nfaItemType: "",
       nfaBarrelLength: "",
-      nfaFinish: ""
+      nfaFinish: "",
+      accessoryType: "",
+      compatibility: "",
+      material: "",
+      mountType: ""
     });
     setCurrentPage(0);
   };

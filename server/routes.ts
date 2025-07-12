@@ -2621,6 +2621,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         baseFilters.push(`partTypeCategory:"${filters.partTypeCategory}"`);
       }
       
+      // Accessory-specific filters
+      if (filters.accessoryType && filters.accessoryType !== "all") {
+        baseFilters.push(`accessoryType:"${filters.accessoryType}"`);
+      }
+      
+      if (filters.compatibility && filters.compatibility !== "all") {
+        baseFilters.push(`compatibility:"${filters.compatibility}"`);
+      }
+      
+      if (filters.material && filters.material !== "all") {
+        baseFilters.push(`material:"${filters.material}"`);
+      }
+      
+      if (filters.mountType && filters.mountType !== "all") {
+        baseFilters.push(`mountType:"${filters.mountType}"`);
+      }
+      
       // Function to get facet values from Algolia
       async function getFacetValues(facetName: string, excludeFilter?: string) {
         const facetFilters = baseFilters.filter(f => f !== excludeFilter);
@@ -2655,7 +2672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get available values for each filter
-      const [manufacturers, calibers, capacities, priceRanges, stockStatuses, barrelLengths, finishes, frameSizes, actionTypes, sightTypes, newItems, internalSpecials, shippingMethods, platformCategories, partTypeCategories, nfaItemTypes, nfaBarrelLengths, nfaFinishes] = await Promise.all([
+      const [manufacturers, calibers, capacities, priceRanges, stockStatuses, barrelLengths, finishes, frameSizes, actionTypes, sightTypes, newItems, internalSpecials, shippingMethods, platformCategories, partTypeCategories, nfaItemTypes, nfaBarrelLengths, nfaFinishes, accessoryTypes, compatibilities, materials, mountTypes] = await Promise.all([
         getFacetValues('manufacturerName', filters.manufacturer && filters.manufacturer !== "all" ? `manufacturerName:"${filters.manufacturer}"` : undefined),
         getFacetValues('caliber', filters.caliber && filters.caliber !== "all" ? `caliber:"${filters.caliber}"` : undefined),
         getFacetValues('capacity', filters.capacity && filters.capacity !== "all" ? `capacity:"${filters.capacity}"` : undefined),
@@ -2675,7 +2692,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // NFA-specific filters
         getFacetValues('nfaItemType', filters.nfaItemType && filters.nfaItemType !== "all" ? `nfaItemType:"${filters.nfaItemType}"` : undefined),
         getFacetValues('barrelLengthNFA', filters.barrelLengthNFA && filters.barrelLengthNFA !== "all" ? `barrelLengthNFA:"${filters.barrelLengthNFA}"` : undefined),
-        getFacetValues('finishNFA', filters.finishNFA && filters.finishNFA !== "all" ? `finishNFA:"${filters.finishNFA}"` : undefined)
+        getFacetValues('finishNFA', filters.finishNFA && filters.finishNFA !== "all" ? `finishNFA:"${filters.finishNFA}"` : undefined),
+        // Accessory-specific filters
+        getFacetValues('accessoryType', filters.accessoryType && filters.accessoryType !== "all" ? `accessoryType:"${filters.accessoryType}"` : undefined),
+        getFacetValues('compatibility', filters.compatibility && filters.compatibility !== "all" ? `compatibility:"${filters.compatibility}"` : undefined),
+        getFacetValues('material', filters.material && filters.material !== "all" ? `material:"${filters.material}"` : undefined),
+        getFacetValues('mountType', filters.mountType && filters.mountType !== "all" ? `mountType:"${filters.mountType}"` : undefined)
       ]);
       
       // Process manufacturers
@@ -2818,6 +2840,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         count: nfaFinishes[nf]
       })).sort((a, b) => b.count - a.count);
 
+      // Process accessory filters
+      const availableAccessoryTypes = Object.keys(accessoryTypes).filter(at => at && at !== 'null').map(at => ({
+        value: at,
+        count: accessoryTypes[at]
+      })).sort((a, b) => b.count - a.count);
+
+      const availableCompatibilities = Object.keys(compatibilities).filter(c => c && c !== 'null').map(c => ({
+        value: c,
+        count: compatibilities[c]
+      })).sort((a, b) => b.count - a.count);
+
+      const availableMaterials = Object.keys(materials).filter(m => m && m !== 'null').map(m => ({
+        value: m,
+        count: materials[m]
+      })).sort((a, b) => b.count - a.count);
+
+      const availableMountTypes = Object.keys(mountTypes).filter(mt => mt && mt !== 'null').map(mt => ({
+        value: mt,
+        count: mountTypes[mt]
+      })).sort((a, b) => b.count - a.count);
+
       res.json({
         manufacturers: availableManufacturers,
         calibers: availableCalibers,
@@ -2839,7 +2882,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         partTypeCategories: availablePartTypeCategories,
         nfaItemTypes: availableNFAItemTypes,
         nfaBarrelLengths: availableNFABarrelLengths,
-        nfaFinishes: availableNFAFinishes
+        nfaFinishes: availableNFAFinishes,
+        accessoryTypes: availableAccessoryTypes,
+        compatibilities: availableCompatibilities,
+        materials: availableMaterials,
+        mountTypes: availableMountTypes
       });
       
     } catch (error) {

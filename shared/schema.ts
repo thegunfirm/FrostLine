@@ -77,6 +77,10 @@ export const products = pgTable("products", {
   nfaItemType: text("nfa_item_type"), // NFA item type (SBR, Suppressor, Destructive Device, etc.)
   barrelLengthNfa: text("barrel_length_nfa"), // NFA-specific barrel length
   finishNfa: text("finish_nfa"), // NFA-specific finish
+  accessoryType: text("accessoryType"), // Accessory type (Sights, Grips, Cases, Holsters, etc.)
+  compatibility: text("compatibility"), // Platform compatibility (AR-15, Glock, 1911, etc.)
+  materialFinish: text("materialFinish"), // Material/finish (Aluminum, Steel, Polymer, etc.)
+  mountType: text("mountType"), // Mount type (Picatinny, Weaver, Quick Detach, etc.)
 });
 
 export const orders = pgTable("orders", {
