@@ -2305,6 +2305,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         algoliaFilters.push(`tags:"${filters.stateRestriction}"`);
       }
 
+      // Accessory-specific filters
+      if (cleanedFilters.accessoryType) {
+        const cleanValue = cleanedFilters.accessoryType.replace(/"/g, '');
+        algoliaFilters.push(`accessoryType:"${cleanValue}"`);
+      }
+      if (cleanedFilters.compatibility) {
+        const cleanValue = cleanedFilters.compatibility.replace(/"/g, '');
+        algoliaFilters.push(`compatibility:"${cleanValue}"`);
+      }
+      if (cleanedFilters.material) {
+        const cleanValue = cleanedFilters.material.replace(/"/g, '');
+        algoliaFilters.push(`material:"${cleanValue}"`);
+      }
+      if (cleanedFilters.mountType) {
+        const cleanValue = cleanedFilters.mountType.replace(/"/g, '');
+        algoliaFilters.push(`mountType:"${cleanValue}"`);
+      }
+      
+      // Parts-specific filters
+      if (cleanedFilters.platformCategory) {
+        const cleanValue = cleanedFilters.platformCategory.replace(/"/g, '');
+        algoliaFilters.push(`platformCategory:"${cleanValue}"`);
+      }
+      if (cleanedFilters.partTypeCategory) {
+        const cleanValue = cleanedFilters.partTypeCategory.replace(/"/g, '');
+        algoliaFilters.push(`partTypeCategory:"${cleanValue}"`);
+      }
+      
+      // NFA-specific filters
+      if (cleanedFilters.nfaItemType) {
+        const cleanValue = cleanedFilters.nfaItemType.replace(/"/g, '');
+        algoliaFilters.push(`nfaItemType:"${cleanValue}"`);
+      }
+      if (cleanedFilters.nfaBarrelLength) {
+        const cleanValue = cleanedFilters.nfaBarrelLength.replace(/"/g, '');
+        algoliaFilters.push(`barrelLengthNFA:"${cleanValue}"`);
+      }
+      if (cleanedFilters.nfaFinish) {
+        const cleanValue = cleanedFilters.nfaFinish.replace(/"/g, '');
+        algoliaFilters.push(`finishNFA:"${cleanValue}"`);
+      }
+
       // Enhanced handgun-specific filters
       if (filters.handgunManufacturer) {
         algoliaFilters.push(`manufacturerName:"${filters.handgunManufacturer}"`);
