@@ -127,7 +127,7 @@ export function FilterPanel({
       case 'rimfire ammo':
         return [...baseFilters, 'caliber', 'shippingMethod'];
       case 'optics':
-        return [...baseFilters, 'finish', 'sightType', 'shippingMethod'];
+        return [...baseFilters, 'sightType', 'frameSize', 'shippingMethod'];
       case 'accessories':
       case 'parts':
         return [...baseFilters, 'finish', 'shippingMethod'];
@@ -409,21 +409,21 @@ export function FilterPanel({
             </div>
           )}
 
-          {/* Frame Size Filter */}
+          {/* Frame Size / Zoom Filter */}
           {relevantFilters.includes('frameSize') && filterOptions.frameSizes.length > 0 && (
             <div>
               <label className="block text-xs font-medium mb-1 text-gray-700">
-                Frame Size ({filterOptions.frameSizes.length})
+                {category.toLowerCase() === 'optics' ? 'Zoom' : 'Frame Size'} ({filterOptions.frameSizes.length})
               </label>
               <Select
                 value={filters.frameSize}
                 onValueChange={(value) => onFilterChange('frameSize', value === 'all' ? '' : value)}
               >
                 <SelectTrigger className="h-8 text-sm">
-                  <SelectValue placeholder="All Frame Sizes" />
+                  <SelectValue placeholder={category.toLowerCase() === 'optics' ? 'All Zoom Levels' : 'All Frame Sizes'} />
                 </SelectTrigger>
                 <SelectContent className="z-[60]">
-                  <SelectItem value="all">All Frame Sizes</SelectItem>
+                  <SelectItem value="all">{category.toLowerCase() === 'optics' ? 'All Zoom Levels' : 'All Frame Sizes'}</SelectItem>
                   {filterOptions.frameSizes.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.value} ({option.count})
