@@ -2600,6 +2600,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         baseFilters.push(`dropShippable:${filters.shippingMethod === "drop-ship" ? "true" : "false"}`);
       }
       
+      if (filters.platformCategory && filters.platformCategory !== "all") {
+        baseFilters.push(`platformCategory:"${filters.platformCategory}"`);
+      }
+      
+      if (filters.partTypeCategory && filters.partTypeCategory !== "all") {
+        baseFilters.push(`partTypeCategory:"${filters.partTypeCategory}"`);
+      }
+      
       // Function to get facet values from Algolia
       async function getFacetValues(facetName: string, excludeFilter?: string) {
         const facetFilters = baseFilters.filter(f => f !== excludeFilter);
@@ -2634,7 +2642,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get available values for each filter
-      const [manufacturers, calibers, capacities, priceRanges, stockStatuses, barrelLengths, finishes, frameSizes, actionTypes, sightTypes, newItems, internalSpecials, shippingMethods] = await Promise.all([
+      const [manufacturers, calibers, capacities, priceRanges, stockStatuses, barrelLengths, finishes, frameSizes, actionTypes, sightTypes, newItems, internalSpecials, shippingMethods, platformCategories, partTypeCategories] = await Promise.all([
         getFacetValues('manufacturerName', filters.manufacturer && filters.manufacturer !== "all" ? `manufacturerName:"${filters.manufacturer}"` : undefined),
         getFacetValues('caliber', filters.caliber && filters.caliber !== "all" ? `caliber:"${filters.caliber}"` : undefined),
         getFacetValues('capacity', filters.capacity && filters.capacity !== "all" ? `capacity:"${filters.capacity}"` : undefined),
@@ -2648,7 +2656,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         getFacetValues('sightType', filters.sightType && filters.sightType !== "all" ? `sightType:"${filters.sightType}"` : undefined),
         getFacetValues('newItem', filters.newItem !== null ? `newItem:${filters.newItem}` : undefined),
         getFacetValues('internalSpecial', filters.internalSpecial !== null ? `internalSpecial:${filters.internalSpecial}` : undefined),
-        getFacetValues('dropShippable', filters.shippingMethod && filters.shippingMethod !== "all" ? `dropShippable:${filters.shippingMethod === "drop-ship" ? "true" : "false"}` : undefined)
+        getFacetValues('dropShippable', filters.shippingMethod && filters.shippingMethod !== "all" ? `dropShippable:${filters.shippingMethod === "drop-ship" ? "true" : "false"}` : undefined),
+        getFacetValues('platformCategory', filters.platformCategory && filters.platformCategory !== "all" ? `platformCategory:"${filters.platformCategory}"` : undefined),
+        getFacetValues('partTypeCategory', filters.partTypeCategory && filters.partTypeCategory !== "all" ? `partTypeCategory:"${filters.partTypeCategory}"` : undefined)
       ]);
       
       // Process manufacturers
@@ -2762,6 +2772,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (shippingMethods.false) {
         availableShippingMethods.push({ value: "warehouse", count: shippingMethods.false });
       }
+      
+      // Process Parts platform categories
+      const availablePlatformCategories = Object.keys(platformCategories).filter(pc => pc && pc !== 'null').map(pc => ({
+        value: pc,
+        count: platformCategories[pc]
+      })).sort((a, b) => b.count - a.count);
+      
+      // Process Parts part type categories
+      const availablePartTypeCategories = Object.keys(partTypeCategories).filter(ptc => ptc && ptc !== 'null').map(ptc => ({
+        value: ptc,
+        count: partTypeCategories[ptc]
+      })).sort((a, b) => b.count - a.count);
 
       res.json({
         manufacturers: availableManufacturers,
@@ -2779,7 +2801,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sightTypes: availableSightTypes,
         newItems: availableNewItems,
         internalSpecials: availableInternalSpecials,
-        shippingMethods: availableShippingMethods
+        shippingMethods: availableShippingMethods,
+        platformCategories: availablePlatformCategories,
+        partTypeCategories: availablePartTypeCategories
       });
       
     } catch (error) {

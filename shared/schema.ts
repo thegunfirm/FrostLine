@@ -72,6 +72,8 @@ export const products = pgTable("products", {
   returnPolicyDays: integer("return_policy_days").default(30),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
+  platformCategory: text("platform_category"), // Parts platform categorization (Glock, AR-15, AR-10, etc.)
+  partTypeCategory: text("part_type_category"), // Parts type categorization (Magazine, Trigger, etc.)
 });
 
 export const orders = pgTable("orders", {

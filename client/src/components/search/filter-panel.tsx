@@ -17,6 +17,8 @@ interface FilterOptions {
   actionTypes: Array<{ value: string; count: number }>;
   sightTypes: Array<{ value: string; count: number }>;
   shippingMethods: Array<{ value: string; count: number }>;
+  platformCategories: Array<{ value: string; count: number }>;
+  partTypeCategories: Array<{ value: string; count: number }>;
 }
 
 interface FilterPanelProps {
@@ -34,6 +36,8 @@ interface FilterPanelProps {
     actionType: string;
     sightType: string;
     shippingMethod: string;
+    platformCategory: string;
+    partTypeCategory: string;
   };
   onFilterChange: (key: string, value: any) => void;
   onClearFilters: () => void;
@@ -129,8 +133,9 @@ export function FilterPanel({
       case 'optics':
         return [...baseFilters, 'sightType', 'frameSize', 'shippingMethod'];
       case 'accessories':
-      case 'parts':
         return [...baseFilters, 'finish', 'shippingMethod'];
+      case 'parts':
+        return [...baseFilters, 'platformCategory', 'partTypeCategory', 'finish', 'shippingMethod'];
       case 'nfa products':
         return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'actionType', 'sightType', 'shippingMethod'];
       default:
@@ -527,6 +532,56 @@ export function FilterPanel({
                   {filterOptions.internalSpecials.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.value === 'true' ? 'Special Offers Only' : 'Regular Products'} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Platform Filter - Parts only */}
+          {relevantFilters.includes('platformCategory') && filterOptions.platformCategories.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-700">
+                Platform ({filterOptions.platformCategories.length})
+              </label>
+              <Select
+                value={filters.platformCategory}
+                onValueChange={(value) => onFilterChange('platformCategory', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="All Platforms" />
+                </SelectTrigger>
+                <SelectContent className="z-[60]">
+                  <SelectItem value="all">All Platforms</SelectItem>
+                  {filterOptions.platformCategories.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Part Type Filter - Parts only */}
+          {relevantFilters.includes('partTypeCategory') && filterOptions.partTypeCategories.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-700">
+                Part Type ({filterOptions.partTypeCategories.length})
+              </label>
+              <Select
+                value={filters.partTypeCategory}
+                onValueChange={(value) => onFilterChange('partTypeCategory', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="All Part Types" />
+                </SelectTrigger>
+                <SelectContent className="z-[60]">
+                  <SelectItem value="all">All Part Types</SelectItem>
+                  {filterOptions.partTypeCategories.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
                     </SelectItem>
                   ))}
                 </SelectContent>

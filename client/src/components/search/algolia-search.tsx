@@ -63,6 +63,8 @@ interface FilterOptions {
   newItems: Array<{ value: string; count: number }>;
   internalSpecials: Array<{ value: string; count: number }>;
   shippingMethods: Array<{ value: string; count: number }>;
+  platformCategories: Array<{ value: string; count: number }>;
+  partTypeCategories: Array<{ value: string; count: number }>;
 }
 
 export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initialManufacturer = "" }: AlgoliaSearchProps) {
@@ -96,7 +98,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     sightType: "",
     newItem: null as boolean | null,
     internalSpecial: null as boolean | null,
-    shippingMethod: ""
+    shippingMethod: "",
+    platformCategory: "",
+    partTypeCategory: ""
   });
 
   // Update category when initialCategory changes
@@ -117,7 +121,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         sightType: "",
         newItem: null,
         internalSpecial: null,
-        shippingMethod: ""
+        shippingMethod: "",
+        platformCategory: "",
+        partTypeCategory: ""
       });
       setCurrentPage(0);
     }
@@ -182,7 +188,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       sightType: "",
       newItem: null,
       internalSpecial: null,
-      shippingMethod: ""
+      shippingMethod: "",
+      platformCategory: "",
+      partTypeCategory: ""
     });
     setCurrentPage(0);
   };
@@ -476,7 +484,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           sightTypes: filterOptions?.sightTypes || [],
           newItems: filterOptions?.newItems || [],
           internalSpecials: filterOptions?.internalSpecials || [],
-          shippingMethods: filterOptions?.shippingMethods || []
+          shippingMethods: filterOptions?.shippingMethods || [],
+          platformCategories: filterOptions?.platformCategories || [],
+          partTypeCategories: filterOptions?.partTypeCategories || []
         }}
         category={category}
         totalResults={searchResults?.nbHits || 0}
