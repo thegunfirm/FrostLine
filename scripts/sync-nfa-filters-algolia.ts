@@ -38,10 +38,10 @@ async function syncNFAFiltersToAlgolia() {
     // Transform for Algolia - include all NFA products for complete filter data
     const algoliaUpdates: AlgoliaProduct[] = nfaProducts.map(product => ({
       objectID: product.sku,
-      nfaItemType: product.nfa_item_type || undefined,
+      nfaItemType: product.nfaItemType || undefined,
       caliber: product.caliber || undefined,
-      barrelLengthNFA: product.barrel_length_nfa || undefined,
-      finishNFA: product.finish_nfa || undefined,
+      barrelLengthNFA: product.barrelLengthNfa || undefined,
+      finishNFA: product.finishNfa || undefined,
     }));
 
     // Update all NFA products to ensure complete filter data
