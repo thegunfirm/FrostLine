@@ -16,8 +16,6 @@ interface FilterOptions {
   frameSizes: Array<{ value: string; count: number }>;
   actionTypes: Array<{ value: string; count: number }>;
   sightTypes: Array<{ value: string; count: number }>;
-  newItems: Array<{ value: string; count: number }>;
-  internalSpecials: Array<{ value: string; count: number }>;
   shippingMethods: Array<{ value: string; count: number }>;
 }
 
@@ -35,8 +33,6 @@ interface FilterPanelProps {
     frameSize: string;
     actionType: string;
     sightType: string;
-    newItem: boolean | null;
-    internalSpecial: boolean | null;
     shippingMethod: string;
   };
   onFilterChange: (key: string, value: any) => void;
@@ -118,27 +114,27 @@ export function FilterPanel({
     
     switch (category.toLowerCase()) {
       case 'handguns':
-        return [...baseFilters, 'caliber', 'capacity', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType', 'newItem', 'internalSpecial', 'shippingMethod'];
+        return [...baseFilters, 'caliber', 'capacity', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType', 'shippingMethod'];
       case 'rifles':
       case 'long guns':
-        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType', 'newItem', 'internalSpecial', 'shippingMethod'];
+        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType', 'shippingMethod'];
       case 'shotguns':
-        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType', 'newItem', 'internalSpecial', 'shippingMethod'];
+        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType', 'shippingMethod'];
       case 'ammunition':
       case 'handgun ammo':
       case 'rifle ammo':
       case 'shotgun ammo':
       case 'rimfire ammo':
-        return [...baseFilters, 'caliber', 'newItem', 'internalSpecial', 'shippingMethod'];
+        return [...baseFilters, 'caliber', 'shippingMethod'];
       case 'optics':
-        return [...baseFilters, 'finish', 'sightType', 'newItem', 'internalSpecial', 'shippingMethod'];
+        return [...baseFilters, 'finish', 'sightType', 'shippingMethod'];
       case 'accessories':
       case 'parts':
-        return [...baseFilters, 'finish', 'newItem', 'internalSpecial', 'shippingMethod'];
+        return [...baseFilters, 'finish', 'shippingMethod'];
       case 'nfa products':
-        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'actionType', 'sightType', 'newItem', 'internalSpecial', 'shippingMethod'];
+        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'actionType', 'sightType', 'shippingMethod'];
       default:
-        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'newItem', 'internalSpecial', 'shippingMethod'];
+        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'shippingMethod'];
     }
   };
 
