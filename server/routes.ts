@@ -2356,8 +2356,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         algoliaFilters.push(`manufacturerName:"${filters.ammunitionManufacturer}"`);
       }
       
-      // Note: Custom sorting disabled - using Algolia's default relevance ranking
+      // Handle sorting
       let sortParam = undefined;
+      if (sort && sort !== 'relevance') {
+        switch (sort) {
+          case 'price_low_to_high':
+            sortParam = 'tierPricing.platinum:asc';
+            break;
+          case 'price_high_to_low':
+            sortParam = 'tierPricing.platinum:desc';
+            break;
+          default:
+            sortParam = undefined;
+        }
+      }
       
       // Build search params
       let searchQuery = query || "";
@@ -2402,6 +2414,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (algoliaFilters.length > 0) {
         searchParams.filters = algoliaFilters.join(' AND ');
+      }
+      
+      if (sortParam) {
+        searchParams.sort = [sortParam];
       }
       
       // Note: Stock priority sorting would require index replica configuration

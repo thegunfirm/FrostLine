@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProductGrid } from "@/components/product/product-grid";
 import { FilterPanel } from "@/components/search/filter-panel";
 import { Search, Filter, X } from "lucide-react";
@@ -70,6 +71,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [resultsPerPage] = useState(24);
+  const [sortBy, setSortBy] = useState("relevance");
   
   console.log("AlgoliaSearch props:", { initialQuery, initialCategory, initialManufacturer });
   console.log("Current category state:", category);
@@ -147,7 +149,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
   // Main search query
   const { data: searchResults, isLoading, error } = useQuery<SearchResponse>({
-    queryKey: ["/api/search/algolia", searchQuery, category, filters, currentPage, resultsPerPage],
+    queryKey: ["/api/search/algolia", searchQuery, category, filters, currentPage, resultsPerPage, sortBy],
     queryFn: async () => {
       const searchParams = {
         query: searchQuery,
@@ -157,7 +159,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           // Handle department number for handguns
           ...(category.toLowerCase() === "handguns" && { departmentNumber: "01" })
         },
-        sort: "relevance",
+        sort: sortBy,
         page: currentPage,
         hitsPerPage: resultsPerPage,
       };
@@ -266,7 +268,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         )}
       </div>
 
-      {/* Results Summary */}
+      {/* Results Summary & Sort */}
       {searchResults && (
         <div className="flex items-center justify-between text-sm text-gray-600">
           <span>
@@ -274,9 +276,66 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
             {category !== "all" && ` in ${category}`}
             {searchQuery && ` for "${searchQuery}"`}
           </span>
-          <span>
-            Page {currentPage + 1} of {Math.max(1, searchResults.nbPages)}
-          </span>
+          <div className="flex items-center gap-4">
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="relevance">Relevance</SelectItem>
+                <SelectItem value="price_low_to_high">Low to High</SelectItem>
+                <SelectItem value="price_high_to_low">High to Low</SelectItem>
+              </SelectContent>
+            </Select>
+            <span>
+              Page {currentPage + 1} of {Math.max(1, searchResults.nbPages)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Top Pagination */}
+      {searchResults && searchResults.nbPages > 1 && (
+        <div className="flex justify-center items-center gap-2 py-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 0}
+          >
+            Previous
+          </Button>
+          
+          {/* Page Numbers */}
+          <div className="flex gap-1">
+            {Array.from({ length: Math.min(5, searchResults.nbPages) }, (_, i) => {
+              const pageNum = Math.max(0, Math.min(
+                searchResults.nbPages - 5,
+                currentPage - 2
+              )) + i;
+              
+              return (
+                <Button
+                  key={pageNum}
+                  variant={currentPage === pageNum ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handlePageChange(pageNum)}
+                  className="w-10"
+                >
+                  {pageNum + 1}
+                </Button>
+              );
+            })}
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage >= searchResults.nbPages - 1}
+          >
+            Next
+          </Button>
         </div>
       )}
 
