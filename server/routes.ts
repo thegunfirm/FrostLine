@@ -3217,6 +3217,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sync action types to Algolia
+  app.post("/api/admin/sync-action-types", async (req, res) => {
+    try {
+      console.log('🔄 Starting action type sync to Algolia...');
+      
+      // Get all handgun products with updated action types
+      const { products } = await import("../shared/schema");
+      const productsWithActionTypes = await db.select({
+        id: products.id,
+        name: products.name,
+        actionType: products.actionType,
+        departmentNumber: products.departmentNumber
+      }).from(products).where(
+        and(
+          eq(products.departmentNumber, '01'),
+          isNotNull(products.actionType),
+          ne(products.actionType, '')
+        )
+      );
+      
+      console.log(`📊 Found ${productsWithActionTypes.length} handgun products with action types`);
+      
+      // Prepare batch updates for Algolia
+      const updates = productsWithActionTypes.map(product => ({
+        objectID: product.id.toString(),
+        actionType: product.actionType
+      }));
+      
+      // Batch update Algolia in chunks of 100
+      const batchSize = 100;
+      let updated = 0;
+      
+      for (let i = 0; i < updates.length; i += batchSize) {
+        const batch = updates.slice(i, i + batchSize);
+        
+        try {
+          const algoliaResponse = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/products/batch`, {
+            method: 'POST',
+            headers: {
+              'X-Algolia-API-Key': process.env.ALGOLIA_API_KEY!,
+              'X-Algolia-Application-Id': process.env.ALGOLIA_APP_ID!,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              requests: batch.map(update => ({
+                action: 'partialUpdateObject',
+                body: {
+                  objectID: update.objectID,
+                  actionType: update.actionType
+                }
+              }))
+            })
+          });
+          
+          if (algoliaResponse.ok) {
+            updated += batch.length;
+            console.log(`✅ Updated ${updated}/${updates.length} products in Algolia`);
+          } else {
+            console.error(`❌ Algolia batch update failed for batch ${i}-${i + batchSize}`);
+          }
+        } catch (error) {
+          console.error(`❌ Error updating batch ${i}-${i + batchSize}:`, error);
+        }
+      }
+      
+      console.log(`🎉 Successfully synced ${updated} action types to Algolia`);
+      
+      res.json({
+        success: true,
+        message: `Synced ${updated} action types to Algolia`,
+        totalProducts: productsWithActionTypes.length,
+        updatedProducts: updated
+      });
+    } catch (error: any) {
+      console.error('❌ Action type sync error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+  });
+
   // Add discrepancy fix endpoint
   app.post("/api/admin/rsr/fix-discrepancies", async (req, res) => {
     try {
