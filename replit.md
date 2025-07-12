@@ -408,6 +408,8 @@ Code preservation: Always maintain working solutions - never overwrite functioni
 
 ## CRITICAL WORKING SOLUTIONS - DO NOT OVERWRITE
 
+**⚠️ CONFLICT RESOLUTION PROTOCOL**: If user instructions conflict with any "DO NOT MODIFY" section below, STOP immediately and ask the user to resolve the conflict before proceeding.
+
 ### RSR Image System (WORKING - DO NOT MODIFY)
 **Location**: `server/routes.ts` lines 1489-1558
 **Function**: `/api/rsr-image/:imageName` endpoint
