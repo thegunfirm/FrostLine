@@ -517,7 +517,11 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           partTypeCategories: filterOptions?.partTypeCategories || [],
           nfaItemTypes: filterOptions?.nfaItemTypes || [],
           nfaBarrelLengths: filterOptions?.nfaBarrelLengths || [],
-          nfaFinishes: filterOptions?.nfaFinishes || []
+          nfaFinishes: filterOptions?.nfaFinishes || [],
+          accessoryTypes: filterOptions?.accessoryTypes || [],
+          compatibilities: filterOptions?.compatibilities || [],
+          materials: filterOptions?.materials || [],
+          mountTypes: filterOptions?.mountTypes || []
         }}
         category={category}
         totalResults={searchResults?.nbHits || 0}
