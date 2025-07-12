@@ -2543,7 +2543,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         baseFilters.push(`capacity:${filters.capacity}`);
       }
       
-      if (filters.inStock !== null) {
+      if (filters.inStock !== null && filters.inStock !== undefined) {
         baseFilters.push(`inStock:${filters.inStock}`);
       }
       
@@ -2572,11 +2572,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         baseFilters.push(`sightType:"${cleanValue}"`);
       }
       
-      if (filters.newItem !== null) {
+      if (filters.newItem !== null && filters.newItem !== undefined) {
         baseFilters.push(`newItem:${filters.newItem}`);
       }
       
-      if (filters.internalSpecial !== null) {
+      if (filters.internalSpecial !== null && filters.internalSpecial !== undefined) {
         baseFilters.push(`internalSpecial:${filters.internalSpecial}`);
       }
       
