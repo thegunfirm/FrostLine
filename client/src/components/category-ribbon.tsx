@@ -20,10 +20,10 @@ export function CategoryRibbon() {
       const response = await apiRequest('GET', '/api/category-ribbons/active');
       return response.json() as Promise<CategoryRibbon[]>;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    cacheTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchOnMount: false, // Don't refetch on component mount if data exists
+    refetchOnMount: true, // Refetch on mount to get latest categories
   });
 
   const handleCategoryClick = (categoryName: string) => {
@@ -47,7 +47,8 @@ export function CategoryRibbon() {
       { text: "Optics", category: "Optics" },
       { text: "Parts", category: "Parts" },
       { text: "NFA", category: "NFA" },
-      { text: "Accessories", category: "Accessories" }
+      { text: "Accessories", category: "Accessories" },
+      { text: "Magazines", category: "Magazines" }
     ];
 
     return (
