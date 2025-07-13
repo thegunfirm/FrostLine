@@ -49,7 +49,9 @@ async function syncUppersLowersToAlgolia() {
         price_map,
         price_wholesale,
         requires_ffl,
-        manufacturer_part_number
+        manufacturer_part_number,
+        receiver_type,
+        platform_category
       FROM products 
       WHERE category = 'Uppers/Lowers'
       ORDER BY sku
@@ -97,6 +99,8 @@ async function syncUppersLowersToAlgolia() {
       price: parseFloat(product.price_platinum) || 0,
       fflRequired: product.requires_ffl,
       mpn: product.manufacturer_part_number,
+      receiverType: product.receiver_type,
+      platformCategory: product.platform_category,
       tags: ['Uppers/Lowers']
     }));
     

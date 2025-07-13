@@ -286,7 +286,7 @@ export function FilterPanel({
           )}
 
           {/* Receiver Type Filter - Uppers/Lowers only */}
-          {relevantFilters.includes('receiverType') && filterOptions.receiverTypes.length > 0 && (
+          {relevantFilters.includes('receiverType') && filterOptions?.receiverTypes?.length > 0 && (
             <div>
               <label className="block text-xs font-medium mb-1 text-gray-700">
                 Receiver Type ({filterOptions.receiverTypes.length})
