@@ -427,6 +427,7 @@ Changelog:
 - July 13, 2025. **MAGAZINE FILTER BUG FIXED**: Resolved critical issue where "In Stock" filter was removing all other filter options by improving filter options API to exclude specific filters when calculating facet values - all 7 magazine filters now work properly in combination
 - July 13, 2025. **MAGAZINE DATA SYNCHRONIZATION ENHANCED**: Fixed data alignment between inStock status and filter attributes (caliber, capacity, finish, frameSize) ensuring 491 of 738 in-stock magazines have complete filter data for accurate search results
 - July 13, 2025. **STABLE SYSTEM CHECKPOINT ESTABLISHED**: Created comprehensive documentation and code annotations marking current stable state as solid reference point for future RSR feed and Algolia development - all major systems operational with ribbon locked in and filtering working perfectly
+- July 13, 2025. **DEPARTMENT-SPECIFIC GOLD PRICING SYSTEM COMPLETED**: Successfully implemented and deployed comprehensive department-specific Gold discount system using CMS-configured percentages - Handguns (7% discount), all other departments (5% discount), with zero products remaining with matching Bronze/Gold pricing
 ```
 
 ## User Preferences
