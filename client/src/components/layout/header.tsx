@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, User, ShoppingCart, Menu, X } from "lucide-react";
+import { User, ShoppingCart, Menu, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { CategoryRibbon } from "@/components/category-ribbon";
@@ -22,15 +21,7 @@ const categories = [
 export function Header() {
   const [location, setLocation] = useLocation();
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      setLocation(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
 
   const handleCategoryClick = (category: string) => {
     console.log("Header category click:", category);
@@ -52,20 +43,8 @@ export function Header() {
             </Link>
           </div>
 
-          {/* Desktop Search - Centered */}
+          {/* Spacer for centered navigation */}
           <div className="hidden md:flex flex-1 justify-center">
-            <form onSubmit={handleSearch} className="relative max-w-lg w-full">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gun-gray-light" />
-              </div>
-              <Input
-                type="text"
-                placeholder="Search firearms, accessories, ammunition..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-gun-gray border-gun-gray text-white placeholder-gun-gray-light focus:border-gun-gold focus:ring-gun-gold"
-              />
-            </form>
           </div>
 
           {/* Navigation Icons */}
@@ -104,22 +83,6 @@ export function Header() {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-gun-gray">
-            {/* Mobile Search */}
-            <div className="p-4">
-              <form onSubmit={handleSearch} className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gun-gray-light" />
-                </div>
-                <Input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-gun-gray border-gun-gray text-white placeholder-gun-gray-light focus:border-gun-gold focus:ring-gun-gold"
-                />
-              </form>
-            </div>
-
             {/* Mobile Categories */}
             <div className="grid grid-cols-2 gap-2 p-4">
               {categories.map((category) => (
