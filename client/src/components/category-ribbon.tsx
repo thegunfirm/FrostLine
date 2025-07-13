@@ -112,7 +112,8 @@ export function CategoryRibbon() {
                 className={cn(
                   "py-2 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap",
                   index < ribbons.length - 1 && "border-r border-gun-black",
-                  currentCategory === ribbon.categoryName && "bg-gun-black text-gun-gold py-2 -mt-2 pt-4"
+                  currentCategory === ribbon.categoryName && "bg-gun-black text-gun-gold py-2 -mt-2 pt-4",
+                  ribbon.categoryName === "Uppers/Lowers" && "flex items-center justify-center"
                 )}
               >
                 {ribbon.ribbonText}
