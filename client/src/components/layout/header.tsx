@@ -37,7 +37,7 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="absolute top-0 right-0 bg-black px-4 py-2 rounded-bl-lg z-10">
+          <div className="absolute top-0 left-0 bg-black px-4 py-2 rounded-br-lg z-10">
             <Link href="/">
               <Logo className="hover:opacity-80 transition-opacity cursor-pointer scale-110 md:scale-150" />
             </Link>
