@@ -108,7 +108,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
       
       <CardContent className="p-3">
         <div className="mb-2">
-          <p className="text-gun-gray-light text-xs line-clamp-2">
+          <p className="text-gun-black text-sm line-clamp-2">
             {product.description}
           </p>
         </div>
