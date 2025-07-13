@@ -21,7 +21,7 @@ export function Logo({ className, variant = "full" }: LogoProps) {
     <img
       src={logoImage}
       alt="The Gun Firm"
-      className={cn("h-20 relative z-10", className)}
+      className={cn("h-20 w-auto relative z-10", className)}
     />
   );
 }
