@@ -44,7 +44,7 @@ export function Header() {
           </div>
 
           {/* Category Ribbon in Header */}
-          <div className="hidden xl:flex flex-1 justify-start px-4 absolute top-0" style={{marginLeft: '90px'}}>
+          <div className="hidden xl:flex flex-1 justify-start px-4 absolute top-0" style={{marginLeft: '90px', marginTop: '4px'}}>
             <CategoryRibbon />
           </div>
 
