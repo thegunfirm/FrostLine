@@ -37,12 +37,10 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-[120px_1fr_120px] items-center h-20">
           {/* Logo - Left */}
-          <div className="justify-self-start self-start">
-            <div className="pl-1 pr-3 pt-1">
-              <Link href="/">
-                <Logo className="hover:opacity-80 transition-opacity cursor-pointer h-14 w-auto sm:h-16 md:h-18 lg:h-20" />
-              </Link>
-            </div>
+          <div className="justify-self-start self-center">
+            <Link href="/">
+              <Logo className="hover:opacity-80 transition-opacity cursor-pointer h-16 w-auto sm:h-18 md:h-20 lg:h-22 object-contain" />
+            </Link>
           </div>
 
           {/* Category Ribbon - Center */}
