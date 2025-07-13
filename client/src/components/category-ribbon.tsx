@@ -97,14 +97,14 @@ export function CategoryRibbon() {
   }
 
   return (
-    <div className="flex items-center space-x-1 bg-gun-gray border border-gun-black rounded px-2 py-1 max-w-full overflow-hidden">
+    <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1 bg-gun-gray border border-gun-black rounded px-2 py-1 max-w-full">
       {ribbons.map((ribbon, index) => {
         // Individual button styling based on category
         let buttonClass = "py-1 px-2 md:py-2 md:px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-xs md:text-sm lg:text-base tracking-wide uppercase whitespace-nowrap flex-shrink-0";
         
-        // Add border except for last button
+        // Add border except for last button (only on lg+ screens)
         if (index < ribbons.length - 1) {
-          buttonClass += " border-r border-gun-black";
+          buttonClass += " lg:border-r lg:border-gun-black";
         }
         
         // Active state
