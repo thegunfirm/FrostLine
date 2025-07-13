@@ -35,21 +35,21 @@ export function Header() {
   return (
     <header className="bg-gun-black text-white shadow-lg sticky top-0 z-50 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 relative">
           {/* Logo */}
-          <div className="absolute top-0 left-0 bg-black px-4 py-2 rounded-br-lg z-10">
+          <div className="absolute top-0 left-0 bg-black px-2 sm:px-4 py-2 rounded-br-lg z-10">
             <Link href="/">
-              <Logo className="hover:opacity-80 transition-opacity cursor-pointer scale-110 md:scale-150" />
+              <Logo className="hover:opacity-80 transition-opacity cursor-pointer scale-75 sm:scale-90 md:scale-110 lg:scale-150" />
             </Link>
           </div>
 
           {/* Category Ribbon in Header */}
-          <div className="hidden lg:flex flex-1 justify-start px-4" style={{marginLeft: '120px'}}>
+          <div className="hidden xl:flex flex-1 justify-start px-4" style={{marginLeft: '80px'}}>
             <CategoryRibbon />
           </div>
 
           {/* Navigation Icons */}
-          <div className="flex items-center space-x-2 md:space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4 ml-auto">
             <Link href="/account">
               <Button variant="ghost" size="sm" className="text-white hover:text-gun-gold">
                 <User className="h-5 w-5" />
@@ -79,7 +79,7 @@ export function Header() {
         </div>
 
         {/* Mobile Category Ribbon - Below Header */}
-        <div className="block lg:hidden border-t border-gun-gray">
+        <div className="block xl:hidden border-t border-gun-gray">
           <CategoryRibbon />
         </div>
 

@@ -97,10 +97,10 @@ export function CategoryRibbon() {
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1 bg-gun-gray border border-gun-black rounded px-2 py-1 max-w-full">
+    <div className="flex flex-wrap items-center justify-center xl:justify-start gap-1 bg-gun-gray border border-gun-black rounded px-1 sm:px-2 py-1 max-w-full">
       {ribbons.map((ribbon, index) => {
-        // Individual button styling based on category
-        let buttonClass = "py-1 px-2 md:py-2 md:px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-xs md:text-sm lg:text-base tracking-wide uppercase whitespace-nowrap flex-shrink-0";
+        // Individual button styling based on category with better responsive scaling
+        let buttonClass = "py-1 px-1 sm:px-2 md:py-2 md:px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-xs sm:text-sm md:text-base tracking-wide uppercase whitespace-nowrap flex-shrink-0";
         
         // No borders - using gap spacing instead
         
