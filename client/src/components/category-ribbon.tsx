@@ -87,7 +87,7 @@ export function CategoryRibbon() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="flex items-center">
           {/* Minimal spacer for logo */}
-          <div className="w-32 flex-shrink-0"></div>
+          <div className="w-28 flex-shrink-0"></div>
           
           {/* Category buttons - tight spacing */}
           <div className="flex items-center ml-2">
