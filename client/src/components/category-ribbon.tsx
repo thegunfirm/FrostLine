@@ -75,7 +75,7 @@ export function CategoryRibbon() {
             <div className="w-[450px] border-r border-gun-black"></div>
             
             {/* Category buttons - evenly distributed */}
-            <div className="flex flex-1 justify-evenly ml-4">
+            <div className="flex flex-1 justify-evenly ml-2">
               {defaultCategories.map((item, index) => (
                 <button
                   key={item.category}
@@ -104,7 +104,7 @@ export function CategoryRibbon() {
           <div className="w-32 flex-shrink-0 border-r border-gun-black"></div>
           
           {/* Category buttons - proper spacing from logo */}
-          <div className="flex items-center ml-2">
+          <div className="flex items-center ml-1">
             {ribbons.map((ribbon, index) => (
               <button
                 key={ribbon.id}
