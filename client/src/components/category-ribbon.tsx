@@ -71,8 +71,8 @@ export function CategoryRibbon() {
       <div className="hidden md:block border-t border-gun-gray bg-gun-gray">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="flex items-center">
-            {/* Spacer for logo */}
-            <div className="w-[450px]"></div>
+            {/* Spacer for logo with border spacing */}
+            <div className="w-[450px] border-r border-gun-black"></div>
             
             {/* Category buttons - evenly distributed */}
             <div className="flex flex-1 justify-evenly ml-4">
@@ -100,10 +100,10 @@ export function CategoryRibbon() {
     <div className="hidden md:block border-t border-gun-gray bg-gun-gray">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="flex items-center">
-          {/* Minimal spacer for logo */}
-          <div className="w-28 flex-shrink-0"></div>
+          {/* Spacer for logo with border spacing */}
+          <div className="w-32 flex-shrink-0 border-r border-gun-black"></div>
           
-          {/* Category buttons - tight spacing */}
+          {/* Category buttons - proper spacing from logo */}
           <div className="flex items-center ml-2">
             {ribbons.map((ribbon, index) => (
               <button
