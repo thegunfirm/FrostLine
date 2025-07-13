@@ -69,7 +69,7 @@ export function CategoryRibbon() {
                   className={cn(
                     "py-2 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase min-w-0 whitespace-nowrap",
                     index < defaultCategories.length - 1 && "border-r border-gun-black",
-                    currentCategory === item.category && "bg-gun-black text-gun-gold !py-0 !h-full !flex !items-center !justify-center"
+                    currentCategory === item.category && "bg-gun-black text-gun-gold"
                   )}
                 >
                   {item.text}
@@ -98,7 +98,7 @@ export function CategoryRibbon() {
                 className={cn(
                   "py-2 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap",
                   index < ribbons.length - 1 && "border-r border-gun-black",
-                  currentCategory === ribbon.categoryName && "bg-gun-black text-gun-gold !py-0 !h-full !flex !items-center !justify-center"
+                  currentCategory === ribbon.categoryName && "bg-gun-black text-gun-gold"
                 )}
               >
                 {ribbon.ribbonText}
