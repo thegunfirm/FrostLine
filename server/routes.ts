@@ -3318,6 +3318,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Force Algolia pricing sync endpoint
+  app.post("/api/admin/sync-algolia-pricing", async (req, res) => {
+    try {
+      console.log('🔄 Starting force Algolia pricing sync...');
+      
+      // Get all RSR products from database
+      const allProducts = await db
+        .select()
+        .from(products)
+        .where(eq(products.distributor, 'RSR'));
+
+      console.log(`📊 Found ${allProducts.length} RSR products in database`);
+
+      // Prepare pricing updates for Algolia
+      const algoliaUpdates = allProducts.map(product => ({
+        objectID: product.sku,
+        tierPricing: {
+          bronze: parseFloat(product.priceBronze?.toString() || '0'),
+          gold: parseFloat(product.priceGold?.toString() || '0'),
+          platinum: parseFloat(product.pricePlatinum?.toString() || '0')
+        }
+      }));
+
+      // Update Algolia in batches
+      const batchSize = 1000;
+      const totalBatches = Math.ceil(algoliaUpdates.length / batchSize);
+      let totalUpdated = 0;
+
+      for (let i = 0; i < totalBatches; i++) {
+        const start = i * batchSize;
+        const end = Math.min(start + batchSize, algoliaUpdates.length);
+        const batch = algoliaUpdates.slice(start, end);
+
+        console.log(`📦 Updating batch ${i + 1}/${totalBatches} (${batch.length} products)`);
+
+        try {
+          const response = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/products/batch`, {
+            method: 'POST',
+            headers: {
+              'X-Algolia-API-Key': process.env.ALGOLIA_ADMIN_API_KEY!,
+              'X-Algolia-Application-Id': process.env.ALGOLIA_APP_ID!,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              requests: batch.map(item => ({
+                action: 'partialUpdateObject',
+                body: {
+                  objectID: item.objectID,
+                  tierPricing: item.tierPricing
+                }
+              }))
+            })
+          });
+
+          if (!response.ok) {
+            console.error(`❌ Batch ${i + 1} failed: ${response.status}`);
+            continue;
+          }
+
+          totalUpdated += batch.length;
+          console.log(`   ✅ Updated ${totalUpdated}/${algoliaUpdates.length} products`);
+
+        } catch (error) {
+          console.error(`❌ Error updating batch ${i + 1}:`, error);
+        }
+      }
+
+      console.log(`✅ Force Algolia pricing sync completed: ${totalUpdated} products updated`);
+      
+      res.json({ 
+        success: true, 
+        message: 'Algolia pricing sync completed successfully',
+        totalUpdated 
+      });
+
+    } catch (error: any) {
+      console.error('❌ Error in force Algolia pricing sync:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // Zoho Integration Routes
