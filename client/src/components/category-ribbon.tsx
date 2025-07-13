@@ -67,7 +67,7 @@ export function CategoryRibbon() {
                   key={item.category}
                   onClick={() => handleCategoryClick(item.category)}
                   className={cn(
-                    "py-2 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase min-w-0 whitespace-nowrap",
+                    "py-2 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap",
                     index < defaultCategories.length - 1 && "border-r border-gun-black",
                     currentCategory === item.category && "bg-gun-black text-gun-gold py-2 -mt-2 pt-4"
                   )}
