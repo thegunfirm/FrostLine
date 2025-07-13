@@ -97,17 +97,17 @@ export function CategoryRibbon() {
   }
 
   return (
-    <div className="hidden md:block border-t border-gun-gray bg-gun-gray">
+    <div className="border-t border-gun-gray bg-gun-gray">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="flex items-center">
           {/* Spacer for logo with border spacing */}
-          <div className="w-32 flex-shrink-0 border-r border-gun-black"></div>
+          <div className="w-32 lg:w-32 md:w-24 sm:w-20 flex-shrink-0 border-r border-gun-black"></div>
           
           {/* Category buttons - individual styling */}
-          <div className="flex items-center ml-1">
+          <div className="flex items-center ml-1 flex-wrap">
             {ribbons.map((ribbon, index) => {
               // Individual button styling based on category
-              let buttonClass = "py-2 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap";
+              let buttonClass = "py-2 px-2 sm:px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-base sm:text-lg tracking-wide sm:tracking-widest uppercase whitespace-nowrap flex-shrink-0";
               
               // Add border except for last button
               if (index < ribbons.length - 1) {
@@ -121,7 +121,7 @@ export function CategoryRibbon() {
               
               // Special styling for Uppers/Lowers
               if (ribbon.categoryName === "Uppers/Lowers") {
-                buttonClass = "py-2 pl-1 pr-8 text-left text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap";
+                buttonClass = "py-2 pl-1 pr-4 sm:pr-8 text-left text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-base sm:text-lg tracking-wide sm:tracking-widest uppercase whitespace-nowrap flex-shrink-0";
                 if (index < ribbons.length - 1) {
                   buttonClass += " border-r border-gun-black";
                 }
