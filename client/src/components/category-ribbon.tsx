@@ -67,9 +67,9 @@ export function CategoryRibbon() {
                   key={item.category}
                   onClick={() => handleCategoryClick(item.category)}
                   className={cn(
-                    "py-3 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase min-w-0 whitespace-nowrap h-full flex items-center justify-center",
+                    "py-2 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase min-w-0 whitespace-nowrap",
                     index < defaultCategories.length - 1 && "border-r border-gun-black",
-                    currentCategory === item.category && "bg-gun-black text-gun-gold"
+                    currentCategory === item.category && "bg-gun-black text-gun-gold !py-0 !h-full !flex !items-center !justify-center"
                   )}
                 >
                   {item.text}
@@ -96,9 +96,9 @@ export function CategoryRibbon() {
                 key={ribbon.id}
                 onClick={() => handleCategoryClick(ribbon.categoryName)}
                 className={cn(
-                  "py-3 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap h-full flex items-center justify-center",
+                  "py-2 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap",
                   index < ribbons.length - 1 && "border-r border-gun-black",
-                  currentCategory === ribbon.categoryName && "bg-gun-black text-gun-gold"
+                  currentCategory === ribbon.categoryName && "bg-gun-black text-gun-gold !py-0 !h-full !flex !items-center !justify-center"
                 )}
               >
                 {ribbon.ribbonText}
