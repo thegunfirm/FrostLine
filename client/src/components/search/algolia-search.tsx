@@ -75,6 +75,7 @@ interface FilterOptions {
   compatibilities: Array<{ value: string; count: number }>;
   materials: Array<{ value: string; count: number }>;
   mountTypes: Array<{ value: string; count: number }>;
+  receiverTypes: Array<{ value: string; count: number }>;
 }
 
 export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initialManufacturer = "" }: AlgoliaSearchProps) {
@@ -117,7 +118,8 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     accessoryType: "",
     compatibility: "",
     material: "",
-    mountType: ""
+    mountType: "",
+    receiverType: ""
   });
 
   // Update category when initialCategory changes
@@ -147,7 +149,8 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         accessoryType: "",
         compatibility: "",
         material: "",
-        mountType: ""
+        mountType: "",
+        receiverType: ""
       });
       setCurrentPage(0);
     }
@@ -221,7 +224,8 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       accessoryType: "",
       compatibility: "",
       material: "",
-      mountType: ""
+      mountType: "",
+      receiverType: ""
     });
     setCurrentPage(0);
   };

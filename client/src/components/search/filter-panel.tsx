@@ -26,6 +26,7 @@ interface FilterOptions {
   compatibilities: Array<{ value: string; count: number }>;
   materials: Array<{ value: string; count: number }>;
   mountTypes: Array<{ value: string; count: number }>;
+  receiverTypes: Array<{ value: string; count: number }>;
 }
 
 interface FilterPanelProps {
@@ -52,6 +53,7 @@ interface FilterPanelProps {
     compatibility: string;
     material: string;
     mountType: string;
+    receiverType: string;
   };
   onFilterChange: (key: string, value: any) => void;
   onClearFilters: () => void;
@@ -155,6 +157,8 @@ export function FilterPanel({
       case 'nfa products':
       case 'nfa':
         return [...baseFilters, 'caliber', 'nfaItemType', 'nfaBarrelLength', 'nfaFinish', 'actionType', 'sightType', 'shippingMethod'];
+      case 'uppers/lowers':
+        return [...baseFilters, 'receiverType', 'platformCategory', 'caliber', 'finish', 'shippingMethod'];
       default:
         return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'shippingMethod'];
     }
@@ -272,6 +276,31 @@ export function FilterPanel({
                 <SelectContent className="z-[60]">
                   <SelectItem value="all">All Manufacturers</SelectItem>
                   {filterOptions.manufacturers.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Receiver Type Filter - Uppers/Lowers only */}
+          {relevantFilters.includes('receiverType') && filterOptions.receiverTypes.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-700">
+                Receiver Type ({filterOptions.receiverTypes.length})
+              </label>
+              <Select
+                value={filters.receiverType}
+                onValueChange={(value) => onFilterChange('receiverType', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="All Receiver Types" />
+                </SelectTrigger>
+                <SelectContent className="z-[60]">
+                  <SelectItem value="all">All Receiver Types</SelectItem>
+                  {filterOptions.receiverTypes.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.value} ({option.count})
                     </SelectItem>

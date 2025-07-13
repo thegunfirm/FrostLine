@@ -2333,6 +2333,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         algoliaFilters.push(`mountType:"${cleanValue}"`);
       }
       
+      // Uppers/Lowers-specific filters
+      if (cleanedFilters.receiverType) {
+        const cleanValue = cleanedFilters.receiverType.replace(/"/g, '');
+        algoliaFilters.push(`receiverType:"${cleanValue}"`);
+      }
+      
       // Parts-specific filters
       if (cleanedFilters.platformCategory) {
         const cleanValue = cleanedFilters.platformCategory.replace(/"/g, '');
@@ -2624,6 +2630,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         baseFilters.push(`inStock:${filters.inStock}`);
       }
       
+      if (filters.receiverType && filters.receiverType !== "all") {
+        baseFilters.push(`receiverType:"${filters.receiverType}"`);
+      }
+      
       if (filters.barrelLength && filters.barrelLength !== "all") {
         const cleanValue = filters.barrelLength.replace(/"/g, '');
         baseFilters.push(`barrelLength:"${cleanValue}"`);
@@ -2737,7 +2747,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get available values for each filter
-      const [manufacturers, calibers, capacities, priceRanges, stockStatuses, barrelLengths, finishes, frameSizes, actionTypes, sightTypes, newItems, internalSpecials, shippingMethods, platformCategories, partTypeCategories, nfaItemTypes, nfaBarrelLengths, nfaFinishes, accessoryTypes, compatibilities, materials, mountTypes] = await Promise.all([
+      const [manufacturers, calibers, capacities, priceRanges, stockStatuses, barrelLengths, finishes, frameSizes, actionTypes, sightTypes, newItems, internalSpecials, shippingMethods, platformCategories, partTypeCategories, nfaItemTypes, nfaBarrelLengths, nfaFinishes, accessoryTypes, compatibilities, materials, mountTypes, receiverTypes] = await Promise.all([
         getFacetValues('manufacturerName', ['manufacturerName']),
         getFacetValues('caliber', ['caliber']),
         getFacetValues('capacity', ['capacity']),
@@ -2762,7 +2772,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         getFacetValues('accessoryType', ['accessoryType']),
         getFacetValues('compatibility', ['compatibility']),
         getFacetValues('material', ['material']),
-        getFacetValues('mountType', ['mountType'])
+        getFacetValues('mountType', ['mountType']),
+        // Uppers/Lowers-specific filters
+        getFacetValues('receiverType', ['receiverType'])
       ]);
       
       // Process manufacturers
@@ -2926,6 +2938,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         count: mountTypes[mt]
       })).sort((a, b) => b.count - a.count);
 
+      const availableReceiverTypes = Object.keys(receiverTypes).filter(rt => rt && rt !== 'null').map(rt => ({
+        value: rt,
+        count: receiverTypes[rt]
+      })).sort((a, b) => b.count - a.count);
+
       res.json({
         manufacturers: availableManufacturers,
         calibers: availableCalibers,
@@ -2951,7 +2968,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accessoryTypes: availableAccessoryTypes,
         compatibilities: availableCompatibilities,
         materials: availableMaterials,
-        mountTypes: availableMountTypes
+        mountTypes: availableMountTypes,
+        receiverTypes: availableReceiverTypes
       });
       
     } catch (error) {
