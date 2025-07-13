@@ -311,23 +311,6 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           </span>
           
           <div className="flex items-center gap-4">
-            {/* Sort Control */}
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="relevance">Relevance</SelectItem>
-                <SelectItem value="price_low_to_high">Low to High</SelectItem>
-                <SelectItem value="price_high_to_low">High to Low</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {/* Page Info */}
-            <span>
-              Page {currentPage + 1} of {Math.max(1, searchResults.nbPages)}
-            </span>
-            
             {/* Pagination Controls */}
             {searchResults.nbPages > 1 && (
               <div className="flex items-center gap-1">
@@ -372,6 +355,23 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                 </Button>
               </div>
             )}
+            
+            {/* Page Info */}
+            <span>
+              Page {currentPage + 1} of {Math.max(1, searchResults.nbPages)}
+            </span>
+            
+            {/* Sort Control */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="relevance">Relevance</SelectItem>
+                <SelectItem value="price_low_to_high">Low to High</SelectItem>
+                <SelectItem value="price_high_to_low">High to Low</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       )}
