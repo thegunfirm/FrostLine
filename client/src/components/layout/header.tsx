@@ -80,10 +80,7 @@ export function Header() {
           </div>
         </div>
 
-        {/* Mobile Category Ribbon - Below Header */}
-        <div className="block xl:hidden border-t border-gun-gray">
-          <CategoryRibbon />
-        </div>
+
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
