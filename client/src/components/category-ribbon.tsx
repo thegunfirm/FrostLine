@@ -56,12 +56,12 @@ export function CategoryRibbon() {
     return (
       <div className="hidden md:block border-t border-gun-gray bg-gun-gray">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="flex justify-between items-center">
+          <div className="flex items-center">
             {/* Spacer for logo */}
             <div className="w-[450px]"></div>
             
             {/* Category buttons - evenly distributed */}
-            <div className="flex flex-1 justify-evenly">
+            <div className="flex flex-1 justify-evenly ml-4">
               {defaultCategories.map((item, index) => (
                 <button
                   key={item.category}
@@ -85,12 +85,12 @@ export function CategoryRibbon() {
   return (
     <div className="hidden md:block border-t border-gun-gray bg-gun-gray">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="flex justify-between items-center">
+        <div className="flex items-center">
           {/* Spacer for logo */}
           <div className="w-[450px]"></div>
           
           {/* Category buttons - evenly distributed */}
-          <div className="flex flex-1 justify-evenly">
+          <div className="flex flex-1 justify-evenly ml-4">
             {ribbons.map((ribbon, index) => (
               <button
                 key={ribbon.id}

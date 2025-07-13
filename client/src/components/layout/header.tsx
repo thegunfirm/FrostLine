@@ -45,6 +45,36 @@ export function Header() {
 
           {/* Spacer for centered navigation */}
           <div className="hidden md:flex flex-1 justify-center">
+            {/* Additional space for category navigation */}
+            <div className="flex items-center space-x-6 ml-64">
+              <span className="text-gun-gold text-sm font-medium">Categories:</span>
+              <div className="flex space-x-4">
+                <button 
+                  onClick={() => handleCategoryClick('Handguns')}
+                  className="text-white hover:text-gun-gold transition-colors text-sm font-medium"
+                >
+                  Handguns
+                </button>
+                <button 
+                  onClick={() => handleCategoryClick('Rifles')}
+                  className="text-white hover:text-gun-gold transition-colors text-sm font-medium"
+                >
+                  Rifles
+                </button>
+                <button 
+                  onClick={() => handleCategoryClick('Shotguns')}
+                  className="text-white hover:text-gun-gold transition-colors text-sm font-medium"
+                >
+                  Shotguns
+                </button>
+                <button 
+                  onClick={() => handleCategoryClick('Ammunition')}
+                  className="text-white hover:text-gun-gold transition-colors text-sm font-medium"
+                >
+                  Ammo
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Navigation Icons */}
