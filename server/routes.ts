@@ -1484,6 +1484,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // RSR Product Image Service - Authentic RSR Image Access
+  // STABLE CHECKPOINT: July 13, 2025 - WORKING - DO NOT MODIFY
+  // Multi-angle support, proper authentication, RSR domain handling
   app.get("/api/rsr-image/:imageName", async (req, res) => {
     try {
       const imageName = req.params.imageName;
@@ -2112,6 +2114,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===== ALGOLIA SEARCH & AI LEARNING ENDPOINTS =====
   
   // Direct Algolia search with comprehensive filtering
+  // STABLE CHECKPOINT: July 13, 2025 - WORKING - DO NOT MODIFY
+  // 100% search coverage, proper department filtering, stock priority
   app.post("/api/search/algolia", async (req, res) => {
     try {
       const { query = "", filters = {}, sort = "relevance", page = 0, hitsPerPage = 24 } = req.body;
@@ -2541,6 +2545,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get dynamic filter options based on current selections
+  // STABLE CHECKPOINT: July 13, 2025 - WORKING - DO NOT MODIFY
+  // Critical exclusion logic prevents filter option removal bug
   app.post("/api/search/filter-options", async (req, res) => {
     try {
       console.log('Request body:', req.body);

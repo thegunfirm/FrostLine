@@ -1,3 +1,5 @@
+// STABLE CHECKPOINT: July 13, 2025 - WORKING - DO NOT MODIFY
+// Category ribbon locked in with proper caching and navigation
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
