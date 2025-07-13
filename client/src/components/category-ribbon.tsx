@@ -97,10 +97,10 @@ export function CategoryRibbon() {
   }
 
   return (
-    <div className="flex items-center space-x-1 bg-gun-gray border border-gun-black rounded-md px-2 py-1">
+    <div className="flex items-center space-x-1 bg-gun-gray border border-gun-black rounded-lg px-3 py-2 md:px-4 md:py-3 lg:px-6 lg:py-4 max-w-full overflow-hidden">
       {ribbons.map((ribbon, index) => {
         // Individual button styling based on category
-        let buttonClass = "py-1 px-2 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-sm tracking-wide uppercase whitespace-nowrap flex-shrink-0";
+        let buttonClass = "py-2 px-3 md:py-3 md:px-4 lg:py-4 lg:px-6 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-sm md:text-base lg:text-lg tracking-wide uppercase whitespace-nowrap flex-shrink-0";
         
         // Add border except for last button
         if (index < ribbons.length - 1) {
@@ -114,7 +114,7 @@ export function CategoryRibbon() {
         
         // Special styling for Uppers/Lowers
         if (ribbon.categoryName === "Uppers/Lowers") {
-          buttonClass = "py-1 pl-1 pr-4 text-left text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-sm tracking-wide uppercase whitespace-nowrap flex-shrink-0";
+          buttonClass = "py-2 pl-2 pr-6 md:py-3 md:pl-3 md:pr-8 lg:py-4 lg:pl-4 lg:pr-10 text-left text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-sm md:text-base lg:text-lg tracking-wide uppercase whitespace-nowrap flex-shrink-0";
           if (index < ribbons.length - 1) {
             buttonClass += " border-r border-gun-black";
           }
