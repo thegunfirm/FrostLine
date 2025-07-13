@@ -44,7 +44,7 @@ export function Header() {
           </div>
 
           {/* Category Ribbon in Header */}
-          <div className="hidden lg:flex flex-1 justify-center px-4">
+          <div className="hidden lg:flex flex-1 justify-start px-4" style={{marginLeft: '160px'}}>
             <CategoryRibbon />
           </div>
 
