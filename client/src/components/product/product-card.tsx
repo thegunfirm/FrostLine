@@ -164,19 +164,6 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
         </div>
         
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full text-xs flex-1"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              // Link functionality is handled by the parent Link component
-            }}
-          >
-            View Details
-          </Button>
-          
           {user && product.inStock && (
             <Button
               onClick={(e) => {
@@ -185,7 +172,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
                 onAddToCart?.(product);
               }}
               size="sm"
-              className="flex-1 bg-gun-gold hover:bg-gun-gold-bright text-gun-black text-xs"
+              className="w-full bg-gun-gold hover:bg-gun-gold-bright text-gun-black text-xs"
             >
               Add to Cart
             </Button>
