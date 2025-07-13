@@ -40,7 +40,7 @@ export function Header() {
           <div className="justify-self-start">
             <div className="pl-1 pr-3 py-1">
               <Link href="/">
-                <Logo className="hover:opacity-80 transition-opacity cursor-pointer h-10 w-auto sm:h-12 md:h-14 lg:h-16" />
+                <Logo className="hover:opacity-80 transition-opacity cursor-pointer h-12 w-auto sm:h-14 md:h-16 lg:h-18" />
               </Link>
             </div>
           </div>
