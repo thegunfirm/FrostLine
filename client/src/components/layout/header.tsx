@@ -35,7 +35,7 @@ export function Header() {
   return (
     <header className="bg-gun-black text-white shadow-lg sticky top-0 z-50 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-3 items-center h-16">
+        <div className="grid grid-cols-[200px_1fr_200px] items-center h-16">
           {/* Logo - Left */}
           <div className="justify-self-start">
             <div className="bg-black px-3 py-1 rounded-br-lg">
