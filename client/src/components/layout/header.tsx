@@ -44,7 +44,7 @@ export function Header() {
           </div>
 
           {/* Category Ribbon in Header */}
-          <div className="hidden md:flex flex-1 justify-center ml-32">
+          <div className="hidden md:flex flex-1 justify-center">
             <CategoryRibbon />
           </div>
 
