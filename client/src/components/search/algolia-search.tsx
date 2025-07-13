@@ -301,15 +301,17 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         )}
       </div>
 
-      {/* Results Summary & Sort */}
+      {/* Results Controls - All in One Line */}
       {searchResults && (
-        <div className="flex items-center justify-between text-sm text-gray-600">
-          <span>
+        <div className="flex items-center justify-between text-sm text-gray-600 py-2">
+          <span className="font-medium">
             {searchResults.nbHits.toLocaleString()} results
             {category !== "all" && ` in ${category}`}
             {searchQuery && ` for "${searchQuery}"`}
           </span>
+          
           <div className="flex items-center gap-4">
+            {/* Sort Control */}
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Sort by" />
@@ -320,55 +322,57 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                 <SelectItem value="price_high_to_low">High to Low</SelectItem>
               </SelectContent>
             </Select>
+            
+            {/* Page Info */}
             <span>
               Page {currentPage + 1} of {Math.max(1, searchResults.nbPages)}
             </span>
-          </div>
-        </div>
-      )}
-
-      {/* Top Pagination */}
-      {searchResults && searchResults.nbPages > 1 && (
-        <div className="flex justify-center items-center gap-2 py-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 0}
-          >
-            Previous
-          </Button>
-          
-          {/* Page Numbers */}
-          <div className="flex gap-1">
-            {Array.from({ length: Math.min(5, searchResults.nbPages) }, (_, i) => {
-              const pageNum = Math.max(0, Math.min(
-                searchResults.nbPages - 5,
-                currentPage - 2
-              )) + i;
-              
-              return (
+            
+            {/* Pagination Controls */}
+            {searchResults.nbPages > 1 && (
+              <div className="flex items-center gap-1">
                 <Button
-                  key={pageNum}
-                  variant={currentPage === pageNum ? "default" : "outline"}
+                  variant="outline"
                   size="sm"
-                  onClick={() => handlePageChange(pageNum)}
-                  className="w-10"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 0}
                 >
-                  {pageNum + 1}
+                  Previous
                 </Button>
-              );
-            })}
-          </div>
+                
+                {/* Page Numbers */}
+                <div className="flex gap-1">
+                  {Array.from({ length: Math.min(5, searchResults.nbPages) }, (_, i) => {
+                    const pageNum = Math.max(0, Math.min(
+                      searchResults.nbPages - 5,
+                      currentPage - 2
+                    )) + i;
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(pageNum)}
+                        className="w-10"
+                      >
+                        {pageNum + 1}
+                      </Button>
+                    );
+                  })}
+                </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage >= searchResults.nbPages - 1}
-          >
-            Next
-          </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= searchResults.nbPages - 1}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
