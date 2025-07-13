@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 
 interface CategoryRibbon {
   id: number;
@@ -15,6 +16,20 @@ interface CategoryRibbon {
 
 export function CategoryRibbon() {
   const [location, setLocation] = useLocation();
+  const [currentCategory, setCurrentCategory] = useState<string | null>(null);
+
+  // Update current category when URL changes
+  useEffect(() => {
+    const updateCategory = () => {
+      const category = new URLSearchParams(window.location.search).get('category');
+      setCurrentCategory(category);
+    };
+    
+    updateCategory();
+    window.addEventListener('popstate', updateCategory);
+    
+    return () => window.removeEventListener('popstate', updateCategory);
+  }, [location]);
 
   const { data: ribbons, isLoading } = useQuery({
     queryKey: ['category-ribbons-active'],
@@ -36,8 +51,7 @@ export function CategoryRibbon() {
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
-  // Get current category from URL to determine active state
-  const currentCategory = new URLSearchParams(window.location.search).get('category');
+  // currentCategory is now managed by useState and useEffect above
 
   if (isLoading || !ribbons || ribbons.length === 0) {
     // Fallback to default categories while loading
@@ -67,7 +81,7 @@ export function CategoryRibbon() {
                   key={item.category}
                   onClick={() => handleCategoryClick(item.category)}
                   className={cn(
-                    "py-2 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap",
+                    "py-2 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap flex items-center justify-center",
                     index < defaultCategories.length - 1 && "border-r border-gun-black",
                     currentCategory === item.category && "bg-gun-black text-gun-gold py-2 -mt-2 pt-4"
                   )}
@@ -96,7 +110,7 @@ export function CategoryRibbon() {
                 key={ribbon.id}
                 onClick={() => handleCategoryClick(ribbon.categoryName)}
                 className={cn(
-                  "py-2 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap",
+                  "py-2 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap flex items-center justify-center",
                   index < ribbons.length - 1 && "border-r border-gun-black",
                   currentCategory === ribbon.categoryName && "bg-gun-black text-gun-gold py-2 -mt-2 pt-4"
                 )}
