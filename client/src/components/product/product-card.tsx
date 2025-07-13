@@ -108,9 +108,6 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
       
       <CardContent className="p-3">
         <div className="mb-2">
-          <h3 className="text-sm font-oswald font-semibold text-gun-black mb-1 group-hover:text-gun-gold transition-colors duration-200 line-clamp-2">
-            {product.name}
-          </h3>
           <p className="text-gun-gray-light text-xs line-clamp-2">
             {product.description}
           </p>
