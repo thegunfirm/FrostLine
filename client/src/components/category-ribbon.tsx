@@ -85,18 +85,18 @@ export function CategoryRibbon() {
   return (
     <div className="hidden md:block border-t border-gun-gray bg-gun-gray">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="flex justify-between items-center">
-          {/* Spacer for logo */}
-          <div className="w-80" style={{ minWidth: '280px' }}></div>
+        <div className="flex items-center">
+          {/* Spacer for logo - minimal space needed */}
+          <div className="w-64 flex-shrink-0"></div>
           
-          {/* Category buttons - evenly distributed */}
-          <div className="flex flex-1 justify-evenly">
+          {/* Category buttons - wrap on smaller screens */}
+          <div className="flex flex-wrap items-center ml-4">
             {ribbons.map((ribbon, index) => (
               <button
                 key={ribbon.id}
                 onClick={() => handleCategoryClick(ribbon.categoryName)}
                 className={cn(
-                  "py-2 px-4 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase min-w-0 whitespace-nowrap",
+                  "py-2 px-4 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap",
                   index < ribbons.length - 1 && "border-r border-gun-black",
                   currentCategory === ribbon.categoryName && "bg-gun-black text-gun-gold"
                 )}
