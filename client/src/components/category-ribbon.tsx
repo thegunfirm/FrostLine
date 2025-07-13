@@ -58,7 +58,7 @@ export function CategoryRibbon() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="flex justify-between items-center">
             {/* Spacer for logo */}
-            <div className="w-64"></div>
+            <div className="w-80"></div>
             
             {/* Category buttons - evenly distributed */}
             <div className="flex flex-1 justify-evenly">
@@ -87,7 +87,7 @@ export function CategoryRibbon() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="flex justify-between items-center">
           {/* Spacer for logo */}
-          <div className="w-64"></div>
+          <div className="w-80"></div>
           
           {/* Category buttons - evenly distributed */}
           <div className="flex flex-1 justify-evenly">

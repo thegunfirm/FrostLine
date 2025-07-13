@@ -26,7 +26,9 @@ async function configureAlgoliaIndex() {
         'newItem',
         'internalSpecial',
         'dropShippable',
-        'tags'
+        'tags',
+        'receiverType',
+        'platformCategory'
       ],
       searchableAttributes: [
         'name',
