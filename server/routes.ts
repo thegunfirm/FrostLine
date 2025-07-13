@@ -2163,6 +2163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "Parts": "34",           // Department 34 - Parts
           "NFA": "06",             // Department 06 - NFA Products
           "Magazines": "10",       // Department 10 - Magazines
+          "Uppers/Lowers": "uppers_lowers_multi", // Multiple departments for uppers/lowers
           "Accessories": "accessories_multi", // Multiple departments for accessories
           // For other categories, fall back to category name
         };
@@ -2193,6 +2194,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // For accessories, combine multiple departments (09, 11, 12, 13, 14, 17, 20, 21, 25, 26, 27, 30, 31, 35)
           algoliaFilters.push(`(departmentNumber:"09" OR departmentNumber:"11" OR departmentNumber:"12" OR departmentNumber:"13" OR departmentNumber:"14" OR departmentNumber:"17" OR departmentNumber:"20" OR departmentNumber:"21" OR departmentNumber:"25" OR departmentNumber:"26" OR departmentNumber:"27" OR departmentNumber:"30" OR departmentNumber:"31" OR departmentNumber:"35")`);
           console.log(`Applied RSR accessories filter (multiple departments)`);
+        } else if (department === "uppers_lowers_multi") {
+          // For uppers/lowers, combine multiple departments (41, 42, 43)
+          algoliaFilters.push(`(departmentNumber:"41" OR departmentNumber:"42" OR departmentNumber:"43")`);
+          console.log(`Applied RSR uppers/lowers filter (multiple departments)`);
         } else if (department === "18") {
           // For ammunition (department 18), show all products including zero inventory (matches RSR behavior)
           algoliaFilters.push(`departmentNumber:"18"`);
@@ -2580,6 +2585,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (category === "Accessories") {
           // Multiple departments for accessories: 09, 11, 12, 13, 14, 17, 20, 21, 25, 26, 27, 30, 31, 35
           baseFilters.push('(departmentNumber:"09" OR departmentNumber:"11" OR departmentNumber:"12" OR departmentNumber:"13" OR departmentNumber:"14" OR departmentNumber:"17" OR departmentNumber:"20" OR departmentNumber:"21" OR departmentNumber:"25" OR departmentNumber:"26" OR departmentNumber:"27" OR departmentNumber:"30" OR departmentNumber:"31" OR departmentNumber:"35")');
+        } else if (category === "Uppers/Lowers") {
+          // Multiple departments for uppers/lowers: 41, 42, 43
+          baseFilters.push('(departmentNumber:"41" OR departmentNumber:"42" OR departmentNumber:"43")');
         } else {
           baseFilters.push(`categoryName:"${category}"`);
         }
