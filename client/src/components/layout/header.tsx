@@ -33,12 +33,12 @@ export function Header() {
   };
 
   return (
-    <header className="bg-gun-black text-white shadow-lg sticky top-0 z-50 relative">
+    <header className="bg-gun-gray text-white shadow-lg sticky top-0 z-50 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-[150px_1fr_150px] items-center h-16">
           {/* Logo - Left */}
           <div className="justify-self-start">
-            <div className="bg-black px-3 py-1 rounded-br-lg">
+            <div className="px-3 py-1">
               <Link href="/">
                 <Logo className="hover:opacity-80 transition-opacity cursor-pointer scale-75 sm:scale-90 md:scale-110 lg:scale-150" />
               </Link>
