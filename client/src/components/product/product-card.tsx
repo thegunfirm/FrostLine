@@ -149,7 +149,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
           ) : (
             <div className="flex justify-between items-center border-t border-gray-200 pt-1">
               <span className="text-xs text-gun-gray-light font-medium">Platinum:</span>
-              <span className="text-xs text-gun-gold font-medium">
+              <span className="text-xs text-gun-gray-light font-medium">
                 ${(() => {
                   const platinumPrice = parseFloat(product.pricePlatinum || '0') || 0;
                   const priceStr = platinumPrice.toFixed(2);
