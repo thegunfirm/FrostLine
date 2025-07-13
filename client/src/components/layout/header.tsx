@@ -43,8 +43,9 @@ export function Header() {
             </Link>
           </div>
 
-          {/* Spacer for centered navigation */}
-          <div className="hidden md:flex flex-1 justify-center">
+          {/* Category Ribbon in Header */}
+          <div className="hidden md:flex flex-1 justify-center ml-32">
+            <CategoryRibbon />
           </div>
 
           {/* Navigation Icons */}
@@ -77,8 +78,7 @@ export function Header() {
           </div>
         </div>
 
-        {/* Desktop Category Ribbon */}
-        <CategoryRibbon />
+
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
