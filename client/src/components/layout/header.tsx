@@ -44,7 +44,7 @@ export function Header() {
           </div>
 
           {/* Category Ribbon - Center */}
-          <div className="hidden lg:flex justify-center">
+          <div className="hidden lg:flex justify-center items-end h-full pb-1">
             <CategoryRibbon />
           </div>
 
