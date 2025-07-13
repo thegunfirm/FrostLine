@@ -81,7 +81,7 @@ export function CategoryRibbon() {
                   key={item.category}
                   onClick={() => handleCategoryClick(item.category)}
                   className={cn(
-                    "py-2 px-2 text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-wider uppercase whitespace-nowrap flex items-center justify-center flex-shrink-0",
+                    "py-2 px-3 text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-base tracking-wide uppercase whitespace-nowrap flex items-center justify-center",
                     index < defaultCategories.length - 1 && "border-r border-gun-black",
                     currentCategory === item.category && "bg-gun-black text-gun-gold py-2 -mt-2 pt-4"
                   )}
@@ -104,13 +104,13 @@ export function CategoryRibbon() {
           <div className="w-32 flex-shrink-0 border-r border-gun-black"></div>
           
           {/* Category buttons - proper spacing from logo */}
-          <div className="flex items-center ml-1">
+          <div className="flex items-center ml-1 space-x-0">
             {ribbons.map((ribbon, index) => (
               <button
                 key={ribbon.id}
                 onClick={() => handleCategoryClick(ribbon.categoryName)}
                 className={cn(
-                  "py-2 px-2 text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-wider uppercase whitespace-nowrap flex items-center justify-center flex-shrink-0",
+                  "py-2 px-3 text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-base tracking-wide uppercase whitespace-nowrap flex items-center justify-center",
                   index < ribbons.length - 1 && "border-r border-gun-black",
                   currentCategory === ribbon.categoryName && "bg-gun-black text-gun-gold py-2 -mt-2 pt-4"
                 )}
