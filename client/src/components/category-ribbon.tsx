@@ -86,11 +86,10 @@ export function CategoryRibbon() {
     <div className="hidden md:block border-t border-gun-gray bg-gun-gray">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="flex items-center">
-          {/* Spacer for logo */}
-          <div className="w-[450px]"></div>
-          
-          {/* Category buttons - evenly distributed */}
-          <div className="flex flex-1 justify-evenly ml-4">
+          {/* Spacer for logo - using margin-left to push content right */}
+          <div className="w-full flex justify-center" style={{ marginLeft: '400px' }}>
+            {/* Category buttons - evenly distributed */}
+            <div className="flex justify-evenly space-x-8">
             {ribbons.map((ribbon, index) => (
               <button
                 key={ribbon.id}
@@ -104,6 +103,7 @@ export function CategoryRibbon() {
                 {ribbon.ribbonText}
               </button>
             ))}
+            </div>
           </div>
         </div>
       </div>
