@@ -2686,8 +2686,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Function to get facet values from Algolia
-      async function getFacetValues(facetName: string, excludeFilter?: string) {
-        const facetFilters = baseFilters.filter(f => f !== excludeFilter);
+      async function getFacetValues(facetName: string, excludeFilters: string[] = []) {
+        // Build filters excluding the ones we want to calculate facets for
+        const facetFilters = baseFilters.filter(f => {
+          // Exclude filters that would restrict the facet we're calculating
+          return !excludeFilters.some(exclude => f.includes(exclude));
+        });
         
         const requestBody = {
           query: '',
@@ -2720,31 +2724,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get available values for each filter
       const [manufacturers, calibers, capacities, priceRanges, stockStatuses, barrelLengths, finishes, frameSizes, actionTypes, sightTypes, newItems, internalSpecials, shippingMethods, platformCategories, partTypeCategories, nfaItemTypes, nfaBarrelLengths, nfaFinishes, accessoryTypes, compatibilities, materials, mountTypes] = await Promise.all([
-        getFacetValues('manufacturerName', filters.manufacturer && filters.manufacturer !== "all" ? `manufacturerName:"${filters.manufacturer}"` : undefined),
-        getFacetValues('caliber', filters.caliber && filters.caliber !== "all" ? `caliber:"${filters.caliber}"` : undefined),
-        getFacetValues('capacity', filters.capacity && filters.capacity !== "all" ? `capacity:"${filters.capacity}"` : undefined),
+        getFacetValues('manufacturerName', ['manufacturerName']),
+        getFacetValues('caliber', ['caliber']),
+        getFacetValues('capacity', ['capacity']),
         // For price ranges, we need to get actual products and calculate ranges
-        getFacetValues('tierPricing.platinum'),
-        getFacetValues('inStock'),
-        getFacetValues('barrelLength', filters.barrelLength && filters.barrelLength !== "all" ? `barrelLength:"${filters.barrelLength}"` : undefined),
-        getFacetValues('finish', filters.finish && filters.finish !== "all" ? `finish:"${filters.finish}"` : undefined),
-        getFacetValues('frameSize', filters.frameSize && filters.frameSize !== "all" ? `frameSize:"${filters.frameSize}"` : undefined),
-        getFacetValues('actionType', filters.actionType && filters.actionType !== "all" ? `actionType:"${filters.actionType}"` : undefined),
-        getFacetValues('sightType', filters.sightType && filters.sightType !== "all" ? `sightType:"${filters.sightType}"` : undefined),
-        getFacetValues('newItem', filters.newItem !== null ? `newItem:${filters.newItem}` : undefined),
-        getFacetValues('internalSpecial', filters.internalSpecial !== null ? `internalSpecial:${filters.internalSpecial}` : undefined),
-        getFacetValues('dropShippable', filters.shippingMethod && filters.shippingMethod !== "all" ? `dropShippable:${filters.shippingMethod === "drop-ship" ? "true" : "false"}` : undefined),
-        getFacetValues('platformCategory', filters.platformCategory && filters.platformCategory !== "all" ? `platformCategory:"${filters.platformCategory}"` : undefined),
-        getFacetValues('partTypeCategory', filters.partTypeCategory && filters.partTypeCategory !== "all" ? `partTypeCategory:"${filters.partTypeCategory}"` : undefined),
+        getFacetValues('tierPricing.platinum', []),
+        getFacetValues('inStock', ['inStock']),
+        getFacetValues('barrelLength', ['barrelLength']),
+        getFacetValues('finish', ['finish']),
+        getFacetValues('frameSize', ['frameSize']),
+        getFacetValues('actionType', ['actionType']),
+        getFacetValues('sightType', ['sightType']),
+        getFacetValues('newItem', ['newItem']),
+        getFacetValues('internalSpecial', ['internalSpecial']),
+        getFacetValues('dropShippable', ['dropShippable']),
+        getFacetValues('platformCategory', ['platformCategory']),
+        getFacetValues('partTypeCategory', ['partTypeCategory']),
         // NFA-specific filters
-        getFacetValues('nfaItemType', filters.nfaItemType && filters.nfaItemType !== "all" ? `nfaItemType:"${filters.nfaItemType}"` : undefined),
-        getFacetValues('barrelLengthNFA', filters.barrelLengthNFA && filters.barrelLengthNFA !== "all" ? `barrelLengthNFA:"${filters.barrelLengthNFA}"` : undefined),
-        getFacetValues('finishNFA', filters.finishNFA && filters.finishNFA !== "all" ? `finishNFA:"${filters.finishNFA}"` : undefined),
+        getFacetValues('nfaItemType', ['nfaItemType']),
+        getFacetValues('barrelLengthNFA', ['barrelLengthNFA']),
+        getFacetValues('finishNFA', ['finishNFA']),
         // Accessory-specific filters
-        getFacetValues('accessoryType', filters.accessoryType && filters.accessoryType !== "all" ? `accessoryType:"${filters.accessoryType}"` : undefined),
-        getFacetValues('compatibility', filters.compatibility && filters.compatibility !== "all" ? `compatibility:"${filters.compatibility}"` : undefined),
-        getFacetValues('material', filters.material && filters.material !== "all" ? `material:"${filters.material}"` : undefined),
-        getFacetValues('mountType', filters.mountType && filters.mountType !== "all" ? `mountType:"${filters.mountType}"` : undefined)
+        getFacetValues('accessoryType', ['accessoryType']),
+        getFacetValues('compatibility', ['compatibility']),
+        getFacetValues('material', ['material']),
+        getFacetValues('mountType', ['mountType'])
       ]);
       
       // Process manufacturers
