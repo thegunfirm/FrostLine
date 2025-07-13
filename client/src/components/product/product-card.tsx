@@ -106,8 +106,8 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
 
       </div>
       
-      <CardContent className="p-4">
-        <div className="mb-3">
+      <CardContent className="p-3">
+        <div className="mb-2">
           <h3 className="text-sm font-oswald font-semibold text-gun-black mb-1 group-hover:text-gun-gold transition-colors duration-200 line-clamp-2">
             {product.name}
           </h3>
@@ -116,7 +116,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
           </p>
         </div>
         
-        <div className="mb-3 space-y-1">
+        <div className="mb-2 space-y-1">
           {/* Bronze Price - MSRP */}
           <div className="flex justify-between items-center">
             <span className="text-xs font-medium text-amber-600">Bronze:</span>
@@ -159,7 +159,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
           )}
         </div>
         
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
           {getAvailabilityBadge()}
         </div>
         
