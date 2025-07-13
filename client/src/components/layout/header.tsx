@@ -37,14 +37,14 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 relative">
           {/* Logo */}
-          <div className="absolute top-0 left-0 bg-black px-2 sm:px-4 py-2 rounded-br-lg z-10">
+          <div className="absolute top-0 left-0 bg-black px-3 py-1 rounded-br-lg z-10">
             <Link href="/">
               <Logo className="hover:opacity-80 transition-opacity cursor-pointer scale-75 sm:scale-90 md:scale-110 lg:scale-150" />
             </Link>
           </div>
 
           {/* Category Ribbon in Header */}
-          <div className="hidden xl:flex flex-1 justify-start px-4" style={{marginLeft: '80px'}}>
+          <div className="hidden xl:flex flex-1 justify-start px-4" style={{marginLeft: '90px'}}>
             <CategoryRibbon />
           </div>
 
