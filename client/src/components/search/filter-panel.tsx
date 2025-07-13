@@ -150,6 +150,8 @@ export function FilterPanel({
         return [...baseFilters, 'accessoryType', 'compatibility', 'material', 'mountType', 'finish', 'shippingMethod'];
       case 'parts':
         return [...baseFilters, 'platformCategory', 'partTypeCategory', 'finish', 'shippingMethod'];
+      case 'magazines':
+        return [...baseFilters, 'caliber', 'capacity', 'finish', 'frameSize', 'shippingMethod'];
       case 'nfa products':
       case 'nfa':
         return [...baseFilters, 'caliber', 'nfaItemType', 'nfaBarrelLength', 'nfaFinish', 'actionType', 'sightType', 'shippingMethod'];
