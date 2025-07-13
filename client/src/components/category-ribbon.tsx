@@ -121,7 +121,7 @@ export function CategoryRibbon() {
               
               // Special styling for Uppers/Lowers
               if (ribbon.categoryName === "Uppers/Lowers") {
-                buttonClass = "py-2 pl-16 pr-3 text-left text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap";
+                buttonClass = "py-2 pl-1 pr-8 text-left text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap";
                 if (index < ribbons.length - 1) {
                   buttonClass += " border-r border-gun-black";
                 }
