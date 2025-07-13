@@ -361,6 +361,18 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               Page {currentPage + 1} of {Math.max(1, searchResults.nbPages)}
             </span>
             
+            {/* Results Per Page */}
+            <Select value={resultsPerPage.toString()} onValueChange={(value) => setResultsPerPage(parseInt(value))}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="24">24</SelectItem>
+                <SelectItem value="48">48</SelectItem>
+                <SelectItem value="96">96</SelectItem>
+              </SelectContent>
+            </Select>
+            
             {/* Sort Control */}
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-40">
