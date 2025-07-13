@@ -34,10 +34,10 @@ export function Header() {
 
   return (
     <header className="bg-gun-black text-white shadow-lg sticky top-0 z-50 relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="absolute top-0 left-0 bg-black px-3 py-1 rounded-br-lg z-10">
+          <div className="absolute top-0 left-0 bg-black px-3 py-1 rounded-br-lg z-10" style={{marginLeft: '-16px'}}>
             <Link href="/">
               <Logo className="hover:opacity-80 transition-opacity cursor-pointer scale-75 sm:scale-90 md:scale-110 lg:scale-150" />
             </Link>
