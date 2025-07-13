@@ -103,22 +103,43 @@ export function CategoryRibbon() {
           {/* Spacer for logo with border spacing */}
           <div className="w-32 flex-shrink-0 border-r border-gun-black"></div>
           
-          {/* Category buttons - proper spacing from logo */}
+          {/* Category buttons - individual styling */}
           <div className="flex items-center ml-1">
-            {ribbons.map((ribbon, index) => (
-              <button
-                key={ribbon.id}
-                onClick={() => handleCategoryClick(ribbon.categoryName)}
-                className={cn(
-                  "py-2 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap",
-                  index < ribbons.length - 1 && "border-r border-gun-black",
-                  currentCategory === ribbon.categoryName && "bg-gun-black text-gun-gold py-2 -mt-2 pt-4",
-                  ribbon.categoryName === "Uppers/Lowers" && "flex items-center justify-center pl-3 pr-12"
-                )}
-              >
-                {ribbon.ribbonText}
-              </button>
-            ))}
+            {ribbons.map((ribbon, index) => {
+              // Individual button styling based on category
+              let buttonClass = "py-2 px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap";
+              
+              // Add border except for last button
+              if (index < ribbons.length - 1) {
+                buttonClass += " border-r border-gun-black";
+              }
+              
+              // Active state
+              if (currentCategory === ribbon.categoryName) {
+                buttonClass += " bg-gun-black text-gun-gold py-2 -mt-2 pt-4";
+              }
+              
+              // Special styling for Uppers/Lowers
+              if (ribbon.categoryName === "Uppers/Lowers") {
+                buttonClass = "py-2 px-3 pr-12 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-lg tracking-widest uppercase whitespace-nowrap flex items-center justify-center";
+                if (index < ribbons.length - 1) {
+                  buttonClass += " border-r border-gun-black";
+                }
+                if (currentCategory === ribbon.categoryName) {
+                  buttonClass += " bg-gun-black text-gun-gold py-2 -mt-2 pt-4";
+                }
+              }
+              
+              return (
+                <button
+                  key={ribbon.id}
+                  onClick={() => handleCategoryClick(ribbon.categoryName)}
+                  className={buttonClass}
+                >
+                  {ribbon.ribbonText}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
