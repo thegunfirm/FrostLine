@@ -35,21 +35,23 @@ export function Header() {
   return (
     <header className="bg-gun-black text-white shadow-lg sticky top-0 z-50 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center h-16">
-          {/* Logo */}
-          <div className="flex-shrink-0 bg-black px-3 py-1 rounded-br-lg">
-            <Link href="/">
-              <Logo className="hover:opacity-80 transition-opacity cursor-pointer scale-75 sm:scale-90 md:scale-110 lg:scale-150" />
-            </Link>
+        <div className="grid grid-cols-3 items-center h-16">
+          {/* Logo - Left */}
+          <div className="justify-self-start">
+            <div className="bg-black px-3 py-1 rounded-br-lg">
+              <Link href="/">
+                <Logo className="hover:opacity-80 transition-opacity cursor-pointer scale-75 sm:scale-90 md:scale-110 lg:scale-150" />
+              </Link>
+            </div>
           </div>
 
-          {/* Category Ribbon in Header */}
-          <div className="hidden xl:flex flex-1 justify-start px-4">
+          {/* Category Ribbon - Center */}
+          <div className="hidden lg:flex justify-center">
             <CategoryRibbon />
           </div>
 
-          {/* Navigation Icons */}
-          <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4 ml-auto">
+          {/* Navigation Icons - Right */}
+          <div className="justify-self-end flex items-center space-x-1 sm:space-x-2 md:space-x-4">
             <Link href="/account">
               <Button variant="ghost" size="sm" className="text-white hover:text-gun-gold">
                 <User className="h-5 w-5" />
