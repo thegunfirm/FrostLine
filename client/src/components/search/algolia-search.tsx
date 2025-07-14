@@ -218,7 +218,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     }));
     
     // Clear search query when changing product type to avoid confusion
-    if (key === 'productType' && value !== '') {
+    if (key === 'productType') {
       setSearchQuery('');
       
       // Synchronize dropdown selection with category for ribbon
@@ -235,6 +235,12 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       
       const newCategory = productTypeToCategory[value] || "all";
       setCategory(newCategory);
+      
+      // Update URL so ribbon can detect the change
+      const newUrl = value === "" ? '/products' : `/products?category=${encodeURIComponent(newCategory)}`;
+      console.log("Updating URL to:", newUrl);
+      window.history.pushState({}, '', newUrl);
+      window.dispatchEvent(new PopStateEvent('popstate'));
     }
     
     setCurrentPage(0); // Reset to first page when filters change
