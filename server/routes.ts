@@ -2449,6 +2449,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           case 'price_high_to_low':
             sortParam = 'tierPricing.platinum:desc';
             break;
+          case 'traditional_first':
+            // Custom ranking for traditional handguns first
+            sortParam = 'isTraditionalHandgun:desc,inStock:desc,name:asc';
+            break;
           default:
             sortParam = undefined;
         }

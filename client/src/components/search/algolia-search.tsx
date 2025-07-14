@@ -506,6 +506,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="relevance">Relevance</SelectItem>
+                {category.toLowerCase() === "handguns" && (
+                  <SelectItem value="traditional_first">Traditional First</SelectItem>
+                )}
                 <SelectItem value="price_low_to_high">Low to High</SelectItem>
                 <SelectItem value="price_high_to_low">High to Low</SelectItem>
               </SelectContent>
