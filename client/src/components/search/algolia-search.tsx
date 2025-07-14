@@ -144,7 +144,8 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       const productType = categoryToProductType[initialCategory] || "";
       
       // Reset filters when category changes and sync productType
-      setFilters({
+      setFilters(prev => ({
+        ...prev,
         manufacturer: initialManufacturer || "",
         caliber: "",
         capacity: "",
@@ -169,7 +170,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         mountType: "",
         receiverType: "",
         productType: productType
-      });
+      }));
       setCurrentPage(0);
     }
   }, [initialCategory, initialManufacturer, category]);
@@ -220,6 +221,21 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     // Clear search query when changing product type to avoid confusion
     if (key === 'productType' && value !== '') {
       setSearchQuery('');
+      
+      // Synchronize dropdown selection with category for ribbon
+      const productTypeToCategory = {
+        "handgun": "Handguns",
+        "rifle": "Rifles",
+        "shotgun": "Shotguns", 
+        "ammunition": "Ammunition",
+        "optics": "Optics",
+        "accessories": "Accessories",
+        "parts": "Parts",
+        "nfa": "NFA Products"
+      };
+      
+      const newCategory = productTypeToCategory[value] || "all";
+      setCategory(newCategory);
     }
     
     setCurrentPage(0); // Reset to first page when filters change
