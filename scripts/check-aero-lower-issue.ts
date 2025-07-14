@@ -8,96 +8,71 @@ import { db } from '../server/db';
 import { sql } from 'drizzle-orm';
 
 async function checkAeroLowerIssue() {
-  console.log('🔍 Checking Aero lower issue...');
+  console.log('🔍 Checking Aero Lower Issue...');
   
   try {
-    // Find the specific product
+    // Check if the specific product exists and its current category
     const aeroProduct = await db.execute(sql`
       SELECT 
         id, name, sku, department_number, category, receiver_type, manufacturer
       FROM products 
-      WHERE name LIKE '%AERO AR15 ENHANCED COMPLETE LWR%'
+      WHERE name LIKE '%AERO%' AND name LIKE '%LWR%'
       ORDER BY name
     `);
     
-    console.log(`📊 Found ${aeroProduct.rows.length} Aero enhanced complete lower products`);
+    console.log(`📊 Found ${aeroProduct.rows.length} AERO LWR products`);
     
     if (aeroProduct.rows.length > 0) {
-      console.log('📋 AERO LOWER PRODUCTS:');
+      console.log('🔧 AERO LWR PRODUCTS:');
       aeroProduct.rows.forEach(p => {
-        console.log(`  ID: ${p.id}, SKU: ${p.sku}`);
-        console.log(`  Name: ${p.name}`);
-        console.log(`  Category: ${p.category}`);
-        console.log(`  Receiver Type: ${p.receiver_type}`);
-        console.log(`  ---`);
+        console.log(`  ${p.sku}: ${p.name} (${p.category}) - ${p.receiver_type || 'No receiver type'}`);
       });
     }
     
-    // Check for all products with "LWR" in the name that are still in rifles
-    const lwrInRifles = await db.execute(sql`
+    // Check current category totals
+    const categoryTotals = await db.execute(sql`
       SELECT 
-        id, name, sku, department_number, category, receiver_type, manufacturer
+        category,
+        COUNT(*) as count
       FROM products 
-      WHERE department_number = '05' 
-        AND category = 'Rifles'
-        AND (LOWER(name) LIKE '%lwr%' OR LOWER(name) LIKE '% lwr %')
-      ORDER BY name
+      WHERE category IN ('Rifles', 'Uppers/Lowers')
+      GROUP BY category
     `);
     
-    console.log(`📊 Found ${lwrInRifles.rows.length} products with LWR in rifles category`);
+    console.log('\n📊 CATEGORY TOTALS:');
+    categoryTotals.rows.forEach(c => {
+      console.log(`  ${c.category}: ${c.count}`);
+    });
     
-    if (lwrInRifles.rows.length > 0) {
-      console.log('🚨 LWR PRODUCTS IN RIFLES:');
-      lwrInRifles.rows.forEach(p => {
-        console.log(`  ${p.sku}: ${p.name}`);
-      });
-    }
-    
-    // Check for all products with "UPPER" in the name that are still in rifles
-    const upperInRifles = await db.execute(sql`
+    // Check Uppers/Lowers receiver type distribution
+    const receiverTypes = await db.execute(sql`
       SELECT 
-        id, name, sku, department_number, category, receiver_type, manufacturer
+        receiver_type,
+        COUNT(*) as count
       FROM products 
-      WHERE department_number = '05' 
-        AND category = 'Rifles'
-        AND LOWER(name) LIKE '%upper%'
-      ORDER BY name
+      WHERE category = 'Uppers/Lowers'
+      GROUP BY receiver_type
+      ORDER BY count DESC
     `);
     
-    console.log(`📊 Found ${upperInRifles.rows.length} products with UPPER in rifles category`);
+    console.log('\n📊 UPPERS/LOWERS RECEIVER TYPE DISTRIBUTION:');
+    receiverTypes.rows.forEach(rt => {
+      console.log(`  ${rt.receiver_type || 'NULL'}: ${rt.count}`);
+    });
     
-    if (upperInRifles.rows.length > 0) {
-      console.log('🚨 UPPER PRODUCTS IN RIFLES:');
-      upperInRifles.rows.slice(0, 10).forEach(p => {
-        console.log(`  ${p.sku}: ${p.name}`);
-      });
-    }
-    
-    // Check for products that should be uppers/lowers but aren't
-    const shouldBeUppersLowers = await db.execute(sql`
+    // Check if there are any receiver type nulls that need updating
+    const nullReceiverTypes = await db.execute(sql`
       SELECT 
-        id, name, sku, department_number, category, receiver_type, manufacturer
+        id, name, sku, category, receiver_type
       FROM products 
-      WHERE department_number = '05' 
-        AND category = 'Rifles'
-        AND (
-          LOWER(name) LIKE '%complete%lower%' OR
-          LOWER(name) LIKE '%complete%upper%' OR
-          LOWER(name) LIKE '%stripped%lower%' OR
-          LOWER(name) LIKE '%stripped%upper%' OR
-          LOWER(name) LIKE '%enhanced%lower%' OR
-          LOWER(name) LIKE '%enhanced%upper%' OR
-          LOWER(name) LIKE '% lwr %' OR
-          LOWER(name) LIKE '% upr %'
-        )
-      ORDER BY name
+      WHERE category = 'Uppers/Lowers' AND receiver_type IS NULL
+      LIMIT 10
     `);
     
-    console.log(`📊 Found ${shouldBeUppersLowers.rows.length} products that should be uppers/lowers`);
-    
-    if (shouldBeUppersLowers.rows.length > 0) {
-      console.log('🔧 PRODUCTS THAT SHOULD BE UPPERS/LOWERS:');
-      shouldBeUppersLowers.rows.forEach(p => {
+    console.log(`\n📊 NULL RECEIVER TYPES: ${nullReceiverTypes.rows.length}`);
+    if (nullReceiverTypes.rows.length > 0) {
+      console.log('🔧 SAMPLE NULL RECEIVER TYPES:');
+      nullReceiverTypes.rows.forEach(p => {
         console.log(`  ${p.sku}: ${p.name}`);
       });
     }

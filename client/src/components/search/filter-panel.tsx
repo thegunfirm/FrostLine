@@ -660,6 +660,31 @@ export function FilterPanel({
             </div>
           )}
 
+          {/* Receiver Type Filter - Uppers/Lowers only */}
+          {relevantFilters.includes('receiverType') && filterOptions.receiverTypes && filterOptions.receiverTypes.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-700">
+                Receiver Type ({filterOptions.receiverTypes.length})
+              </label>
+              <Select
+                value={filters.receiverType}
+                onValueChange={(value) => onFilterChange('receiverType', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="All Receiver Types" />
+                </SelectTrigger>
+                <SelectContent className="z-[60]">
+                  <SelectItem value="all">All Receiver Types</SelectItem>
+                  {filterOptions.receiverTypes.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Platform Filter - Parts only */}
           {relevantFilters.includes('platformCategory') && filterOptions.platformCategories.length > 0 && (
             <div>
