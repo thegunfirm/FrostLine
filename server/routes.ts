@@ -2973,6 +2973,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         count: receiverTypes[rt]
       })).sort((a, b) => b.count - a.count);
 
+      console.log('🔧 Available receiver types:', availableReceiverTypes);
+      console.log('🔧 Response includes receiverTypes:', !!availableReceiverTypes);
+
       res.json({
         manufacturers: availableManufacturers,
         calibers: availableCalibers,
