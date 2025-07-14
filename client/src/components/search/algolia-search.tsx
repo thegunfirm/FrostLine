@@ -128,7 +128,22 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   useEffect(() => {
     if (initialCategory !== category) {
       setCategory(initialCategory || "all");
-      // Reset filters when category changes
+      
+      // Map ribbon category to productType for dropdown synchronization
+      const categoryToProductType = {
+        "Handguns": "handgun",
+        "Rifles": "rifle", 
+        "Shotguns": "shotgun",
+        "Ammunition": "ammunition",
+        "Optics": "optics",
+        "Accessories": "accessories",
+        "Parts": "parts",
+        "NFA Products": "nfa"
+      };
+      
+      const productType = categoryToProductType[initialCategory] || "";
+      
+      // Reset filters when category changes and sync productType
       setFilters({
         manufacturer: initialManufacturer || "",
         caliber: "",
@@ -153,7 +168,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         material: "",
         mountType: "",
         receiverType: "",
-        productType: ""
+        productType: productType
       });
       setCurrentPage(0);
     }
