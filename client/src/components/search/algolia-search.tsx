@@ -145,34 +145,14 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     
     const productType = categoryToProductType[initialCategory] || "";
     
-    // Reset filters when category changes and sync productType
+    // FILTER PRESERVATION FIX: Only update productType and URL-based filters
+    // Don't reset user-applied filters when category changes
     console.log("Setting productType to:", productType);
     setFilters(prev => ({
       ...prev,
-      manufacturer: initialManufacturer || "",
-      caliber: "",
-      capacity: "",
-      priceRange: "",
-      inStock: null,
-      barrelLength: "",
-      finish: "",
-      frameSize: "",
-      actionType: "",
-      sightType: "",
-      newItem: null,
-      internalSpecial: null,
-      shippingMethod: "",
-      platformCategory: "",
-      partTypeCategory: "",
-      nfaItemType: "",
-      nfaBarrelLength: "",
-      nfaFinish: "",
-      accessoryType: "",
-      compatibility: "",
-      material: "",
-      mountType: "",
-      receiverType: "",
+      manufacturer: initialManufacturer || prev.manufacturer, // Preserve existing if no URL override
       productType: productType
+      // Keep all other filter values intact
     }));
     setCurrentPage(0);
   }, [initialCategory, initialManufacturer]);

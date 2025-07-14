@@ -430,6 +430,8 @@ Changelog:
 - July 13, 2025. **DEPARTMENT-SPECIFIC GOLD PRICING SYSTEM COMPLETED**: Successfully implemented and deployed comprehensive department-specific Gold discount system using CMS-configured percentages - Handguns (7% discount), all other departments (5% discount), with zero products remaining with matching Bronze/Gold pricing
 - July 14, 2025. **RIBBON-DROPDOWN SYNCHRONIZATION COMPLETED**: Successfully resolved critical UX issue where category ribbon and product type dropdown were not synchronized - implemented bidirectional synchronization with URL updates and popstate event handling ensuring ribbon highlighting and dropdown selection always match perfectly
 - July 14, 2025. **AUTOMATIC HANDGUN PRIORITY RANKING IMPLEMENTED**: Successfully deployed invisible automatic ranking system prioritizing handguns in $400-$700 range (1,137 products, 33.9% of handguns) as most likely to be purchased - configured Algolia custom ranking with isPriorityPriceRange field for seamless user experience without visible sorting options
+- July 14, 2025. **UPPERS/LOWERS CATEGORY CLEANUP COMPLETED**: Successfully moved 19 additional upper/lower receiver products from rifles category to proper Uppers/Lowers category with correct receiver type classification
+- July 14, 2025. **CRITICAL FILTER PRESERVATION FIX**: Resolved major UX issue where all applied filters were being reset when category changed - modified filter state management to preserve user selections during navigation while maintaining URL-based parameter handling
 ```
 
 ## User Preferences
