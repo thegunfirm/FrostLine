@@ -201,6 +201,12 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       ...prev,
       [key]: value
     }));
+    
+    // Clear search query when changing product type to avoid confusion
+    if (key === 'productType' && value !== '') {
+      setSearchQuery('');
+    }
+    
     setCurrentPage(0); // Reset to first page when filters change
   };
 
@@ -366,14 +372,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         )}
       </div>
 
-      {/* Product Grid Title */}
-      {searchResults && (
-        <div className="border-b border-gray-200 pb-4">
-          <h1 className="text-2xl font-bold text-gun-black">
-            {getDisplayTitle()}
-          </h1>
-        </div>
-      )}
+
 
       {/* Results Controls - All in One Line */}
       {searchResults && (
