@@ -2139,8 +2139,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Build Algolia filters array
       const algoliaFilters = [];
       
+      // Product type filtering (takes precedence over category)
+      if (cleanedFilters.productType) {
+        if (cleanedFilters.productType === "handgun") {
+          algoliaFilters.push(`departmentNumber:"01"`);
+        } else if (cleanedFilters.productType === "rifle") {
+          algoliaFilters.push(`departmentNumber:"05" AND categoryName:"Rifles"`);
+        } else if (cleanedFilters.productType === "shotgun") {
+          algoliaFilters.push(`departmentNumber:"05" AND categoryName:"Shotguns"`);
+        } else if (cleanedFilters.productType === "ammunition") {
+          algoliaFilters.push(`departmentNumber:"18"`);
+        } else if (cleanedFilters.productType === "optics") {
+          algoliaFilters.push(`departmentNumber:"08"`);
+        } else if (cleanedFilters.productType === "parts") {
+          algoliaFilters.push(`departmentNumber:"34"`);
+        } else if (cleanedFilters.productType === "nfa") {
+          algoliaFilters.push(`departmentNumber:"06"`);
+        } else if (cleanedFilters.productType === "accessories") {
+          algoliaFilters.push(`(departmentNumber:"09" OR departmentNumber:"11" OR departmentNumber:"12" OR departmentNumber:"13" OR departmentNumber:"14" OR departmentNumber:"17" OR departmentNumber:"20" OR departmentNumber:"21" OR departmentNumber:"25" OR departmentNumber:"26" OR departmentNumber:"27" OR departmentNumber:"30" OR departmentNumber:"31" OR departmentNumber:"35")`);
+        }
+        console.log(`Applied product type filter: ${cleanedFilters.productType}`);
+      }
       // Department number filtering (takes precedence over category)
-      if (cleanedFilters.departmentNumber) {
+      else if (cleanedFilters.departmentNumber) {
         algoliaFilters.push(`departmentNumber:"${cleanedFilters.departmentNumber}"`);
         console.log(`Applied department number filter: ${cleanedFilters.departmentNumber}`);
       }

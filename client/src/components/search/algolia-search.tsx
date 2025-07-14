@@ -76,6 +76,7 @@ interface FilterOptions {
   materials: Array<{ value: string; count: number }>;
   mountTypes: Array<{ value: string; count: number }>;
   receiverTypes: Array<{ value: string; count: number }>;
+  productTypes: Array<{ value: string; count: number }>;
 }
 
 export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initialManufacturer = "" }: AlgoliaSearchProps) {
@@ -119,7 +120,8 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     compatibility: "",
     material: "",
     mountType: "",
-    receiverType: ""
+    receiverType: "",
+    productType: ""
   });
 
   // Update category when initialCategory changes
@@ -150,7 +152,8 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         compatibility: "",
         material: "",
         mountType: "",
-        receiverType: ""
+        receiverType: "",
+        productType: ""
       });
       setCurrentPage(0);
     }
@@ -225,7 +228,8 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       compatibility: "",
       material: "",
       mountType: "",
-      receiverType: ""
+      receiverType: "",
+      productType: ""
     });
     setCurrentPage(0);
   };
@@ -269,6 +273,24 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
             </span>
           )}
         </Button>
+
+        {/* Product Type Filter */}
+        <Select value={filters.productType || "all"} onValueChange={(value) => handleFilterChange('productType', value === "all" ? "" : value)}>
+          <SelectTrigger className="w-32">
+            <SelectValue placeholder="Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="handgun">Handguns</SelectItem>
+            <SelectItem value="rifle">Rifles</SelectItem>
+            <SelectItem value="shotgun">Shotguns</SelectItem>
+            <SelectItem value="ammunition">Ammunition</SelectItem>
+            <SelectItem value="optics">Optics</SelectItem>
+            <SelectItem value="accessories">Accessories</SelectItem>
+            <SelectItem value="parts">Parts</SelectItem>
+            <SelectItem value="nfa">NFA</SelectItem>
+          </SelectContent>
+        </Select>
 
         {/* Search Bar */}
         <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2">
