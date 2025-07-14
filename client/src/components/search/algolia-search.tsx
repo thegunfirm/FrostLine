@@ -126,54 +126,53 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
   // Update category when initialCategory changes
   useEffect(() => {
-    if (initialCategory !== category) {
-      setCategory(initialCategory || "all");
-      
-      // Map ribbon category to productType for dropdown synchronization
-      const categoryToProductType = {
-        "Handguns": "handgun",
-        "Rifles": "rifle", 
-        "Shotguns": "shotgun",
-        "Ammunition": "ammunition",
-        "Optics": "optics",
-        "Accessories": "accessories",
-        "Parts": "parts",
-        "NFA Products": "nfa"
-      };
-      
-      const productType = categoryToProductType[initialCategory] || "";
-      
-      // Reset filters when category changes and sync productType
-      setFilters(prev => ({
-        ...prev,
-        manufacturer: initialManufacturer || "",
-        caliber: "",
-        capacity: "",
-        priceRange: "",
-        inStock: null,
-        barrelLength: "",
-        finish: "",
-        frameSize: "",
-        actionType: "",
-        sightType: "",
-        newItem: null,
-        internalSpecial: null,
-        shippingMethod: "",
-        platformCategory: "",
-        partTypeCategory: "",
-        nfaItemType: "",
-        nfaBarrelLength: "",
-        nfaFinish: "",
-        accessoryType: "",
-        compatibility: "",
-        material: "",
-        mountType: "",
-        receiverType: "",
-        productType: productType
-      }));
-      setCurrentPage(0);
-    }
-  }, [initialCategory, initialManufacturer, category]);
+    setCategory(initialCategory || "all");
+    
+    // Map ribbon category to productType for dropdown synchronization
+    const categoryToProductType = {
+      "Handguns": "handgun",
+      "Rifles": "rifle", 
+      "Shotguns": "shotgun",
+      "Ammunition": "ammunition",
+      "Optics": "optics",
+      "Accessories": "accessories",
+      "Parts": "parts",
+      "NFA Products": "nfa"
+    };
+    
+    const productType = categoryToProductType[initialCategory] || "";
+    
+    // Reset filters when category changes and sync productType
+    console.log("Setting productType to:", productType);
+    setFilters(prev => ({
+      ...prev,
+      manufacturer: initialManufacturer || "",
+      caliber: "",
+      capacity: "",
+      priceRange: "",
+      inStock: null,
+      barrelLength: "",
+      finish: "",
+      frameSize: "",
+      actionType: "",
+      sightType: "",
+      newItem: null,
+      internalSpecial: null,
+      shippingMethod: "",
+      platformCategory: "",
+      partTypeCategory: "",
+      nfaItemType: "",
+      nfaBarrelLength: "",
+      nfaFinish: "",
+      accessoryType: "",
+      compatibility: "",
+      material: "",
+      mountType: "",
+      receiverType: "",
+      productType: productType
+    }));
+    setCurrentPage(0);
+  }, [initialCategory, initialManufacturer]);
 
   // Get filter options based on current search
   const { data: filterOptions } = useQuery<FilterOptions>({
@@ -355,7 +354,10 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         </Button>
 
         {/* Product Type Filter */}
-        <Select value={filters.productType || "all"} onValueChange={(value) => handleFilterChange('productType', value === "all" ? "" : value)}>
+        <Select value={filters.productType || "all"} onValueChange={(value) => {
+          console.log("Dropdown changed to:", value);
+          handleFilterChange('productType', value === "all" ? "" : value);
+        }}>
           <SelectTrigger className="w-32">
             <SelectValue placeholder="Type" />
           </SelectTrigger>
