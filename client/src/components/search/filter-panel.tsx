@@ -145,18 +145,18 @@ export function FilterPanel({
       case 'rifle ammo':
       case 'shotgun ammo':
       case 'rimfire ammo':
-        return [...baseFilters, 'caliber', 'shippingMethod'];
+        return [...baseFilters, 'caliber'];
       case 'optics':
-        return [...baseFilters, 'sightType', 'frameSize', 'shippingMethod'];
+        return [...baseFilters, 'sightType', 'frameSize'];
       case 'accessories':
-        return [...baseFilters, 'accessoryType', 'compatibility', 'material', 'mountType', 'finish', 'shippingMethod'];
+        return [...baseFilters, 'accessoryType', 'compatibility', 'material', 'mountType', 'finish'];
       case 'parts':
         return [...baseFilters, 'platformCategory', 'partTypeCategory', 'finish'];
       case 'magazines':
         return [...baseFilters, 'caliber', 'capacity', 'finish', 'frameSize'];
       case 'nfa products':
       case 'nfa':
-        return [...baseFilters, 'caliber', 'nfaItemType', 'nfaBarrelLength', 'nfaFinish', 'actionType', 'sightType', 'shippingMethod'];
+        return [...baseFilters, 'caliber', 'nfaItemType', 'nfaBarrelLength', 'nfaFinish', 'actionType', 'sightType'];
       case 'uppers/lowers':
         return [...baseFilters, 'receiverType', 'platformCategory', 'caliber', 'finish'];
       default:
