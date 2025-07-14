@@ -2155,6 +2155,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           algoliaFilters.push(`departmentNumber:"34"`);
         } else if (cleanedFilters.productType === "nfa") {
           algoliaFilters.push(`departmentNumber:"06"`);
+        } else if (cleanedFilters.productType === "magazines") {
+          algoliaFilters.push(`departmentNumber:"10"`);
+        } else if (cleanedFilters.productType === "uppers") {
+          algoliaFilters.push(`(departmentNumber:"41" OR departmentNumber:"42" OR departmentNumber:"43")`);
         } else if (cleanedFilters.productType === "accessories") {
           algoliaFilters.push(`(departmentNumber:"09" OR departmentNumber:"11" OR departmentNumber:"12" OR departmentNumber:"13" OR departmentNumber:"14" OR departmentNumber:"17" OR departmentNumber:"20" OR departmentNumber:"21" OR departmentNumber:"25" OR departmentNumber:"26" OR departmentNumber:"27" OR departmentNumber:"30" OR departmentNumber:"31" OR departmentNumber:"35")`);
         }
