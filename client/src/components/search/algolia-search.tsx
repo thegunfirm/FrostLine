@@ -346,6 +346,15 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
   return (
     <div className="space-y-3">
+      {/* Dynamic Title Based on Dropdown Selection */}
+      {searchResults && (
+        <div className="border-b border-gray-200 pb-4">
+          <h1 className="text-2xl font-bold text-gun-black">
+            {getDisplayTitle()}
+          </h1>
+        </div>
+      )}
+
       {/* Search Header */}
       <div className="flex items-center gap-2">
         {/* Filter Toggle Button */}
@@ -417,15 +426,6 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           </Button>
         )}
       </div>
-
-      {/* Dynamic Title Based on Dropdown Selection */}
-      {searchResults && (
-        <div className="border-b border-gray-200 pb-4">
-          <h1 className="text-2xl font-bold text-gun-black">
-            {getDisplayTitle()}
-          </h1>
-        </div>
-      )}
 
       {/* Results Controls - All in One Line */}
       {searchResults && (
