@@ -432,6 +432,7 @@ Changelog:
 - July 14, 2025. **AUTOMATIC HANDGUN PRIORITY RANKING IMPLEMENTED**: Successfully deployed invisible automatic ranking system prioritizing handguns in $400-$700 range (1,137 products, 33.9% of handguns) as most likely to be purchased - configured Algolia custom ranking with isPriorityPriceRange field for seamless user experience without visible sorting options
 - July 14, 2025. **UPPERS/LOWERS CATEGORY CLEANUP COMPLETED**: Successfully moved 19 additional upper/lower receiver products from rifles category to proper Uppers/Lowers category with correct receiver type classification
 - July 14, 2025. **CRITICAL FILTER PRESERVATION FIX**: Resolved major UX issue where all applied filters were being reset when category changed - modified filter state management to preserve user selections during navigation while maintaining URL-based parameter handling
+- July 14, 2025. **COMPREHENSIVE UPPERS/LOWERS CATEGORIZATION COMPLETED**: Successfully moved 137 total products from rifles to proper Uppers/Lowers category (53 lowers/uppers + 84 actions/receivers/builder kits) including specific user-reported products like "AERO AR15 ENHANCED COMPLETE LWR STR" and "AERO SOLUS LW SHORT ACTION .478"
 ```
 
 ## User Preferences
