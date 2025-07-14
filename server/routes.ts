@@ -2449,13 +2449,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           case 'price_high_to_low':
             sortParam = 'tierPricing.platinum:desc';
             break;
-          case 'traditional_first':
-            // Custom ranking for traditional handguns first
-            sortParam = ['isTraditionalHandgun:desc', 'inStock:desc', 'name:asc'];
-            break;
           default:
             sortParam = undefined;
         }
+      }
+
+      // Default sorting for handguns - automatically prioritize $400-$800 range
+      if (!sortParam && cleanedFilters.departmentNumber === '01') {
+        sortParam = 'isPriorityPriceRange:desc,inStock:desc,name:asc';
       }
       
       // Build search params
