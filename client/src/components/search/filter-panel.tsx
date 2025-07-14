@@ -289,7 +289,8 @@ export function FilterPanel({
           {console.log('receiverType filter check:', {
             relevantFilters: relevantFilters.includes('receiverType'),
             receiverTypes: filterOptions?.receiverTypes,
-            receiverTypesLength: filterOptions?.receiverTypes?.length
+            receiverTypesLength: filterOptions?.receiverTypes?.length,
+            filterOptions: filterOptions
           })}
           {relevantFilters.includes('receiverType') && filterOptions?.receiverTypes?.length > 0 && (
             <div>
