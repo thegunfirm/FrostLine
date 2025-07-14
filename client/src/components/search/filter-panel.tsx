@@ -134,12 +134,12 @@ export function FilterPanel({
     
     switch (category.toLowerCase()) {
       case 'handguns':
-        return [...baseFilters, 'caliber', 'capacity', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType', 'shippingMethod'];
+        return [...baseFilters, 'caliber', 'capacity', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType'];
       case 'rifles':
       case 'long guns':
-        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType', 'shippingMethod'];
+        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType'];
       case 'shotguns':
-        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType', 'shippingMethod'];
+        return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'frameSize', 'actionType', 'sightType'];
       case 'ammunition':
       case 'handgun ammo':
       case 'rifle ammo':
@@ -151,14 +151,14 @@ export function FilterPanel({
       case 'accessories':
         return [...baseFilters, 'accessoryType', 'compatibility', 'material', 'mountType', 'finish', 'shippingMethod'];
       case 'parts':
-        return [...baseFilters, 'platformCategory', 'partTypeCategory', 'finish', 'shippingMethod'];
+        return [...baseFilters, 'platformCategory', 'partTypeCategory', 'finish'];
       case 'magazines':
-        return [...baseFilters, 'caliber', 'capacity', 'finish', 'frameSize', 'shippingMethod'];
+        return [...baseFilters, 'caliber', 'capacity', 'finish', 'frameSize'];
       case 'nfa products':
       case 'nfa':
         return [...baseFilters, 'caliber', 'nfaItemType', 'nfaBarrelLength', 'nfaFinish', 'actionType', 'sightType', 'shippingMethod'];
       case 'uppers/lowers':
-        return [...baseFilters, 'receiverType', 'platformCategory', 'caliber', 'finish', 'shippingMethod'];
+        return [...baseFilters, 'receiverType', 'platformCategory', 'caliber', 'finish'];
       default:
         return [...baseFilters, 'caliber', 'barrelLength', 'finish', 'shippingMethod'];
     }
