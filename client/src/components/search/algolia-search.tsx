@@ -124,6 +124,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     productType: ""
   });
 
+  // Track user-applied vs system-applied filters
+  const [userAppliedFilters, setUserAppliedFilters] = useState(new Set<string>());
+
   // Update category when initialCategory changes
   useEffect(() => {
     setCategory(initialCategory || "all");
@@ -145,17 +148,38 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     
     const productType = categoryToProductType[initialCategory] || "";
     
-    // FILTER PRESERVATION FIX: Only update productType and URL-based filters
-    // Don't reset user-applied filters when category changes
+    // FILTER PRESERVATION FIX: Preserve user-applied filters, only reset system filters
     console.log("Setting productType to:", productType);
-    setFilters(prev => ({
-      ...prev,
-      manufacturer: initialManufacturer || prev.manufacturer, // Preserve existing if no URL override
-      productType: productType
-      // Keep all other filter values intact
-    }));
+    console.log("User applied filters:", Array.from(userAppliedFilters));
+    
+    setFilters(prev => {
+      const newFilters = { ...prev };
+      
+      // Always update productType (system controlled)
+      newFilters.productType = productType;
+      
+      // Update manufacturer only from URL params
+      if (initialManufacturer) {
+        newFilters.manufacturer = initialManufacturer;
+      }
+      
+      // Reset non-user-applied filters to defaults
+      Object.keys(newFilters).forEach(key => {
+        if (!userAppliedFilters.has(key) && key !== 'productType' && key !== 'manufacturer') {
+          // Reset to default values
+          if (key === 'inStock' || key === 'newItem' || key === 'internalSpecial') {
+            newFilters[key] = null;
+          } else {
+            newFilters[key] = "";
+          }
+        }
+      });
+      
+      return newFilters;
+    });
+    
     setCurrentPage(0);
-  }, [initialCategory, initialManufacturer]);
+  }, [initialCategory, initialManufacturer, userAppliedFilters]);
 
   // Get filter options based on current search
   const { data: filterOptions } = useQuery<FilterOptions>({
@@ -199,6 +223,18 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       ...prev,
       [key]: value
     }));
+    
+    // Track user-applied filters (when they actually set a value)
+    if (value && value !== "" && value !== null) {
+      setUserAppliedFilters(prev => new Set([...prev, key]));
+    } else {
+      // Remove from user-applied if they clear the filter
+      setUserAppliedFilters(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(key);
+        return newSet;
+      });
+    }
     
     // Clear search query when changing product type to avoid confusion
     if (key === 'productType') {
@@ -258,6 +294,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       receiverType: "",
       productType: ""
     });
+    setUserAppliedFilters(new Set()); // Clear user-applied filters tracking
     setCategory("all");
     setCurrentPage(0);
   };
