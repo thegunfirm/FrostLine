@@ -2195,9 +2195,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const department = categoryToDepartment[cleanedFilters.category];
         if (department === "01") {
-          // For handguns, use department 01 only (authentic RSR categorization)
+          // For handguns, use department 01 only (authentic RSR categorization) but exclude lowers moved to Uppers/Lowers
           algoliaFilters.push(`departmentNumber:"01"`);
-          console.log(`Applied RSR department 01 filter for all handgun products`);
+          algoliaFilters.push(`NOT categoryName:"Uppers/Lowers"`);
+          console.log(`Applied RSR department 01 filter for all handgun products (excluding lowers)`);
         } else if (department === "05") {
           // For Long Guns, Rifles, and Shotguns - now use proper category filtering since it's synced
           if (cleanedFilters.category === "Rifles") {
@@ -2598,6 +2599,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (category && category !== "all") {
         if (category === "Handguns") {
           baseFilters.push('departmentNumber:"01"');
+          baseFilters.push('NOT categoryName:"Uppers/Lowers"');
         } else if (category === "Rifles") {
           baseFilters.push('departmentNumber:"05"');
           baseFilters.push('categoryName:"Rifles"');

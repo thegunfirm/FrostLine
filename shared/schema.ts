@@ -81,6 +81,7 @@ export const products = pgTable("products", {
   compatibility: text("compatibility"), // Platform compatibility (AR-15, Glock, 1911, etc.)
   materialFinish: text("materialFinish"), // Material/finish (Aluminum, Steel, Polymer, etc.)
   mountType: text("mountType"), // Mount type (Picatinny, Weaver, Quick Detach, etc.)
+  receiverType: text("receiver_type"), // Receiver type (Handgun Lower, Rifle Lower, Upper, etc.)
 });
 
 export const orders = pgTable("orders", {
