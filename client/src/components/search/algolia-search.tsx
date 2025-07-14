@@ -372,7 +372,14 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         )}
       </div>
 
-
+      {/* Dynamic Title Based on Dropdown Selection */}
+      {searchResults && (
+        <div className="border-b border-gray-200 pb-4">
+          <h1 className="text-2xl font-bold text-gun-black">
+            {getDisplayTitle()}
+          </h1>
+        </div>
+      )}
 
       {/* Results Controls - All in One Line */}
       {searchResults && (
