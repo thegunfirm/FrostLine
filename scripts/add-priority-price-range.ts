@@ -27,9 +27,9 @@ async function addPriorityPriceRange() {
       const algoliaUpdates = [];
       
       for (const product of batch) {
-        // Parse pricing to check if it's in $400-$800 range
+        // Parse pricing to check if it's in $400-$700 range
         const platinumPrice = parseFloat(product.pricePlatinum || '0');
-        const isPriorityRange = platinumPrice >= 400 && platinumPrice <= 800;
+        const isPriorityRange = platinumPrice >= 400 && platinumPrice <= 700;
         
         if (isPriorityRange) {
           priorityRangeCount++;
@@ -75,7 +75,7 @@ async function addPriorityPriceRange() {
     
     console.log(`🎯 Priority price range classification complete:`);
     console.log(`   • Total handgun products: ${handgunProducts.length}`);
-    console.log(`   • Products in $400-$800 range: ${priorityRangeCount} (${(priorityRangeCount / handgunProducts.length * 100).toFixed(1)}%)`);
+    console.log(`   • Products in $400-$700 range: ${priorityRangeCount} (${(priorityRangeCount / handgunProducts.length * 100).toFixed(1)}%)`);
     console.log(`   • Products outside priority range: ${handgunProducts.length - priorityRangeCount}`);
     console.log(`   • Algolia updates: ${updatedCount}`);
     
