@@ -2454,10 +2454,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Default sorting for handguns - automatically prioritize $400-$800 range
-      if (!sortParam && cleanedFilters.departmentNumber === '01') {
-        sortParam = 'isPriorityPriceRange:desc,inStock:desc,name:asc';
-      }
+      // For handguns, we'll use Algolia's ranking configuration instead of sort parameter
+      // The isPriorityPriceRange field will be used in the ranking formula
       
       // Build search params
       let searchQuery = query || "";
