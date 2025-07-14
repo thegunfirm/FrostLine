@@ -237,6 +237,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
   // Get display title based on current filters
   const getDisplayTitle = () => {
+    // First check if a specific product type is selected from dropdown
     if (filters.productType) {
       const typeMap = {
         "handgun": "Handguns",
@@ -251,8 +252,26 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       return typeMap[filters.productType] || "Products";
     }
     
+    // Then check if a category is selected from ribbon buttons
     if (category !== "all") {
-      return category;
+      // Handle the specific category names from the ribbon
+      const categoryMap = {
+        "Handguns": "Handguns",
+        "Rifles": "Rifles",
+        "Shotguns": "Shotguns",
+        "Long Guns": "Long Guns",
+        "Ammunition": "Ammunition",
+        "Optics": "Optics",
+        "Accessories": "Accessories",
+        "Parts": "Parts",
+        "NFA Products": "NFA Products"
+      };
+      return categoryMap[category] || category;
+    }
+    
+    // Check if there's an initial category from URL that should be displayed
+    if (initialCategory) {
+      return initialCategory;
     }
     
     return "All Products";
