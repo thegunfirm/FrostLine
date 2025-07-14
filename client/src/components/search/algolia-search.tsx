@@ -137,7 +137,10 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       "Optics": "optics",
       "Accessories": "accessories",
       "Parts": "parts",
-      "NFA Products": "nfa"
+      "NFA Products": "nfa",
+      "NFA": "nfa",
+      "Magazines": "magazines",
+      "Uppers/Lowers": "uppers"
     };
     
     const productType = categoryToProductType[initialCategory] || "";
@@ -230,7 +233,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         "optics": "Optics",
         "accessories": "Accessories",
         "parts": "Parts",
-        "nfa": "NFA Products"
+        "nfa": "NFA",
+        "magazines": "Magazines",
+        "uppers": "Uppers/Lowers"
       };
       
       const newCategory = productTypeToCategory[value] || "all";
@@ -377,6 +382,8 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
             <SelectItem value="accessories">Accessories</SelectItem>
             <SelectItem value="parts">Parts</SelectItem>
             <SelectItem value="nfa">NFA</SelectItem>
+            <SelectItem value="magazines">Magazines</SelectItem>
+            <SelectItem value="uppers">Uppers/Lowers</SelectItem>
           </SelectContent>
         </Select>
 
