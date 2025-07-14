@@ -231,7 +231,31 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       receiverType: "",
       productType: ""
     });
+    setCategory("all");
     setCurrentPage(0);
+  };
+
+  // Get display title based on current filters
+  const getDisplayTitle = () => {
+    if (filters.productType) {
+      const typeMap = {
+        "handgun": "Handguns",
+        "rifle": "Rifles", 
+        "shotgun": "Shotguns",
+        "ammunition": "Ammunition",
+        "optics": "Optics",
+        "accessories": "Accessories",
+        "parts": "Parts",
+        "nfa": "NFA Products"
+      };
+      return typeMap[filters.productType] || "Products";
+    }
+    
+    if (category !== "all") {
+      return category;
+    }
+    
+    return "All Products";
   };
 
   const hasActiveFilters = Object.values(filters).some(value => 
@@ -322,6 +346,15 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           </Button>
         )}
       </div>
+
+      {/* Product Grid Title */}
+      {searchResults && (
+        <div className="border-b border-gray-200 pb-4">
+          <h1 className="text-2xl font-bold text-gun-black">
+            {getDisplayTitle()}
+          </h1>
+        </div>
+      )}
 
       {/* Results Controls - All in One Line */}
       {searchResults && (
