@@ -2451,7 +2451,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             break;
           case 'traditional_first':
             // Custom ranking for traditional handguns first
-            sortParam = 'isTraditionalHandgun:desc,inStock:desc,name:asc';
+            sortParam = ['isTraditionalHandgun:desc', 'inStock:desc', 'name:asc'];
             break;
           default:
             sortParam = undefined;
@@ -2504,7 +2504,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (sortParam) {
-        searchParams.sort = [sortParam];
+        searchParams.sort = Array.isArray(sortParam) ? sortParam : [sortParam];
       }
       
       // Note: Stock priority sorting would require index replica configuration
