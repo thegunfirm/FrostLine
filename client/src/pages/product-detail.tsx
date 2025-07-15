@@ -1021,9 +1021,9 @@ export default function ProductDetail() {
                         <div className="text-xs text-gray-600">{related.manufacturer}</div>
                         <div className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2">
-                            <span className="text-black px-1 py-0.5 rounded bg-amber-600">${(parseFloat(related.priceBronze) || 0).toFixed(2)}</span>
-                            <span className="text-black px-1 py-0.5 rounded bg-yellow-500">${(parseFloat(related.priceGold) || 0).toFixed(2)}</span>
-                            <span className="text-black px-1 py-0.5 rounded bg-gray-400">${(parseFloat(related.pricePlatinum) || 0).toFixed(2).replace(/\d/g, '*')}</span>
+                            <span className="text-black px-1 py-0.5 rounded" style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}>${(parseFloat(related.priceBronze) || 0).toFixed(2)}</span>
+                            <span className="text-black px-1 py-0.5 rounded" style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}>${(parseFloat(related.priceGold) || 0).toFixed(2)}</span>
+                            <span className="text-black px-1 py-0.5 rounded" style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}>${(parseFloat(related.pricePlatinum) || 0).toFixed(2).replace(/\d/g, '*')}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             {related.inStock ? (
