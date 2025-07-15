@@ -294,8 +294,8 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     staleTime: 30 * 1000, // Cache for 30 seconds
   });
 
-  // Cross-category suggestions query - only fetch when results are low
-  const shouldFetchSuggestions = searchResults && !isLoading && searchResults.hits.length < 10 && searchResults.hits.length > 0;
+  // Cross-category suggestions query - only fetch when results are low or when testing fallback
+  const shouldFetchSuggestions = searchResults && !isLoading && searchResults.hits.length > 0;
   
   const { data: suggestions } = useQuery<SuggestionsResponse>({
     queryKey: ["/api/search/suggestions", searchQuery, category, filters],
