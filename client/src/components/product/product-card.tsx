@@ -1,13 +1,7 @@
-import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
 import { Product } from "@shared/schema";
-import { cn } from "@/lib/utils";
 import { Link } from "wouter";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, CheckCircle, XCircle } from "lucide-react";
 
 interface ProductCardProps {
   product: Product;
@@ -16,53 +10,9 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCardProps) {
-  const { user } = useAuth();
   // Use RSR image service for product images
   const imageUrl = product.sku ? `/api/rsr-image/${product.sku}` : '/api/placeholder-image.jpg';
   const altText = product.name || 'Product Image';
-  const [imageLoading, setImageLoading] = useState(true);
-  const [imageError, setImageError] = useState(false);
-
-  const onLoad = () => setImageLoading(false);
-  const onError = () => {
-    setImageLoading(false);
-    setImageError(true);
-  };
-
-  // Fetch hide Gold pricing setting
-  const { data: hideGoldSetting } = useQuery({
-    queryKey: ["/api/admin/system-settings/hide_gold_when_equal_map"],
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-  });
-
-  const shouldHideGoldPricing = () => {
-    // Hide Gold pricing if the setting is enabled and Bronze equals Gold
-    if (hideGoldSetting?.value === "true") {
-      const bronzePrice = product.priceBronze || product.price_bronze ? parseFloat(product.priceBronze || product.price_bronze) : 0;
-      const goldPrice = product.priceGold || product.price_gold ? parseFloat(product.priceGold || product.price_gold) : 0;
-      
-      // If Bronze equals Gold, hide Gold pricing
-      if (bronzePrice > 0 && goldPrice > 0 && Math.abs(bronzePrice - goldPrice) < 0.01) {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  const getAvailabilityBadge = () => {
-    if (!product.inStock) {
-      return (
-        <Badge variant="destructive">
-          Out of Stock
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
-        In Stock
-      </Badge>
-    );
-  };
 
 
 
@@ -71,116 +21,51 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
 
 
   return (
-    <Link href={`/product/${product.sku || product.id}`} className="block">
-      <Card className="group cursor-pointer hover:shadow-xl transition-shadow duration-300 h-fit">
-        <div className="aspect-[5/4] relative overflow-hidden bg-gray-100 rounded-lg">
-          {/* Always render image, show loading overlay when needed */}
-          <img 
-            src={imageUrl}
-            alt={altText}
-            className={cn(
-              "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300",
-              imageLoading && "opacity-0"
-            )}
-            onLoad={onLoad}
-            onError={onError}
-          />
-          
-          {/* Loading overlay */}
-          {imageLoading && (
-            <div className="absolute inset-0 w-full h-full bg-gray-100 flex items-center justify-center">
-              <div className="w-8 h-8 border-4 border-gun-gold border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
-          
-          {/* Error overlay */}
-          {imageError && (
-            <div className="absolute inset-0 w-full h-full bg-gray-100 flex items-center justify-center">
-              <div className="text-center text-gray-500">
-                <ImageIcon className="w-12 h-12 mx-auto mb-2" />
-                <p className="text-xs">No Image</p>
-              </div>
-            </div>
-          )}
-        
-
-      </div>
-      
-      <CardContent className="p-3">
-        <div className="mb-2">
-          <p className="text-gun-black text-sm line-clamp-2">
-            {product.description}
-          </p>
-        </div>
-        
-        <div className="mb-2 space-y-1">
-          {/* Bronze Price - MSRP */}
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-medium text-amber-600">Bronze:</span>
-            <span className="text-xs font-medium text-gun-black">
-              ${parseFloat(product.priceBronze || product.price_bronze || "0").toFixed(2)}
-            </span>
-          </div>
-          
-          {/* Gold Price - MAP (show if available and not hidden) */}
-          {((product.priceGold && parseFloat(product.priceGold) > 0) || (product.price_gold && parseFloat(product.price_gold) > 0)) && !shouldHideGoldPricing() && (
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-medium text-yellow-500">Gold:</span>
-              <span className="text-xs font-medium text-gun-black">
-                ${parseFloat(product.priceGold || product.price_gold).toFixed(2)}
-              </span>
-            </div>
-          )}
-          
-          {/* Your Price - Show user's tier pricing */}
-          {user ? (
-            <div className="flex justify-between items-center border-t border-gray-200 pt-1">
-              <span className="text-xs text-gun-gray-light font-medium">Your Price:</span>
-              <div className="text-sm font-bold text-gun-gold">
-                {user.subscriptionTier === 'Gold' && ((product.priceGold && parseFloat(product.priceGold) > 0) || (product.price_gold && parseFloat(product.price_gold) > 0)) && !shouldHideGoldPricing() ? 
-                  `$${parseFloat(product.priceGold || product.price_gold).toFixed(2)}` :
-                  user.subscriptionTier === 'Platinum' ? 
-                    'Login to cart' :
-                    `$${parseFloat(product.priceBronze || product.price_bronze || "0").toFixed(2)}`
-                }
-                <span className="text-xs ml-1 text-gun-gray-light">({user.subscriptionTier})</span>
-              </div>
-            </div>
-          ) : (
-            <div className="flex justify-between items-center border-t border-gray-200 pt-1">
-              <span className="text-xs text-gun-gray-light font-medium">Platinum:</span>
-              <span className="text-xs text-gun-gray-light font-medium">
-                ${(() => {
-                  const platinumPrice = parseFloat(product.pricePlatinum || '0') || 0;
-                  const priceStr = platinumPrice.toFixed(2);
-                  return priceStr.replace(/\d/g, '*');
-                })()}
-              </span>
-            </div>
-          )}
-        </div>
-        
-        <div className="flex items-center justify-between mb-2">
-          {getAvailabilityBadge()}
-        </div>
-        
-        <div className="flex gap-2">
-          {user && product.inStock && (
-            <Button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onAddToCart?.(product);
+    <Link href={`/product/${product.sku || product.id}`}>
+      <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+        <CardContent className="p-4">
+          <div className="aspect-[5/4] bg-gray-100 rounded-lg mb-3">
+            <img
+              src={imageUrl}
+              alt={altText}
+              className="w-full h-full object-contain transition-opacity duration-300"
+              onError={(e) => {
+                // Show professional placeholder for missing RSR images
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling.style.display = 'flex';
               }}
-              size="sm"
-              className="w-full bg-gun-gold hover:bg-gun-gold-bright text-gun-black text-xs"
-            >
-              Add to Cart
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            />
+            <div className="w-full h-full hidden items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded">
+              <div className="text-center text-gray-500">
+                <ImageIcon className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                <p className="text-xs font-medium">Product image not available</p>
+                <p className="text-xs text-gray-400 mt-1">RSR image pending</p>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="font-medium text-sm leading-tight">{product.name}</h3>
+            <div className="text-xs text-gray-600">{product.manufacturer}</div>
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-black px-1 py-0.5 rounded" style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}>${(parseFloat(product.priceBronze || product.price_bronze || "0")).toFixed(2)}</span>
+                <span className="text-black px-1 py-0.5 rounded" style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}>${(parseFloat(product.priceGold || product.price_gold || "0")).toFixed(2)}</span>
+                <span className="text-black px-1 py-0.5 rounded" style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}>${(parseFloat(product.pricePlatinum || product.price_platinum || "0")).toFixed(2).replace(/\d/g, '*')}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                {product.inStock ? (
+                  <CheckCircle className="w-3 h-3 text-green-500" />
+                ) : (
+                  <XCircle className="w-3 h-3 text-red-500" />
+                )}
+                <span className="text-xs text-gray-500">
+                  {product.inStock ? "In Stock" : "Out of Stock"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </Link>
   );
 }
