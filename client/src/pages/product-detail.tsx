@@ -1019,11 +1019,11 @@ export default function ProductDetail() {
                       <div className="space-y-2">
                         <h3 className="font-medium text-sm leading-tight">{related.name}</h3>
                         <div className="text-xs text-gray-600">{related.manufacturer}</div>
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm font-bold">
-                            ${(parseFloat(user?.subscriptionTier === "Gold" ? related.priceGold : 
-                               user?.subscriptionTier === "Platinum" ? related.pricePlatinum : 
-                               related.priceBronze) || 0).toFixed(2)}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-amber-600">${(parseFloat(related.priceBronze) || 0).toFixed(2)}</span>
+                            <span className="text-yellow-500">${(parseFloat(related.priceGold) || 0).toFixed(2)}</span>
+                            <span className="text-gray-400">${(parseFloat(related.pricePlatinum) || 0).toFixed(2).replace(/\d/g, '*')}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             {related.inStock ? (
