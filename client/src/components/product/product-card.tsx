@@ -2,7 +2,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Product } from "@shared/schema";
 import { Link } from "wouter";
 import { ImageIcon, CheckCircle, XCircle } from "lucide-react";
-import fallbackImage from "@assets/Small G_1752617546908.png";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ProductCardProps {
   product: Product;
@@ -11,8 +12,17 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCardProps) {
+  // Fetch dynamic fallback image from CMS
+  const { data: fallbackImageSetting } = useQuery({
+    queryKey: ["/api/admin/fallback-image"],
+    queryFn: () => apiRequest("GET", "/api/admin/fallback-image"),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  const fallbackImage = fallbackImageSetting?.value || "/fallback-logo.png";
+  
   // Use RSR image service for product images
-  const imageUrl = product.sku ? `/api/rsr-image/${product.sku}` : '/api/placeholder-image.jpg';
+  const imageUrl = product.sku ? `/api/rsr-image/${product.sku}` : fallbackImage;
   const altText = product.name || 'Product Image';
 
 

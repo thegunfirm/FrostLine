@@ -13,7 +13,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
-import fallbackImage from "@assets/Small G_1752617546908.png";
 import { 
   ArrowLeft, 
   Heart, 
@@ -124,6 +123,15 @@ export default function ProductDetail() {
     retry: 2,
   });
 
+  // Fetch dynamic fallback image from CMS
+  const { data: fallbackImageSetting } = useQuery({
+    queryKey: ["/api/admin/fallback-image"],
+    queryFn: () => apiRequest("GET", "/api/admin/fallback-image"),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  const fallbackImage = fallbackImageSetting?.value || "/fallback-logo.png";
+
   // Fetch related products with minimal caching
   const { data: relatedProducts, isLoading: relatedLoading, error: relatedError } = useQuery({
     queryKey: ['related-products', product?.id],
@@ -202,12 +210,12 @@ export default function ProductDetail() {
 
   // Image handling with multiple angles
   const getImageUrl = (angle: number = 1) => {
-    if (!product?.sku) return "/api/placeholder/400/400";
+    if (!product?.sku) return fallbackImage;
     return `/api/rsr-image/${product.sku}?angle=${angle}`;
   };
 
   const getThumbnailUrl = (angle: number = 1) => {
-    if (!product?.sku) return "/api/placeholder/150/150";
+    if (!product?.sku) return fallbackImage;
     return `/api/rsr-image/${product.sku}?angle=${angle}&size=thumbnail`;
   };
 
@@ -252,9 +260,10 @@ export default function ProductDetail() {
           setImageLoading(false);
           setImageError(false);
         } else {
-          // No images available
+          // No images available, use fallback
+          setImageSrc(fallbackImage);
           setImageLoading(false);
-          setImageError(true);
+          setImageError(false);
         }
       };
       
@@ -996,20 +1005,14 @@ export default function ProductDetail() {
                         <img
                           src={`/api/rsr-image/${related.sku}`}
                           alt={related.name}
-                          className="w-full h-full object-cover transition-opacity duration-300"
+                          className="w-full h-full object-contain transition-opacity duration-300"
                           onError={(e) => {
-                            // Show professional placeholder for missing RSR images
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                            // Use fallback logo for missing RSR images
+                            console.log('Related product RSR image failed, using fallback:', fallbackImage);
+                            e.currentTarget.src = fallbackImage;
+                            e.currentTarget.onerror = null; // Prevent infinite loop
                           }}
                         />
-                        <div className="w-full h-full hidden items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded">
-                          <div className="text-center text-gray-500">
-                            <ImageIcon className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                            <p className="text-xs font-medium">Product image not available</p>
-                            <p className="text-xs text-gray-400 mt-1">RSR image pending</p>
-                          </div>
-                        </div>
                       </div>
                       <div className="space-y-2">
                         <h3 className="font-medium text-sm leading-tight">{related.name}</h3>

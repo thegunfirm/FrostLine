@@ -1973,6 +1973,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fallback image setting endpoints
+  app.get("/api/admin/fallback-image", async (req, res) => {
+    try {
+      const [setting] = await db.select()
+        .from(systemSettings)
+        .where(eq(systemSettings.key, "fallback_image_url"));
+      
+      if (!setting) {
+        // Return default value if setting doesn't exist
+        res.json({ key: "fallback_image_url", value: "/fallback-logo.png" });
+      } else {
+        res.json(setting);
+      }
+    } catch (error) {
+      console.error("Fallback image fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch fallback image setting" });
+    }
+  });
+
+  app.put("/api/admin/fallback-image", async (req, res) => {
+    try {
+      const { value } = req.body;
+      
+      await db.insert(systemSettings)
+        .values({
+          key: "fallback_image_url",
+          value,
+          description: "Default fallback image URL for products without RSR images",
+          category: "images"
+        })
+        .onConflictDoUpdate({
+          target: systemSettings.key,
+          set: { value, updatedAt: new Date() }
+        });
+      
+      res.json({ message: "Fallback image updated successfully" });
+    } catch (error) {
+      console.error("Fallback image update error:", error);
+      res.status(500).json({ error: "Failed to update fallback image setting" });
+    }
+  });
+
   // Department-specific pricing configuration
   app.get("/api/admin/pricing/department-discounts", async (req, res) => {
     try {
