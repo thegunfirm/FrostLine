@@ -353,8 +353,8 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
   // Start bounce arrow timer when search results load
   useEffect(() => {
-    if (searchResults && searchResults.hits.length > 12 && !hasScrolled && bounceCount < 3) {
-      // Show immediately on first load, then every 5 seconds
+    if (searchResults && searchResults.hits.length > 12 && !hasScrolled && bounceCount < 2) {
+      // Show immediately on first load, then after 5 seconds
       const delay = bounceCount === 0 ? 0 : 5000;
       
       const timer = setTimeout(() => {
