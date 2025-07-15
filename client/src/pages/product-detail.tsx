@@ -997,7 +997,7 @@ export default function ProductDetail() {
                   <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-in fade-in slide-in-from-bottom cursor-pointer"
                         style={{animationDelay: `${800 + index * 100}ms`}}>
                     <CardContent className="p-4">
-                      <div className="aspect-[5/4] bg-gray-100 rounded-lg mb-3 p-0.5">
+                      <div className="aspect-[5/4] bg-gray-100 rounded-lg mb-3">
                         <img
                           src={`/api/rsr-image/${related.sku}`}
                           alt={related.name}
