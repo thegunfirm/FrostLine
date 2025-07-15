@@ -993,56 +993,53 @@ export default function ProductDetail() {
             <div className="animate-in fade-in slide-in-from-bottom duration-500 delay-700">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.slice(0, 4).map((related, index) => (
-                <Card key={related.id} className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-in fade-in slide-in-from-bottom"
-                      style={{animationDelay: `${800 + index * 100}ms`}}>
-                  <CardContent className="p-4">
-                    <div className="aspect-square bg-gray-100 rounded-lg mb-3">
-                      <img
-                        src={`/api/rsr-image/${related.sku}`}
-                        alt={related.name}
-                        className="w-full h-full object-contain transition-opacity duration-300"
-                        onError={(e) => {
-                          // Show professional placeholder for missing RSR images
-                          e.currentTarget.style.display = 'none';
-                          e.currentTarget.nextElementSibling.style.display = 'flex';
-                        }}
-                      />
-                      <div className="w-full h-full hidden items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded">
-                        <div className="text-center text-gray-500">
-                          <ImageIcon className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                          <p className="text-xs font-medium">Product image not available</p>
-                          <p className="text-xs text-gray-400 mt-1">RSR image pending</p>
+                <Link key={related.id} href={`/product/${related.id}`}>
+                  <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-in fade-in slide-in-from-bottom cursor-pointer"
+                        style={{animationDelay: `${800 + index * 100}ms`}}>
+                    <CardContent className="p-4">
+                      <div className="aspect-square bg-gray-100 rounded-lg mb-3">
+                        <img
+                          src={`/api/rsr-image/${related.sku}`}
+                          alt={related.name}
+                          className="w-full h-full object-contain transition-opacity duration-300"
+                          onError={(e) => {
+                            // Show professional placeholder for missing RSR images
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                          }}
+                        />
+                        <div className="w-full h-full hidden items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded">
+                          <div className="text-center text-gray-500">
+                            <ImageIcon className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                            <p className="text-xs font-medium">Product image not available</p>
+                            <p className="text-xs text-gray-400 mt-1">RSR image pending</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="font-medium text-sm leading-tight">{related.name}</h3>
-                      <div className="text-xs text-gray-600">{related.manufacturer}</div>
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-bold">
-                          ${(parseFloat(user?.subscriptionTier === "Gold" ? related.priceGold : 
-                             user?.subscriptionTier === "Platinum" ? related.pricePlatinum : 
-                             related.priceBronze) || 0).toFixed(2)}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {related.inStock ? (
-                            <CheckCircle className="w-3 h-3 text-green-500" />
-                          ) : (
-                            <XCircle className="w-3 h-3 text-red-500" />
-                          )}
-                          <span className="text-xs text-gray-500">
-                            {related.inStock ? "In Stock" : "Out of Stock"}
-                          </span>
+                      <div className="space-y-2">
+                        <h3 className="font-medium text-sm leading-tight">{related.name}</h3>
+                        <div className="text-xs text-gray-600">{related.manufacturer}</div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-bold">
+                            ${(parseFloat(user?.subscriptionTier === "Gold" ? related.priceGold : 
+                               user?.subscriptionTier === "Platinum" ? related.pricePlatinum : 
+                               related.priceBronze) || 0).toFixed(2)}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {related.inStock ? (
+                              <CheckCircle className="w-3 h-3 text-green-500" />
+                            ) : (
+                              <XCircle className="w-3 h-3 text-red-500" />
+                            )}
+                            <span className="text-xs text-gray-500">
+                              {related.inStock ? "In Stock" : "Out of Stock"}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <Link href={`/product/${related.id}`}>
-                        <Button size="sm" variant="outline" className="w-full transition-all duration-200 hover:scale-[1.02]">
-                          View Product
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
             </div>
