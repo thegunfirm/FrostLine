@@ -45,23 +45,23 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
           </div>
           <div className="space-y-1">
             <h3 className="font-medium text-sm leading-tight">{product.name}</h3>
-            <div className="text-xs text-gray-600">{product.manufacturer}</div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-1 text-xs">
-                <span className="text-black px-1 py-0.5 rounded text-xs" style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}>${(parseFloat(product.priceBronze || product.price_bronze || "0")).toFixed(2)}</span>
-                <span className="text-black px-1 py-0.5 rounded text-xs" style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}>${(parseFloat(product.priceGold || product.price_gold || "0")).toFixed(2)}</span>
-                <span className="text-black px-1 py-0.5 rounded text-xs" style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}>${(parseFloat(product.pricePlatinum || product.price_platinum || "0")).toFixed(2).replace(/\d/g, '*')}</span>
-              </div>
-              <div className="flex items-center gap-1 text-xs">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-gray-600">{product.manufacturer}</span>
+              <div className="flex items-center gap-1">
                 {product.inStock ? (
                   <CheckCircle className="w-3 h-3 text-green-500" />
                 ) : (
                   <XCircle className="w-3 h-3 text-red-500" />
                 )}
-                <span className="text-xs text-gray-500">
+                <span className="text-gray-500">
                   {product.inStock ? "In Stock" : "Out of Stock"}
                 </span>
               </div>
+            </div>
+            <div className="flex items-center gap-1 text-xs">
+              <span className="text-black px-1 py-0.5 rounded text-xs" style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}>${(parseFloat(product.priceBronze || product.price_bronze || "0")).toFixed(2)}</span>
+              <span className="text-black px-1 py-0.5 rounded text-xs" style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}>${(parseFloat(product.priceGold || product.price_gold || "0")).toFixed(2)}</span>
+              <span className="text-black px-1 py-0.5 rounded text-xs" style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}>${(parseFloat(product.pricePlatinum || product.price_platinum || "0")).toFixed(2).replace(/\d/g, '*')}</span>
             </div>
           </div>
         </CardContent>
