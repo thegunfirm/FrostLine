@@ -130,6 +130,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     const handleScroll = () => {
       setHasScrolled(true);
       setShowBounceArrow(false);
+      setIsSettled(false);
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -143,7 +144,17 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     setHasScrolled(false);
     setBounceCount(0);
     setShowBounceArrow(false);
+    setIsSettled(false);
   }, [searchQuery, category]);
+
+  // Handle arrow click to scroll down
+  const handleArrowClick = () => {
+    const scrollAmount = window.innerHeight * 0.8; // Scroll about 80% of viewport height
+    window.scrollBy({
+      top: scrollAmount,
+      behavior: 'smooth'
+    });
+  };
   
   console.log("AlgoliaSearch props:", { initialQuery, initialCategory, initialManufacturer });
   console.log("Current category state:", category);
@@ -183,6 +194,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   const [showBounceArrow, setShowBounceArrow] = useState(false);
   const [bounceCount, setBounceCount] = useState(0);
   const [hasScrolled, setHasScrolled] = useState(false);
+  const [isSettled, setIsSettled] = useState(false);
 
   // Update category when initialCategory changes
   useEffect(() => {
@@ -349,9 +361,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         setShowBounceArrow(true);
         setBounceCount(prev => prev + 1);
         
-        // Hide arrow after bounce animation
+        // After bounce animation, settle the arrow
         setTimeout(() => {
-          setShowBounceArrow(false);
+          setIsSettled(true);
         }, 2000);
       }, delay);
 
@@ -741,10 +753,13 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           {/* Bounce Arrow Indicator */}
           {showBounceArrow && searchResults.hits.length > 12 && (
             <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
-              <div className="animate-bounce">
-                <div className="bg-gray-400 text-white p-2 rounded-full shadow-md opacity-80">
+              <div className={`${!isSettled ? 'animate-bounce' : ''}`}>
+                <button
+                  onClick={handleArrowClick}
+                  className="bg-gray-400 text-white p-2 rounded-full shadow-md opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
+                >
                   <ChevronDown className="w-5 h-5" />
-                </div>
+                </button>
               </div>
             </div>
           )}
