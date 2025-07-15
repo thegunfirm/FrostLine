@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProductGrid } from "@/components/product/product-grid";
 import { FilterPanel } from "@/components/search/filter-panel";
-import { Search, Filter, X } from "lucide-react";
+import { Search, Filter, X, ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -124,6 +124,26 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     setSortBy("relevance");
     setCurrentPage(0);
   }, [category]);
+
+  // Bounce arrow functionality
+  useEffect(() => {
+    const handleScroll = () => {
+      setHasScrolled(true);
+      setShowBounceArrow(false);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+
+
+  // Reset bounce arrow state when query changes
+  useEffect(() => {
+    setHasScrolled(false);
+    setBounceCount(0);
+    setShowBounceArrow(false);
+  }, [searchQuery, category]);
   
   console.log("AlgoliaSearch props:", { initialQuery, initialCategory, initialManufacturer });
   console.log("Current category state:", category);
@@ -158,6 +178,11 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
   // Track user-applied vs system-applied filters
   const [userAppliedFilters, setUserAppliedFilters] = useState(new Set<string>());
+
+  // Bounce arrow state
+  const [showBounceArrow, setShowBounceArrow] = useState(false);
+  const [bounceCount, setBounceCount] = useState(0);
+  const [hasScrolled, setHasScrolled] = useState(false);
 
   // Update category when initialCategory changes
   useEffect(() => {
@@ -313,6 +338,23 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     enabled: shouldFetchSuggestions,
     staleTime: 60 * 1000, // Cache for 60 seconds
   });
+
+  // Start bounce arrow timer when search results load
+  useEffect(() => {
+    if (searchResults && searchResults.hits.length > 0 && !hasScrolled && bounceCount < 3) {
+      const timer = setTimeout(() => {
+        setShowBounceArrow(true);
+        setBounceCount(prev => prev + 1);
+        
+        // Hide arrow after bounce animation
+        setTimeout(() => {
+          setShowBounceArrow(false);
+        }, 2000);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchResults, hasScrolled, bounceCount]);
 
   const handleFilterChange = (key: string, value: any) => {
     setFilters(prev => ({
@@ -644,53 +686,69 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
       {/* Results Grid */}
       {searchResults && !isLoading && (
-        <ProductGrid 
-          products={searchResults.hits.map((hit, index) => ({
-            id: hit.objectID || `product-${index}`,
-            sku: hit.objectID,
-            name: hit.name || '',
-            description: hit.description || '',
-            category: hit.categoryName || '',
-            subcategoryName: hit.subcategoryName || null,
-            departmentNumber: hit.departmentNumber || null,
-            departmentDesc: hit.departmentDesc || null,
-            subDepartmentDesc: hit.subDepartmentDesc || null,
-            manufacturer: hit.manufacturerName || '',
-            manufacturerPartNumber: hit.mpn || null,
-            priceWholesale: hit.tierPricing?.platinum?.toString() || '0',
-            priceMAP: hit.tierPricing?.gold?.toString() || '0',
-            priceMSRP: hit.tierPricing?.bronze?.toString() || '0',
-            priceBronze: hit.tierPricing?.bronze?.toString() || '0',
-            priceGold: hit.tierPricing?.gold?.toString() || '0',
-            pricePlatinum: hit.tierPricing?.platinum?.toString() || '0',
-            stockQuantity: hit.inventoryQuantity || 0,
-            allocated: 'N',
-            requiresFFL: hit.fflRequired || false,
-            createdAt: new Date(),
-            isActive: true,
-            tags: hit.tags || [],
-            images: [],
-            upcCode: hit.upc || null,
-            weight: hit.weight || 0,
-            dimensions: null,
-            restrictions: null,
-            stateRestrictions: null,
-            groundShipOnly: false,
-            adultSignatureRequired: false,
-            dropShippable: hit.dropShippable || true,
-            prop65: false,
-            returnPolicyDays: 30,
-            newItem: hit.newItem || false,
-            promo: null,
-            accessories: null,
-            distributor: 'RSR',
-            mustRouteThroughGunFirm: false,
-            firearmType: null,
-            compatibilityTags: null,
-            inStock: hit.inStock || false
-          }))}
-          loading={false}
-        />
+        <div className="relative">
+          <ProductGrid 
+            products={searchResults.hits.map((hit, index) => ({
+              id: hit.objectID || `product-${index}`,
+              sku: hit.objectID,
+              name: hit.name || '',
+              description: hit.description || '',
+              category: hit.categoryName || '',
+              subcategoryName: hit.subcategoryName || null,
+              departmentNumber: hit.departmentNumber || null,
+              departmentDesc: hit.departmentDesc || null,
+              subDepartmentDesc: hit.subDepartmentDesc || null,
+              manufacturer: hit.manufacturerName || '',
+              manufacturerPartNumber: hit.mpn || null,
+              priceWholesale: hit.tierPricing?.platinum?.toString() || '0',
+              priceMAP: hit.tierPricing?.gold?.toString() || '0',
+              priceMSRP: hit.tierPricing?.bronze?.toString() || '0',
+              priceBronze: hit.tierPricing?.bronze?.toString() || '0',
+              priceGold: hit.tierPricing?.gold?.toString() || '0',
+              pricePlatinum: hit.tierPricing?.platinum?.toString() || '0',
+              stockQuantity: hit.inventoryQuantity || 0,
+              allocated: 'N',
+              requiresFFL: hit.fflRequired || false,
+              createdAt: new Date(),
+              isActive: true,
+              tags: hit.tags || [],
+              images: [],
+              upcCode: hit.upc || null,
+              weight: hit.weight || 0,
+              dimensions: null,
+              restrictions: null,
+              stateRestrictions: null,
+              groundShipOnly: false,
+              adultSignatureRequired: false,
+              dropShippable: hit.dropShippable || true,
+              prop65: false,
+              returnPolicyDays: 30,
+              newItem: hit.newItem || false,
+              promo: null,
+              accessories: null,
+              distributor: 'RSR',
+              mustRouteThroughGunFirm: false,
+              firearmType: null,
+              compatibilityTags: null,
+              inStock: hit.inStock || false
+            }))}
+            loading={false}
+          />
+          
+          {/* Bounce Arrow Indicator */}
+          {showBounceArrow && searchResults.hits.length > 12 && (
+            <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
+              <div className="flex flex-col items-center animate-bounce">
+                <div className="bg-blue-600 text-white p-2 rounded-full shadow-lg">
+                  <ChevronDown className="w-6 h-6" />
+                </div>
+                <div className="mt-2 text-sm text-gray-600 bg-white px-3 py-1 rounded-full shadow-md">
+                  More results below
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Cross-Category Suggestions */}
