@@ -125,12 +125,20 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     setCurrentPage(0);
   }, [category]);
 
-  // Bounce arrow functionality
+  // Track scroll state and detect bottom of results
   useEffect(() => {
     const handleScroll = () => {
       setHasScrolled(true);
-      setShowBounceArrow(false);
-      setIsSettled(false);
+      
+      // Check if user has scrolled to the bottom of results
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const footerHeight = 400; // Approximate footer height
+      
+      // Consider "bottom of results" as being within 200px of the footer
+      const isNearBottom = scrollTop + windowHeight >= documentHeight - footerHeight;
+      setIsAtBottom(isNearBottom);
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -145,6 +153,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     setBounceCount(0);
     setShowBounceArrow(false);
     setIsSettled(false);
+    setIsAtBottom(false);
   }, [searchQuery, category]);
 
   // Handle arrow click to scroll down
@@ -195,6 +204,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   const [bounceCount, setBounceCount] = useState(0);
   const [hasScrolled, setHasScrolled] = useState(false);
   const [isSettled, setIsSettled] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(false);
 
   // Update category when initialCategory changes
   useEffect(() => {
@@ -353,21 +363,27 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
   // Start bounce arrow timer when search results load
   useEffect(() => {
-    if (searchResults && searchResults.hits.length > 12 && !hasScrolled && bounceCount < 2) {
-      // Show immediately on first load, then after 5 seconds
-      const delay = bounceCount === 0 ? 0 : 5000;
-      
-      const timer = setTimeout(() => {
-        setShowBounceArrow(true);
-        setBounceCount(prev => prev + 1);
+    if (searchResults && searchResults.hits.length > 12) {
+      // Show immediately on first load, then after 5 seconds, but only bounce if not scrolled
+      if (!hasScrolled && bounceCount < 2) {
+        const delay = bounceCount === 0 ? 0 : 5000;
         
-        // After bounce animation, settle the arrow
-        setTimeout(() => {
-          setIsSettled(true);
-        }, 3000);
-      }, delay);
+        const timer = setTimeout(() => {
+          setShowBounceArrow(true);
+          setBounceCount(prev => prev + 1);
+          
+          // After bounce animation, settle the arrow
+          setTimeout(() => {
+            setIsSettled(true);
+          }, 3000);
+        }, delay);
 
-      return () => clearTimeout(timer);
+        return () => clearTimeout(timer);
+      } else {
+        // Always show arrow if results > 12, even after scroll
+        setShowBounceArrow(true);
+        setIsSettled(true);
+      }
     }
   }, [searchResults, hasScrolled, bounceCount]);
 
@@ -751,14 +767,14 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           />
           
           {/* Bounce Arrow Indicator */}
-          {showBounceArrow && searchResults.hits.length > 12 && (
+          {showBounceArrow && searchResults.hits.length > 12 && !isAtBottom && (
             <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
               <div className={`${!isSettled ? 'animate-dampening-bounce' : ''}`}>
                 <button
                   onClick={handleArrowClick}
-                  className="bg-gray-400 text-white p-2 rounded-full shadow-md opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
+                  className="text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
                 >
-                  <ChevronDown className="w-5 h-5" />
+                  <ChevronDown className="w-6 h-6 sm:w-4 sm:h-4" />
                 </button>
               </div>
             </div>
