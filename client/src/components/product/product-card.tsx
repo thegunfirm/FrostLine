@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Product } from "@shared/schema";
 import { Link } from "wouter";
 import { ImageIcon, CheckCircle, XCircle } from "lucide-react";
+import fallbackImage from "@assets/Small G_1752617546908.png";
 
 interface ProductCardProps {
   product: Product;
@@ -30,18 +31,12 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
               alt={altText}
               className="w-full h-auto object-contain transition-opacity duration-300"
               onError={(e) => {
-                // Show professional placeholder for missing RSR images
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling.style.display = 'flex';
+                // Use fallback logo for missing RSR images
+                e.currentTarget.src = fallbackImage;
+                e.currentTarget.onerror = null; // Prevent infinite loop
               }}
             />
-            <div className="w-full h-full hidden items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded">
-              <div className="text-center text-gray-500">
-                <ImageIcon className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                <p className="text-xs font-medium">Product image not available</p>
-                <p className="text-xs text-gray-400 mt-1">RSR image pending</p>
-              </div>
-            </div>
+
           </div>
           <div className="space-y-1">
             <h3 className="font-medium text-sm leading-tight">{product.name}</h3>

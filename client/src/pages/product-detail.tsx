@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
+import fallbackImage from "@assets/Small G_1752617546908.png";
 import { 
   ArrowLeft, 
   Heart, 
@@ -273,10 +274,12 @@ export default function ProductDetail() {
     setImageError(false);
   };
 
-  const handleImageError = () => {
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     setImageLoading(false);
-    setImageError(true);
-    // Don't change src to prevent flashing - just show placeholder
+    setImageError(false);
+    // Use fallback logo for missing RSR images
+    e.currentTarget.src = fallbackImage;
+    e.currentTarget.onerror = null; // Prevent infinite loop
   };
 
   // Handlers
@@ -418,15 +421,7 @@ export default function ProductDetail() {
                   <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
                 </div>
               )}
-              {imageError ? (
-                <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded border-2 border-dashed border-gray-300">
-                  <div className="text-center text-gray-500">
-                    <ImageIcon className="w-16 h-16 mx-auto mb-2 text-gray-400" />
-                    <p className="text-sm font-medium">Product image not available</p>
-                    <p className="text-xs text-gray-400 mt-1">RSR image server unavailable</p>
-                  </div>
-                </div>
-              ) : (
+              {!imageLoading && (
                 <img
                   src={imageSrc}
                   alt={`${product.name} - View ${currentAngle}`}
