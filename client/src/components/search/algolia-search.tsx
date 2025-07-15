@@ -194,10 +194,44 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       console.log('🔍 Filter options API response:', data);
       console.log('🔍 Has receiverTypes:', !!data.receiverTypes);
       console.log('🔍 receiverTypes data:', data.receiverTypes);
+      
+      // Update receiver type labels for industry standard terminology
+      if (data.receiverTypes) {
+        data.receiverTypes = data.receiverTypes.map(rt => ({
+          ...rt,
+          value: rt.value === 'Handgun Lower' ? 'Frame' : rt.value
+        }));
+      }
+      
       return data;
     },
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
-  });
+  }) || {
+    manufacturers: [],
+    calibers: [],
+    capacities: [],
+    priceRanges: [],
+    stockStatus: [],
+    barrelLengths: [],
+    finishes: [],
+    frameSizes: [],
+    actionTypes: [],
+    sightTypes: [],
+    newItems: [],
+    internalSpecials: [],
+    shippingMethods: [],
+    platformCategories: [],
+    partTypeCategories: [],
+    nfaItemTypes: [],
+    nfaBarrelLengths: [],
+    nfaFinishes: [],
+    accessoryTypes: [],
+    compatibilities: [],
+    materials: [],
+    mountTypes: [],
+    receiverTypes: [],
+    productTypes: []
+  };
 
   // Main search query
   const { data: searchResults, isLoading, error } = useQuery<SearchResponse>({

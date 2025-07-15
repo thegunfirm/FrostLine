@@ -290,7 +290,10 @@ export function FilterPanel({
             relevantFilters: relevantFilters.includes('receiverType'),
             receiverTypes: filterOptions?.receiverTypes,
             receiverTypesLength: filterOptions?.receiverTypes?.length,
-            filterOptions: filterOptions
+            filterOptions: filterOptions,
+            hasReceiverTypes: !!filterOptions?.receiverTypes,
+            filterOptionsKeys: Object.keys(filterOptions || {}),
+            receiverTypesRaw: filterOptions?.receiverTypes
           })}
           {relevantFilters.includes('receiverType') && filterOptions?.receiverTypes?.length > 0 && (
             <div>
