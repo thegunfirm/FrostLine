@@ -772,7 +772,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               <div className={`${!isSettled ? 'animate-dampening-bounce' : ''}`}>
                 <button
                   onClick={handleArrowClick}
-                  className="text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                  className="text-gray-500 hover:text-gray-700 transition-colors cursor-pointer sm:bg-gray-100 sm:hover:bg-gray-200 sm:rounded-full sm:p-2 md:p-3"
                 >
                   <ChevronDown className="w-4 h-4 sm:w-6 sm:h-6 md:w-8 md:h-8" />
                 </button>
