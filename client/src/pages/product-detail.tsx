@@ -1021,9 +1021,9 @@ export default function ProductDetail() {
                         <div className="text-xs text-gray-600">{related.manufacturer}</div>
                         <div className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2">
-                            <span className="text-amber-600">${(parseFloat(related.priceBronze) || 0).toFixed(2)}</span>
-                            <span className="text-yellow-500">${(parseFloat(related.priceGold) || 0).toFixed(2)}</span>
-                            <span className="text-gray-400">${(parseFloat(related.pricePlatinum) || 0).toFixed(2).replace(/\d/g, '*')}</span>
+                            <span className="text-black font-medium" style={{textShadow: '0 0 0 1px rgb(217 119 6)', WebkitTextStroke: '1px rgb(217 119 6)'}}>${(parseFloat(related.priceBronze) || 0).toFixed(2)}</span>
+                            <span className="text-black font-medium" style={{textShadow: '0 0 0 1px rgb(234 179 8)', WebkitTextStroke: '1px rgb(234 179 8)'}}>${(parseFloat(related.priceGold) || 0).toFixed(2)}</span>
+                            <span className="text-black font-medium" style={{textShadow: '0 0 0 1px rgb(156 163 175)', WebkitTextStroke: '1px rgb(156 163 175)'}}>${(parseFloat(related.pricePlatinum) || 0).toFixed(2).replace(/\d/g, '*')}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             {related.inStock ? (
