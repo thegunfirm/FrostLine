@@ -190,7 +190,11 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         query: searchQuery,
         filters: filters
       });
-      return response.json();
+      const data = await response.json();
+      console.log('🔍 Filter options API response:', data);
+      console.log('🔍 Has receiverTypes:', !!data.receiverTypes);
+      console.log('🔍 receiverTypes data:', data.receiverTypes);
+      return data;
     },
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
   });
