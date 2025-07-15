@@ -364,7 +364,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         // After bounce animation, settle the arrow
         setTimeout(() => {
           setIsSettled(true);
-        }, 2000);
+        }, 3000);
       }, delay);
 
       return () => clearTimeout(timer);
