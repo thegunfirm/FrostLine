@@ -73,13 +73,13 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
   return (
     <Link href={`/product/${product.sku || product.id}`} className="block">
       <Card className="group cursor-pointer hover:shadow-xl transition-shadow duration-300 h-fit">
-        <div className="aspect-square relative overflow-hidden">
+        <div className="aspect-[5/4] relative overflow-hidden bg-gray-100 rounded-lg">
           {/* Always render image, show loading overlay when needed */}
           <img 
             src={imageUrl}
             alt={altText}
             className={cn(
-              "w-full h-full object-contain group-hover:scale-105 transition-transform duration-300",
+              "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300",
               imageLoading && "opacity-0"
             )}
             onLoad={onLoad}
