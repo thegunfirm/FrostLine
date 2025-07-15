@@ -25,18 +25,18 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
     <Link href={`/product/${product.sku || product.id}`}>
       <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer">
         <CardContent className="p-2">
-          <div className="bg-gray-100 rounded-lg mb-1 overflow-hidden flex items-center justify-center">
+          <div className="bg-gray-100 rounded-lg mb-1 overflow-hidden flex items-center justify-center min-h-[100px]">
             <img
               src={imageUrl}
               alt={altText}
-              className="w-full h-auto object-contain transition-opacity duration-300"
+              className="w-full h-auto object-contain transition-opacity duration-300 max-w-full"
               onError={(e) => {
                 // Use fallback logo for missing RSR images
+                console.log('RSR image failed, using fallback:', fallbackImage);
                 e.currentTarget.src = fallbackImage;
                 e.currentTarget.onerror = null; // Prevent infinite loop
               }}
             />
-
           </div>
           <div className="space-y-1">
             <h3 className="font-medium text-sm leading-tight">{product.name}</h3>
