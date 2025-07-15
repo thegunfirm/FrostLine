@@ -24,11 +24,11 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
     <Link href={`/product/${product.sku || product.id}`}>
       <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer">
         <CardContent className="p-2">
-          <div className="aspect-[4/3] bg-gray-100 rounded-lg mb-1 overflow-hidden flex items-center justify-center">
+          <div className="bg-gray-100 rounded-lg mb-1 overflow-hidden flex items-center justify-center min-h-[120px]">
             <img
               src={imageUrl}
               alt={altText}
-              className="max-w-full max-h-full object-contain transition-opacity duration-300"
+              className="w-full h-auto object-contain transition-opacity duration-300"
               onError={(e) => {
                 // Show professional placeholder for missing RSR images
                 e.currentTarget.style.display = 'none';
