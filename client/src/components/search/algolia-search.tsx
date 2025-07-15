@@ -753,7 +753,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           {/* Bounce Arrow Indicator */}
           {showBounceArrow && searchResults.hits.length > 12 && (
             <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
-              <div className={`${!isSettled ? 'animate-bounce' : ''}`}>
+              <div className={`${!isSettled ? 'animate-bounce' : ''} transition-all duration-1000 ease-out`}>
                 <button
                   onClick={handleArrowClick}
                   className="bg-gray-400 text-white p-2 rounded-full shadow-md opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
