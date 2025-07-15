@@ -194,6 +194,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       console.log('🔍 Filter options API response:', data);
       console.log('🔍 Has receiverTypes:', !!data.receiverTypes);
       console.log('🔍 receiverTypes data:', data.receiverTypes);
+      console.log('🔍 API response keys:', Object.keys(data));
       
       // Update receiver type labels for industry standard terminology
       if (data.receiverTypes) {
@@ -201,12 +202,17 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           ...rt,
           value: rt.value === 'Handgun Lower' ? 'Frame' : rt.value
         }));
+        console.log('🔍 Updated receiverTypes:', data.receiverTypes);
       }
       
+      console.log('🔍 Final data being returned:', data);
       return data;
     },
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
-  }) || {
+  });
+
+  // Provide default values only if no data is available
+  const safeFilterOptions = filterOptions || {
     manufacturers: [],
     calibers: [],
     capacities: [],
@@ -725,7 +731,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           accessoryTypes: filterOptions?.accessoryTypes || [],
           compatibilities: filterOptions?.compatibilities || [],
           materials: filterOptions?.materials || [],
-          mountTypes: filterOptions?.mountTypes || []
+          mountTypes: filterOptions?.mountTypes || [],
+          receiverTypes: filterOptions?.receiverTypes || [],
+          productTypes: filterOptions?.productTypes || []
         }}
         category={category}
         totalResults={searchResults?.nbHits || 0}
