@@ -738,12 +738,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           {/* Bounce Arrow Indicator */}
           {showBounceArrow && searchResults.hits.length > 12 && (
             <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
-              <div className="flex flex-col items-center animate-bounce">
-                <div className="bg-blue-600 text-white p-2 rounded-full shadow-lg">
-                  <ChevronDown className="w-6 h-6" />
-                </div>
-                <div className="mt-2 text-sm text-gray-600 bg-white px-3 py-1 rounded-full shadow-md">
-                  More results below
+              <div className="animate-bounce">
+                <div className="bg-gray-400 text-white p-2 rounded-full shadow-md opacity-80">
+                  <ChevronDown className="w-5 h-5" />
                 </div>
               </div>
             </div>
