@@ -24,7 +24,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
     <Link href={`/product/${product.sku || product.id}`}>
       <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer">
         <CardContent className="p-2">
-          <div className="aspect-[5/4] bg-gray-100 rounded-lg mb-1 overflow-hidden flex items-center justify-center">
+          <div className="aspect-[4/3] bg-gray-100 rounded-lg mb-1 overflow-hidden flex items-center justify-center">
             <img
               src={imageUrl}
               alt={altText}
@@ -43,7 +43,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
               </div>
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <h3 className="font-medium text-sm leading-tight">{product.name}</h3>
             <div className="text-xs text-gray-600">{product.manufacturer}</div>
             <div className="flex items-center justify-between text-xs">
