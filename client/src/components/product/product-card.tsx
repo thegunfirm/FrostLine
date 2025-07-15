@@ -24,7 +24,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
     <Link href={`/product/${product.sku || product.id}`}>
       <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer">
         <CardContent className="p-2">
-          <div className="aspect-[5/4] bg-gray-100 rounded-lg mb-3 overflow-hidden flex items-center justify-center">
+          <div className="aspect-[5/4] bg-gray-100 rounded-lg mb-1 overflow-hidden flex items-center justify-center">
             <img
               src={imageUrl}
               alt={altText}
