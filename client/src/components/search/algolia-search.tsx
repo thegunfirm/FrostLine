@@ -79,6 +79,38 @@ interface FilterOptions {
   productTypes: Array<{ value: string; count: number }>;
 }
 
+interface SuggestionItem {
+  objectID: string;
+  title: string;
+  name: string;
+  manufacturerName: string;
+  categoryName: string;
+  stockNumber: string;
+  inventoryQuantity: number;
+  inStock: boolean;
+  tierPricing: {
+    bronze: number;
+    gold: number;
+    platinum: number;
+  };
+  distributor: string;
+  images: any[];
+  caliber?: string;
+  capacity?: number;
+  suggestionReason: string;
+}
+
+interface CategorySuggestion {
+  category: string;
+  count: number;
+  items: SuggestionItem[];
+}
+
+interface SuggestionsResponse {
+  suggestions: CategorySuggestion[];
+  totalSuggestions: number;
+}
+
 export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initialManufacturer = "" }: AlgoliaSearchProps) {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [category, setCategory] = useState(initialCategory || "all");
@@ -260,6 +292,26 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       return response.json();
     },
     staleTime: 30 * 1000, // Cache for 30 seconds
+  });
+
+  // Cross-category suggestions query - only fetch when results are low
+  const shouldFetchSuggestions = searchResults && !isLoading && searchResults.hits.length < 10 && searchResults.hits.length > 0;
+  
+  const { data: suggestions } = useQuery<SuggestionsResponse>({
+    queryKey: ["/api/search/suggestions", searchQuery, category, filters],
+    queryFn: async () => {
+      const suggestionParams = {
+        query: searchQuery,
+        category: category === "all" ? "" : category,
+        filters,
+        excludeCategories: [] // Can be expanded later
+      };
+
+      const response = await apiRequest("POST", "/api/search/suggestions", suggestionParams);
+      return response.json();
+    },
+    enabled: shouldFetchSuggestions,
+    staleTime: 60 * 1000, // Cache for 60 seconds
   });
 
   const handleFilterChange = (key: string, value: any) => {
@@ -639,6 +691,79 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
           }))}
           loading={false}
         />
+      )}
+
+      {/* Cross-Category Suggestions */}
+      {suggestions && suggestions.suggestions && suggestions.suggestions.length > 0 && (
+        <div className="mt-8 border-t pt-8">
+          <h3 className="text-lg font-semibold mb-4 text-gray-900">
+            You might also like
+          </h3>
+          <p className="text-sm text-gray-600 mb-6">
+            Found {suggestions.totalSuggestions} similar items in other categories
+          </p>
+          
+          {suggestions.suggestions.map((categoryGroup, groupIndex) => (
+            <div key={groupIndex} className="mb-8">
+              <h4 className="text-md font-medium text-gray-800 mb-4 flex items-center gap-2">
+                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm">
+                  {categoryGroup.category}
+                </span>
+                <span className="text-gray-500">
+                  ({categoryGroup.count} items)
+                </span>
+              </h4>
+              
+              <ProductGrid 
+                products={categoryGroup.items.map((item, index) => ({
+                  id: item.objectID || `suggestion-${groupIndex}-${index}`,
+                  sku: item.objectID,
+                  name: item.name || '',
+                  description: '',
+                  category: item.categoryName || '',
+                  subcategoryName: null,
+                  departmentNumber: null,
+                  departmentDesc: null,
+                  subDepartmentDesc: null,
+                  manufacturer: item.manufacturerName || '',
+                  manufacturerPartNumber: null,
+                  priceWholesale: item.tierPricing?.platinum?.toString() || '0',
+                  priceMAP: item.tierPricing?.gold?.toString() || '0',
+                  priceMSRP: item.tierPricing?.bronze?.toString() || '0',
+                  priceBronze: item.tierPricing?.bronze?.toString() || '0',
+                  priceGold: item.tierPricing?.gold?.toString() || '0',
+                  pricePlatinum: item.tierPricing?.platinum?.toString() || '0',
+                  stockQuantity: item.inventoryQuantity || 0,
+                  allocated: 'N',
+                  requiresFFL: false,
+                  createdAt: new Date(),
+                  isActive: true,
+                  tags: [],
+                  images: [],
+                  upcCode: null,
+                  weight: 0,
+                  dimensions: null,
+                  restrictions: null,
+                  stateRestrictions: null,
+                  groundShipOnly: false,
+                  adultSignatureRequired: false,
+                  dropShippable: true,
+                  prop65: false,
+                  returnPolicyDays: 30,
+                  newItem: false,
+                  promo: null,
+                  accessories: null,
+                  distributor: 'RSR',
+                  mustRouteThroughGunFirm: false,
+                  firearmType: null,
+                  compatibilityTags: null,
+                  inStock: item.inStock || false
+                }))}
+                loading={false}
+              />
+            </div>
+          ))}
+        </div>
       )}
 
       {/* No Results */}

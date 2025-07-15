@@ -3055,6 +3055,171 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cross-category suggestions for low result scenarios
+  app.post("/api/search/suggestions", async (req, res) => {
+    try {
+      const { query, category, filters = {}, excludeCategories = [] } = req.body;
+      
+      console.log('🔍 Cross-category suggestions requested:', { query, category, filters, excludeCategories });
+      
+      // Define category relationships for intelligent suggestions
+      const categoryRelationships = {
+        "Handguns": ["Uppers/Lowers", "Parts", "Accessories", "Magazines"],
+        "Rifles": ["Long Guns", "Shotguns", "Uppers/Lowers", "Parts", "Accessories"],
+        "Shotguns": ["Long Guns", "Rifles", "Parts", "Accessories"],
+        "Long Guns": ["Rifles", "Shotguns", "Parts", "Accessories"],
+        "Uppers/Lowers": ["Parts", "Accessories", "Handguns", "Rifles"],
+        "Parts": ["Handguns", "Rifles", "Shotguns", "Accessories", "Uppers/Lowers"],
+        "Accessories": ["Handguns", "Rifles", "Shotguns", "Parts", "Optics"],
+        "Optics": ["Accessories", "Parts", "Rifles", "Handguns"],
+        "Ammunition": ["Handguns", "Rifles", "Shotguns"],
+        "Magazines": ["Handguns", "Rifles", "Parts", "Accessories"],
+        "NFA Products": ["Parts", "Accessories", "Rifles"]
+      };
+      
+      // Get related categories, excluding the current category and any specified exclusions
+      const relatedCategories = categoryRelationships[category] || [];
+      const searchCategories = relatedCategories.filter(cat => 
+        cat !== category && !excludeCategories.includes(cat)
+      );
+      
+      console.log('🔍 Searching in related categories:', searchCategories);
+      
+      if (searchCategories.length === 0) {
+        return res.json({ suggestions: [] });
+      }
+      
+      // Build search parameters for cross-category search
+      const suggestions = [];
+      
+      // Helper function to build category filters
+      function buildCategoryFilters(category) {
+        const categoryToDepartment = {
+          "Handguns": "01",
+          "Long Guns": "05",
+          "Rifles": "05",
+          "Shotguns": "05",
+          "Ammunition": "18",
+          "Optics": "08",
+          "Parts": "34",
+          "NFA": "06",
+          "Magazines": "10",
+          "Uppers/Lowers": "uppers_lowers_multi",
+          "Accessories": "accessories_multi",
+        };
+        
+        const department = categoryToDepartment[category];
+        
+        if (department === "01") {
+          return `departmentNumber:"01" AND NOT categoryName:"Uppers/Lowers"`;
+        } else if (department === "05") {
+          if (category === "Rifles") {
+            return `categoryName:"Rifles"`;
+          } else if (category === "Shotguns") {
+            return `categoryName:"Shotguns"`;
+          } else {
+            return `(categoryName:"Rifles" OR categoryName:"Shotguns")`;
+          }
+        } else if (department === "18") {
+          return `departmentNumber:"18"`;
+        } else if (department === "08") {
+          return `departmentNumber:"08"`;
+        } else if (department === "34") {
+          return `departmentNumber:"34"`;
+        } else if (department === "06") {
+          return `departmentNumber:"06"`;
+        } else if (department === "10") {
+          return `departmentNumber:"10"`;
+        } else if (department === "uppers_lowers_multi") {
+          return `(departmentNumber:"41" OR departmentNumber:"42" OR departmentNumber:"43")`;
+        } else if (department === "accessories_multi") {
+          return `(departmentNumber:"09" OR departmentNumber:"11" OR departmentNumber:"12" OR departmentNumber:"13" OR departmentNumber:"14" OR departmentNumber:"17" OR departmentNumber:"20" OR departmentNumber:"21" OR departmentNumber:"25" OR departmentNumber:"26" OR departmentNumber:"27" OR departmentNumber:"30" OR departmentNumber:"31" OR departmentNumber:"35")`;
+        } else {
+          return `categoryName:"${category}"`;
+        }
+      }
+
+      // Search across related categories
+      for (const searchCategory of searchCategories) {
+        try {
+          // Build filters for this category
+          const categoryFilters = buildCategoryFilters(searchCategory);
+          
+          // Perform Algolia search
+          const searchParams = {
+            query: query || '',
+            hitsPerPage: 5, // Limit suggestions per category
+            page: 0,
+            filters: categoryFilters,
+            facets: []
+          };
+          
+          console.log(`🔍 Searching category ${searchCategory}:`, searchParams);
+          
+          // Make request to Algolia using the same pattern as main search
+          const response = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/products/query`, {
+            method: 'POST',
+            headers: {
+              'X-Algolia-API-Key': process.env.ALGOLIA_API_KEY!,
+              'X-Algolia-Application-Id': process.env.ALGOLIA_APP_ID!,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(searchParams)
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Algolia error for category ${searchCategory}:`, errorText);
+            continue;
+          }
+
+          const result = await response.json();
+          
+          if (result.hits && result.hits.length > 0) {
+            // Transform hits to match expected format
+            const categoryHits = result.hits.map(hit => ({
+              objectID: hit.objectID,
+              title: hit.title || hit.name,
+              name: hit.name,
+              manufacturerName: hit.manufacturerName,
+              categoryName: searchCategory, // Override with suggestion category
+              stockNumber: hit.stockNumber,
+              inventoryQuantity: hit.inventoryQuantity || 0,
+              inStock: hit.inStock || false,
+              tierPricing: hit.tierPricing || { bronze: 0, gold: 0, platinum: 0 },
+              distributor: hit.distributor || 'RSR',
+              images: hit.images || [],
+              caliber: hit.caliber,
+              capacity: hit.capacity,
+              suggestionReason: `Found in ${searchCategory}` // Add reason for suggestion
+            }));
+            
+            suggestions.push({
+              category: searchCategory,
+              count: categoryHits.length,
+              items: categoryHits
+            });
+          }
+          
+        } catch (categoryError) {
+          console.error(`Error searching category ${searchCategory}:`, categoryError);
+          continue; // Skip this category and continue with others
+        }
+      }
+      
+      console.log('🔍 Total suggestions found:', suggestions.length);
+      
+      res.json({
+        suggestions: suggestions.slice(0, 3), // Limit to top 3 categories
+        totalSuggestions: suggestions.reduce((sum, cat) => sum + cat.count, 0)
+      });
+      
+    } catch (error) {
+      console.error('Cross-category suggestions error:', error);
+      res.status(500).json({ error: 'Failed to get suggestions' });
+    }
+  });
+
   // ===== CATEGORY RIBBON MANAGEMENT (CMS) =====
   
   // Get active category ribbons for frontend display (with caching)
