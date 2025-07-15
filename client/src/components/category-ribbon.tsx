@@ -49,6 +49,12 @@ export function CategoryRibbon() {
     console.log("Navigating to:", newUrl);
     window.history.pushState({}, '', newUrl);
     window.dispatchEvent(new PopStateEvent('popstate'));
+    
+    // Scroll to top of the page when category changes
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   };
 
   // currentCategory is now managed by useState and useEffect above
