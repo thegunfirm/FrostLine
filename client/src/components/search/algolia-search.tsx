@@ -116,7 +116,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   const [category, setCategory] = useState(initialCategory || "all");
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
-  const [resultsPerPage] = useState(24);
+  const [resultsPerPage, setResultsPerPage] = useState(24);
   const [sortBy, setSortBy] = useState("relevance");
   
   // Reset sort when category changes
