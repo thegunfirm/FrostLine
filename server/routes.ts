@@ -2549,6 +2549,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchParams.sort = Array.isArray(sortParam) ? sortParam : [sortParam];
       }
       
+      // Boost popular handgun manufacturers in handgun searches
+      if (cleanedFilters.category === "Handguns" || cleanedFilters.productType === "handgun" || cleanedFilters.departmentNumber === "01") {
+        searchParams.optionalFilters = [
+          "manufacturerName:GLOCK<score=100>",
+          "manufacturerName:S&W<score=90>",
+          "manufacturerName:SIG<score=85>",
+          "manufacturerName:SPGFLD<score=80>",
+          "manufacturerName:RUGER<score=75>",
+          "manufacturerName:COLT<score=70>",
+          "manufacturerName:KIMBER<score=65>",
+          "manufacturerName:BERETA<score=60>",
+          "manufacturerName:TAURUS<score=55>",
+          "manufacturerName:WALTHR<score=50>"
+        ];
+      }
+      
       // Note: Stock priority sorting would require index replica configuration
       // For now, using default relevance ranking
 
