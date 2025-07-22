@@ -2549,7 +2549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchParams.sort = Array.isArray(sortParam) ? sortParam : [sortParam];
       }
       
-      // Boost popular handgun manufacturers in handgun searches
+      // Boost popular handgun manufacturers and calibers in handgun searches
       if (cleanedFilters.category === "Handguns" || cleanedFilters.productType === "handgun" || cleanedFilters.departmentNumber === "01") {
         searchParams.optionalFilters = [
           "manufacturerName:GLOCK<score=100>",
@@ -2561,7 +2561,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "manufacturerName:KIMBER<score=65>",
           "manufacturerName:BERETA<score=60>",
           "manufacturerName:TAURUS<score=55>",
-          "manufacturerName:WALTHR<score=50>"
+          "manufacturerName:WALTHR<score=50>",
+          "caliber:9mm<score=120>",
+          "caliber:45 ACP<score=70>",
+          "caliber:380 ACP<score=65>",
+          "caliber:357 Magnum<score=60>",
+          "caliber:40 S&W<score=55>",
+          "caliber:22 LR<score=50>"
         ];
       }
       
