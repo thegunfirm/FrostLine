@@ -37,7 +37,8 @@ export function CartSheet() {
       const platinumCost = total;
       const savings = bronzeCost - platinumCost;
       const percentage = bronzeCost > 0 ? (savings / bronzeCost) * 100 : 0;
-      const roundedPercentage = Math.floor(percentage / 10) * 10; // Round down to nearest 10%
+      // Round down to nearest 10%, but ensure minimum of 10% if there are any savings
+      const roundedPercentage = savings > 0 ? Math.max(10, Math.floor(percentage / 10) * 10) : 0;
       return { savings, percentage: roundedPercentage };
     }
     return { savings: 0, percentage: 0 };
