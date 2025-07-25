@@ -1581,7 +1581,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           res.set({
             'Content-Type': 'image/jpeg',
-            'Cache-Control': 'public, max-age=3600', // 1 hour for errors
+            'Cache-Control': 'no-cache, no-store, must-revalidate', // Force reload
+            'Pragma': 'no-cache',
+            'Expires': '0',
             'Content-Length': imageBuffer.length.toString(),
             'X-Image-Source': 'universal-placeholder'
           });
