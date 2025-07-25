@@ -214,6 +214,17 @@ export const systemSettings = pgTable("system_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Product image management for custom uploads
+export const productImages = pgTable("product_images", {
+  id: serial("id").primaryKey(),
+  productSku: text("product_sku").notNull(),
+  imageUrl: text("image_url").notNull(),
+  angle: text("angle").default("1"), // Image angle (1, 2, 3, etc.)
+  isCustom: boolean("is_custom").default(true), // Custom uploaded vs RSR
+  uploadedBy: integer("uploaded_by"), // Admin user who uploaded
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Filter configurations for CMS-controlled search filtering
 export const filterConfigurations = pgTable("filter_configurations", {
   id: serial("id").primaryKey(),
@@ -345,7 +356,7 @@ export const insertSystemSettingSchema = createInsertSchema(systemSettings).pick
   value: true,
   description: true,
   category: true,
-  isActive: true,
+  isEditable: true,
 });
 
 export const insertPricingRuleSchema = createInsertSchema(pricingRules).pick({
@@ -382,6 +393,14 @@ export const insertCategorySettingSchema = createInsertSchema(categorySettings).
   parentCategory: true,
 });
 
+export const insertProductImageSchema = createInsertSchema(productImages).pick({
+  productSku: true,
+  imageUrl: true,
+  angle: true,
+  isCustom: true,
+  uploadedBy: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -403,3 +422,5 @@ export type FilterConfiguration = typeof filterConfigurations.$inferSelect;
 export type InsertFilterConfiguration = z.infer<typeof insertFilterConfigurationSchema>;
 export type CategorySetting = typeof categorySettings.$inferSelect;
 export type InsertCategorySetting = z.infer<typeof insertCategorySettingSchema>;
+export type ProductImage = typeof productImages.$inferSelect;
+export type InsertProductImage = z.infer<typeof insertProductImageSchema>;

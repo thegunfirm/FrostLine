@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import { join } from "path";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
-import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema, type InsertProduct, type Product, systemSettings, pricingRules, insertPricingRuleSchema, products } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema, type InsertProduct, type Product, systemSettings, pricingRules, insertPricingRuleSchema, products, productImages, insertProductImageSchema, type ProductImage, type InsertProductImage } from "@shared/schema";
 import { pricingEngine } from "./services/pricing-engine";
 import { db } from "./db";
 import { sql, eq, and, ne, inArray, desc } from "drizzle-orm";
@@ -1483,8 +1483,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // RSR Product Image Service - Authentic RSR Image Access
-  // STABLE CHECKPOINT: July 13, 2025 - WORKING - DO NOT MODIFY
+  // RSR Product Image Service - Authentic RSR Image Access with Custom Upload Override
+  // Enhanced: July 24, 2025 - Custom image management support added
   // Multi-angle support, proper authentication, RSR domain handling
   app.get("/api/rsr-image/:imageName", async (req, res) => {
     try {
@@ -1493,6 +1493,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Use 'angle' parameter from frontend, fallback to 'view' for backward compatibility
       const imageAngle = angle || view || '1';
+      
+      // First check if there's a custom uploaded image for this product and angle
+      try {
+        const customImage = await db.select()
+          .from(productImages)
+          .where(eq(productImages.productSku, imageName))
+          .where(eq(productImages.angle, String(imageAngle)))
+          .limit(1);
+        
+        if (customImage.length > 0) {
+          // Serve the custom image
+          const response = await axios.get(customImage[0].imageUrl, {
+            responseType: "arraybuffer",
+            timeout: 10000,
+          });
+          
+          const contentType = response.headers['content-type'] || 'image/jpeg';
+          const imageBuffer = response.data;
+          
+          res.set({
+            'Content-Type': contentType,
+            'Cache-Control': 'public, max-age=86400', // 24 hours
+            'Content-Length': imageBuffer.length.toString(),
+            'X-Image-Source': 'custom-upload'
+          });
+          
+          return res.send(imageBuffer);
+        }
+      } catch (customError) {
+        console.log(`No custom image found for ${imageName} angle ${imageAngle}, using RSR`);
+      }
       
       let rsrImageUrl = '';
       
@@ -3994,6 +4025,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imageName: req.params.imageName,
         message: error.message
       });
+    }
+  });
+
+  // Product image management endpoints
+  app.get("/api/admin/product-images/:sku", async (req, res) => {
+    try {
+      const sku = req.params.sku;
+      const images = await db.select()
+        .from(productImages)
+        .where(eq(productImages.productSku, sku))
+        .orderBy(productImages.angle);
+      
+      res.json(images);
+    } catch (error: any) {
+      console.error("Error fetching product images:", error);
+      res.status(500).json({ error: "Failed to fetch product images" });
+    }
+  });
+
+  app.post("/api/admin/product-images", async (req, res) => {
+    try {
+      const imageData = insertProductImageSchema.parse(req.body);
+      
+      // Check if image already exists for this SKU and angle
+      const existing = await db.select()
+        .from(productImages)
+        .where(eq(productImages.productSku, imageData.productSku))
+        .where(eq(productImages.angle, imageData.angle || "1"))
+        .limit(1);
+      
+      if (existing.length > 0) {
+        // Update existing image
+        await db.update(productImages)
+          .set({
+            imageUrl: imageData.imageUrl,
+            uploadedBy: imageData.uploadedBy
+          })
+          .where(eq(productImages.id, existing[0].id));
+        
+        res.json({ message: "Product image updated successfully", id: existing[0].id });
+      } else {
+        // Create new image record
+        const [newImage] = await db.insert(productImages)
+          .values(imageData)
+          .returning();
+        
+        res.json({ message: "Product image added successfully", id: newImage.id });
+      }
+    } catch (error: any) {
+      console.error("Error saving product image:", error);
+      res.status(500).json({ error: "Failed to save product image" });
+    }
+  });
+
+  app.delete("/api/admin/product-images/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      await db.delete(productImages)
+        .where(eq(productImages.id, id));
+      
+      res.json({ message: "Product image deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting product image:", error);
+      res.status(500).json({ error: "Failed to delete product image" });
     }
   });
 

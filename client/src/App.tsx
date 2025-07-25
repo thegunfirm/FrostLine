@@ -23,6 +23,7 @@ import AdminFilterSettings from "@/pages/admin-filter-settings";
 import AdminSyncHealth from "@/pages/admin-sync-health";
 import AdminDepartmentPricing from "@/pages/admin-department-pricing";
 import AdminImageSettings from "@/pages/admin-image-settings";
+import AdminProductImages from "@/pages/admin-product-images";
 import RSRIntelligenceTest from "@/pages/rsr-intelligence-test";
 import Categories from "@/pages/categories";
 import NotFound from "@/pages/not-found";
@@ -47,6 +48,7 @@ function Router() {
       <Route path="/admin-sync-health" component={AdminSyncHealth} />
       <Route path="/admin-department-pricing" component={AdminDepartmentPricing} />
       <Route path="/admin-image-settings" component={AdminImageSettings} />
+      <Route path="/admin-product-images" component={AdminProductImages} />
       <Route path="/rsr-intelligence-test" component={RSRIntelligenceTest} />
       <Route path="/categories" component={Categories} />
       <Route component={NotFound} />
