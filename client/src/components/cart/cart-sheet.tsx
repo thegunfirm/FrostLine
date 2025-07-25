@@ -53,87 +53,76 @@ export function CartSheet() {
               <p className="text-muted-foreground mb-4">
                 Browse our products and add items to your cart
               </p>
-              <Button onClick={() => setCartOpen(false)}>
-                Continue Shopping
-              </Button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {items.map((item) => (
-                <div key={item.id} className="flex gap-4 p-4 border rounded-lg">
+            <div className="space-y-3">
+              {items.map((item, index) => (
+                <div key={`${item.productSku}-${item.productId}`} className="flex gap-3 py-3 border-b border-gray-100 last:border-b-0">
                   <div className="flex-shrink-0">
                     <img
                       src={item.productImage}
                       alt={item.productName}
-                      className="w-16 h-16 object-contain rounded"
+                      className="w-12 h-12 object-contain rounded"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.src = '/fallback-logo.png';
+                        target.src = '/api/admin/fallback-image';
                       }}
                     />
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm truncate">
+                    <h4 className="font-medium text-sm truncate leading-tight">
                       {item.productName}
                     </h4>
-                    <p className="text-xs text-muted-foreground">
-                      SKU: {item.productSku}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-gray-500 mt-0.5">
                       {item.manufacturer}
                     </p>
                     
-                    <div className="flex flex-col gap-1 mt-2">
-                      <div className="flex items-center gap-2 text-xs">
-                        {!user ? (
-                          <Button 
-                            size="sm" 
-                            className="text-xs h-6 px-2 text-black font-medium hover:opacity-90"
-                            style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}
-                            onClick={() => {/* Navigate to account creation */}}
-                          >
-                            Bronze: {formatPrice(item.priceBronze || item.price)} - Create an Account for Free
-                          </Button>
-                        ) : (
-                          <span className="text-black px-1.5 py-0.5 rounded" style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}>
-                            Bronze: {formatPrice(item.priceBronze || item.price)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        {!user ? (
-                          <Button 
-                            size="sm" 
-                            className="text-xs h-6 px-2 text-black font-medium hover:opacity-90"
-                            style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}
-                            onClick={() => {/* Navigate to Gold membership signup */}}
-                          >
-                            Gold: {formatPrice(item.priceGold || item.price)} - Join Now to get this price
-                          </Button>
-                        ) : (
-                          <span className="text-black px-1.5 py-0.5 rounded" style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}>
-                            Gold: {formatPrice(item.priceGold || item.price)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        {!user ? (
-                          <Button 
-                            size="sm" 
-                            className="text-xs h-6 px-2 text-black font-medium hover:opacity-90"
-                            style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}
-                            onClick={() => {/* Navigate to Platinum membership signup */}}
-                          >
-                            Platinum: {formatPrice(item.price)} - Join Now to get this price
-                          </Button>
-                        ) : (
-                          <span className="text-black px-1.5 py-0.5 rounded text-sm font-semibold" style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}>
-                            Platinum: {formatPrice(item.price)}
-                          </span>
-                        )}
+                    {/* Show only the best price (Platinum) */}
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-sm font-semibold text-green-600">
+                        {formatPrice(item.price)}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => updateQuantity(item.productSku, Math.max(1, item.quantity - 1))}
+                          className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        
+                        <span className="text-xs font-medium w-8 text-center">
+                          {item.quantity}
+                        </span>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => updateQuantity(item.productSku, Math.min(10, item.quantity + 1))}
+                          className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeItem(item.productSku)}
+                          className="h-6 w-6 p-0 text-gray-400 hover:text-red-500 ml-1"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
+
+                    {/* Compact tier pricing info for non-authenticated users */}
+                    {!user && (
+                      <div className="text-xs text-blue-600 mt-1">
+                        Save more with membership • <span className="underline cursor-pointer">Join now</span>
+                      </div>
+                    )}
 
                     {item.requiresFFL && (
                       <div className="flex items-center gap-1 mt-1">
@@ -142,42 +131,6 @@ export function CartSheet() {
                       </div>
                     )}
                   </div>
-                  
-                  <div className="flex flex-col items-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeItem(item.id)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                    
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        className="h-8 w-8 p-0"
-                        disabled={item.quantity <= 1}
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      
-                      <span className="w-8 text-center text-sm">
-                        {item.quantity}
-                      </span>
-                      
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
                 </div>
               ))}
             </div>
@@ -185,39 +138,34 @@ export function CartSheet() {
         </div>
 
         {items.length > 0 && (
-          <div className="border-t pt-4 space-y-4">
+          <div className="border-t pt-4 space-y-3">
             {hasFirearms() && (
-              <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm">
-                  <p className="font-medium text-amber-800">FFL Transfer Required</p>
-                  <p className="text-amber-700">
-                    Your cart contains firearms that require FFL transfer. 
-                    You'll need to select an FFL dealer during checkout.
-                  </p>
-                </div>
+              <div className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
+                <AlertTriangle className="h-3 w-3 text-amber-600 flex-shrink-0" />
+                <span className="text-amber-700">FFL transfer required for firearms</span>
               </div>
             )}
-
-            <Separator />
             
-            <div className="space-y-2">
-              <div className="flex justify-between text-lg font-semibold">
-                <span>Total:</span>
-                <span>{formatPrice(total)}</span>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Subtotal ({itemCount} item{itemCount !== 1 ? 's' : ''}):</span>
+                <span className="text-lg font-bold">{formatPrice(total)}</span>
               </div>
               
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" onClick={() => setCartOpen(false)}>
-                  Continue Shopping
+              <Link href="/cart">
+                <Button 
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-white" 
+                  onClick={() => setCartOpen(false)}
+                >
+                  Go to Cart
                 </Button>
-                
-                <Link href="/checkout">
-                  <Button className="w-full" onClick={() => setCartOpen(false)}>
-                    Checkout
-                  </Button>
-                </Link>
-              </div>
+              </Link>
+
+              {!user && (
+                <div className="text-center text-xs text-blue-600">
+                  <span className="underline cursor-pointer">Sign in</span> for member pricing
+                </div>
+              )}
             </div>
           </div>
         )}
