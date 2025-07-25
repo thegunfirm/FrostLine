@@ -2,6 +2,7 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { join } from "path";
+import { readFileSync, existsSync } from "fs";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema, type InsertProduct, type Product, systemSettings, pricingRules, insertPricingRuleSchema, products, productImages, insertProductImageSchema, type ProductImage, type InsertProductImage } from "@shared/schema";
@@ -1498,8 +1499,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const customImage = await db.select()
           .from(productImages)
-          .where(eq(productImages.productSku, imageName))
-          .where(eq(productImages.angle, String(imageAngle)))
+          .where(and(
+            eq(productImages.productSku, imageName),
+            eq(productImages.angle, String(imageAngle))
+          ))
           .limit(1);
         
         if (customImage.length > 0) {
@@ -1571,26 +1574,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Serve the universal placeholder image for all missing images
       try {
-        const fs = require('fs');
-        const path = require('path');
+        const placeholderPath = join(process.cwd(), 'attached_assets', 'Out of Stock Placeholder_1753481157952.jpg');
         
-        const placeholderPath = path.join(process.cwd(), 'attached_assets', 'Out of Stock Placeholder_1753481157952.jpg');
-        const imageBuffer = fs.readFileSync(placeholderPath);
-        
-        res.set({
-          'Content-Type': 'image/jpeg',
-          'Cache-Control': 'public, max-age=3600', // 1 hour for errors
-          'Content-Length': imageBuffer.length.toString(),
-          'X-Image-Source': 'universal-placeholder'
-        });
-        
-        res.send(imageBuffer);
-      } catch (placeholderError) {
+        if (existsSync(placeholderPath)) {
+          const imageBuffer = readFileSync(placeholderPath);
+          
+          res.set({
+            'Content-Type': 'image/jpeg',
+            'Cache-Control': 'public, max-age=3600', // 1 hour for errors
+            'Content-Length': imageBuffer.length.toString(),
+            'X-Image-Source': 'universal-placeholder'
+          });
+          
+          return res.send(imageBuffer);
+        } else {
+          console.error('Universal placeholder not found at:', placeholderPath);
+        }
+      } catch (placeholderError: any) {
         console.error('Error serving universal placeholder:', placeholderError.message);
-        
-        // Final fallback - simple error response
-        res.status(404).json({ error: 'Image not available' });
       }
+      
+      // Final fallback - simple error response
+      res.status(404).json({ error: 'Image not available' });
     }
   });
 
