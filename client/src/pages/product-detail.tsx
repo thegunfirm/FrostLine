@@ -299,17 +299,18 @@ export default function ProductDetail() {
   };
 
   const handleAddToCart = () => {
-    if (!user) {
+    if (!product) return;
+
+    // For FFL items, check if user is signed in for FFL selection
+    if (product.requiresFFL && !user) {
       toast({
-        title: "Sign In Required",
-        description: "Please sign in to add items to your cart.",
+        title: "Sign In Required for Firearms",
+        description: "Please sign in to select an FFL dealer for this firearm.",
         variant: "destructive",
       });
       navigate("/login");
       return;
     }
-
-    if (!product) return;
 
     if (product.requiresFFL && !selectedFFL) {
       toast({
@@ -320,7 +321,7 @@ export default function ProductDetail() {
       return;
     }
 
-    // Add item to cart using the cart hook
+    // Add item to cart using the cart hook - allow without sign in
     addItem({
       productId: product.id,
       productSku: product.sku,

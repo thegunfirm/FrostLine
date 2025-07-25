@@ -61,37 +61,34 @@ export function CartSheet() {
                 <div key={item.id} className="flex gap-4 p-4 border rounded-lg">
                   <div className="flex-shrink-0">
                     <img
-                      src={`/api/rsr-image/${item.product.sku}`}
-                      alt={item.product.name}
+                      src={item.productImage}
+                      alt={item.productName}
                       className="w-16 h-16 object-contain rounded"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.src = '/api/admin/fallback-image';
+                        target.src = '/fallback-logo.png';
                       }}
                     />
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-sm truncate">
-                      {item.product.name}
+                      {item.productName}
                     </h4>
                     <p className="text-xs text-muted-foreground">
-                      SKU: {item.product.sku}
+                      SKU: {item.productSku}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.manufacturer}
                     </p>
                     
                     <div className="flex items-center gap-2 mt-2">
-                      <Badge variant={
-                        item.tierPriceUsed === 'Bronze' ? 'outline' :
-                        item.tierPriceUsed === 'Gold' ? 'default' : 'secondary'
-                      }>
-                        {item.tierPriceUsed}
-                      </Badge>
                       <span className="font-medium">
-                        {formatPrice(item.priceSnapshot)}
+                        {formatPrice(item.price)}
                       </span>
                     </div>
 
-                    {item.product.requiresFFL && (
+                    {item.requiresFFL && (
                       <div className="flex items-center gap-1 mt-1">
                         <AlertTriangle className="h-3 w-3 text-amber-500" />
                         <span className="text-xs text-amber-600">FFL Required</span>

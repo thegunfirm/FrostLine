@@ -6,11 +6,27 @@ import { apiRequest } from '@/lib/queryClient';
 export interface CartItem {
   id: string;
   productId: number;
-  product: Product;
+  productSku: string;
+  productName: string;
+  productImage: string;
   quantity: number;
-  tierPriceUsed: 'Bronze' | 'Gold' | 'Platinum';
-  priceSnapshot: number;
+  price: number;
+  requiresFFL: boolean;
+  selectedFFL?: string;
+  manufacturer: string;
   addedAt: string;
+}
+
+interface AddToCartParams {
+  productId: number;
+  productSku: string;
+  productName: string;
+  productImage: string;
+  quantity: number;
+  price: number;
+  requiresFFL: boolean;
+  selectedFFL?: string;
+  manufacturer: string;
 }
 
 interface CartState {
@@ -19,7 +35,7 @@ interface CartState {
   isCartOpen: boolean;
   
   // Actions
-  addItem: (product: Product, tier: 'Bronze' | 'Gold' | 'Platinum') => Promise<void>;
+  addItem: (params: AddToCartParams) => Promise<void>;
   removeItem: (itemId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -39,39 +55,30 @@ export const useCart = create<CartState>()(
       isLoading: false,
       isCartOpen: false,
 
-      addItem: async (product: Product, tier: 'Bronze' | 'Gold' | 'Platinum') => {
+      addItem: async (params: AddToCartParams) => {
         const currentItems = get().items;
         const existingItem = currentItems.find(item => 
-          item.productId === product.id && item.tierPriceUsed === tier
+          item.productId === params.productId && 
+          item.productSku === params.productSku &&
+          Math.abs(item.price - params.price) < 0.01 // Same price tier
         );
-        
-        let priceSnapshot: number;
-        switch (tier) {
-          case 'Bronze':
-            priceSnapshot = parseFloat(product.priceBronze || '0');
-            break;
-          case 'Gold':
-            priceSnapshot = parseFloat(product.priceGold || '0');
-            break;
-          case 'Platinum':
-            priceSnapshot = parseFloat(product.pricePlatinum || '0');
-            break;
-          default:
-            priceSnapshot = parseFloat(product.priceBronze || '0');
-        }
 
         if (existingItem) {
           // Update quantity
-          await get().updateQuantity(existingItem.id, existingItem.quantity + 1);
+          await get().updateQuantity(existingItem.id, existingItem.quantity + params.quantity);
         } else {
           // Add new item
           const newItem: CartItem = {
-            id: `${product.id}_${tier}_${Date.now()}`,
-            productId: product.id,
-            product,
-            quantity: 1,
-            tierPriceUsed: tier,
-            priceSnapshot,
+            id: `${params.productId}_${params.productSku}_${Date.now()}`,
+            productId: params.productId,
+            productSku: params.productSku,
+            productName: params.productName,
+            productImage: params.productImage,
+            quantity: params.quantity,
+            price: params.price,
+            requiresFFL: params.requiresFFL,
+            selectedFFL: params.selectedFFL,
+            manufacturer: params.manufacturer,
             addedAt: new Date().toISOString(),
           };
 
@@ -133,7 +140,7 @@ export const useCart = create<CartState>()(
 
       getTotalPrice: () => {
         const { items } = get();
-        return items.reduce((total, item) => total + (item.priceSnapshot * item.quantity), 0);
+        return items.reduce((total, item) => total + (item.price * item.quantity), 0);
       },
 
       getItemCount: () => {
@@ -143,7 +150,7 @@ export const useCart = create<CartState>()(
 
       hasFirearms: () => {
         const { items } = get();
-        return items.some(item => item.product.requiresFFL);
+        return items.some(item => item.requiresFFL);
       }
     }),
     {
