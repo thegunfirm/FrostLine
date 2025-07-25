@@ -1569,28 +1569,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error(`RSR Image Error for ${req.params.imageName}:`, error.message);
       
-      // Return clean SVG placeholder for missing images
-      const svgPlaceholder = `
-        <svg width="300" height="300" xmlns="http://www.w3.org/2000/svg">
-          <rect width="300" height="300" fill="#f3f4f6" stroke="#d1d5db" stroke-width="2" stroke-dasharray="5,5"/>
-          <text x="150" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">
-            RSR Product Image
-          </text>
-          <text x="150" y="160" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#9ca3af">
-            ${req.params.imageName}
-          </text>
-          <text x="150" y="180" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#d1d5db">
-            Image Not Available
-          </text>
-        </svg>
-      `;
-      
-      res.set({
-        'Content-Type': 'image/svg+xml',
-        'Cache-Control': 'public, max-age=3600' // 1 hour for errors
-      });
-      
-      res.send(svgPlaceholder);
+      // Serve the universal placeholder image for all missing images
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        
+        const placeholderPath = path.join(process.cwd(), 'attached_assets', 'Out of Stock Placeholder_1753481157952.jpg');
+        const imageBuffer = fs.readFileSync(placeholderPath);
+        
+        res.set({
+          'Content-Type': 'image/jpeg',
+          'Cache-Control': 'public, max-age=3600', // 1 hour for errors
+          'Content-Length': imageBuffer.length.toString(),
+          'X-Image-Source': 'universal-placeholder'
+        });
+        
+        res.send(imageBuffer);
+      } catch (placeholderError) {
+        console.error('Error serving universal placeholder:', placeholderError.message);
+        
+        // Final fallback - simple error response
+        res.status(404).json({ error: 'Image not available' });
+      }
     }
   });
 
