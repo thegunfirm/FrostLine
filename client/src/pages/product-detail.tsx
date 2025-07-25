@@ -103,7 +103,7 @@ export default function ProductDetail() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { addItem } = useCart();
+  const { addItem, setCartOpen } = useCart();
   
   // State management
   const [quantity, setQuantity] = useState(1);
@@ -301,27 +301,8 @@ export default function ProductDetail() {
   const handleAddToCart = () => {
     if (!product) return;
 
-    // For FFL items, check if user is signed in for FFL selection
-    if (product.requiresFFL && !user) {
-      toast({
-        title: "Sign In Required for Firearms",
-        description: "Please sign in to select an FFL dealer for this firearm.",
-        variant: "destructive",
-      });
-      navigate("/login");
-      return;
-    }
-
-    if (product.requiresFFL && !selectedFFL) {
-      toast({
-        title: "FFL Required",
-        description: "Please select an FFL dealer for this firearm.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Add item to cart using the cart hook - allow without sign in
+    // Add item to cart without authentication requirement
+    // FFL dealer selection will be handled during checkout
     addItem({
       productId: product.id,
       productSku: product.sku,
@@ -338,6 +319,9 @@ export default function ProductDetail() {
       title: "Added to Cart",
       description: `${product.name} (${quantity}) added to your cart.`,
     });
+
+    // Open cart to show the item was added
+    setCartOpen(true);
   };
 
   const handleWishlist = () => {
