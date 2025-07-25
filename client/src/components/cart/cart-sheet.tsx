@@ -86,36 +86,51 @@ export function CartSheet() {
                     
                     <div className="flex flex-col gap-1 mt-2">
                       <div className="flex items-center gap-2 text-xs">
-                        <span className="text-black px-1.5 py-0.5 rounded" style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}>
-                          Bronze: {formatPrice(item.priceBronze || item.price)}
-                        </span>
-                        <div className="flex items-center gap-1">
+                        {!user ? (
+                          <Button 
+                            size="sm" 
+                            className="text-xs h-6 px-2 text-black font-medium hover:opacity-90"
+                            style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}
+                            onClick={() => {/* Navigate to account creation */}}
+                          >
+                            Bronze: {formatPrice(item.priceBronze || item.price)} - Create an Account for Free
+                          </Button>
+                        ) : (
+                          <span className="text-black px-1.5 py-0.5 rounded" style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}>
+                            Bronze: {formatPrice(item.priceBronze || item.price)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        {!user ? (
+                          <Button 
+                            size="sm" 
+                            className="text-xs h-6 px-2 text-black font-medium hover:opacity-90"
+                            style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}
+                            onClick={() => {/* Navigate to Gold membership signup */}}
+                          >
+                            Gold: {formatPrice(item.priceGold || item.price)} - Join Now to get this price
+                          </Button>
+                        ) : (
                           <span className="text-black px-1.5 py-0.5 rounded" style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}>
                             Gold: {formatPrice(item.priceGold || item.price)}
                           </span>
-                          {!user && (
-                            <Button 
-                              size="sm" 
-                              className="text-xs h-5 px-2 bg-amber-500 hover:bg-amber-600 text-white"
-                              onClick={() => {/* Navigate to membership signup */}}
-                            >
-                              Join Now to get this price
-                            </Button>
-                          )}
-                        </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-black px-1.5 py-0.5 rounded text-sm font-semibold" style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}>
-                          Platinum: {formatPrice(item.price)}
-                        </span>
-                        {!user && (
+                      <div className="flex items-center gap-2 text-xs">
+                        {!user ? (
                           <Button 
                             size="sm" 
-                            className="text-xs h-5 px-2 bg-gray-600 hover:bg-gray-700 text-white"
-                            onClick={() => {/* Navigate to membership signup */}}
+                            className="text-xs h-6 px-2 text-black font-medium hover:opacity-90"
+                            style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}
+                            onClick={() => {/* Navigate to Platinum membership signup */}}
                           >
-                            Join Now to get this price
+                            Platinum: {formatPrice(item.price)} - Join Now to get this price
                           </Button>
+                        ) : (
+                          <span className="text-black px-1.5 py-0.5 rounded text-sm font-semibold" style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}>
+                            Platinum: {formatPrice(item.price)}
+                          </span>
                         )}
                       </div>
                     </div>
