@@ -10,7 +10,9 @@ export interface CartItem {
   productName: string;
   productImage: string;
   quantity: number;
-  price: number;
+  price: number; // Platinum price - the actual price user pays
+  priceBronze?: number; // For comparison display
+  priceGold?: number; // For comparison display
   requiresFFL: boolean;
   selectedFFL?: string;
   manufacturer: string;
@@ -23,7 +25,9 @@ interface AddToCartParams {
   productName: string;
   productImage: string;
   quantity: number;
-  price: number;
+  price: number; // Platinum price
+  priceBronze?: number; // For comparison display
+  priceGold?: number; // For comparison display
   requiresFFL: boolean;
   selectedFFL?: string;
   manufacturer: string;
@@ -76,6 +80,8 @@ export const useCart = create<CartState>()(
             productImage: params.productImage,
             quantity: params.quantity,
             price: params.price,
+            priceBronze: params.priceBronze,
+            priceGold: params.priceGold,
             requiresFFL: params.requiresFFL,
             selectedFFL: params.selectedFFL,
             manufacturer: params.manufacturer,

@@ -82,10 +82,21 @@ export function CartSheet() {
                       {item.manufacturer}
                     </p>
                     
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="font-medium">
-                        {formatPrice(item.price)}
-                      </span>
+                    <div className="flex flex-col gap-1 mt-2">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-black px-1.5 py-0.5 rounded" style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}>
+                          Bronze: {formatPrice(item.priceBronze || item.price)}
+                        </span>
+                        <span className="text-black px-1.5 py-0.5 rounded" style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}>
+                          Gold: {formatPrice(item.priceGold || item.price)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-black px-1.5 py-0.5 rounded text-sm font-semibold" style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}>
+                          Platinum: {formatPrice(item.price)}
+                        </span>
+                        <span className="text-xs text-green-600 font-medium">← Your Price</span>
+                      </div>
                     </div>
 
                     {item.requiresFFL && (

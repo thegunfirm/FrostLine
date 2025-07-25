@@ -309,7 +309,9 @@ export default function ProductDetail() {
       productName: product.name,
       productImage: product.sku ? `/api/rsr-image/${product.sku}` : "/fallback-logo.png",
       quantity: quantity,
-      price: getCurrentPrice(),
+      price: getCurrentPrice(), // Platinum price
+      priceBronze: parseFloat(product.priceBronze || "0"),
+      priceGold: parseFloat(product.priceGold || "0"),
       requiresFFL: product.requiresFFL,
       selectedFFL: selectedFFL,
       manufacturer: product.manufacturer

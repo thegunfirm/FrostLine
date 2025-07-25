@@ -4111,9 +4111,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid cart items format" });
       }
       
-      // Validate each item has required fields
+      // Validate each item has required fields (updated for new cart interface)
       for (const item of items) {
-        if (!item.id || !item.productId || !item.quantity || !item.tierPriceUsed || !item.priceSnapshot) {
+        if (!item.id || !item.productId || !item.quantity || !item.price) {
           return res.status(400).json({ error: "Invalid cart item structure" });
         }
       }
@@ -4121,7 +4121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         message: "Cart synced successfully", 
         itemCount: items.length,
-        totalPrice: items.reduce((sum: number, item: any) => sum + (item.priceSnapshot * item.quantity), 0)
+        totalPrice: items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0)
       });
     } catch (error: any) {
       console.error("Cart sync error:", error);
