@@ -15,7 +15,10 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
   // Fetch dynamic fallback image from CMS
   const { data: fallbackImageSetting } = useQuery({
     queryKey: ["/api/admin/fallback-image"],
-    queryFn: () => apiRequest("GET", "/api/admin/fallback-image"),
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/admin/fallback-image");
+      return response.json();
+    },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
@@ -64,9 +67,9 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
               </div>
             </div>
             <div className="flex items-center gap-1 text-xs">
-              <span className="text-black px-1 py-0.5 rounded text-xs" style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}>${(parseFloat(product.priceBronze || product.price_bronze || "0")).toFixed(2)}</span>
-              <span className="text-black px-1 py-0.5 rounded text-xs" style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}>${(parseFloat(product.priceGold || product.price_gold || "0")).toFixed(2)}</span>
-              <span className="text-black px-1 py-0.5 rounded text-xs" style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}>${(parseFloat(product.pricePlatinum || product.price_platinum || "0")).toFixed(2).replace(/\d/g, '*')}</span>
+              <span className="text-black px-1 py-0.5 rounded text-xs" style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}>${(parseFloat(product.priceBronze || "0")).toFixed(2)}</span>
+              <span className="text-black px-1 py-0.5 rounded text-xs" style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}>${(parseFloat(product.priceGold || "0")).toFixed(2)}</span>
+              <span className="text-black px-1 py-0.5 rounded text-xs" style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}>${(parseFloat(product.pricePlatinum || "0")).toFixed(2).replace(/\d/g, '*')}</span>
             </div>
           </div>
         </CardContent>

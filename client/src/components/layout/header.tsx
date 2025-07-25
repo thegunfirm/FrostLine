@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
-import { User, ShoppingCart, Menu, X } from "lucide-react";
+import { User, Menu, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { CategoryRibbon } from "@/components/category-ribbon";
+import { CartIcon } from "@/components/cart/cart-icon";
+import { CartSheet } from "@/components/cart/cart-sheet";
 
 const categories = [
   "Handguns",
@@ -56,15 +58,7 @@ export function Header() {
                 <span className="sr-only">My Account</span>
               </Button>
             </Link>
-            <Link href="/cart">
-              <Button variant="ghost" size="sm" className="text-white hover:text-gun-gold relative">
-                <ShoppingCart className="h-5 w-5" />
-                <span className="sr-only">Shopping Cart</span>
-                <span className="absolute -top-2 -right-2 bg-gun-gold text-gun-black rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
-                  0
-                </span>
-              </Button>
-            </Link>
+            <CartIcon />
             
             {/* Mobile Menu Button */}
             <Button
@@ -120,6 +114,9 @@ export function Header() {
           </div>
         )}
       </div>
+      
+      {/* Cart Sheet */}
+      <CartSheet />
     </header>
   );
 }

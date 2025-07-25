@@ -162,6 +162,49 @@ export const heroCarouselSlides = pgTable("hero_carousel_slides", {
   updatedAt: timestamp("updated_at").defaultNow()
 });
 
+// Cart system tables
+export const carts = pgTable("carts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  sessionId: text("session_id"), // For anonymous users
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const cartItems = pgTable("cart_items", {
+  id: serial("id").primaryKey(),
+  cartId: integer("cart_id").notNull(),
+  productId: integer("product_id").notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  tierPriceUsed: text("tier_price_used").notNull().default("Bronze"), // Bronze, Gold, Platinum
+  priceSnapshot: decimal("price_snapshot", { precision: 10, scale: 2 }).notNull(), // Price at time of adding to cart
+  addedAt: timestamp("added_at").defaultNow(),
+});
+
+// FFL system for firearm orders
+export const fflLookupHistory = pgTable("ffl_lookup_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  searchZip: text("search_zip").notNull(),
+  searchRadius: integer("search_radius").default(25), // miles
+  resultsFound: integer("results_found").default(0),
+  searchTimestamp: timestamp("search_timestamp").defaultNow(),
+  sourceType: text("source_type").notNull(), // RSR, ATF, Internal
+});
+
+// Orders flagged for manual handling (non-RSR FFLs)
+export const orderFlags = pgTable("order_flags", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").notNull(),
+  flagType: text("flag_type").notNull(), // "non_rsr_ffl", "compliance_review", "manual_processing"
+  flagReason: text("flag_reason").notNull(),
+  isResolved: boolean("is_resolved").default(false),
+  resolvedBy: integer("resolved_by"), // Admin user ID
+  resolvedAt: timestamp("resolved_at"),
+  flaggedAt: timestamp("flagged_at").defaultNow(),
+  notes: text("notes"),
+});
+
 // AI Search Learning System Tables
 export const searchCache = pgTable("search_cache", {
   id: serial("id").primaryKey(),
@@ -277,6 +320,32 @@ export const ordersRelations = relations(orders, ({ one }) => ({
 export const fflsRelations = relations(ffls, ({ many }) => ({
   orders: many(orders),
   preferredByUsers: many(users),
+}));
+
+export const cartsRelations = relations(carts, ({ one, many }) => ({
+  user: one(users, {
+    fields: [carts.userId],
+    references: [users.id],
+  }),
+  items: many(cartItems),
+}));
+
+export const cartItemsRelations = relations(cartItems, ({ one }) => ({
+  cart: one(carts, {
+    fields: [cartItems.cartId],
+    references: [carts.id],
+  }),
+  product: one(products, {
+    fields: [cartItems.productId],
+    references: [products.id],
+  }),
+}));
+
+export const orderFlagsRelations = relations(orderFlags, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderFlags.orderId],
+    references: [orders.id],
+  }),
 }));
 
 export const pricingRules = pgTable("pricing_rules", {
@@ -401,6 +470,26 @@ export const insertProductImageSchema = createInsertSchema(productImages).pick({
   uploadedBy: true,
 });
 
+export const insertCartSchema = createInsertSchema(carts).pick({
+  userId: true,
+  sessionId: true,
+});
+
+export const insertCartItemSchema = createInsertSchema(cartItems).pick({
+  cartId: true,
+  productId: true,
+  quantity: true,
+  tierPriceUsed: true,
+  priceSnapshot: true,
+});
+
+export const insertOrderFlagSchema = createInsertSchema(orderFlags).pick({
+  orderId: true,
+  flagType: true,
+  flagReason: true,
+  notes: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -424,3 +513,9 @@ export type CategorySetting = typeof categorySettings.$inferSelect;
 export type InsertCategorySetting = z.infer<typeof insertCategorySettingSchema>;
 export type ProductImage = typeof productImages.$inferSelect;
 export type InsertProductImage = z.infer<typeof insertProductImageSchema>;
+export type Cart = typeof carts.$inferSelect;
+export type InsertCart = z.infer<typeof insertCartSchema>;
+export type CartItem = typeof cartItems.$inferSelect;
+export type InsertCartItem = z.infer<typeof insertCartItemSchema>;
+export type OrderFlag = typeof orderFlags.$inferSelect;
+export type InsertOrderFlag = z.infer<typeof insertOrderFlagSchema>;

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/hooks/use-cart";
 import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { 
@@ -102,6 +103,7 @@ export default function ProductDetail() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { addItem } = useCart();
   
   // State management
   const [quantity, setQuantity] = useState(1);
@@ -307,7 +309,9 @@ export default function ProductDetail() {
       return;
     }
 
-    if (product?.requiresFFL && !selectedFFL) {
+    if (!product) return;
+
+    if (product.requiresFFL && !selectedFFL) {
       toast({
         title: "FFL Required",
         description: "Please select an FFL dealer for this firearm.",
@@ -316,9 +320,22 @@ export default function ProductDetail() {
       return;
     }
 
+    // Add item to cart using the cart hook
+    addItem({
+      productId: product.id,
+      productSku: product.sku,
+      productName: product.name,
+      productImage: product.sku ? `/api/rsr-image/${product.sku}` : "/fallback-logo.png",
+      quantity: quantity,
+      price: getCurrentPrice(),
+      requiresFFL: product.requiresFFL,
+      selectedFFL: selectedFFL,
+      manufacturer: product.manufacturer
+    });
+
     toast({
       title: "Added to Cart",
-      description: `${product?.name} (${quantity}) added to your cart.`,
+      description: `${product.name} (${quantity}) added to your cart.`,
     });
   };
 

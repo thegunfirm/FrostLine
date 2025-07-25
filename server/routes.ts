@@ -4100,5 +4100,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cart API endpoints
+  app.post("/api/cart/sync", async (req, res) => {
+    try {
+      const { items } = req.body;
+      
+      // For now, just validate the cart items structure
+      // In the future, we'll sync with database when user authentication is ready
+      if (!Array.isArray(items)) {
+        return res.status(400).json({ error: "Invalid cart items format" });
+      }
+      
+      // Validate each item has required fields
+      for (const item of items) {
+        if (!item.id || !item.productId || !item.quantity || !item.tierPriceUsed || !item.priceSnapshot) {
+          return res.status(400).json({ error: "Invalid cart item structure" });
+        }
+      }
+      
+      res.json({ 
+        message: "Cart synced successfully", 
+        itemCount: items.length,
+        totalPrice: items.reduce((sum: number, item: any) => sum + (item.priceSnapshot * item.quantity), 0)
+      });
+    } catch (error: any) {
+      console.error("Cart sync error:", error);
+      res.status(500).json({ error: "Failed to sync cart" });
+    }
+  });
+
+  app.get("/api/cart", async (req, res) => {
+    try {
+      // For now, return empty cart since we don't have user sessions yet
+      // In the future, we'll fetch from database based on user session
+      res.json({ items: [] });
+    } catch (error: any) {
+      console.error("Cart fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch cart" });
+    }
+  });
+
   return httpServer;
 }
