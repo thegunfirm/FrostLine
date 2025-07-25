@@ -97,7 +97,7 @@ export function CartSheet() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => updateQuantity(item.productSku, Math.max(1, item.quantity - 1))}
+                          onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
                           className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600"
                         >
                           <Minus className="h-2.5 w-2.5" />
@@ -110,7 +110,7 @@ export function CartSheet() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => updateQuantity(item.productSku, Math.min(10, item.quantity + 1))}
+                          onClick={() => updateQuantity(item.id, Math.min(10, item.quantity + 1))}
                           className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600"
                         >
                           <Plus className="h-2.5 w-2.5" />
@@ -119,7 +119,7 @@ export function CartSheet() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeItem(item.productSku)}
+                          onClick={() => removeItem(item.id)}
                           className="h-5 w-5 p-0 text-gray-400 hover:text-red-500 ml-0.5"
                         >
                           <Trash2 className="h-2.5 w-2.5" />
