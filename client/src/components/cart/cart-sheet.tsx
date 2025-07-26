@@ -33,12 +33,37 @@ export function CartSheet() {
   // Calculate potential savings for membership upsell
   const calculateSavings = () => {
     if (!user) {
-      const bronzeCost = items.reduce((sum, item) => sum + (item.priceBronze || item.price) * item.quantity, 0);
-      const platinumCost = total;
+      // Calculate Bronze total (public pricing)
+      const bronzeCost = items.reduce((sum, item) => {
+        const bronzePrice = item.priceBronze || item.price;
+        return sum + bronzePrice * item.quantity;
+      }, 0);
+      
+      // Calculate Platinum total (current cart pricing - what they'd pay as members)
+      const platinumCost = items.reduce((sum, item) => {
+        return sum + item.price * item.quantity;
+      }, 0);
+      
       const savings = bronzeCost - platinumCost;
       const percentage = bronzeCost > 0 ? (savings / bronzeCost) * 100 : 0;
       // Round down to nearest 10%, but ensure minimum of 10% if there are any savings
       const roundedPercentage = savings > 0 ? Math.max(10, Math.floor(percentage / 10) * 10) : 0;
+      
+      console.log('Savings calculation:', {
+        bronzeCost,
+        platinumCost,
+        savings,
+        percentage,
+        roundedPercentage,
+        items: items.map(item => ({
+          name: item.productName,
+          qty: item.quantity,
+          currentPrice: item.price,
+          bronzePrice: item.priceBronze,
+          subtotal: item.price * item.quantity
+        }))
+      });
+      
       return { savings, percentage: roundedPercentage };
     }
     return { savings: 0, percentage: 0 };
@@ -97,7 +122,13 @@ export function CartSheet() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                          onClick={() => {
+                            if (item.quantity <= 1) {
+                              removeItem(item.id);
+                            } else {
+                              updateQuantity(item.id, item.quantity - 1);
+                            }
+                          }}
                           className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600"
                         >
                           <Minus className="h-2.5 w-2.5" />
