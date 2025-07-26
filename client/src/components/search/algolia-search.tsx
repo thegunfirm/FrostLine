@@ -586,14 +586,14 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
       {/* Search Header - Mobile vs Desktop */}
       <div className="flex items-center gap-2">
-        {/* Mobile: Collapsible Search */}
+        {/* Mobile: Search Field + Controls */}
         <div className="sm:hidden flex items-center gap-2 w-full">
           {/* Filter Button */}
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowFilterPanel(true)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 flex-shrink-0"
           >
             <Filter className="h-4 w-4" />
             {hasActiveFilters && (
@@ -603,14 +603,25 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
             )}
           </Button>
 
-          {/* Search Toggle Button - Just magnifying glass with yellow background */}
-          <Button
-            size="sm"
-            onClick={toggleMobileSearch}
-            className="bg-gun-gold hover:bg-gun-gold/90 text-white border-gun-gold p-2 min-w-0"
-          >
-            <Search className="h-4 w-4" />
-          </Button>
+          {/* Search Input Field */}
+          <form onSubmit={handleSearch} className="flex items-center gap-2 flex-1">
+            <Input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="text-sm h-9"
+            />
+            
+            {/* Search Submit Button - Yellow magnifying glass */}
+            <Button
+              type="submit"
+              size="sm"
+              className="bg-gun-gold hover:bg-gun-gold/90 text-white border-gun-gold p-2 min-w-0 flex-shrink-0"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+          </form>
 
           {/* Clear Filters Button */}
           {hasActiveFilters && (
@@ -618,7 +629,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               variant="ghost"
               size="sm"
               onClick={clearFilters}
-              className="flex items-center gap-2 text-gun-gold hover:text-gun-gold/80"
+              className="flex items-center gap-2 text-gun-gold hover:text-gun-gold/80 flex-shrink-0"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -698,44 +709,30 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         </div>
       </div>
 
-      {/* Mobile Collapsible Search Form */}
+      {/* Mobile Product Type Selector - Only show when search is toggled */}
       {showMobileSearch && (
         <div className="sm:hidden bg-gray-50 p-3 rounded-lg border">
-          <form onSubmit={handleSearch} className="space-y-3">
-            {/* Product Type Select */}
-            <Select value={filters.productType || "all"} onValueChange={(value) => {
-              console.log("Mobile dropdown changed to:", value);
-              handleFilterChange('productType', value === "all" ? "" : value);
-            }}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select product type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="handgun">Handguns</SelectItem>
-                <SelectItem value="rifle">Rifles</SelectItem>
-                <SelectItem value="shotgun">Shotguns</SelectItem>
-                <SelectItem value="ammunition">Ammunition</SelectItem>
-                <SelectItem value="optics">Optics</SelectItem>
-                <SelectItem value="accessories">Accessories</SelectItem>
-                <SelectItem value="parts">Parts</SelectItem>
-                <SelectItem value="nfa">NFA</SelectItem>
-                <SelectItem value="magazines">Magazines</SelectItem>
-                <SelectItem value="uppers">Uppers/Lowers</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Search Input - No internal search button */}
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder={`Search ${category === "all" ? "all products" : category.toLowerCase()}...`}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
-              />
-            </div>
-          </form>
+          <Select value={filters.productType || "all"} onValueChange={(value) => {
+            console.log("Mobile dropdown changed to:", value);
+            handleFilterChange('productType', value === "all" ? "" : value);
+          }}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select product type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="handgun">Handguns</SelectItem>
+              <SelectItem value="rifle">Rifles</SelectItem>
+              <SelectItem value="shotgun">Shotguns</SelectItem>
+              <SelectItem value="ammunition">Ammunition</SelectItem>
+              <SelectItem value="optics">Optics</SelectItem>
+              <SelectItem value="accessories">Accessories</SelectItem>
+              <SelectItem value="parts">Parts</SelectItem>
+              <SelectItem value="nfa">NFA</SelectItem>
+              <SelectItem value="magazines">Magazines</SelectItem>
+              <SelectItem value="uppers">Uppers/Lowers</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       )}
 
