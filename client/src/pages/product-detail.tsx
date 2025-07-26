@@ -319,12 +319,7 @@ export default function ProductDetail() {
       manufacturer: product.manufacturer
     });
 
-    toast({
-      title: "Added to Cart",
-      description: `${product.name} (${quantity}) added to your cart.`,
-    });
-
-    // Open cart to show the item was added
+    // Open cart to show the item was added (removed toast notification to avoid blocking CTA)
     setCartOpen(true);
   };
 

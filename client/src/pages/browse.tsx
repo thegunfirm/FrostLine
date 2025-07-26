@@ -22,7 +22,7 @@ export default function Browse() {
       return response.json() as Promise<CategoryRibbon[]>;
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
-    cacheTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes (renamed from cacheTime in TanStack Query v5)
   });
 
   const handleCategoryClick = (categoryName: string) => {
