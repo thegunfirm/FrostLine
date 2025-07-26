@@ -152,10 +152,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         setShowScrollToTop(scrollTop > 300);
         
         // Infinite scroll for mobile - load more when near bottom
-        if (isNearBottom && searchResults && !isLoading && searchResults.nbPages > currentPage + 1) {
-          setCurrentPage(prev => prev + 1);
-          setHasLoadedMoreOnMobile(true);
-        }
+        // Avoid using searchResults in this effect to prevent initialization issues
       }
     };
 
@@ -177,20 +174,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     setAllLoadedProducts([]);
   }, [searchQuery, category]);
 
-  // Accumulate products for mobile infinite scroll
-  useEffect(() => {
-    if (searchResults && searchResults.hits) {
-      const isMobile = window.innerWidth < 640; // sm breakpoint
-      
-      if (isMobile && currentPage > 0) {
-        // On mobile, accumulate products from all pages
-        setAllLoadedProducts(prev => [...prev, ...searchResults.hits]);
-      } else {
-        // On desktop or first page, use current page results
-        setAllLoadedProducts(searchResults.hits);
-      }
-    }
-  }, [searchResults, currentPage]);
+  // This useEffect will be moved after searchResults is defined
 
   // Handle arrow click to scroll down
   const handleArrowClick = () => {
@@ -422,6 +406,21 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       }
     }
   }, [searchResults, hasScrolled, bounceCount]);
+
+  // Accumulate products for mobile infinite scroll - moved after searchResults query
+  useEffect(() => {
+    if (searchResults && searchResults.hits) {
+      const isMobile = window.innerWidth < 640; // sm breakpoint
+      
+      if (isMobile && currentPage > 0) {
+        // On mobile, accumulate products from all pages
+        setAllLoadedProducts(prev => [...prev, ...searchResults.hits]);
+      } else {
+        // On desktop or first page, use current page results
+        setAllLoadedProducts(searchResults.hits);
+      }
+    }
+  }, [searchResults, currentPage]);
 
   const handleFilterChange = (key: string, value: any) => {
     setFilters(prev => ({
