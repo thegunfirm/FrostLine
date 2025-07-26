@@ -189,11 +189,11 @@ export function CartSheet() {
                 {!user && savings > 0 && (
                   <div className="relative">
                     <Button 
-                      className="w-full bg-gradient-to-br from-gray-200 to-white hover:from-gray-100 hover:to-gray-50 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2 relative overflow-hidden border border-gray-300"
+                      className="w-full bg-gradient-to-br from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2 relative overflow-hidden"
                       onClick={() => {/* Navigate to signup */}}
                     >
-                      <span className="relative z-10">Join Now & Save {formatPrice(savings)}</span>
-                      <div className="absolute inset-0 bg-gradient-to-r from-gray-800/10 to-gray-600/10 animate-pulse"></div>
+                      <span className="relative z-10">Unlock {formatPrice(savings)} in Savings</span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-300/20 animate-pulse"></div>
                     </Button>
                   </div>
                 )}
