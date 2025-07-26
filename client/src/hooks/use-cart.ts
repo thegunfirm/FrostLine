@@ -84,6 +84,7 @@ export const useCart = create<CartState>()(
             price: params.price,
             priceBronze: params.priceBronze,
             priceGold: params.priceGold,
+            pricePlatinum: params.pricePlatinum,
             requiresFFL: params.requiresFFL,
             selectedFFL: params.selectedFFL,
             manufacturer: params.manufacturer,

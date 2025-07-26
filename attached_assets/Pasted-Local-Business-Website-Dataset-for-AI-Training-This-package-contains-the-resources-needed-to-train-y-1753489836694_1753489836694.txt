@@ -1,0 +1,29 @@
+Local Business Website Dataset for AI Training
+This package contains the resources needed to train your Replit AI on a curated set of exceptional local‑business websites from the United States. The aim is to teach the model how to craft visually engaging, responsive and high‑performing small‑business websites that go beyond standard templates.
+
+Files
+websites.csv – A comma‑separated list of 50 websites. Each row contains:
+
+Category – one of five top local business categories (Food & Beverage, Beauty & Wellness, Health & Fitness, Professional & Home Services, or Retail & Artisan/E‑commerce).
+
+Business – the name of the business.
+
+URL – the domain of the business’s website.
+
+report.md – The full report explaining why each site was selected, with citations to articles describing their design features. Use this for human reference or to extract qualitative features.
+
+Usage
+Load the dataset – In your Replit training script, read websites.csv using your preferred language (e.g., Python’s csv module). Each row can be used as an example for your AI to analyse the layout, calls to action, and design elements of the corresponding website.
+
+Optional labels – If you want the AI to understand which design patterns appear on each site, create additional columns (e.g., features) and populate them with keywords extracted from the report (e.g., hero video; interactive CTA; testimonials).
+
+Human reference – Keep report.md in your repository. Designers or reviewers can consult this file to understand the rationale for each inclusion and the specific design elements that make these sites exemplary.
+
+Training pipeline – Ensure your training pipeline only uses data you intend. Extra files in the repository (like the report) will not affect your AI unless explicitly consumed by your script.
+
+Notes
+The domains listed are current as of July 25 2025 and were confirmed via browser searches. Ensure they remain valid before running automated scraping.
+
+For ethical AI training, respect each website’s terms of service when crawling pages.
+
+This dataset and accompanying report will help your internal AI learn from diverse, well‑designed local business websites and generate more creative, effective layouts.
