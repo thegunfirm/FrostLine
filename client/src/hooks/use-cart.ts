@@ -10,9 +10,10 @@ export interface CartItem {
   productName: string;
   productImage: string;
   quantity: number;
-  price: number; // Platinum price - the actual price user pays
+  price: number; // Current tier price - the actual price user pays
   priceBronze?: number; // For comparison display
   priceGold?: number; // For comparison display
+  pricePlatinum?: number; // For comparison display
   requiresFFL: boolean;
   selectedFFL?: string;
   manufacturer: string;
@@ -25,9 +26,10 @@ interface AddToCartParams {
   productName: string;
   productImage: string;
   quantity: number;
-  price: number; // Platinum price
+  price: number; // Current tier price
   priceBronze?: number; // For comparison display
   priceGold?: number; // For comparison display
+  pricePlatinum?: number; // For comparison display
   requiresFFL: boolean;
   selectedFFL?: string;
   manufacturer: string;

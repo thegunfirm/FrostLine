@@ -301,17 +301,19 @@ export default function ProductDetail() {
   const handleAddToCart = () => {
     if (!product) return;
 
-    // Add item to cart without authentication requirement
-    // FFL dealer selection will be handled during checkout
+    // Add item to cart with pricing based on user tier or Platinum if not logged in
+    const currentPrice = user ? getCurrentPrice() : parseFloat(product.pricePlatinum || "0");
+    
     addItem({
       productId: product.id,
       productSku: product.sku,
       productName: product.name,
       productImage: product.sku ? `/api/rsr-image/${product.sku}` : "/fallback-logo.png",
       quantity: quantity,
-      price: parseFloat(product.pricePlatinum || "0"), // Always use Platinum dealer price
+      price: currentPrice, // Use tier-appropriate pricing
       priceBronze: parseFloat(product.priceBronze || "0"),
       priceGold: parseFloat(product.priceGold || "0"),
+      pricePlatinum: parseFloat(product.pricePlatinum || "0"),
       requiresFFL: product.requiresFFL,
       selectedFFL: selectedFFL,
       manufacturer: product.manufacturer

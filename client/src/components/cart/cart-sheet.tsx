@@ -33,21 +33,33 @@ export function CartSheet() {
   // Calculate potential savings for membership upsell
   const calculateSavings = () => {
     if (!user) {
-      // Calculate Bronze total (public pricing)
+      // For non-logged users: compare Bronze vs Platinum pricing
       const bronzeCost = items.reduce((sum, item) => {
         const bronzePrice = item.priceBronze || item.price;
         return sum + bronzePrice * item.quantity;
       }, 0);
       
-      // Calculate Platinum total (current cart pricing - what they'd pay as members)
       const platinumCost = items.reduce((sum, item) => {
-        return sum + item.price * item.quantity;
+        const platinumPrice = item.pricePlatinum || item.price;
+        return sum + platinumPrice * item.quantity;
       }, 0);
       
       const savings = bronzeCost - platinumCost;
-      return { savings };
+      return { savings: Math.max(0, savings) };
+    } else {
+      // For logged users: compare their current price vs Platinum pricing
+      const currentCost = items.reduce((sum, item) => {
+        return sum + item.price * item.quantity;
+      }, 0);
+      
+      const platinumCost = items.reduce((sum, item) => {
+        const platinumPrice = item.pricePlatinum || item.price;
+        return sum + platinumPrice * item.quantity;
+      }, 0);
+      
+      const savings = currentCost - platinumCost;
+      return { savings: Math.max(0, savings) };
     }
-    return { savings: 0 };
   };
 
   const { savings } = calculateSavings();
