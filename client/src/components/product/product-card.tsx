@@ -37,8 +37,8 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
   return (
     <Link href={`/product/${product.sku || product.id}`}>
       <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer">
-        <CardContent className="p-2">
-          <div className="bg-gray-100 rounded-lg mb-1 overflow-hidden flex items-center justify-center min-h-[100px]">
+        <CardContent className="p-3 sm:p-2">
+          <div className="bg-gray-100 rounded-lg mb-2 sm:mb-1 overflow-hidden flex items-center justify-center min-h-[120px] sm:min-h-[100px]">
             <img
               src={imageUrl}
               alt={altText}
@@ -51,25 +51,25 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
               }}
             />
           </div>
-          <div className="space-y-1">
-            <h3 className="font-medium text-sm leading-tight">{product.name}</h3>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-600">{product.manufacturer}</span>
+          <div className="space-y-2 sm:space-y-1">
+            <h3 className="font-medium text-sm sm:text-sm leading-tight line-clamp-2">{product.name}</h3>
+            <div className="flex items-center justify-between text-sm sm:text-xs">
+              <span className="text-gray-600 font-medium">{product.manufacturer}</span>
               <div className="flex items-center gap-1">
                 {product.inStock ? (
                   <CheckCircle className="w-3 h-3 text-green-500" />
                 ) : (
                   <XCircle className="w-3 h-3 text-red-500" />
                 )}
-                <span className="text-gray-500">
+                <span className="text-gray-500 text-xs hidden sm:inline">
                   {product.inStock ? "In Stock" : "Out of Stock"}
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-1 text-xs">
-              <span className="text-black px-1 py-0.5 rounded text-xs" style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}>${(parseFloat(product.priceBronze || "0")).toFixed(2)}</span>
-              <span className="text-black px-1 py-0.5 rounded text-xs" style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}>${(parseFloat(product.priceGold || "0")).toFixed(2)}</span>
-              <span className="text-black px-1 py-0.5 rounded text-xs" style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}>${(parseFloat(product.pricePlatinum || "0")).toFixed(2).replace(/\d/g, '*')}</span>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 text-xs">
+              <span className="text-black px-2 py-1 sm:px-1 sm:py-0.5 rounded text-xs font-medium" style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}>${(parseFloat(product.priceBronze || "0")).toFixed(2)}</span>
+              <span className="text-black px-2 py-1 sm:px-1 sm:py-0.5 rounded text-xs font-medium" style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}>${(parseFloat(product.priceGold || "0")).toFixed(2)}</span>
+              <span className="text-black px-2 py-1 sm:px-1 sm:py-0.5 rounded text-xs font-medium" style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}>${(parseFloat(product.pricePlatinum || "0")).toFixed(2).replace(/\d/g, '*')}</span>
             </div>
           </div>
         </CardContent>
