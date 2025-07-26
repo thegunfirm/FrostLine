@@ -454,6 +454,16 @@ Code preservation: Always maintain working solutions - never overwrite functioni
 
 **⚠️ CONFLICT RESOLUTION PROTOCOL**: If user instructions conflict with any "DO NOT MODIFY" section below, STOP immediately and ask the user to resolve the conflict before proceeding.
 
+### Cart Pricing System (WORKING - DO NOT MODIFY)
+**Location**: `client/src/pages/cart.tsx` lines 85-104
+**Function**: Three-tier pricing display for non-authenticated users in cart page
+**Key Features**: 
+- Bronze: Uses `item.priceBronze || item.price`
+- Gold: Uses `item.priceGold || item.price`
+- Platinum: Uses `item.pricePlatinum || item.price` (CRITICAL - was previously showing `item.price` only)
+**Status**: WORKING - displays authentic RSR pricing tiers with proper membership incentives
+**User Note**: "Do not touch the pricing in the UI or UX" - pricing display logic is finalized and operational
+
 ### RSR Image System (WORKING - DO NOT MODIFY)
 **Location**: `server/routes.ts` lines 1489-1558
 **Function**: `/api/rsr-image/:imageName` endpoint
