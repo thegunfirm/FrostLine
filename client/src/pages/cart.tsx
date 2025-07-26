@@ -100,7 +100,7 @@ export default function CartPage() {
                                 style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}
                                 onClick={() => {/* Navigate to Platinum membership signup */}}
                               >
-                                Platinum: {formatPrice(item.price)} - Join Now to get this price
+                                Platinum: {formatPrice(item.pricePlatinum || item.price)} - Join Now to get this price
                               </Button>
                             </div>
                           )}
