@@ -69,22 +69,22 @@ export function CartSheet() {
     <Sheet open={isCartOpen} onOpenChange={setCartOpen}>
       <SheetContent className="flex flex-col w-full sm:max-w-xs p-0 bg-white border-l shadow-xl fixed right-0 top-0 h-full z-50">
         <SheetHeader className="px-4 py-3 border-b bg-gray-50">
-          <SheetTitle className="flex items-center justify-between text-sm font-semibold">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between">
+            <SheetTitle className="flex items-center gap-2 text-sm font-semibold">
               <ShoppingCart className="h-4 w-4" />
               Cart ({itemCount})
-            </div>
+            </SheetTitle>
             <Link href="/cart">
               <Button 
                 variant="ghost"
                 size="sm"
-                className="text-xs h-6 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50" 
+                className="text-xs h-6 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 mr-8" 
                 onClick={() => setCartOpen(false)}
               >
                 Go to Cart
               </Button>
             </Link>
-          </SheetTitle>
+          </div>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-4">
