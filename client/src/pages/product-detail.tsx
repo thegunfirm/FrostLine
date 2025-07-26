@@ -404,8 +404,8 @@ export default function ProductDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-600 mb-6 animate-in fade-in slide-in-from-top duration-500">
           <Link href="/products" className="hover:text-gray-900">
@@ -421,11 +421,11 @@ export default function ProductDetail() {
         </div>
 
         {/* Main Product Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 mb-12">
           {/* Product Images */}
           <div className="space-y-4 animate-in fade-in slide-in-from-left duration-700">
             {/* Main Image */}
-            <div className="aspect-square bg-white rounded-lg border border-gray-200 p-4 relative">
+            <div className="aspect-square max-h-[60vh] sm:max-h-none bg-white rounded-lg border border-gray-200 p-2 sm:p-4 relative">
               {imageLoading && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
@@ -533,25 +533,25 @@ export default function ProductDetail() {
                   Share
                 </Button>
               </div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
-              <h2 className="text-lg text-gray-600 mb-2">{product.manufacturer}</h2>
-              <p className="text-gray-600">{product.description}</p>
+              <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 leading-tight">{product.name}</h1>
+              <h2 className="text-base sm:text-lg text-gray-600 mb-2">{product.manufacturer}</h2>
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed">{product.description}</p>
             </div>
 
             {/* SKU and Details */}
-            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+            <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
               <div>SKU: <span className="font-medium">{product.sku}</span></div>
               {product.manufacturerPartNumber && (
                 <div>MPN: <span className="font-medium">{product.manufacturerPartNumber}</span></div>
               )}
               {product.upcCode && (
-                <div>UPC: <span className="font-medium">{product.upcCode}</span></div>
+                <div className="hidden sm:block">UPC: <span className="font-medium">{product.upcCode}</span></div>
               )}
             </div>
 
             {/* Stock and Shipping Status with Add to Cart */}
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="space-y-2 flex-1">
                 <div className="flex items-center gap-2">
                   {product.inStock ? (
                     <>
@@ -577,8 +577,8 @@ export default function ProductDetail() {
               </div>
               
               {/* Add to Cart section */}
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:items-end gap-2">
+                <div className="flex items-center gap-2 justify-center sm:justify-end">
                   <Button
                     variant="outline"
                     size="sm"
@@ -599,7 +599,7 @@ export default function ProductDetail() {
                     <Plus className="w-3 h-3" />
                   </Button>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 justify-center sm:justify-end">
                   <Button
                     onClick={handleAddToCart}
                     disabled={!product.inStock}
@@ -607,7 +607,8 @@ export default function ProductDetail() {
                     size="sm"
                   >
                     <ShoppingCart className="w-4 h-4" />
-                    {product.inStock ? "Add to Cart" : "Out of Stock"}
+                    <span className="hidden xs:inline">{product.inStock ? "Add to Cart" : "Out of Stock"}</span>
+                    <span className="xs:hidden">{product.inStock ? "Add" : "Out"}</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -616,7 +617,7 @@ export default function ProductDetail() {
                     size="sm"
                   >
                     <Heart className={cn("w-3 h-3", isWishlist && "fill-current")} />
-                    Wishlist
+                    <span className="hidden xs:inline">Wishlist</span>
                   </Button>
                 </div>
               </div>
@@ -711,9 +712,12 @@ export default function ProductDetail() {
                         <Link href="/register">
                           <Button 
                             size="lg" 
-                            className="bg-gradient-to-r from-gray-700 to-black hover:from-gray-600 hover:to-gray-800 text-yellow-300 font-semibold px-8 py-3 relative overflow-hidden transition-all duration-200 hover:scale-[1.02]"
+                            className="w-full bg-gradient-to-r from-gray-700 to-black hover:from-gray-600 hover:to-gray-800 text-yellow-300 font-semibold px-4 sm:px-8 py-3 relative overflow-hidden transition-all duration-200 hover:scale-[1.02] text-sm sm:text-base"
                           >
-                            <span className="relative z-10">Sign Up for Free to View Member Savings</span>
+                            <span className="relative z-10">
+                              <span className="hidden sm:inline">Sign Up for Free to View Member Savings</span>
+                              <span className="sm:hidden">Sign Up for Free</span>
+                            </span>
                             <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/20 to-amber-500/20 animate-pulse"></div>
                           </Button>
                         </Link>
