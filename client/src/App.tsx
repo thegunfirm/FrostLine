@@ -27,6 +27,7 @@ import AdminImageSettings from "@/pages/admin-image-settings";
 import AdminProductImages from "@/pages/admin-product-images";
 import RSRIntelligenceTest from "@/pages/rsr-intelligence-test";
 import Categories from "@/pages/categories";
+import Browse from "@/pages/browse";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -53,6 +54,7 @@ function Router() {
       <Route path="/admin-product-images" component={AdminProductImages} />
       <Route path="/rsr-intelligence-test" component={RSRIntelligenceTest} />
       <Route path="/categories" component={Categories} />
+      <Route path="/browse" component={Browse} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProductGrid } from "@/components/product/product-grid";
 import { FilterPanel } from "@/components/search/filter-panel";
-import { Search, Filter, X, ChevronDown } from "lucide-react";
+import { Search, Filter, X, ChevronDown, ChevronUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -118,14 +118,20 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
   const [currentPage, setCurrentPage] = useState(0);
   const [resultsPerPage, setResultsPerPage] = useState(24);
   const [sortBy, setSortBy] = useState("relevance");
+  const [hasLoadedMoreOnMobile, setHasLoadedMoreOnMobile] = useState(false);
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [allLoadedProducts, setAllLoadedProducts] = useState<SearchResult[]>([]);
   
   // Reset sort when category changes
   useEffect(() => {
     setSortBy("relevance");
     setCurrentPage(0);
+    setHasLoadedMoreOnMobile(false);
+    setAllLoadedProducts([]);
   }, [category]);
 
-  // Track scroll state and detect bottom of results
+  // Track scroll state and detect bottom of results + mobile infinite scroll
   useEffect(() => {
     const handleScroll = () => {
       setHasScrolled(true);
@@ -139,11 +145,23 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       // Consider "bottom of results" as being within 200px of the footer
       const isNearBottom = scrollTop + windowHeight >= documentHeight - footerHeight;
       setIsAtBottom(isNearBottom);
+      
+      // Show scroll to top button when scrolled down 300px on mobile
+      const isMobile = window.innerWidth < 640; // sm breakpoint
+      if (isMobile) {
+        setShowScrollToTop(scrollTop > 300);
+        
+        // Infinite scroll for mobile - load more when near bottom
+        if (isNearBottom && searchResults && !isLoading && searchResults.nbPages > currentPage + 1) {
+          setCurrentPage(prev => prev + 1);
+          setHasLoadedMoreOnMobile(true);
+        }
+      }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [currentPage]); // Remove searchResults dependency to avoid initialization issues
 
 
 
@@ -154,7 +172,25 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     setShowBounceArrow(false);
     setIsSettled(false);
     setIsAtBottom(false);
+    setHasLoadedMoreOnMobile(false);
+    setCurrentPage(0);
+    setAllLoadedProducts([]);
   }, [searchQuery, category]);
+
+  // Accumulate products for mobile infinite scroll
+  useEffect(() => {
+    if (searchResults && searchResults.hits) {
+      const isMobile = window.innerWidth < 640; // sm breakpoint
+      
+      if (isMobile && currentPage > 0) {
+        // On mobile, accumulate products from all pages
+        setAllLoadedProducts(prev => [...prev, ...searchResults.hits]);
+      } else {
+        // On desktop or first page, use current page results
+        setAllLoadedProducts(searchResults.hits);
+      }
+    }
+  }, [searchResults, currentPage]);
 
   // Handle arrow click to scroll down
   const handleArrowClick = () => {
@@ -530,6 +566,14 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleScrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const toggleMobileSearch = () => {
+    setShowMobileSearch(!showMobileSearch);
+  };
+
   return (
     <div className="space-y-3">
       {/* Dynamic Title Based on Dropdown Selection */}
@@ -541,161 +585,285 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         </div>
       )}
 
-      {/* Search Header */}
+      {/* Search Header - Mobile vs Desktop */}
       <div className="flex items-center gap-2">
-        {/* Filter Toggle Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowFilterPanel(true)}
-          className="flex items-center gap-2"
-        >
-          <Filter className="h-4 w-4" />
-          Filter
-          {hasActiveFilters && (
-            <span className="ml-1 px-1.5 py-0.5 text-xs bg-gun-gold text-white rounded">
-              {getFilterCount()}
-            </span>
-          )}
-        </Button>
+        {/* Mobile: Collapsible Search */}
+        <div className="sm:hidden flex items-center gap-2 w-full">
+          {/* Filter Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilterPanel(true)}
+            className="flex items-center gap-2"
+          >
+            <Filter className="h-4 w-4" />
+            {hasActiveFilters && (
+              <span className="px-1.5 py-0.5 text-xs bg-gun-gold text-white rounded">
+                {getFilterCount()}
+              </span>
+            )}
+          </Button>
 
-        {/* Product Type Filter */}
-        <Select value={filters.productType || "all"} onValueChange={(value) => {
-          console.log("Dropdown changed to:", value);
-          handleFilterChange('productType', value === "all" ? "" : value);
-        }}>
-          <SelectTrigger className="w-32">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="handgun">Handguns</SelectItem>
-            <SelectItem value="rifle">Rifles</SelectItem>
-            <SelectItem value="shotgun">Shotguns</SelectItem>
-            <SelectItem value="ammunition">Ammunition</SelectItem>
-            <SelectItem value="optics">Optics</SelectItem>
-            <SelectItem value="accessories">Accessories</SelectItem>
-            <SelectItem value="parts">Parts</SelectItem>
-            <SelectItem value="nfa">NFA</SelectItem>
-            <SelectItem value="magazines">Magazines</SelectItem>
-            <SelectItem value="uppers">Uppers/Lowers</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder={`Search ${category === "all" ? "all products" : category.toLowerCase()}...`}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Button type="submit" size="sm">
+          {/* Search Toggle Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleMobileSearch}
+            className="flex items-center gap-2"
+          >
+            <Search className="h-4 w-4" />
             Search
           </Button>
-        </form>
 
-        {/* Clear Filters Button */}
-        {hasActiveFilters && (
+          {/* Clear Filters Button */}
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="flex items-center gap-2 text-gun-gold hover:text-gun-gold/80"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        {/* Desktop: Full Search Interface */}
+        <div className="hidden sm:flex items-center gap-2 w-full">
+          {/* Filter Toggle Button */}
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            onClick={clearFilters}
-            className="flex items-center gap-2 text-gun-gold hover:text-gun-gold/80"
+            onClick={() => setShowFilterPanel(true)}
+            className="flex items-center gap-2"
           >
-            <X className="h-4 w-4" />
-            Clear
+            <Filter className="h-4 w-4" />
+            Filter
+            {hasActiveFilters && (
+              <span className="ml-1 px-1.5 py-0.5 text-xs bg-gun-gold text-white rounded">
+                {getFilterCount()}
+              </span>
+            )}
           </Button>
-        )}
+
+          {/* Product Type Filter */}
+          <Select value={filters.productType || "all"} onValueChange={(value) => {
+            console.log("Dropdown changed to:", value);
+            handleFilterChange('productType', value === "all" ? "" : value);
+          }}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="handgun">Handguns</SelectItem>
+              <SelectItem value="rifle">Rifles</SelectItem>
+              <SelectItem value="shotgun">Shotguns</SelectItem>
+              <SelectItem value="ammunition">Ammunition</SelectItem>
+              <SelectItem value="optics">Optics</SelectItem>
+              <SelectItem value="accessories">Accessories</SelectItem>
+              <SelectItem value="parts">Parts</SelectItem>
+              <SelectItem value="nfa">NFA</SelectItem>
+              <SelectItem value="magazines">Magazines</SelectItem>
+              <SelectItem value="uppers">Uppers/Lowers</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder={`Search ${category === "all" ? "all products" : category.toLowerCase()}...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button type="submit" size="sm">
+              Search
+            </Button>
+          </form>
+
+          {/* Clear Filters Button */}
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="flex items-center gap-2 text-gun-gold hover:text-gun-gold/80"
+            >
+              <X className="h-4 w-4" />
+              Clear
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Results Controls - All in One Line */}
-      {searchResults && (
-        <div className="flex items-center justify-between text-sm text-gray-600 py-2">
-          <span className="font-medium">
-            {searchResults.nbHits.toLocaleString()} results
-            {category !== "all" && ` in ${category}`}
-            {searchQuery && ` for "${searchQuery}"`}
-          </span>
-          
-          <div className="flex items-center gap-4">
-            {/* Pagination Controls */}
-            {searchResults.nbPages > 1 && (
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 0}
-                >
-                  Previous
-                </Button>
-                
-                {/* Page Numbers */}
-                <div className="flex gap-1">
-                  {Array.from({ length: Math.min(5, searchResults.nbPages) }, (_, i) => {
-                    const pageNum = Math.max(0, Math.min(
-                      searchResults.nbPages - 5,
-                      currentPage - 2
-                    )) + i;
-                    
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={currentPage === pageNum ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handlePageChange(pageNum)}
-                        className="w-10"
-                      >
-                        {pageNum + 1}
-                      </Button>
-                    );
-                  })}
-                </div>
+      {/* Mobile Collapsible Search Form */}
+      {showMobileSearch && (
+        <div className="sm:hidden bg-gray-50 p-3 rounded-lg border">
+          <form onSubmit={handleSearch} className="space-y-3">
+            {/* Product Type Select */}
+            <Select value={filters.productType || "all"} onValueChange={(value) => {
+              console.log("Mobile dropdown changed to:", value);
+              handleFilterChange('productType', value === "all" ? "" : value);
+            }}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select product type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="handgun">Handguns</SelectItem>
+                <SelectItem value="rifle">Rifles</SelectItem>
+                <SelectItem value="shotgun">Shotguns</SelectItem>
+                <SelectItem value="ammunition">Ammunition</SelectItem>
+                <SelectItem value="optics">Optics</SelectItem>
+                <SelectItem value="accessories">Accessories</SelectItem>
+                <SelectItem value="parts">Parts</SelectItem>
+                <SelectItem value="nfa">NFA</SelectItem>
+                <SelectItem value="magazines">Magazines</SelectItem>
+                <SelectItem value="uppers">Uppers/Lowers</SelectItem>
+              </SelectContent>
+            </Select>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= searchResults.nbPages - 1}
-                >
-                  Next
-                </Button>
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder={`Search ${category === "all" ? "all products" : category.toLowerCase()}...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            {/* Search Button */}
+            <Button type="submit" className="w-full">
+              Search
+            </Button>
+          </form>
+        </div>
+      )}
+
+      {/* Results Controls - Mobile vs Desktop */}
+      {searchResults && (
+        <div className="text-sm text-gray-600 py-2">
+          {/* Mobile: Simplified Controls */}
+          <div className="sm:hidden">
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-medium">
+                {searchResults.nbHits.toLocaleString()} results
+                {category !== "all" && ` in ${category}`}
+              </span>
+              
+              {/* Mobile Sort Control */}
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Sort" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="relevance">Relevance</SelectItem>
+                  <SelectItem value="price_low_to_high">Low to High</SelectItem>
+                  <SelectItem value="price_high_to_low">High to Low</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Mobile: Page Text (no pagination buttons) */}
+            {searchResults.nbPages > 1 && (
+              <div className="text-center text-xs text-gray-500">
+                Showing page {currentPage + 1} of {searchResults.nbPages} 
+                {hasLoadedMoreOnMobile && " (scroll for more)"}
               </div>
             )}
-            
-            {/* Page Info */}
-            <span>
-              Page {currentPage + 1} of {Math.max(1, searchResults.nbPages)}
+          </div>
+
+          {/* Desktop: Full Controls */}
+          <div className="hidden sm:flex items-center justify-between">
+            <span className="font-medium">
+              {searchResults.nbHits.toLocaleString()} results
+              {category !== "all" && ` in ${category}`}
+              {searchQuery && ` for "${searchQuery}"`}
             </span>
             
-            {/* Results Per Page */}
-            <Select value={resultsPerPage.toString()} onValueChange={(value) => setResultsPerPage(parseInt(value))}>
-              <SelectTrigger className="w-20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="24">24</SelectItem>
-                <SelectItem value="48">48</SelectItem>
-                <SelectItem value="96">96</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {/* Sort Control */}
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="relevance">Relevance</SelectItem>
-                <SelectItem value="price_low_to_high">Low to High</SelectItem>
-                <SelectItem value="price_high_to_low">High to Low</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-4">
+              {/* Desktop Pagination Controls */}
+              {searchResults.nbPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 0}
+                  >
+                    Previous
+                  </Button>
+                  
+                  {/* Page Numbers */}
+                  <div className="flex gap-1">
+                    {Array.from({ length: Math.min(5, searchResults.nbPages) }, (_, i) => {
+                      const pageNum = Math.max(0, Math.min(
+                        searchResults.nbPages - 5,
+                        currentPage - 2
+                      )) + i;
+                      
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handlePageChange(pageNum)}
+                          className="w-10"
+                        >
+                          {pageNum + 1}
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= searchResults.nbPages - 1}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+              
+              {/* Page Info */}
+              <span>
+                Page {currentPage + 1} of {Math.max(1, searchResults.nbPages)}
+              </span>
+              
+              {/* Results Per Page */}
+              <Select value={resultsPerPage.toString()} onValueChange={(value) => setResultsPerPage(parseInt(value))}>
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="24">24</SelectItem>
+                  <SelectItem value="48">48</SelectItem>
+                  <SelectItem value="96">96</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Sort Control */}
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="relevance">Relevance</SelectItem>
+                  <SelectItem value="price_low_to_high">Low to High</SelectItem>
+                  <SelectItem value="price_high_to_low">High to Low</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       )}
@@ -719,7 +887,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       {searchResults && !isLoading && (
         <div className="relative">
           <ProductGrid 
-            products={searchResults.hits.map((hit, index) => ({
+            products={allLoadedProducts.map((hit, index) => ({
               id: hit.objectID || `product-${index}`,
               sku: hit.objectID,
               name: hit.name || '',
@@ -871,9 +1039,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         </div>
       )}
 
-      {/* Pagination */}
+      {/* Desktop-only Pagination (mobile uses infinite scroll) */}
       {searchResults && searchResults.nbPages > 1 && (
-        <div className="flex justify-center items-center gap-2 py-6">
+        <div className="hidden sm:flex justify-center items-center gap-2 py-6">
           <Button
             variant="outline"
             size="sm"
@@ -912,6 +1080,26 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
             disabled={currentPage >= searchResults.nbPages - 1}
           >
             Next
+          </Button>
+        </div>
+      )}
+
+      {/* Mobile Loading Indicator for Infinite Scroll */}
+      {isLoading && currentPage > 0 && (
+        <div className="sm:hidden flex justify-center py-4">
+          <div className="text-sm text-gray-500">Loading more products...</div>
+        </div>
+      )}
+
+      {/* Mobile Scroll to Top Button */}
+      {showScrollToTop && (
+        <div className="sm:hidden fixed bottom-6 right-6 z-50">
+          <Button
+            onClick={handleScrollToTop}
+            size="sm"
+            className="rounded-full w-12 h-12 shadow-lg bg-gun-gold hover:bg-gun-gold/80 text-white"
+          >
+            <ChevronUp className="w-5 h-5" />
           </Button>
         </div>
       )}

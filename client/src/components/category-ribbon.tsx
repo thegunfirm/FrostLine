@@ -64,28 +64,41 @@ export function CategoryRibbon() {
   }
 
   return (
-    <div className="bg-black flex flex-wrap items-end justify-center xl:justify-start gap-1 px-1 sm:px-2 py-1 max-w-full">
-      {ribbons.map((ribbon, index) => {
-        // Individual button styling based on category with better responsive scaling
-        let buttonClass = "py-1 px-1 sm:px-2 md:py-2 md:px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-xs sm:text-sm md:text-sm tracking-wide uppercase whitespace-nowrap flex-shrink-0";
-        
-        // No borders - using gap spacing instead
-        
-        // Active state
-        if (currentCategory === ribbon.categoryName) {
-          buttonClass += " text-gun-gold";
-        }
-        
-        return (
-          <button
-            key={ribbon.id}
-            onClick={() => handleCategoryClick(ribbon.categoryName)}
-            className={buttonClass}
-          >
-            {ribbon.ribbonText}
-          </button>
-        );
-      })}
-    </div>
+    <>
+      {/* Mobile: Single Browse Button */}
+      <div className="sm:hidden bg-black flex items-center justify-center px-4 py-2">
+        <button
+          onClick={() => setLocation('/browse')}
+          className="py-2 px-4 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-sm tracking-wide uppercase"
+        >
+          Browse Categories
+        </button>
+      </div>
+      
+      {/* Tablet/Desktop: Full Ribbon */}
+      <div className="hidden sm:flex bg-black flex-wrap items-end justify-center xl:justify-start gap-1 px-1 sm:px-2 py-1 max-w-full">
+        {ribbons.map((ribbon, index) => {
+          // Individual button styling based on category with better responsive scaling
+          let buttonClass = "py-1 px-1 sm:px-2 md:py-2 md:px-3 text-center text-white hover:text-gun-gold hover:bg-gun-black transition-all duration-200 font-bebas text-xs sm:text-sm md:text-sm tracking-wide uppercase whitespace-nowrap flex-shrink-0";
+          
+          // No borders - using gap spacing instead
+          
+          // Active state
+          if (currentCategory === ribbon.categoryName) {
+            buttonClass += " text-gun-gold";
+          }
+          
+          return (
+            <button
+              key={ribbon.id}
+              onClick={() => handleCategoryClick(ribbon.categoryName)}
+              className={buttonClass}
+            >
+              {ribbon.ribbonText}
+            </button>
+          );
+        })}
+      </div>
+    </>
   );
 }
