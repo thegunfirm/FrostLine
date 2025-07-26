@@ -437,6 +437,8 @@ Changelog:
 - July 24, 2025. **HANDGUN SEARCH RANKING ENHANCED**: Added intelligent ranking boost for popular manufacturers (Glock 100pts, S&W 90pts, SIG 85pts) and caliber prioritization (9mm 120pts highest) in handgun search results using Algolia optionalFilters - improves user experience by showing most popular combinations first
 - July 24, 2025. **GIT WORKFLOW PREPARATION COMPLETED**: Created comprehensive version control setup with .gitignore, deployment documentation, and manual Git setup procedures - prepared project for collaboration and production deployment with complete backup strategy for 10 days of RSR integration work
 - July 25, 2025. **UNIVERSAL IMAGE PLACEHOLDER SYSTEM COMPLETED**: Successfully implemented universal fallback image system using user's "Product Image Unavailable" placeholder for all missing RSR images - system serves authentic TG logo placeholder when RSR images fail, working on product detail pages with cache-busting headers for future requests
+- July 26, 2025. **CART PRICING SYSTEM COMPLETED**: Successfully fixed critical cart pricing logic where non-logged users were incorrectly receiving Platinum (dealer) pricing instead of Bronze (public) pricing - cart now properly displays Bronze pricing for non-logged users and calculates meaningful savings comparing Bronze vs Platinum pricing for membership incentives
+- July 26, 2025. **CART SAVINGS CALCULATION OPERATIONAL**: Fixed cart slide-out to display accurate "Save with membership" amounts by ensuring all cart items include complete pricing tier data (priceBronze, priceGold, pricePlatinum) - system now shows compelling savings amounts to encourage membership upgrades
 ```
 
 ## User Preferences
