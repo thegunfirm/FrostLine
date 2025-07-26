@@ -605,10 +605,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
 
           {/* Search Toggle Button - Just magnifying glass with yellow background */}
           <Button
-            variant="outline"
             size="sm"
             onClick={toggleMobileSearch}
-            className="bg-gun-gold hover:bg-gun-gold/90 text-white border-gun-gold p-2"
+            className="bg-gun-gold hover:bg-gun-gold/90 text-white border-gun-gold p-2 min-w-0"
           >
             <Search className="h-4 w-4" />
           </Button>
