@@ -179,13 +179,6 @@ export function CartSheet() {
 
         {items.length > 0 && (
           <div className="border-t bg-gray-50 p-4 space-y-3">
-            {hasFirearms() && (
-              <div className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
-                <AlertTriangle className="h-3 w-3 text-amber-600 flex-shrink-0" />
-                <span className="text-amber-700">FFL transfer required</span>
-              </div>
-            )}
-            
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm">Subtotal ({itemCount} item{itemCount !== 1 ? 's' : ''}):</span>
