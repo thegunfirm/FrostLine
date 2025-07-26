@@ -301,8 +301,8 @@ export default function ProductDetail() {
   const handleAddToCart = () => {
     if (!product) return;
 
-    // Add item to cart with pricing based on user tier or Platinum if not logged in
-    const currentPrice = user ? getCurrentPrice() : parseFloat(product.pricePlatinum || "0");
+    // Add item to cart with pricing based on user tier or Bronze if not logged in
+    const currentPrice = user ? getCurrentPrice() : parseFloat(product.priceBronze || "0");
     
     addItem({
       productId: product.id,
