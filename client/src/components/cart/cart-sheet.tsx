@@ -192,7 +192,7 @@ export function CartSheet() {
                       className="w-full bg-gradient-to-br from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2 relative overflow-hidden"
                       onClick={() => {/* Navigate to signup */}}
                     >
-                      <span className="relative z-10">Unlock {formatPrice(savings)} in Savings</span>
+                      <span className="relative z-10 text-base">Unlock <span className="text-lg font-bold">{formatPrice(savings)}</span> in Savings</span>
                       <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-300/20 animate-pulse"></div>
                     </Button>
                   </div>
