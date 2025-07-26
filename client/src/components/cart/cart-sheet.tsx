@@ -15,6 +15,7 @@ export function CartSheet() {
     setCartOpen, 
     updateQuantity, 
     removeItem, 
+    clearCart,
     getTotalPrice, 
     getItemCount,
     hasFirearms 
@@ -32,6 +33,14 @@ export function CartSheet() {
 
   // Calculate potential savings for membership upsell
   const calculateSavings = () => {
+    console.log('Calculating savings for items:', items.map(item => ({
+      name: item.productName,
+      price: item.price,
+      priceBronze: item.priceBronze,
+      priceGold: item.priceGold,
+      pricePlatinum: item.pricePlatinum
+    })));
+    
     if (!user) {
       // For non-logged users: compare Bronze vs Platinum pricing
       const bronzeCost = items.reduce((sum, item) => {
@@ -45,6 +54,7 @@ export function CartSheet() {
       }, 0);
       
       const savings = bronzeCost - platinumCost;
+      console.log('Non-logged user savings calculation:', { bronzeCost, platinumCost, savings });
       return { savings: Math.max(0, savings) };
     } else {
       // For logged users: compare their current price vs Platinum pricing
@@ -58,6 +68,7 @@ export function CartSheet() {
       }, 0);
       
       const savings = currentCost - platinumCost;
+      console.log('Logged user savings calculation:', { currentCost, platinumCost, savings });
       return { savings: Math.max(0, savings) };
     }
   };
@@ -189,6 +200,27 @@ export function CartSheet() {
                       {formatPrice(savings)}
                     </p>
                   </div>
+                </div>
+              )}
+              
+              {/* Debug info - remove later */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                  <div>Savings: ${savings.toFixed(2)}</div>
+                  <div>Items: {items.length}</div>
+                  {items.map((item, i) => (
+                    <div key={i}>
+                      {item.productName}: Price ${item.price}, Bronze ${item.priceBronze || 'N/A'}, Platinum ${item.pricePlatinum || 'N/A'}
+                    </div>
+                  ))}
+                  <Button 
+                    onClick={clearCart}
+                    variant="outline" 
+                    size="sm"
+                    className="mt-2 w-full"
+                  >
+                    Clear Cart (Test)
+                  </Button>
                 </div>
               )}
               
