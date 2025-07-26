@@ -78,7 +78,7 @@ export function CartSheet() {
               <Button 
                 variant="ghost"
                 size="sm"
-                className="text-xs h-6 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 mr-8" 
+                className="text-sm h-auto px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 mr-8 font-semibold" 
                 onClick={() => setCartOpen(false)}
               >
                 Go to Cart
@@ -189,11 +189,11 @@ export function CartSheet() {
                 {!user && savings > 0 && (
                   <div className="relative">
                     <Button 
-                      className="w-full bg-gradient-to-br from-gray-800 to-black hover:from-gray-700 hover:to-gray-900 text-gray-200 font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2 relative overflow-hidden"
+                      className="w-full bg-gradient-to-br from-gray-200 to-white hover:from-gray-100 hover:to-gray-50 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2 relative overflow-hidden border border-gray-300"
                       onClick={() => {/* Navigate to signup */}}
                     >
                       <span className="relative z-10">Join Now & Save {formatPrice(savings)}</span>
-                      <div className="absolute inset-0 bg-gradient-to-r from-gray-400/20 to-gray-300/20 animate-pulse"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-gray-800/10 to-gray-600/10 animate-pulse"></div>
                     </Button>
                   </div>
                 )}
