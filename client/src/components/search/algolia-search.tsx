@@ -603,15 +603,14 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
             )}
           </Button>
 
-          {/* Search Toggle Button */}
+          {/* Search Toggle Button - Just magnifying glass with yellow background */}
           <Button
             variant="outline"
             size="sm"
             onClick={toggleMobileSearch}
-            className="flex items-center gap-2"
+            className="bg-gun-gold hover:bg-gun-gold/90 text-white border-gun-gold p-2"
           >
             <Search className="h-4 w-4" />
-            Search
           </Button>
 
           {/* Clear Filters Button */}
@@ -727,22 +726,16 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               </SelectContent>
             </Select>
 
-            {/* Search Input */}
+            {/* Search Input - No internal search button */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 type="text"
                 placeholder={`Search ${category === "all" ? "all products" : category.toLowerCase()}...`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="w-full"
               />
             </div>
-
-            {/* Search Button */}
-            <Button type="submit" className="w-full">
-              Search
-            </Button>
           </form>
         </div>
       )}
