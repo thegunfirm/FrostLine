@@ -179,14 +179,14 @@ export function CartSheet() {
                 <span className="text-sm font-bold">{formatPrice(total)}</span>
               </div>
               
-              {!user && savings > 0 && (
+              {savings > 0 && (
                 <div className="p-3 bg-green-50 border border-green-200 rounded-md">
                   <div className="text-center">
                     <p className="text-sm font-semibold text-green-800">
                       Save with membership
                     </p>
                     <p className="text-xs text-green-700 mt-1">
-                      You could save {formatPrice(savings)} on this order
+                      {formatPrice(savings)}
                     </p>
                   </div>
                 </div>
@@ -202,7 +202,7 @@ export function CartSheet() {
                   </Button>
                 </Link>
 
-                {!user && (
+                {!user && savings > 0 && (
                   <Button 
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm"
                     onClick={() => {/* Navigate to signup */}}
