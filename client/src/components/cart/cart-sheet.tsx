@@ -45,31 +45,12 @@ export function CartSheet() {
       }, 0);
       
       const savings = bronzeCost - platinumCost;
-      const percentage = bronzeCost > 0 ? (savings / bronzeCost) * 100 : 0;
-      // Round down to nearest 10%, but ensure minimum of 10% if there are any savings
-      const roundedPercentage = savings > 0 ? Math.max(10, Math.floor(percentage / 10) * 10) : 0;
-      
-      console.log('Savings calculation:', {
-        bronzeCost,
-        platinumCost,
-        savings,
-        percentage,
-        roundedPercentage,
-        items: items.map(item => ({
-          name: item.productName,
-          qty: item.quantity,
-          currentPrice: item.price,
-          bronzePrice: item.priceBronze,
-          subtotal: item.price * item.quantity
-        }))
-      });
-      
-      return { savings, percentage: roundedPercentage };
+      return { savings };
     }
-    return { savings: 0, percentage: 0 };
+    return { savings: 0 };
   };
 
-  const { savings, percentage } = calculateSavings();
+  const { savings } = calculateSavings();
 
   return (
     <Sheet open={isCartOpen} onOpenChange={setCartOpen}>
@@ -190,7 +171,7 @@ export function CartSheet() {
                 <div className="p-3 bg-green-50 border border-green-200 rounded-md">
                   <div className="text-center">
                     <p className="text-sm font-semibold text-green-800">
-                      Save over {percentage}% with membership
+                      Save with membership
                     </p>
                     <p className="text-xs text-green-700 mt-1">
                       You could save {formatPrice(savings)} on this order
