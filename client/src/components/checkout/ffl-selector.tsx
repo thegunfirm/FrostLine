@@ -99,7 +99,7 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
           <div className="flex-1">
             <Input
               type="text"
-              placeholder="Enter ZIP code to find nearby FFL dealers"
+              placeholder="Enter ZIP code or business name to find FFL dealers"
               value={searchZip}
               onChange={(e) => setSearchZip(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}

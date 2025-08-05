@@ -870,27 +870,7 @@ export class DatabaseStorage implements IStorage {
     return ffl;
   }
 
-  async searchFFLsByZip(zip: string, radiusMiles: number = 25): Promise<FFL[]> {
-    // For now, return FFLs with same ZIP and nearby ones
-    // In production, you'd implement proper geolocation search
-    const exactMatches = await db.select().from(ffls)
-      .where(and(
-        eq(ffls.zip, zip),
-        eq(ffls.isAvailableToUser, true)
-      ))
-      .orderBy(asc(ffls.businessName));
-    
-    if (exactMatches.length > 0) {
-      return exactMatches;
-    }
-    
-    // Fallback: return all available FFLs in same state/region
-    // This is a simplified implementation
-    return await db.select().from(ffls)
-      .where(eq(ffls.isAvailableToUser, true))
-      .orderBy(asc(ffls.businessName))
-      .limit(20);
-  }
+
 
   // Cart persistence operations
   async saveUserCart(userId: number, items: any[]): Promise<void> {
@@ -979,11 +959,45 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchFFLsByZip(zip: string, radius = 25): Promise<FFL[]> {
-    // Nationwide FFL search - search all available FFLs and let frontend handle distance
-    // In a production system, this would use geolocation/distance calculations
-    return await db.select().from(ffls)
+    // Search FFLs by ZIP code - prioritize exact ZIP matches, then nearby states
+    const zipPrefix = zip.substring(0, 3);
+    
+    const results = await db.select().from(ffls)
       .where(eq(ffls.isAvailableToUser, true))
-      .orderBy(asc(ffls.businessName));
+      .orderBy(
+        // Order by: exact ZIP match first, then ZIP prefix match, then alphabetical
+        sql`CASE 
+          WHEN ${ffls.zip} = ${zip} THEN 1
+          WHEN ${ffls.zip} LIKE ${zipPrefix + '%'} THEN 2
+          ELSE 3
+        END`,
+        asc(ffls.businessName)
+      )
+      .limit(50); // Limit to reasonable number
+    
+    return results;
+  }
+
+  async searchFFLsByName(businessName: string, radius = 25): Promise<FFL[]> {
+    // Search FFLs by business name using fuzzy matching
+    const searchTerm = `%${businessName.toLowerCase()}%`;
+    
+    return await db.select().from(ffls)
+      .where(
+        and(
+          eq(ffls.isAvailableToUser, true),
+          sql`LOWER(${ffls.businessName}) LIKE ${searchTerm}`
+        )
+      )
+      .orderBy(
+        // Order by relevance: starts with search term first, then contains
+        sql`CASE 
+          WHEN LOWER(${ffls.businessName}) LIKE ${businessName.toLowerCase() + '%'} THEN 1
+          ELSE 2
+        END`,
+        asc(ffls.businessName)
+      )
+      .limit(50);
   }
 
   async getAllFFLs(): Promise<FFL[]> {
@@ -991,12 +1005,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(asc(ffls.businessName));
   }
 
-  async createFFL(fflData: any): Promise<FFL> {
-    const [ffl] = await db.insert(ffls)
-      .values(fflData)
-      .returning();
-    return ffl;
-  }
+
 
   async getFFLByLicense(licenseNumber: string): Promise<FFL | undefined> {
     const [ffl] = await db.select().from(ffls).where(eq(ffls.licenseNumber, licenseNumber));

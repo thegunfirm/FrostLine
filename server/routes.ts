@@ -570,12 +570,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/ffls/search/:zip", async (req, res) => {
+  app.get("/api/ffls/search/:query", async (req, res) => {
     try {
-      const { zip } = req.params;
+      const { query } = req.params;
       const { radius = "25" } = req.query;
       
-      const ffls = await storage.searchFFLsByZip(zip, parseInt(radius as string));
+      // Determine if query is ZIP code (numeric) or business name (text)
+      const isZipCode = /^\d{5}(-?\d{4})?$/.test(query.trim());
+      
+      let ffls;
+      if (isZipCode) {
+        ffls = await storage.searchFFLsByZip(query, parseInt(radius as string));
+      } else {
+        ffls = await storage.searchFFLsByName(query, parseInt(radius as string));
+      }
       
       res.set('Cache-Control', 'public, max-age=1800'); // 30 minutes
       res.json(ffls);
