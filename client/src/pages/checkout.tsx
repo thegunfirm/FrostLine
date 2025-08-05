@@ -29,18 +29,12 @@ function CheckoutPageContent() {
   const [requiresMembershipTier, setRequiresMembershipTier] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Redirect to login if not authenticated
+  // Check if user needs to select membership tier
   useEffect(() => {
-    if (!user) {
-      setLocation("/login?redirect=/checkout");
-      return;
-    }
-
-    // Check if user needs to select membership tier
-    if (!user.subscriptionTier || user.subscriptionTier === 'Bronze') {
+    if (user && (!user.subscriptionTier || user.subscriptionTier === 'Bronze')) {
       setRequiresMembershipTier(true);
     }
-  }, [user, setLocation]);
+  }, [user]);
 
   // Fetch fulfillment settings
   const { data: fulfillmentSettings } = useQuery({
@@ -48,17 +42,7 @@ function CheckoutPageContent() {
     enabled: !!user,
   });
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Shield className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h1>
-          <p className="text-gray-600">Redirecting to login...</p>
-        </div>
-      </div>
-    );
-  }
+  // Note: Authentication is handled by SubscriptionEnforcement wrapper
 
   if (items.length === 0) {
     return (
