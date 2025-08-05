@@ -23,6 +23,8 @@ export const users = pgTable("users", {
   fapCustomerId: text("fap_customer_id"), // For membership payments
   emailVerified: boolean("email_verified").default(false),
   emailVerificationToken: text("email_verification_token"),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires"),
 });
 
 export const products = pgTable("products", {

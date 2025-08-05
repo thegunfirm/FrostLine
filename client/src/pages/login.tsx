@@ -8,11 +8,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import { useCart } from "@/hooks/use-cart";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const { login } = useAuth();
@@ -102,14 +104,30 @@ export default function Login() {
             
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </Button>
+              </div>
             </div>
             
             <Button
@@ -121,11 +139,18 @@ export default function Login() {
             </Button>
           </form>
           
-          <div className="mt-6 text-center text-sm">
-            <span className="text-gun-gray-light">Don't have an account? </span>
-            <Link href="/register" className="text-gun-gold hover:text-gun-gold-bright font-medium">
-              Sign up
-            </Link>
+          <div className="mt-6 text-center space-y-3">
+            <div className="text-sm">
+              <Link href="/forgot-password" className="text-gun-gold hover:text-gun-gold-bright font-medium">
+                Forgot your password?
+              </Link>
+            </div>
+            <div className="text-sm">
+              <span className="text-gun-gray-light">Don't have an account? </span>
+              <Link href="/register" className="text-gun-gold hover:text-gun-gold-bright font-medium">
+                Sign up
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>

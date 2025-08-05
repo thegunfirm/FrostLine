@@ -48,10 +48,13 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByVerificationToken(token: string): Promise<User | undefined>;
+  getUserByPasswordResetToken(token: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User>;
   updateUserTier(id: number, tier: string): Promise<User>;
   verifyUserEmail(token: string): Promise<User | undefined>;
+  setPasswordResetToken(email: string, token: string, expiresAt: Date): Promise<boolean>;
+  resetPassword(token: string, newPassword: string): Promise<User | undefined>;
   
   // Product operations
   getProducts(filters?: {
@@ -189,6 +192,61 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.emailVerificationToken, token))
       .returning();
     return user || undefined;
+  }
+
+  async getUserByPasswordResetToken(token: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.passwordResetToken, token));
+    return user || undefined;
+  }
+
+  async setPasswordResetToken(email: string, token: string, expiresAt: Date): Promise<boolean> {
+    try {
+      const [user] = await db.update(users)
+        .set({ 
+          passwordResetToken: token,
+          passwordResetExpires: expiresAt
+        })
+        .where(eq(users.email, email))
+        .returning();
+      return !!user;
+    } catch (error) {
+      console.error("Error setting password reset token:", error);
+      return false;
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<User | undefined> {
+    try {
+      // First verify token exists and is not expired
+      const [user] = await db.select().from(users)
+        .where(and(
+          eq(users.passwordResetToken, token),
+          sql`password_reset_expires > NOW()`
+        ));
+      
+      if (!user) {
+        return undefined; // Token invalid or expired
+      }
+
+      // Hash the new password
+      const bcrypt = require('bcrypt');
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update password and clear reset token
+      const [updatedUser] = await db.update(users)
+        .set({ 
+          password: hashedPassword,
+          passwordResetToken: null,
+          passwordResetExpires: null
+        })
+        .where(eq(users.passwordResetToken, token))
+        .returning();
+      
+      return updatedUser;
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      return undefined;
+    }
   }
 
   // Product operations

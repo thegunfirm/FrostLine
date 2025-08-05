@@ -20,7 +20,8 @@ import { rsrFTPClient } from "./services/distributors/rsr/rsr-ftp-client";
 import { rsrFileUpload } from "./services/rsr-file-upload";
 import { rsrAutoSync } from "./services/rsr-auto-sync";
 import { syncHealthMonitor } from "./services/sync-health-monitor";
-import { sendVerificationEmail, generateVerificationToken } from "./services/email-service";
+import { sendVerificationEmail, generateVerificationToken, sendPasswordResetEmail } from "./services/email-service";
+import crypto from "crypto";
 import axios from "axios";
 import multer from "multer";
 
@@ -177,6 +178,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Forgot password endpoint
+  app.post("/api/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email address is required" });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        // For security, don't reveal if email exists
+        return res.json({ message: "If that email address is registered, you will receive a password reset link." });
+      }
+      
+      // Generate secure random token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+      
+      // Store reset token in database
+      const tokenSet = await storage.setPasswordResetToken(email, resetToken, expiresAt);
+      if (!tokenSet) {
+        return res.status(500).json({ message: "Failed to generate reset token" });
+      }
+      
+      // Send password reset email
+      const emailSent = await sendPasswordResetEmail(email, user.firstName, resetToken);
+      if (!emailSent) {
+        console.error("Failed to send password reset email to:", email);
+        return res.status(500).json({ message: "Failed to send reset email" });
+      }
+      
+      res.json({ message: "If that email address is registered, you will receive a password reset link." });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ message: "Failed to process password reset request" });
+    }
+  });
+
+  // Verify reset token endpoint
+  app.post("/api/verify-reset-token", async (req, res) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ message: "Reset token is required" });
+      }
+      
+      const user = await storage.getUserByPasswordResetToken(token);
+      if (!user || !user.passwordResetExpires || new Date() > user.passwordResetExpires) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+      
+      res.json({ message: "Token is valid" });
+    } catch (error) {
+      console.error("Verify reset token error:", error);
+      res.status(500).json({ message: "Failed to verify reset token" });
+    }
+  });
+
+  // Reset password endpoint
+  app.post("/api/reset-password", async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      
+      if (!token || !password) {
+        return res.status(400).json({ message: "Reset token and new password are required" });
+      }
+      
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters long" });
+      }
+      
+      const user = await storage.resetPassword(token, password);
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+      
+      res.json({ message: "Password reset successful" });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
     }
   });
 
