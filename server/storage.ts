@@ -975,33 +975,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchFFLsByZip(zip: string, radius = 25): Promise<FFL[]> {
-    // Enhanced search logic for better ZIP code matching
-    const searchPrefix = zip.substring(0, 3);
-    
-    // For Arizona ZIP codes (85xxx), also search broader range
-    const azPatterns = ['85%'];
-    const txPatterns = ['7%'];
-    
-    let searchPatterns: string[] = [];
-    
-    if (searchPrefix === '853') {
-      // Arizona ZIP codes - search all 85xxx codes
-      searchPatterns = azPatterns;
-    } else if (searchPrefix.startsWith('7')) {
-      // Texas ZIP codes  
-      searchPatterns = txPatterns;
-    } else {
-      // Default: search by first 3 digits
-      searchPatterns = [`${searchPrefix}%`];
-    }
-    
-    const conditions = searchPatterns.map(pattern => like(ffls.zip, pattern));
-    
+    // Nationwide FFL search - search all available FFLs and let frontend handle distance
+    // In a production system, this would use geolocation/distance calculations
     return await db.select().from(ffls)
-      .where(and(
-        or(...conditions),
-        eq(ffls.isAvailableToUser, true)
-      ))
+      .where(eq(ffls.isAvailableToUser, true))
       .orderBy(asc(ffls.businessName));
   }
 
