@@ -959,7 +959,41 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchFFLsByZip(zip: string, radius = 25): Promise<FFL[]> {
-    const { calculateZipDistance } = await import('../utils/distance');
+    const zipcodes = require('zipcodes');
+    
+    // Calculate distance between two ZIP codes
+    const calculateZipDistance = (zip1: string, zip2: string): number | null => {
+      try {
+        const cleanZip1 = zip1.substring(0, 5);
+        const cleanZip2 = zip2.substring(0, 5);
+        
+        const location1 = zipcodes.lookup(cleanZip1);
+        const location2 = zipcodes.lookup(cleanZip2);
+        
+        if (!location1 || !location2 || !location1.latitude || !location2.latitude) {
+          return null;
+        }
+        
+        const lat1 = parseFloat(location1.latitude);
+        const lon1 = parseFloat(location1.longitude);
+        const lat2 = parseFloat(location2.latitude);
+        const lon2 = parseFloat(location2.longitude);
+        
+        // Haversine formula
+        const R = 3959; // Earth's radius in miles
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+          
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+      } catch (error) {
+        return null;
+      }
+    };
     
     // Get all available FFLs first
     const allFFLs = await db.select().from(ffls)
@@ -983,6 +1017,8 @@ export class DatabaseStorage implements IStorage {
         return a.businessName.localeCompare(b.businessName);
       })
       .slice(0, 50); // Limit to 50 results
+    
+    console.log(`🔍 ZIP ${zip} search: Found ${fflsWithDistance.length} FFLs within ${radius} miles`);
     
     // Remove the distance property before returning
     return fflsWithDistance.map(({ distance, ...ffl }) => ffl);

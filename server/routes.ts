@@ -4576,19 +4576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // FFL search endpoints
-  app.get("/api/ffls/search/:zip", async (req, res) => {
-    try {
-      const { zip } = req.params;
-      const { radius = 25 } = req.query;
-      
-      const ffls = await storage.searchFFLsByZip(zip, parseInt(radius as string));
-      res.json(ffls);
-    } catch (error: any) {
-      console.error("FFL search error:", error);
-      res.status(500).json({ error: "Failed to search FFLs" });
-    }
-  });
+
 
   app.get("/api/ffls", async (req, res) => {
     try {
