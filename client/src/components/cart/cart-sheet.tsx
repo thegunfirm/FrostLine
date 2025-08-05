@@ -5,11 +5,13 @@ import { ShoppingCart, Minus, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Link } from 'wouter';
-import { useAuth } from '@/hooks/use-auth';
+import { useFapAuth } from '@/hooks/use-fap-auth';
+import { useLocation } from 'wouter';
 import { CheckoutButton } from './checkout-button';
 
 export function CartSheet() {
-  const { user } = useAuth();
+  const { user } = useFapAuth();
+  const [, setLocation] = useLocation();
   const { 
     items, 
     isCartOpen, 
@@ -187,25 +189,56 @@ export function CartSheet() {
               </div>
               
               <div className="space-y-2">
-                {!user && savings > 0 && (
-                  <div className="relative">
+                {!user && (
+                  <div className="space-y-2">
+                    <Button 
+                      className="w-full bg-gradient-to-br from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2 relative overflow-hidden"
+                      onClick={() => {
+                        setCartOpen(false);
+                        setLocation('/register');
+                      }}
+                    >
+                      <span className="relative z-10 text-sm">Save with membership!</span>
+                    </Button>
+                    <p className="text-xs text-center text-gray-600 px-2">
+                      Create a free account or upgrade to Gold/Platinum for exclusive pricing on all items.
+                    </p>
+                    <div className="text-center">
+                      <button 
+                        className="text-xs text-blue-600 underline hover:text-blue-700"
+                        onClick={() => {
+                          setCartOpen(false);
+                          setLocation('/login');
+                        }}
+                      >
+                        Sign in
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                {user && !user.membershipPaid && (
+                  <div className="space-y-2">
                     <Button 
                       className="w-full bg-gradient-to-br from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2 relative overflow-hidden"
-                      onClick={() => {/* Navigate to signup */}}
+                      onClick={() => {
+                        setCartOpen(false);
+                        setLocation('/membership');
+                      }}
                     >
-                      <span className="relative z-10 text-base">Unlock <span className="text-lg font-bold">{formatPrice(savings)}</span> in Savings</span>
-                      <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-300/20 animate-pulse"></div>
+                      <span className="relative z-10 text-sm">Upgrade to {user.subscriptionTier === 'Bronze' ? 'Gold/Platinum' : 'Platinum'}</span>
                     </Button>
+                    <p className="text-xs text-center text-gray-600 px-2">
+                      {savings > 0 ? `Save ${formatPrice(savings)} on this order` : 'Unlock exclusive member pricing'}
+                    </p>
                   </div>
                 )}
-                  
-                {!user && (
-                  <div className="text-center">
-                    <button className="text-xs text-blue-600 underline">
-                      Sign in
-                    </button>
-                  </div>
-                )}
+                
+                <CheckoutButton 
+                  itemCount={itemCount}
+                  disabled={items.length === 0}
+                  className="mt-4"
+                />
               </div>
             </div>
           </div>

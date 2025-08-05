@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
+import { useFapAuth } from "@/hooks/use-fap-auth";
 
 interface CheckoutButtonProps {
   itemCount: number;
@@ -11,7 +11,7 @@ interface CheckoutButtonProps {
 
 export function CheckoutButton({ itemCount, disabled = false, className = "" }: CheckoutButtonProps) {
   const [, setLocation] = useLocation();
-  const { user } = useAuth();
+  const { user } = useFapAuth();
 
   const handleCheckout = () => {
     if (!user) {
