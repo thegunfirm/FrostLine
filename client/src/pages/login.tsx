@@ -31,10 +31,8 @@ export default function Login() {
     try {
       const user = await login(email, password);
       
-      // Merge guest cart with user cart after successful login
-      if (user) {
-        await mergeGuestCart(user);
-      }
+      // Merge guest cart with user cart after successful login (login function handles this internally)
+      // The mergeGuestCart is already called in the login function
       
       // Navigate to the intended destination (checkout if redirected from cart)
       const redirectUrl = getRedirectUrl();
@@ -51,9 +49,20 @@ export default function Login() {
     } catch (error: any) {
       // Check if this is a verification required error
       const isVerificationRequired = error.requiresVerification;
+      const errorType = error.errorType;
+      
+      // Customize title based on error type
+      let title = "Error";
+      if (isVerificationRequired) {
+        title = "Email Verification Required";
+      } else if (errorType === "email_not_found") {
+        title = "Email Not Found";
+      } else if (errorType === "invalid_password") {
+        title = "Incorrect Password";
+      }
       
       toast({
-        title: isVerificationRequired ? "Email Verification Required" : "Error",
+        title,
         description: error.message || "Login failed. Please try again.",
         variant: "destructive",
       });

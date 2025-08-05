@@ -83,9 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         errorData = { message: error.message || "Login failed" };
       }
       
-      // Create an error object that preserves the verification requirement info
+      // Create an error object that preserves all error metadata
       const loginError = new Error(errorData.message || "Login failed");
       (loginError as any).requiresVerification = errorData.requiresVerification;
+      (loginError as any).errorType = errorData.errorType;
       throw loginError;
     }
   };
