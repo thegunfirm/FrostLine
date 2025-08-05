@@ -118,7 +118,7 @@ export class RSRFFLImportService {
 
   /**
    * Parse a single FFL line from RSR data
-   * Format needs to be determined based on actual RSR file structure
+   * Format: BusinessName;Street;City;State;Zip;LicenseNumber
    */
   private parseFFLLine(line: string): RSRFFLRecord | null {
     try {
@@ -127,37 +127,32 @@ export class RSRFFLImportService {
         return null;
       }
       
-      // RSR FFL file format - try both pipe and tab delimited
-      let parts: string[];
-      if (line.includes('|')) {
-        parts = line.split('|').map(p => p.trim());
-      } else {
-        parts = line.split('\t').map(p => p.trim());
-      }
+      // RSR FFL file format is semicolon delimited
+      const parts = line.split(';').map(p => p.trim());
       
       if (parts.length < 6) {
         return null; // Skip incomplete records
       }
 
-      // Format: License|BusinessName|Street|City|State|Zip|Phone|Email|Status
-      const [license, businessName, street, city, state, zip, phone, email, status] = parts;
+      // Format: BusinessName;Street;City;State;Zip;LicenseNumber
+      const [businessName, street, city, state, zip, licenseNumber] = parts;
 
-      if (!license || !businessName || !city || !state || !zip) {
+      if (!licenseNumber || !businessName || !city || !state || !zip) {
         return null; // Skip records missing essential data
       }
 
       return {
-        licenseNumber: license,
-        businessName: businessName,
+        licenseNumber: licenseNumber.trim(),
+        businessName: businessName.trim(),
         address: {
-          street: street || '',
-          city: city,
-          state: state,
-          zip: zip
+          street: street?.trim() || '',
+          city: city.trim(),
+          state: state.trim(),
+          zip: zip.trim()
         },
-        phone: phone || undefined,
-        contactEmail: email || undefined,
-        status: this.mapRSRStatus(status)
+        phone: undefined, // Not included in this RSR format
+        contactEmail: undefined, // Not included in this RSR format
+        status: 'OnFile' // RSR dealers are typically on file
       };
     } catch (error) {
       console.error('Failed to parse FFL line:', error);
