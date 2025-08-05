@@ -81,10 +81,10 @@ export default function AdminRSRFTP() {
         });
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Test Failed",
-        description: "Failed to test RSR FTP connection",
+        description: error.message || "Failed to test RSR FTP connection",
         variant: "destructive",
       });
     }
@@ -103,10 +103,10 @@ export default function AdminRSRFTP() {
       });
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Sync Failed",
-        description: "Failed to start RSR FTP sync",
+        description: error.message || "Failed to start RSR FTP sync",
         variant: "destructive",
       });
     }
@@ -125,10 +125,10 @@ export default function AdminRSRFTP() {
       });
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Update Failed",
-        description: "Failed to update RSR FTP configuration",
+        description: error.message || "Failed to update RSR FTP configuration",
         variant: "destructive",
       });
     }

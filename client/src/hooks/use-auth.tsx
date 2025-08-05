@@ -75,19 +75,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Return user data for use in login page
       return userData;
     } catch (error: any) {
-      // Parse the error response if it's a structured error from the API
-      let errorData;
-      try {
-        errorData = typeof error === 'string' ? JSON.parse(error) : error;
-      } catch {
-        errorData = { message: error.message || "Login failed" };
-      }
-      
-      // Create an error object that preserves all error metadata
-      const loginError = new Error(errorData.message || "Login failed");
-      (loginError as any).requiresVerification = errorData.requiresVerification;
-      (loginError as any).errorType = errorData.errorType;
-      throw loginError;
+      // The error is already processed by throwIfResNotOk with natural language message
+      // Just re-throw it as it contains the metadata we need
+      throw error;
     }
   };
 
