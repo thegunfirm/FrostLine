@@ -42,6 +42,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, like, ilike, and, or, desc, asc, ne, sql } from "drizzle-orm";
+import bcrypt from "bcrypt";
 
 export interface IStorage {
   // User operations
@@ -229,7 +230,6 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Hash the new password
-      const bcrypt = require('bcrypt');
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
       // Update password and clear reset token
