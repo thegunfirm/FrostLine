@@ -27,6 +27,12 @@ export default function Login() {
     return params.get('redirect') || '/';
   };
 
+  // Check if user was redirected after password reset
+  const isPasswordResetSuccess = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('passwordReset') === 'success';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -92,6 +98,11 @@ export default function Login() {
         </CardHeader>
         
         <CardContent>
+          {isPasswordResetSuccess() && (
+            <div className="mb-4 p-3 bg-green-50 border-2 border-green-500 rounded-md">
+              <p className="text-sm text-gun-black font-medium">Your password has been updated successfully. Use your new password to sign in.</p>
+            </div>
+          )}
           {error && (
             <div className="mb-4 p-3 bg-white border-2 border-red-500 rounded-md">
               <p className="text-sm text-gun-black font-medium">{error}</p>

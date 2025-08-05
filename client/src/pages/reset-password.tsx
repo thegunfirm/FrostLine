@@ -81,13 +81,7 @@ export default function ResetPassword() {
         password 
       });
       
-      toast({
-        title: "Password Reset Successful",
-        description: "Your password has been updated. You can now sign in with your new password.",
-        variant: "default",
-      });
-      
-      setLocation("/login");
+      setLocation("/login?passwordReset=success");
     } catch (error: any) {
       // Extract clean error message, removing HTTP status codes and JSON formatting
       let errorMessage = error.message || "Failed to reset password. Please try again.";
