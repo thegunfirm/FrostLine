@@ -7,9 +7,11 @@ async function throwIfResNotOk(res: Response) {
     // Try to parse JSON error response to extract natural language message
     try {
       const errorData = JSON.parse(text);
-      if (errorData && errorData.message) {
+      // Check for message field first, then error field as fallback
+      const errorMessage = errorData.message || errorData.error;
+      if (errorData && errorMessage) {
         // Create error with natural language message and preserve metadata
-        const error = new Error(errorData.message);
+        const error = new Error(errorMessage);
         // Preserve important error metadata for authentication flows
         if (errorData.requiresVerification) {
           (error as any).requiresVerification = errorData.requiresVerification;
@@ -21,7 +23,6 @@ async function throwIfResNotOk(res: Response) {
       }
     } catch (jsonParseError) {
       // If JSON parsing fails, continue to fallback behavior below
-      console.log('Failed to parse error JSON, using fallback:', jsonParseError);
     }
     
     throw new Error(`${res.status}: ${text}`);
