@@ -1,5 +1,5 @@
 import { useCart } from "@/hooks/use-cart";
-import { useFapAuth } from "@/hooks/use-fap-auth";
+import { useAuth } from "@/hooks/use-auth";
 import { SubscriptionEnforcement } from "@/components/auth/subscription-enforcement";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
@@ -23,7 +23,7 @@ const formatPrice = (price: number | string) => {
 
 function CheckoutPageContent() {
   const { items, getTotalPrice, hasFirearms, requiresFflSelection } = useCart();
-  const { user } = useFapAuth();
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [selectedFfl, setSelectedFfl] = useState<number | null>(null);
   const [requiresMembershipTier, setRequiresMembershipTier] = useState(false);
@@ -37,7 +37,7 @@ function CheckoutPageContent() {
     }
 
     // Check if user needs to select membership tier
-    if (!user.membershipPaid) {
+    if (!user.subscriptionTier || user.subscriptionTier === 'Bronze') {
       setRequiresMembershipTier(true);
     }
   }, [user, setLocation]);

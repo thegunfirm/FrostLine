@@ -22,10 +22,6 @@ export default function Login() {
 
     try {
       await login(email, password);
-      toast({
-        title: "Success",
-        description: "You have been logged in successfully.",
-      });
       setLocation("/");
     } catch (error: any) {
       // Check if this is a verification required error
