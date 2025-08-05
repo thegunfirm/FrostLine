@@ -959,21 +959,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchFFLsByZip(zip: string, radius = 25): Promise<FFL[]> {
-    // Search FFLs by ZIP code - prioritize exact ZIP matches, then nearby states
+    // Search FFLs by ZIP code with proper distance-based ordering
     const zipPrefix = zip.substring(0, 3);
+    const first2Digits = zip.substring(0, 2);
+    const first1Digit = zip.substring(0, 1);
     
     const results = await db.select().from(ffls)
       .where(eq(ffls.isAvailableToUser, true))
       .orderBy(
-        // Order by: exact ZIP match first, then ZIP prefix match, then alphabetical
+        // Order by proximity: exact ZIP, then 3-digit prefix, then 2-digit, then 1-digit, then alphabetical
         sql`CASE 
           WHEN ${ffls.zip} = ${zip} THEN 1
           WHEN ${ffls.zip} LIKE ${zipPrefix + '%'} THEN 2
-          ELSE 3
+          WHEN ${ffls.zip} LIKE ${first2Digits + '%'} THEN 3
+          WHEN ${ffls.zip} LIKE ${first1Digit + '%'} THEN 4
+          ELSE 5
         END`,
+        // Within same proximity level, order by ZIP distance numerically
+        sql`ABS(CAST(SUBSTRING(${ffls.zip}, 1, 5) AS INTEGER) - CAST(${zip} AS INTEGER))`,
         asc(ffls.businessName)
       )
-      .limit(50); // Limit to reasonable number
+      .limit(50);
     
     return results;
   }
