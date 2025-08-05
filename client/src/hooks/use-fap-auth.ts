@@ -122,7 +122,7 @@ export const useFapAuth = create<FapAuthState>()(
 
       validateSession: async () => {
         try {
-          const response = await apiRequest('GET', '/api/fap/validate-session', {});
+          const response = await apiRequest('GET', '/api/fap/validate-session');
           
           if (response.ok) {
             const data = await response.json();
@@ -137,7 +137,7 @@ export const useFapAuth = create<FapAuthState>()(
       },
 
       checkEnforcementSettings: async () => {
-        const response = await apiRequest('GET', '/api/fap/enforcement-settings', {});
+        const response = await apiRequest('GET', '/api/fap/enforcement-settings');
         const data = await response.json();
         
         if (!response.ok) {
