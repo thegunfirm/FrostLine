@@ -10,16 +10,27 @@ Code preservation: Always maintain working solutions - never overwrite functioni
 
 ## System Architecture
 
+### Dual Platform Infrastructure
+- **FreeAmericanPeople.com (FAP)**: 
+  - Membership management platform with CMS and backend
+  - User authentication and subscription tier management
+  - Admin controls for delivery timing, subscription enforcement, FFL settings
+  - Authorize.Net integration for membership payments
+- **TheGunFirm.com**: 
+  - E-commerce platform requiring FAP membership for checkout access
+  - Enforces subscription tier requirements before checkout
+  - Authorize.Net integration for product sales
+  - Advanced cart persistence and intelligent merging during login flow
+
 ### Core Design Principles
-- **Dual Platform Architecture**: FreeAmericanPeople.com manages memberships and user authentication, TheGunFirm.com provides e-commerce platform access.
-- **Tier-based Membership**: Bronze, Gold, and Platinum tiers managed through FAP with differentiated pricing and benefits on TheGunFirm.
-- **Cross-Platform Authentication**: Users authenticate through FreeAmericanPeople.com to access TheGunFirm.com shopping features.
-- **FFL Integration**: Built-in handling for firearms requiring Federal Firearms License transfers.
-- **Specialized Commerce**: Gun-specific categories, manufacturer filtering, and compliance features.
-- **Responsive Design**: Mobile-first approach with custom breakpoints and a brand-focused UI reflecting industry aesthetics.
-- **Hybrid Search**: Multi-layer search system combining RSR API, Algolia indexing, and internal AI learning for product recommendations.
-- **Real-time Inventory**: Live inventory synchronization with RSR distributor data.
-- **Dual Payment System**: FAP Authorize.Net for memberships, TheGunFirm Authorize.Net for product sales.
+- **Mandatory Authentication**: Users must login via FAP and select subscription tier before checkout access
+- **Intelligent Cart Management**: Cart persistence across login, smart merging of guest/user carts, complete clearing on logout
+- **Three-Tier Fulfillment System**: Direct-to-consumer, warehouse-to-FFL, drop-ship-to-FFL with configurable delivery times
+- **CMS-Controlled Operations**: Admin controls for delivery timing, subscription enforcement toggles, FFL management
+- **FFL Integration**: Built-in handling for firearms requiring Federal Firearms License transfers with RSR "on file" status
+- **Specialized Commerce**: Gun-specific categories, manufacturer filtering, and compliance features
+- **Responsive Design**: Mobile-first approach with custom breakpoints and industry-focused UI
+- **Real-time Inventory**: Live inventory synchronization with RSR distributor data
 
 ### Technical Stack
 - **Frontend**: React 18 (TypeScript), Wouter for routing, TanStack Query for server state, React Context for authentication, Shadcn/ui (Radix UI) for components, Tailwind CSS for styling, Vite for tooling.

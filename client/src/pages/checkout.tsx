@@ -1,5 +1,6 @@
 import { useCart } from "@/hooks/use-cart";
-import { useAuth } from "@/hooks/use-auth";
+import { useFapAuth } from "@/hooks/use-fap-auth";
+import { SubscriptionEnforcement } from "@/components/auth/subscription-enforcement";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -20,9 +21,9 @@ const formatPrice = (price: number | string) => {
   return `$${numPrice.toFixed(2)}`;
 };
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
   const { items, getTotalPrice, hasFirearms, requiresFflSelection } = useCart();
-  const { user } = useAuth();
+  const { user } = useFapAuth();
   const [, setLocation] = useLocation();
   const [selectedFfl, setSelectedFfl] = useState<number | null>(null);
   const [requiresMembershipTier, setRequiresMembershipTier] = useState(false);
@@ -265,5 +266,13 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <SubscriptionEnforcement requiredForCheckout={true}>
+      <CheckoutPageContent />
+    </SubscriptionEnforcement>
   );
 }

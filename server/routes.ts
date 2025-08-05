@@ -4201,5 +4201,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Register FAP routes for authentication and CMS management
+  try {
+    await registerFapRoutes(app);
+  } catch (error) {
+    console.error("Failed to register FAP routes:", error);
+  }
+
+  const httpServer = createServer(app);
   return httpServer;
 }
