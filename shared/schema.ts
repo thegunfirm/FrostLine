@@ -216,6 +216,18 @@ export const adminSettings = pgTable("admin_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Order Restrictions for firearms compliance  
+export const orderRestrictions = pgTable("order_restrictions", {
+  id: serial("id").primaryKey(),
+  restrictionType: text("restriction_type").notNull(), // "firearms_per_order", "firearms_per_month"
+  maxQuantity: integer("max_quantity").notNull().default(5),
+  requiresHumanReview: boolean("requires_human_review").default(true),
+  isActive: boolean("is_active").default(true),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many, one }) => ({
   orders: many(orders),

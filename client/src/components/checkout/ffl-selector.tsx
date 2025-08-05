@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -27,13 +28,14 @@ interface FflSelectorProps {
 
 export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelectorProps) {
   const [searchZip, setSearchZip] = useState(userZip || '');
+  const [searchRadius, setSearchRadius] = useState(25);
   const [isSearching, setIsSearching] = useState(false);
 
   const { data: ffls, isLoading, refetch } = useQuery({
-    queryKey: ['/api/ffls/search', searchZip],
+    queryKey: ['/api/ffls/search', searchZip, searchRadius],
     queryFn: async () => {
       if (!searchZip.trim()) return [];
-      const response = await apiRequest('GET', `/api/ffls/search/${searchZip}`);
+      const response = await apiRequest('GET', `/api/ffls/search/${searchZip}?radius=${searchRadius}`);
       return await response.json();
     },
     enabled: !!searchZip.trim(),
@@ -81,24 +83,45 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
   return (
     <div className="space-y-4">
       {/* Search Section */}
-      <div className="flex gap-2">
-        <div className="flex-1">
-          <Input
-            type="text"
-            placeholder="Enter ZIP code to find nearby FFL dealers"
-            value={searchZip}
-            onChange={(e) => setSearchZip(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-          />
+      <div className="space-y-3">
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <Input
+              type="text"
+              placeholder="Enter ZIP code to find nearby FFL dealers"
+              value={searchZip}
+              onChange={(e) => setSearchZip(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            />
+          </div>
+          <div className="w-32">
+            <Select value={searchRadius.toString()} onValueChange={(value) => setSearchRadius(parseInt(value))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5 miles</SelectItem>
+                <SelectItem value="10">10 miles</SelectItem>
+                <SelectItem value="25">25 miles</SelectItem>
+                <SelectItem value="50">50 miles</SelectItem>
+                <SelectItem value="100">100 miles</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button 
+            onClick={handleSearch}
+            disabled={!searchZip.trim() || isSearching}
+            className="flex items-center gap-2"
+          >
+            <Search className="w-4 h-4" />
+            Search
+          </Button>
         </div>
-        <Button 
-          onClick={handleSearch}
-          disabled={!searchZip.trim() || isSearching}
-          className="flex items-center gap-2"
-        >
-          <Search className="w-4 h-4" />
-          Search
-        </Button>
+        {searchZip && (
+          <p className="text-sm text-gray-600">
+            Searching within {searchRadius} miles of {searchZip}
+          </p>
+        )}
       </div>
 
       {/* Search Results */}
@@ -112,7 +135,7 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
       {ffls && ffls.length === 0 && searchZip && (
         <Alert>
           <AlertDescription>
-            No FFL dealers found in ZIP code {searchZip}. Try searching nearby ZIP codes or contact customer support for assistance.
+            No FFL dealers found within {searchRadius} miles of ZIP code {searchZip}. Try expanding your search radius or contact customer support for assistance.
           </AlertDescription>
         </Alert>
       )}
@@ -120,7 +143,7 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
       {ffls && ffls.length > 0 && (
         <div className="space-y-3">
           <h3 className="font-medium text-gray-900">
-            Found {ffls.length} FFL dealer{ffls.length !== 1 ? 's' : ''} near {searchZip}
+            Found {ffls.length} FFL dealer{ffls.length !== 1 ? 's' : ''} within {searchRadius} miles of {searchZip}
           </h3>
           
           {ffls.map((ffl: FFL) => (

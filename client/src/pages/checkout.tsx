@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Truck, MapPin, Clock, CreditCard, Shield, AlertTriangle, Star } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Truck, MapPin, Clock, CreditCard, Shield, AlertTriangle, Star, Minus, Plus, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { FflSelector } from "@/components/checkout/ffl-selector";
@@ -36,6 +37,28 @@ function CheckoutPageContent() {
     queryKey: ['/api/fulfillment/settings'],
     enabled: !!user,
   });
+
+  // Function to update cart quantity
+  const updateQuantity = async (itemId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    
+    try {
+      await apiRequest('PATCH', `/api/cart/${user?.id}/item/${itemId}`, {
+        quantity: newQuantity
+      });
+    } catch (error) {
+      console.error('Failed to update quantity:', error);
+    }
+  };
+
+  // Function to remove item from cart  
+  const removeItem = async (itemId: string) => {
+    try {
+      await apiRequest('DELETE', `/api/cart/${user?.id}/item/${itemId}`);
+    } catch (error) {
+      console.error('Failed to remove item:', error);
+    }
+  };
 
   // Note: Authentication is handled by SubscriptionEnforcement wrapper
 
@@ -81,7 +104,7 @@ function CheckoutPageContent() {
                   <FflSelector 
                     selectedFflId={selectedFfl}
                     onFflSelected={setSelectedFfl}
-                    userZip={user?.shippingAddress?.zip || ''}
+                    userZip={(user?.shippingAddress as any)?.zip || ''}
                   />
                 </CardContent>
               </Card>
@@ -98,7 +121,7 @@ function CheckoutPageContent() {
               <CardContent>
                 <DeliveryGroups 
                   items={items}
-                  fulfillmentSettings={fulfillmentSettings}
+                  fulfillmentSettings={Array.isArray(fulfillmentSettings) ? fulfillmentSettings : []}
                   selectedFfl={selectedFfl}
                 />
               </CardContent>
@@ -114,7 +137,7 @@ function CheckoutPageContent() {
               </CardHeader>
               <CardContent>
                 <PaymentSection 
-                  user={user}
+                  user={user!}
                   totalAmount={getTotalPrice()}
                   canProceed={canProceed}
                   isProcessing={isProcessing}
@@ -128,14 +151,25 @@ function CheckoutPageContent() {
           <div className="lg:col-span-1">
             <Card className="bg-white shadow-sm sticky top-8">
               <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  Order Summary
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setLocation('/')}
+                    className="text-amber-600 hover:text-amber-700"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-1" />
+                    Back to Shopping
+                  </Button>
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 
                 {/* Items List */}
                 <div className="space-y-3">
                   {items.map((item) => (
-                    <div key={item.id} className="flex gap-3">
+                    <div key={item.id} className="flex gap-3 p-3 border rounded-lg">
                       <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                         <img
                           src={item.productImage}
@@ -156,11 +190,53 @@ function CheckoutPageContent() {
                             FFL Required
                           </Badge>
                         )}
-                        <div className="flex justify-between items-center mt-1">
-                          <span className="text-xs text-gray-600">Qty: {item.quantity}</span>
-                          <span className="text-sm font-medium">
-                            {formatPrice(item.price * item.quantity)}
-                          </span>
+                        
+                        {/* Quantity Controls */}
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              disabled={item.quantity <= 1}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const newQty = parseInt(e.target.value) || 1;
+                                if (newQty !== item.quantity) {
+                                  updateQuantity(item.id, newQty);
+                                }
+                              }}
+                              className="h-8 w-16 text-center"
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium">
+                              {formatPrice(item.price * item.quantity)}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeItem(item.id)}
+                              className="text-xs text-red-600 hover:text-red-700 h-auto p-0"
+                            >
+                              Remove
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
