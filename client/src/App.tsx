@@ -40,6 +40,7 @@ import CMSDashboard from "@/pages/cms/cms-dashboard";
 import SupportTickets from "@/pages/cms/support/support-tickets";
 import EmailTemplates from "@/pages/cms/email-templates";
 import FAPIntegration from "@/pages/cms/fap-integration";
+import Account from "@/pages/account";
 
 function Router() {
   return (
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/product/:id" component={ProductDetail} />
       <Route path="/cart" component={Cart} />
       <Route path="/checkout" component={Checkout} />
+      <Route path="/account" component={Account} />
       <Route path="/membership" component={Membership} />
       <Route path="/image-test" component={ImageTest} />
       <Route path="/admin-sync" component={AdminSync} />

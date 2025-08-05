@@ -104,16 +104,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Auto-login the user after successful email verification
-      req.login(user, (err) => {
-        if (err) {
-          console.error("Auto-login error after email verification:", err);
-          // Fallback to redirect without login
-          return res.redirect(`/`);
-        }
-        
-        // Successfully logged in, redirect to homepage 
-        res.redirect(`/?loggedIn=true`);
-      });
+      (req.session as any).user = user;
+      
+      // Successfully logged in, redirect to homepage 
+      res.redirect(`/?loggedIn=true`);
     } catch (error) {
       console.error("Email verification error:", error);
       res.status(500).json({ message: "Verification failed" });
@@ -123,12 +117,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current authenticated user
   app.get("/api/me", async (req, res) => {
     try {
-      if (!req.user) {
+      const user = (req.session as any)?.user;
+      if (!user) {
         return res.status(401).json({ message: "Not authenticated" });
       }
       
       // Remove password from response
-      const { password, emailVerificationToken, ...userWithoutPassword } = req.user;
+      const { password, emailVerificationToken, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Get current user error:", error);
+      res.status(500).json({ message: "Failed to fetch user data" });
+    }
+  });
+
+  // Alternative auth route for compatibility
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      const user = (req.session as any)?.user;
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Remove password from response
+      const { password, emailVerificationToken, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
     } catch (error) {
       console.error("Get current user error:", error);
@@ -171,7 +183,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Store user session (simplified for now)
+      // Store user in session
+      (req.session as any).user = user;
+      
       const { password: _, emailVerificationToken, ...userWithoutPassword } = user;
       
       res.json(userWithoutPassword);
@@ -4510,8 +4524,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // If user is authenticated, persist to database
-      if (req.user) {
-        await storage.saveUserCart(req.user.id, items);
+      const sessionUser = (req.session as any)?.user;
+      if (sessionUser) {
+        await storage.saveUserCart(sessionUser.id, items);
       }
       
       res.json({ 
@@ -4529,7 +4544,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.userId);
       
-      if (!userId || (req.user && req.user.id !== userId)) {
+      if (!userId) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Allow access if user is authenticated and accessing their own cart
+      const sessionUser = (req.session as any)?.user;
+      if (sessionUser && sessionUser.id !== userId) {
         return res.status(403).json({ error: "Access denied" });
       }
       
