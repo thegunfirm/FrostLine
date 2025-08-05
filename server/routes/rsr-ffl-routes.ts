@@ -1,5 +1,6 @@
 import { Express } from 'express';
 import { rsrFFLImportService } from '../services/rsr-ffl-import';
+import { rsrFFLDownloader } from '../services/rsr-ffl-downloader';
 
 /**
  * RSR FFL Management Routes
@@ -54,24 +55,53 @@ export function registerRSRFFLRoutes(app: Express) {
     }
   });
 
-  // Download fresh FFL data from RSR FTP (if available)
+  // Download fresh FFL data from RSR FTP
   app.post("/api/admin/rsr/download-ffl-data", async (req, res) => {
     try {
       if (!req.isAuthenticated() || req.user?.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      // This would integrate with the RSR FTP client to download fresh FFL data
-      // For now, return a message indicating manual data is needed
+      console.log('📥 Starting RSR FFL data download...');
+      const downloadResult = await rsrFFLDownloader.downloadFFLData();
       
-      res.json({
-        message: "RSR FFL data download requires authentic RSR credentials and FTP access. Please contact RSR for current FFL dealer data.",
-        status: "manual_required"
-      });
+      if (downloadResult.success) {
+        // Automatically import the downloaded data
+        const importResult = await rsrFFLImportService.importFFLs();
+        
+        res.json({
+          message: "RSR FFL data downloaded and imported successfully",
+          download: downloadResult,
+          import: importResult
+        });
+      } else {
+        res.status(500).json({
+          message: "Failed to download RSR FFL data",
+          error: downloadResult.message
+        });
+      }
     } catch (error: any) {
       console.error("RSR FFL download error:", error);
       res.status(500).json({ 
         message: "Failed to download RSR FFL data",
+        error: error.message
+      });
+    }
+  });
+
+  // Test RSR FTP connection
+  app.post("/api/admin/rsr/test-ftp", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const result = await rsrFFLDownloader.testConnection();
+      res.json(result);
+    } catch (error: any) {
+      console.error("RSR FTP test error:", error);
+      res.status(500).json({ 
+        message: "Failed to test RSR FTP connection",
         error: error.message
       });
     }

@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { storage } from '../storage';
 
@@ -28,7 +28,30 @@ export class RSRFFLImportService {
    * Import FFL dealers from RSR data file
    */
   async importFFLs(): Promise<{ imported: number; updated: number; errors: string[] }> {
-    const filePath = join(this.dataPath, 'ffl-transfer-dealers.txt');
+    // Try multiple possible FFL data file locations
+    const possibleFiles = [
+      join(this.dataPath, 'ffl-transfer-dealers.txt'),
+      join(process.cwd(), 'server', 'data', 'sample-ffl-data.txt'),
+      join(this.dataPath, 'dealers.txt'),
+      join(this.dataPath, 'ffl-dealers.txt')
+    ];
+    
+    let filePath: string | null = null;
+    for (const file of possibleFiles) {
+      if (existsSync(file)) {
+        filePath = file;
+        break;
+      }
+    }
+    
+    if (!filePath) {
+      return {
+        imported: 0,
+        updated: 0,
+        errors: ['No FFL data file found. Please download RSR FFL data first.']
+      };
+    }
+
     const errors: string[] = [];
     let imported = 0;
     let updated = 0;
@@ -99,15 +122,24 @@ export class RSRFFLImportService {
    */
   private parseFFLLine(line: string): RSRFFLRecord | null {
     try {
-      // RSR FFL file format (assuming tab-delimited or similar)
-      // This will need to be adjusted based on actual RSR file format
-      const parts = line.split('\t').map(p => p.trim());
+      // Skip comment lines
+      if (line.startsWith('#') || line.trim() === '') {
+        return null;
+      }
+      
+      // RSR FFL file format - try both pipe and tab delimited
+      let parts: string[];
+      if (line.includes('|')) {
+        parts = line.split('|').map(p => p.trim());
+      } else {
+        parts = line.split('\t').map(p => p.trim());
+      }
       
       if (parts.length < 6) {
         return null; // Skip incomplete records
       }
 
-      // Assuming format: License|BusinessName|Street|City|State|Zip|Phone|Email|Status
+      // Format: License|BusinessName|Street|City|State|Zip|Phone|Email|Status
       const [license, businessName, street, city, state, zip, phone, email, status] = parts;
 
       if (!license || !businessName || !city || !state || !zip) {
