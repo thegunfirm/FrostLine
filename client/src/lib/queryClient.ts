@@ -9,7 +9,7 @@ async function throwIfResNotOk(res: Response) {
       const errorData = JSON.parse(text);
       // Check for message field first, then error field as fallback
       const errorMessage = errorData.message || errorData.error;
-      if (errorData && errorMessage) {
+      if (errorMessage) {
         // Create error with natural language message and preserve metadata
         const error = new Error(errorMessage);
         // Preserve important error metadata for authentication flows
@@ -22,9 +22,10 @@ async function throwIfResNotOk(res: Response) {
         throw error;
       }
     } catch (jsonParseError) {
-      // If JSON parsing fails, continue to fallback behavior below
+      // JSON parsing failed, fall through to default behavior
     }
     
+    // Fallback for non-JSON errors
     throw new Error(`${res.status}: ${text}`);
   }
 }

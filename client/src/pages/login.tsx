@@ -51,7 +51,26 @@ export default function Login() {
         });
       }
     } catch (error: any) {
-      setError(error.message || "Login failed. Please try again.");
+      // Extract clean error message, removing HTTP status codes and JSON formatting
+      let errorMessage = error.message || "Login failed. Please try again.";
+      
+      // If the error message contains JSON, extract just the message field
+      if (errorMessage.includes('{"message"') || errorMessage.includes('{"error"')) {
+        try {
+          // Remove the "401: " prefix if present
+          const jsonPart = errorMessage.replace(/^\d+:\s*/, '');
+          const errorData = JSON.parse(jsonPart);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If JSON parsing fails, try to extract message with regex
+          const messageMatch = errorMessage.match(/"message":"([^"]+)"/);
+          if (messageMatch) {
+            errorMessage = messageMatch[1];
+          }
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
