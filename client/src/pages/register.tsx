@@ -22,6 +22,7 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState("");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { register } = useAuth();
@@ -35,14 +36,11 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setIsLoading(true);
 
     if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords do not match.",
-        variant: "destructive",
-      });
+      setError("Passwords do not match.");
       setIsLoading(false);
       return;
     }
@@ -59,11 +57,7 @@ export default function Register() {
       // Redirect to success page with email parameter
       setLocation(`/registration-success?email=${encodeURIComponent(formData.email)}`);
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Registration failed. Please try again.",
-        variant: "destructive",
-      });
+      setError(error.message || "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +76,11 @@ export default function Register() {
         </CardHeader>
         
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-800 font-medium">{error}</p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

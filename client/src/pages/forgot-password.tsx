@@ -11,26 +11,19 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isEmailSent, setIsEmailSent] = useState(false);
+  const [error, setError] = useState("");
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setIsLoading(true);
 
     try {
       await apiRequest("POST", "/api/forgot-password", { email });
       setIsEmailSent(true);
-      toast({
-        title: "Reset Email Sent",
-        description: "Check your email for password reset instructions.",
-        variant: "default",
-      });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send reset email. Please try again.",
-        variant: "destructive",
-      });
+      setError(error.message || "Failed to send reset email. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -59,6 +52,7 @@ export default function ForgotPassword() {
                 onClick={() => {
                   setIsEmailSent(false);
                   setEmail("");
+                  setError("");
                 }}
                 variant="outline"
                 className="w-full"
@@ -91,6 +85,11 @@ export default function ForgotPassword() {
         </CardHeader>
         
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-800 font-medium">{error}</p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>

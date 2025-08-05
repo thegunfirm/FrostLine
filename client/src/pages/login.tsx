@@ -15,6 +15,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const { login } = useAuth();
@@ -28,6 +29,7 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setIsLoading(true);
 
     try {
@@ -49,25 +51,7 @@ export default function Login() {
         });
       }
     } catch (error: any) {
-      // Check if this is a verification required error
-      const isVerificationRequired = error.requiresVerification;
-      const errorType = error.errorType;
-      
-      // Customize title based on error type
-      let title = "Error";
-      if (isVerificationRequired) {
-        title = "Email Verification Required";
-      } else if (errorType === "email_not_found") {
-        title = "Email Not Found";
-      } else if (errorType === "invalid_password") {
-        title = "Incorrect Password";
-      }
-      
-      toast({
-        title,
-        description: error.message || "Login failed. Please try again.",
-        variant: "destructive",
-      });
+      setError(error.message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -89,6 +73,11 @@ export default function Login() {
         </CardHeader>
         
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-800 font-medium">{error}</p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

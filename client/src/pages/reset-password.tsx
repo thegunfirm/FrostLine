@@ -18,6 +18,7 @@ export default function ResetPassword() {
   const [token, setToken] = useState("");
   const [isValidToken, setIsValidToken] = useState(false);
   const [isCheckingToken, setIsCheckingToken] = useState(true);
+  const [error, setError] = useState("");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -60,22 +61,15 @@ export default function ResetPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     
     if (password !== confirmPassword) {
-      toast({
-        title: "Password Mismatch",
-        description: "Passwords do not match. Please try again.",
-        variant: "destructive",
-      });
+      setError("Passwords do not match. Please try again.");
       return;
     }
 
     if (password.length < 8) {
-      toast({
-        title: "Password Too Short",
-        description: "Password must be at least 8 characters long.",
-        variant: "destructive",
-      });
+      setError("Password must be at least 8 characters long.");
       return;
     }
 
@@ -95,11 +89,7 @@ export default function ResetPassword() {
       
       setLocation("/login");
     } catch (error: any) {
-      toast({
-        title: "Reset Failed",
-        description: error.message || "Failed to reset password. Please try again.",
-        variant: "destructive",
-      });
+      setError(error.message || "Failed to reset password. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -137,6 +127,11 @@ export default function ResetPassword() {
         </CardHeader>
         
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-800 font-medium">{error}</p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="password">New Password</Label>
