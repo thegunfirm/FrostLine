@@ -19,6 +19,7 @@ import { imageService } from "./services/image-service";
 import { rsrFTPClient } from "./services/distributors/rsr/rsr-ftp-client";
 import { rsrFileUpload } from "./services/rsr-file-upload";
 import { rsrAutoSync } from "./services/rsr-auto-sync";
+import { registerRSRFFLRoutes } from "./routes/rsr-ffl-routes";
 import { syncHealthMonitor } from "./services/sync-health-monitor";
 import { sendVerificationEmail, generateVerificationToken, sendPasswordResetEmail } from "./services/email-service";
 import crypto from "crypto";

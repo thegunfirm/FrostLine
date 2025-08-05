@@ -93,9 +93,13 @@ export interface IStorage {
   // FFL operations
   getFFLs(filters?: { zip?: string; status?: string }): Promise<FFL[]>;
   getFFL(id: number): Promise<FFL | undefined>;
+  getFFLByLicense(licenseNumber: string): Promise<FFL | undefined>;
   createFFL(ffl: InsertFFL): Promise<FFL>;
   updateFFL(id: number, updates: Partial<FFL>): Promise<FFL>;
+  deleteFFL(id: number): Promise<void>;
+  getAllFFLs(): Promise<FFL[]>;
   searchFFLsByZip(zip: string, radius?: number): Promise<FFL[]>;
+  clearAllFFLs(): Promise<void>;
   
   // State shipping policies
   getStateShippingPolicies(): Promise<StateShippingPolicy[]>;
@@ -992,6 +996,15 @@ export class DatabaseStorage implements IStorage {
       .values(fflData)
       .returning();
     return ffl;
+  }
+
+  async getFFLByLicense(licenseNumber: string): Promise<FFL | undefined> {
+    const [ffl] = await db.select().from(ffls).where(eq(ffls.licenseNumber, licenseNumber));
+    return ffl || undefined;
+  }
+
+  async clearAllFFLs(): Promise<void> {
+    await db.delete(ffls);
   }
 
   async deleteFFL(id: number): Promise<void> {
