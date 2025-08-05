@@ -7,6 +7,7 @@ This is a full-stack e-commerce platform for firearms and accessories, featuring
 Preferred communication style: Simple, everyday language.
 Image policy: NEVER use Unsplash or any placeholder images. Only use authentic distributor images (RSR, etc.) even if they show "Image Coming Soon" placeholders.
 Code preservation: Always maintain working solutions - never overwrite functioning code without explicit user request.
+Email verification: Users must verify their email address before being able to sign in (implemented 2025-08-05).
 
 ## System Architecture
 
@@ -23,6 +24,7 @@ Code preservation: Always maintain working solutions - never overwrite functioni
   - Advanced cart persistence and intelligent merging during login flow
 
 ### Core Design Principles
+- **Email Verification System**: Users must verify their email address via SendGrid before account access (2025-08-05)
 - **Mandatory Authentication**: Users must login via FAP and select subscription tier before checkout access
 - **Intelligent Cart Management**: Cart persistence across login, smart merging of guest/user carts, complete clearing on logout
 - **Three-Tier Fulfillment System**: Direct-to-consumer, warehouse-to-FFL, drop-ship-to-FFL with configurable delivery times

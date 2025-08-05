@@ -21,6 +21,8 @@ export const users = pgTable("users", {
   membershipPaid: boolean("membership_paid").default(false), // Track FAP payment status
   stripeCustomerId: text("stripe_customer_id"), // For product payments
   fapCustomerId: text("fap_customer_id"), // For membership payments
+  emailVerified: boolean("email_verified").default(false),
+  emailVerificationToken: text("email_verification_token"),
 });
 
 export const products = pgTable("products", {
@@ -285,6 +287,8 @@ export const registerSchema = insertUserSchema.omit({
   membershipPaid: true,
   stripeCustomerId: true,
   fapCustomerId: true,
+  emailVerified: true,
+  emailVerificationToken: true,
 });
 
 export const updateUserTierSchema = z.object({

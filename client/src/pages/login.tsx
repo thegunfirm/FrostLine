@@ -28,8 +28,9 @@ export default function Login() {
       });
       setLocation("/");
     } catch (error: any) {
+      const isVerificationRequired = error.response?.data?.requiresVerification;
       toast({
-        title: "Error",
+        title: isVerificationRequired ? "Email Verification Required" : "Error",
         description: error.message || "Login failed. Please try again.",
         variant: "destructive",
       });

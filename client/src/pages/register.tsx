@@ -54,10 +54,10 @@ export default function Register() {
       });
       
       toast({
-        title: "Success",
-        description: "Account created successfully. You can now sign in.",
+        title: "Registration Successful!",
+        description: response.message || "Please check your email to verify your account before signing in.",
       });
-      setLocation("/login");
+      // Don't redirect to login, stay on registration page to show verification message
     } catch (error: any) {
       toast({
         title: "Error",

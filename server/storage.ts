@@ -26,9 +26,11 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByVerificationToken(token: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User>;
   updateUserTier(id: number, tier: string): Promise<User>;
+  verifyUserEmail(token: string): Promise<User | undefined>;
   
   // Product operations
   getProducts(filters?: {
@@ -95,6 +97,11 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getUserByVerificationToken(token: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.emailVerificationToken, token));
+    return user || undefined;
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
@@ -111,6 +118,17 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+
+  async verifyUserEmail(token: string): Promise<User | undefined> {
+    const [user] = await db.update(users)
+      .set({ 
+        emailVerified: true, 
+        emailVerificationToken: null 
+      })
+      .where(eq(users.emailVerificationToken, token))
+      .returning();
+    return user || undefined;
   }
 
   // Product operations

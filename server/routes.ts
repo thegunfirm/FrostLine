@@ -20,6 +20,7 @@ import { rsrFTPClient } from "./services/distributors/rsr/rsr-ftp-client";
 import { rsrFileUpload } from "./services/rsr-file-upload";
 import { rsrAutoSync } from "./services/rsr-auto-sync";
 import { syncHealthMonitor } from "./services/sync-health-monitor";
+import { sendVerificationEmail, generateVerificationToken } from "./services/email-service";
 import axios from "axios";
 import multer from "multer";
 
@@ -51,22 +52,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "User already exists" });
       }
       
-      // Hash password
+      // Hash password and generate verification token
       const hashedPassword = await bcrypt.hash(userData.password, 10);
+      const verificationToken = generateVerificationToken();
       
-      // Create user
+      // Create user with verification token
       const user = await storage.createUser({
         ...userData,
         password: hashedPassword,
+        emailVerificationToken: verificationToken,
       });
       
-      // Remove password from response
-      const { password, ...userWithoutPassword } = user;
+      // Send verification email
+      const emailSent = await sendVerificationEmail(
+        user.email,
+        user.firstName,
+        verificationToken
+      );
       
-      res.status(201).json(userWithoutPassword);
+      if (!emailSent) {
+        console.error("Failed to send verification email to:", user.email);
+        // Don't fail registration if email fails, just log it
+      }
+      
+      // Remove password and token from response
+      const { password, emailVerificationToken, ...userWithoutPassword } = user;
+      
+      res.status(201).json({ 
+        ...userWithoutPassword,
+        message: "Registration successful! Please check your email to verify your account." 
+      });
     } catch (error) {
       console.error("Registration error:", error);
       res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  // Email verification endpoint
+  app.get("/verify-email", async (req, res) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token) {
+        return res.status(400).json({ message: "Verification token required" });
+      }
+      
+      const user = await storage.verifyUserEmail(token as string);
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired verification token" });
+      }
+      
+      // Redirect to frontend with success message
+      res.redirect(`/?verified=true&email=${encodeURIComponent(user.email)}`);
+    } catch (error) {
+      console.error("Email verification error:", error);
+      res.status(500).json({ message: "Verification failed" });
     }
   });
 
@@ -92,8 +132,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Account suspended" });
       }
       
+      if (!user.emailVerified) {
+        return res.status(403).json({ 
+          message: "Please verify your email address before signing in. Check your inbox for the verification link.",
+          requiresVerification: true 
+        });
+      }
+      
       // Store user session (simplified for now)
-      const { password: _, ...userWithoutPassword } = user;
+      const { password: _, emailVerificationToken, ...userWithoutPassword } = user;
       
       res.json(userWithoutPassword);
     } catch (error) {
