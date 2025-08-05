@@ -5,7 +5,7 @@ import { join } from "path";
 import { readFileSync, existsSync } from "fs";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
-import { insertUserSchema, insertProductSchema, insertOrderSchema, type InsertProduct, type Product, tierPricingRules, products, heroCarouselSlides, categoryRibbons, adminSettings, type User, type FFL, ffls, orders, carts, checkoutSettings, fulfillmentSettings } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertOrderSchema, type InsertProduct, type Product, tierPricingRules, products, heroCarouselSlides, categoryRibbons, adminSettings, systemSettings, membershipTierSettings, type User, type FFL, ffls, orders, carts, checkoutSettings, fulfillmentSettings } from "@shared/schema";
 import { pricingEngine } from "./services/pricing-engine";
 import { db } from "./db";
 import { sql, eq, and, ne, inArray, desc } from "drizzle-orm";
@@ -4635,6 +4635,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
   } catch (error) {
     console.error("Failed to register FAP routes:", error);
   }
+
+  // CMS Tier Settings API endpoints
+  app.get("/api/cms/tier-settings", async (req, res) => {
+    try {
+      const tierSettings = await db.select().from(membershipTierSettings);
+      
+      // If no settings exist, return default values
+      if (tierSettings.length === 0) {
+        const defaultTiers = [
+          {
+            id: "bronze",
+            tier: "Bronze",
+            monthlyPrice: 0,
+            annualPrice: 0,
+            features: ["View pricing on all products", "Basic customer support", "Access to product catalog", "Standard shipping rates"],
+            isPopular: false,
+            isFounderPricing: false,
+            founderLimit: 0,
+            founderCountRemaining: 0
+          },
+          {
+            id: "gold", 
+            tier: "Gold",
+            monthlyPrice: 5,
+            annualPrice: 50,
+            features: ["Everything in Bronze", "Better pricing on most items", "Priority customer support", "Early access to deals", "Monthly member specials"],
+            isPopular: false,
+            isFounderPricing: false,
+            founderLimit: 0,
+            founderCountRemaining: 0
+          },
+          {
+            id: "platinum",
+            tier: "Platinum", 
+            monthlyPrice: 10,
+            annualPrice: 50,
+            features: ["Everything in Gold", "Best pricing - near wholesale", "VIP customer support", "Free shipping on all orders", "Exclusive product access", "Special member events"],
+            isPopular: true,
+            isFounderPricing: true,
+            founderLimit: 1000,
+            founderCountRemaining: 1000
+          }
+        ];
+        
+        // Initialize default settings
+        for (const tier of defaultTiers) {
+          await db.insert(membershipTierSettings).values({
+            tier: tier.tier,
+            monthlyPrice: tier.monthlyPrice.toString(),
+            annualPrice: tier.annualPrice.toString(),
+            features: tier.features,
+            isPopular: tier.isPopular,
+            isFounderPricing: tier.isFounderPricing,
+            founderLimit: tier.founderLimit,
+            founderCountRemaining: tier.founderCountRemaining
+          });
+        }
+        
+        return res.json(defaultTiers);
+      }
+      
+      res.json(tierSettings);
+    } catch (error) {
+      console.error("Tier settings fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch tier settings" });
+    }
+  });
+
+  app.put("/api/cms/tier-settings/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      
+      const [updatedTier] = await db.update(membershipTierSettings)
+        .set({
+          ...updateData,
+          updatedAt: new Date()
+        })
+        .where(eq(membershipTierSettings.tier, id))
+        .returning();
+      
+      res.json(updatedTier);
+    } catch (error) {
+      console.error("Tier settings update error:", error);
+      res.status(500).json({ error: "Failed to update tier settings" });
+    }
+  });
 
   return httpServer;
 }

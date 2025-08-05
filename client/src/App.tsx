@@ -40,6 +40,7 @@ import CMSDashboard from "@/pages/cms/cms-dashboard";
 import SupportTickets from "@/pages/cms/support/support-tickets";
 import EmailTemplates from "@/pages/cms/email-templates";
 import FAPIntegration from "@/pages/cms/fap-integration";
+import TierPricing from "@/pages/cms/tier-pricing";
 import Account from "@/pages/account";
 
 function Router() {
@@ -80,6 +81,7 @@ function Router() {
       <Route path="/cms/support/tickets" component={SupportTickets} />
       <Route path="/cms/emails/templates" component={EmailTemplates} />
       <Route path="/cms/fap/integration" component={FAPIntegration} />
+      <Route path="/cms/tier-pricing" component={TierPricing} />
       <Route component={NotFound} />
     </Switch>
   );

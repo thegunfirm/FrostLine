@@ -373,13 +373,30 @@ export const orderNotes = pgTable("order_notes", {
 // System Settings (Admin Only)
 export const systemSettings = pgTable("system_settings", {
   id: serial("id").primaryKey(),
-  settingKey: text("setting_key").notNull().unique(),
-  settingValue: text("setting_value").notNull(),
+  key: text("key").notNull().unique(), // Fixed column name
+  value: text("value").notNull(), // Fixed column name
   dataType: text("data_type").notNull(), // string, number, boolean, json
   category: text("category").notNull(), // site, shipping, payments, inventory
   description: text("description"),
   isPublic: boolean("is_public").default(false), // whether setting is visible to frontend
-  lastModifiedBy: integer("last_modified_by").notNull(),
+  lastModifiedBy: integer("last_modified_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Membership Tier Settings (CMS Management)
+export const membershipTierSettings = pgTable("membership_tier_settings", {
+  id: serial("id").primaryKey(),
+  tier: text("tier").notNull().unique(), // Bronze, Gold, Platinum
+  monthlyPrice: decimal("monthly_price", { precision: 10, scale: 2 }).notNull(),
+  annualPrice: decimal("annual_price", { precision: 10, scale: 2 }).notNull(),
+  features: json("features").notNull(), // Array of feature strings
+  isPopular: boolean("is_popular").default(false),
+  isFounderPricing: boolean("is_founder_pricing").default(false),
+  founderLimit: integer("founder_limit").default(1000),
+  founderCountRemaining: integer("founder_count_remaining").default(1000),
+  description: text("description"),
+  lastModifiedBy: integer("last_modified_by"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -1,11 +1,26 @@
 import { TierCards } from "@/components/membership/tier-cards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { Check, Star, Zap } from "lucide-react";
+import { useLocation } from "wouter";
+import { Check, Star, Zap, ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
 
 export default function Membership() {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  // Check for redirect parameter from checkout
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectAfter = urlParams.get('redirect');
+    
+    // Store redirect destination for after tier selection
+    if (redirectAfter) {
+      sessionStorage.setItem('tierUpgradeRedirect', redirectAfter);
+    }
+  }, []);
 
   const benefits = [
     {
@@ -57,12 +72,35 @@ export default function Membership() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="text-center mb-12">
+          {/* Back to Checkout Button */}
+          {typeof window !== 'undefined' && sessionStorage.getItem('tierUpgradeRedirect') === '/checkout' && (
+            <div className="mb-6">
+              <Button
+                variant="outline"
+                onClick={() => setLocation('/checkout')}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Checkout
+              </Button>
+            </div>
+          )}
+          
           <h1 className="text-4xl md:text-5xl font-oswald font-bold text-gun-black mb-4">
             MEMBERSHIP TIERS
           </h1>
           <p className="text-xl text-gun-gray-light max-w-3xl mx-auto">
             Choose the membership tier that best fits your needs and unlock exclusive pricing, benefits, and VIP treatment.
           </p>
+          
+          {/* Upgrade Notice for Checkout Users */}
+          {typeof window !== 'undefined' && sessionStorage.getItem('tierUpgradeRedirect') === '/checkout' && (
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-800 font-medium">
+                Upgrade to Gold or Platinum tier to access checkout and get better pricing on your order.
+              </p>
+            </div>
+          )}
           
           {user && (
             <div className="mt-6">

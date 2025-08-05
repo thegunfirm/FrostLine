@@ -7,13 +7,15 @@ import { cn } from "@/lib/utils";
 
 interface TierCardProps {
   tier: "Bronze" | "Gold" | "Platinum";
-  price: number;
+  monthlyPrice: number;
+  annualPrice: number;
   features: string[];
   isPopular?: boolean;
+  isFounder?: boolean;
   onSelect?: () => void;
 }
 
-function TierCard({ tier, price, features, isPopular, onSelect }: TierCardProps) {
+function TierCard({ tier, monthlyPrice, annualPrice, features, isPopular, isFounder, onSelect }: TierCardProps) {
   const { user } = useAuth();
   const isCurrentTier = user?.subscriptionTier === tier;
 
@@ -71,19 +73,35 @@ function TierCard({ tier, price, features, isPopular, onSelect }: TierCardProps)
           <CardDescription className="text-gray-200">FREE MEMBERSHIP</CardDescription>
         )}
         {tier === "Gold" && (
-          <CardDescription className="text-gun-black">EXCLUSIVE MEMBERSHIP</CardDescription>
+          <CardDescription className="text-gun-black">${monthlyPrice}/month or ${annualPrice}/year</CardDescription>
         )}
         {tier === "Platinum" && (
-          <CardDescription className="text-gray-200">MAXIMUM SAVINGS</CardDescription>
+          <CardDescription className="text-white">
+            {isFounder ? `FOUNDER PRICING: $${monthlyPrice}/month or $${annualPrice}/year` : `$${monthlyPrice}/month`}
+          </CardDescription>
         )}
+
       </CardHeader>
       
       <CardContent className="p-6">
         <div className="text-center mb-6">
-          <div className="text-4xl font-oswald font-bold text-gun-black">
-            ${price}
-          </div>
-          <div className="text-gun-gray-light">/month</div>
+          {tier === "Bronze" ? (
+            <div className="text-4xl font-oswald font-bold text-gun-black">
+              FREE
+            </div>
+          ) : (
+            <>
+              <div className="text-4xl font-oswald font-bold text-gun-black">
+                ${monthlyPrice}
+              </div>
+              <div className="text-gun-gray-light">/month</div>
+              {annualPrice > 0 && (
+                <div className="text-sm text-gun-gray-light mt-1">
+                  or ${annualPrice}/year {tier === "Platinum" && isFounder && "(Founder Rate)"}
+                </div>
+              )}
+            </>
+          )}
         </div>
         
         <ul className="space-y-2 mb-6">
@@ -120,42 +138,51 @@ export function TierCards() {
 
   const tiers: Array<{
     tier: "Bronze" | "Gold" | "Platinum";
-    price: number;
+    monthlyPrice: number;
+    annualPrice: number;
     features: string[];
     isPopular?: boolean;
+    isFounder?: boolean;
   }> = [
     {
       tier: "Bronze" as const,
-      price: 0,
+      monthlyPrice: 0,
+      annualPrice: 0,
       features: [
         "View pricing on all products",
         "Basic customer support",
         "Access to product catalog",
         "Standard shipping rates"
-      ]
+      ],
+      isPopular: false
     },
     {
       tier: "Gold" as const,
-      price: 29,
+      monthlyPrice: 5,
+      annualPrice: 50,
       features: [
         "Everything in Bronze",
-        "15% discount on all orders",
+        "Better pricing on most items",
         "Priority customer support",
-        "Free shipping on orders $200+",
-        "Access to exclusive deals"
-      ]
+        "Early access to deals",
+        "Monthly member specials"
+      ],
+      isPopular: false
     },
     {
       tier: "Platinum" as const,
-      price: 59,
+      monthlyPrice: 10,
+      annualPrice: 50,
       features: [
         "Everything in Gold",
-        "25% discount on all orders",
+        "Best pricing - near wholesale",
         "VIP customer support",
         "Free shipping on all orders",
-        "Exclusive early access to new products",
-        "Priority order processing"
-      ]
+        "Exclusive product access",
+        "Special member events"
+      ],
+      isPopular: true,
+      isFounder: true
     }
   ];
 
@@ -165,9 +192,11 @@ export function TierCards() {
         <TierCard
           key={tier.tier}
           tier={tier.tier}
-          price={tier.price}
+          monthlyPrice={tier.monthlyPrice}
+          annualPrice={tier.annualPrice}
           features={tier.features}
           isPopular={tier.isPopular}
+          isFounder={tier.isFounder}
           onSelect={() => handleTierSelect(tier.tier)}
         />
       ))}

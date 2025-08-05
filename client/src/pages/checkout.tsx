@@ -12,7 +12,7 @@ import { Truck, MapPin, Clock, CreditCard, Shield, AlertTriangle } from "lucide-
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { FflSelector } from "@/components/checkout/ffl-selector";
-import { MembershipTierSelector } from "@/components/checkout/membership-tier-selector";
+// Removed MembershipTierSelector import - tier selection now happens on membership page
 import { DeliveryGroups } from "@/components/checkout/delivery-groups";
 import { PaymentSection } from "@/components/checkout/payment-section";
 
@@ -26,15 +26,17 @@ function CheckoutPageContent() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [selectedFfl, setSelectedFfl] = useState<number | null>(null);
-  const [requiresMembershipTier, setRequiresMembershipTier] = useState(false);
+  // Removed requiresMembershipTier state - tier selection now handled on membership page
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Check if user needs to select membership tier
+  // Redirect users without paid membership to membership page  
   useEffect(() => {
     if (user && (!user.subscriptionTier || user.subscriptionTier === 'Bronze')) {
-      setRequiresMembershipTier(true);
+      // Redirect to membership page to upgrade instead of blocking checkout
+      setLocation('/membership?redirect=/checkout');
+      return;
     }
-  }, [user]);
+  }, [user, setLocation]);
 
   // Fetch fulfillment settings
   const { data: fulfillmentSettings } = useQuery({
@@ -59,31 +61,7 @@ function CheckoutPageContent() {
     );
   }
 
-  // Show membership tier selector for new users
-  if (requiresMembershipTier) {
-    return (
-      <div className="min-h-screen bg-gray-50 pt-8">
-        <div className="max-w-4xl mx-auto px-4">
-          <Card className="bg-white shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold text-gray-900">
-                Choose Your Membership Tier
-              </CardTitle>
-              <p className="text-gray-600">
-                Select a membership tier to unlock pricing benefits and complete your purchase.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <MembershipTierSelector 
-                onTierSelected={() => setRequiresMembershipTier(false)}
-                totalCartValue={getTotalPrice()}
-              />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  // This section has been removed - tier selection is now handled on the membership page
 
   const canProceed = !hasFirearms() || (hasFirearms() && !requiresFflSelection());
 
