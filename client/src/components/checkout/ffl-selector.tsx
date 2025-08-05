@@ -35,8 +35,11 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
     queryKey: ['/api/ffls/search', searchZip, searchRadius],
     queryFn: async () => {
       if (!searchZip.trim()) return [];
+      console.log(`🔍 FFL Search: ${searchZip} within ${searchRadius} miles`);
       const response = await apiRequest('GET', `/api/ffls/search/${searchZip}?radius=${searchRadius}`);
-      return await response.json();
+      const data = await response.json();
+      console.log(`📍 Found ${data.length} FFLs:`, data.slice(0, 3));
+      return data;
     },
     enabled: !!searchZip.trim(),
   });
@@ -83,6 +86,7 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
   // Auto-trigger search when ZIP changes or on mount if ZIP provided
   useEffect(() => {
     if (searchZip && searchZip.length >= 5) {
+      console.log(`🚀 Auto-triggering FFL search for ZIP: ${searchZip}`);
       refetch();
     }
   }, [searchZip, refetch]);
