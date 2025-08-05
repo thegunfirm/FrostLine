@@ -81,7 +81,7 @@ function CheckoutPageContent() {
                   <FflSelector 
                     selectedFflId={selectedFfl}
                     onFflSelected={setSelectedFfl}
-                    userZip={user.shippingAddress?.zip || ''}
+                    userZip={user?.shippingAddress?.zip || ''}
                   />
                 </CardContent>
               </Card>
