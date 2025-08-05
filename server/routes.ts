@@ -102,11 +102,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid or expired verification token" });
       }
       
-      // Redirect to frontend with success message
-      res.redirect(`/?verified=true&email=${encodeURIComponent(user.email)}`);
+      // Auto-login the user after successful email verification
+      req.login(user, (err) => {
+        if (err) {
+          console.error("Auto-login error after email verification:", err);
+          // Fallback to redirect without login
+          return res.redirect(`/?verified=true&email=${encodeURIComponent(user.email)}`);
+        }
+        
+        // Successfully logged in, redirect to homepage with verification success
+        res.redirect(`/?verified=true&email=${encodeURIComponent(user.email)}&loggedIn=true`);
+      });
     } catch (error) {
       console.error("Email verification error:", error);
       res.status(500).json({ message: "Verification failed" });
+    }
+  });
+
+  // Get current authenticated user
+  app.get("/api/me", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Remove password from response
+      const { password, emailVerificationToken, ...userWithoutPassword } = req.user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Get current user error:", error);
+      res.status(500).json({ message: "Failed to fetch user data" });
     }
   });
 

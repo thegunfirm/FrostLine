@@ -22,6 +22,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check if user is already logged in
     const initAuth = async () => {
       try {
+        // Check for auto-login after email verification
+        const urlParams = new URLSearchParams(window.location.search);
+        const isLoggedIn = urlParams.get('loggedIn') === 'true';
+        
+        if (isLoggedIn) {
+          // User was auto-logged in via email verification, fetch current user data
+          try {
+            const response = await apiRequest("GET", "/api/me");
+            const userData = await response.json();
+            setUser(userData);
+            localStorage.setItem("user", JSON.stringify(userData));
+            await mergeGuestCart(userData);
+            
+            // Clean up URL parameters
+            const newUrl = window.location.pathname + (window.location.search.includes('verified=true') ? '?verified=true&email=' + urlParams.get('email') : '');
+            window.history.replaceState({}, '', newUrl);
+            return;
+          } catch (error) {
+            console.error("Error fetching user after auto-login:", error);
+          }
+        }
+        
+        // Regular auth check from localStorage
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
           const userData = JSON.parse(storedUser);
