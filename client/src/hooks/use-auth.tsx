@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (isLoggedIn) {
           // User was auto-logged in via email verification, fetch current user data
           try {
-            const response = await apiRequest("GET", "/api/me");
+            const response = await apiRequest("GET", "/api/auth/me");
             const userData = await response.json();
             setUser(userData);
             localStorage.setItem("user", JSON.stringify(userData));
