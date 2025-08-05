@@ -128,8 +128,8 @@ export default function ResetPassword() {
         
         <CardContent>
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-800 font-medium">{error}</p>
+            <div className="mb-4 p-3 bg-white border-2 border-red-500 rounded-md">
+              <p className="text-sm text-gun-black font-medium">{error}</p>
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">

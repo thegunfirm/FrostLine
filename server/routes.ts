@@ -155,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ 
-          message: "Incorrect password. Please try again or reset your password.",
+          message: "The password used is incorrect, use a different password or click the forgot password link below.",
           errorType: "invalid_password"
         });
       }
