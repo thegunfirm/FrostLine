@@ -37,6 +37,7 @@ import NotFound from "@/pages/not-found";
 import CMSDashboard from "@/pages/cms/cms-dashboard";
 import SupportTickets from "@/pages/cms/support/support-tickets";
 import EmailTemplates from "@/pages/cms/email-templates";
+import FAPIntegration from "@/pages/cms/fap-integration";
 
 function Router() {
   return (
@@ -72,6 +73,7 @@ function Router() {
       <Route path="/cms/dashboard" component={CMSDashboard} />
       <Route path="/cms/support/tickets" component={SupportTickets} />
       <Route path="/cms/emails/templates" component={EmailTemplates} />
+      <Route path="/cms/fap/integration" component={FAPIntegration} />
       <Route component={NotFound} />
     </Switch>
   );

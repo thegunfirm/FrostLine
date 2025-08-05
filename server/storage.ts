@@ -1223,6 +1223,19 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return newLog;
   }
+
+  // FAP Integration Methods
+  async updateUserSubscription(userId: number, updates: { subscriptionTier?: string; subscriptionStatus?: string }): Promise<User> {
+    const [user] = await db.update(users)
+      .set({ 
+        subscriptionTier: updates.subscriptionTier,
+        // Note: subscriptionStatus field may need to be added to schema
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
 }
 
 export const storage = new DatabaseStorage();

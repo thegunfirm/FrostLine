@@ -17,11 +17,13 @@ Email verification: Users must verify their email address before being able to s
   - User authentication and subscription tier management
   - Admin controls for delivery timing, subscription enforcement, FFL settings
   - Authorize.Net integration for membership payments
+  - **NEW (2025-08-05)**: Full API integration with real-time synchronization
 - **TheGunFirm.com**: 
   - E-commerce platform requiring FAP membership for checkout access
   - Enforces subscription tier requirements before checkout
   - Authorize.Net integration for product sales
   - Advanced cart persistence and intelligent merging during login flow
+  - **NEW (2025-08-05)**: Complete FAP integration with cross-platform features
 
 ### Core Design Principles
 - **Email Verification System**: Users must verify their email address via SendGrid before account access (2025-08-05)
@@ -33,6 +35,7 @@ Email verification: Users must verify their email address before being able to s
 - **Specialized Commerce**: Gun-specific categories, manufacturer filtering, and compliance features
 - **Responsive Design**: Mobile-first approach with custom breakpoints and industry-focused UI
 - **Real-time Inventory**: Live inventory synchronization with RSR distributor data
+- **Cross-Platform Integration (2025-08-05)**: Real-time FAP API connections, shared support ticketing, unified email templates, cross-platform analytics
 
 ### Technical Stack
 - **Frontend**: React 18 (TypeScript), Wouter for routing, TanStack Query for server state, React Context for authentication, Shadcn/ui (Radix UI) for components, Tailwind CSS for styling, Vite for tooling.
@@ -40,10 +43,12 @@ Email verification: Users must verify their email address before being able to s
 - **API Design**: RESTful endpoints with consistent error handling.
 
 ### Key Components
-- **Database Schema**: Users (with tiers, FFLs, shipping), Products (with tier pricing, FFL needs, inventory), Orders (with FFL routing), FFLs directory, State Shipping Policies, Tier Pricing Rules.
+- **Database Schema**: Users (with tiers, FFLs, shipping), Products (with tier pricing, FFL needs, inventory), Orders (with FFL routing), FFLs directory, State Shipping Policies, Tier Pricing Rules, CMS Tables (API configs, email templates, support tickets, system settings, user activity logs).
 - **Authentication**: Cross-platform authentication via FreeAmericanPeople.com with session-based RBAC (user, admin, support, dealer) for TheGunFirm.com access.
 - **Product Management**: Multi-tier pricing, FFL tracking, inventory, category/manufacturer organization, advanced search.
 - **Membership System**: Three-tier structure with progressive benefits, real-time savings calculations, and upgrade recommendations.
+- **CMS System (2025-08-05)**: Role-based content management with admin (API/development), support (customer relations), manager (email templates) access levels.
+- **FAP Integration (2025-08-05)**: Comprehensive API integration service with real-time user sync, cross-platform support tickets, shared email templates, and unified analytics.
 
 ## External Dependencies
 - **Database**: Neon (serverless PostgreSQL), Drizzle ORM.

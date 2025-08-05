@@ -4505,12 +4505,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error("Failed to register CMS routes:", error);
   }
 
-  // TODO: Register FAP routes for authentication and CMS management after schema deployment
-  // try {
-  //   await registerFapRoutes(app);
-  // } catch (error) {
-  //   console.error("Failed to register FAP routes:", error);
-  // }
+  // Register FAP integration routes for cross-platform functionality
+  try {
+    const registerFAPRoutes = (await import('./fap-routes')).default;
+    registerFAPRoutes(app);
+    console.log("✓ FAP integration routes registered successfully");
+  } catch (error) {
+    console.error("Failed to register FAP routes:", error);
+  }
 
   return httpServer;
 }

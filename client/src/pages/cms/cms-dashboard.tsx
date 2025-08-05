@@ -272,6 +272,12 @@ export default function CMSDashboard() {
                     User Activity Logs
                   </Button>
                 </Link>
+                <Link href="/cms/fap/integration">
+                  <Button variant="outline" className="w-full justify-start">
+                    <Settings className="mr-2 h-4 w-4" />
+                    FAP Integration
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </TabsContent>
