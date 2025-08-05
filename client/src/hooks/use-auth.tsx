@@ -50,7 +50,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Merge guest cart after successful login
       await mergeGuestCart(userData);
     } catch (error: any) {
-      throw new Error(error.message || "Login failed");
+      // Parse the error response if it's a structured error from the API
+      let errorData;
+      try {
+        errorData = typeof error === 'string' ? JSON.parse(error) : error;
+      } catch {
+        errorData = { message: error.message || "Login failed" };
+      }
+      
+      // Create an error object that preserves the verification requirement info
+      const loginError = new Error(errorData.message || "Login failed");
+      (loginError as any).requiresVerification = errorData.requiresVerification;
+      throw loginError;
     }
   };
 
