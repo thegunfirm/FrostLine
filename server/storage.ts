@@ -959,69 +959,46 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchFFLsByZip(zip: string, radius = 25): Promise<FFL[]> {
-    const zipcodes = require('zipcodes');
-    
-    // Calculate distance between two ZIP codes
-    const calculateZipDistance = (zip1: string, zip2: string): number | null => {
-      try {
-        const cleanZip1 = zip1.substring(0, 5);
-        const cleanZip2 = zip2.substring(0, 5);
-        
-        const location1 = zipcodes.lookup(cleanZip1);
-        const location2 = zipcodes.lookup(cleanZip2);
-        
-        if (!location1 || !location2 || !location1.latitude || !location2.latitude) {
-          return null;
-        }
-        
-        const lat1 = parseFloat(location1.latitude);
-        const lon1 = parseFloat(location1.longitude);
-        const lat2 = parseFloat(location2.latitude);
-        const lon2 = parseFloat(location2.longitude);
-        
-        // Haversine formula
-        const R = 3959; // Earth's radius in miles
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-          Math.sin(dLon / 2) * Math.sin(dLon / 2);
-          
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-      } catch (error) {
-        return null;
+    try {
+      console.log(`🔍 ZIP ${zip} search: Starting simple regional search`);
+      
+      // Simple approach: return FFLs from the same ZIP code first, then nearby ones
+      const targetZip = zip.substring(0, 5);
+      
+      // First try exact ZIP match
+      const exactMatches = await db.select().from(ffls)
+        .where(
+          and(
+            eq(ffls.isAvailableToUser, true),
+            sql`LEFT(${ffls.zip}, 5) = ${targetZip}`
+          )
+        )
+        .orderBy(asc(ffls.businessName))
+        .limit(20);
+      
+      if (exactMatches.length > 0) {
+        console.log(`✅ Found ${exactMatches.length} FFLs in ZIP ${targetZip}`);
+        return exactMatches;
       }
-    };
-    
-    // Get all available FFLs first
-    const allFFLs = await db.select().from(ffls)
-      .where(eq(ffls.isAvailableToUser, true));
-    
-    // Calculate distances and filter by radius
-    const fflsWithDistance = allFFLs
-      .map(ffl => {
-        const distance = calculateZipDistance(zip, ffl.zip.substring(0, 5));
-        return {
-          ...ffl,
-          distance: distance
-        };
-      })
-      .filter(ffl => ffl.distance !== null && ffl.distance <= radius)
-      .sort((a, b) => {
-        // Sort by distance first, then by business name
-        if (a.distance !== b.distance) {
-          return (a.distance || 999) - (b.distance || 999);
-        }
-        return a.businessName.localeCompare(b.businessName);
-      })
-      .slice(0, 50); // Limit to 50 results
-    
-    console.log(`🔍 ZIP ${zip} search: Found ${fflsWithDistance.length} FFLs within ${radius} miles`);
-    
-    // Remove the distance property before returning
-    return fflsWithDistance.map(({ distance, ...ffl }) => ffl);
+      
+      // If no exact matches, try regional search
+      const zipPrefix = targetZip.substring(0, 3);
+      const regionalMatches = await db.select().from(ffls)
+        .where(
+          and(
+            eq(ffls.isAvailableToUser, true),
+            sql`LEFT(${ffls.zip}, 3) = ${zipPrefix}`
+          )
+        )
+        .orderBy(asc(ffls.businessName))
+        .limit(20);
+        
+      console.log(`✅ Found ${regionalMatches.length} FFLs in ${zipPrefix}xx region`);
+      return regionalMatches;
+    } catch (error) {
+      console.error(`❌ ZIP search error for ${zip}:`, error);
+      throw error;
+    }
   }
 
   async searchFFLsByName(businessName: string, radius = 25): Promise<FFL[]> {
