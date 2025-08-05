@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User, InsertUser } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import { useCart } from "./use-cart";
 
 interface AuthContextType {
   user: User | null;
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { mergeGuestCart, clearOnLogout } = useCart();
 
   useEffect(() => {
     // Check if user is already logged in
@@ -22,7 +24,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
-          setUser(JSON.parse(storedUser));
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          // Load user's cart after successful auth initialization
+          await mergeGuestCart(userData);
         }
       } catch (error) {
         console.error("Error initializing auth:", error);
@@ -32,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     initAuth();
-  }, []);
+  }, [mergeGuestCart]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -41,6 +46,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       setUser(userData);
       localStorage.setItem("user", JSON.stringify(userData));
+      
+      // Merge guest cart after successful login
+      await mergeGuestCart(userData);
     } catch (error: any) {
       throw new Error(error.message || "Login failed");
     }
@@ -54,6 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Auto-login after registration
       setUser(newUser);
       localStorage.setItem("user", JSON.stringify(newUser));
+      
+      // Merge guest cart after successful registration
+      await mergeGuestCart(newUser);
     } catch (error: any) {
       throw new Error(error.message || "Registration failed");
     }
@@ -62,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
+    clearOnLogout(); // Clear cart on logout for security
   };
 
   return (

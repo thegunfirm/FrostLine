@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { Product } from '@shared/schema';
+import type { Product, User } from '@shared/schema';
 import { apiRequest } from '@/lib/queryClient';
 
 export interface CartItem {
@@ -18,6 +18,8 @@ export interface CartItem {
   selectedFFL?: string;
   manufacturer: string;
   addedAt: string;
+  fulfillmentType?: 'direct' | 'ffl_non_dropship' | 'ffl_dropship'; // Fulfillment path
+  dropShippable?: boolean; // RSR field 69
 }
 
 interface AddToCartParams {
@@ -33,12 +35,14 @@ interface AddToCartParams {
   requiresFFL: boolean;
   selectedFFL?: string;
   manufacturer: string;
+  dropShippable?: boolean; // RSR field 69
 }
 
 interface CartState {
   items: CartItem[];
   isLoading: boolean;
   isCartOpen: boolean;
+  guestCartBackup: CartItem[]; // Backup for pre-login cart
   
   // Actions
   addItem: (params: AddToCartParams) => Promise<void>;
@@ -47,11 +51,16 @@ interface CartState {
   clearCart: () => Promise<void>;
   syncWithServer: () => Promise<void>;
   setCartOpen: (isOpen: boolean) => void;
+  mergeGuestCart: (user: User) => Promise<void>;
+  loadUserCart: (user: User) => Promise<void>;
+  clearOnLogout: () => void;
   
   // Computed properties
   getTotalPrice: () => number;
   getItemCount: () => number;
   hasFirearms: () => boolean;
+  getFulfillmentGroups: () => Record<string, CartItem[]>;
+  requiresFflSelection: () => boolean;
 }
 
 export const useCart = create<CartState>()(
@@ -60,6 +69,7 @@ export const useCart = create<CartState>()(
       items: [],
       isLoading: false,
       isCartOpen: false,
+      guestCartBackup: [],
 
       addItem: async (params: AddToCartParams) => {
         const currentItems = get().items;
@@ -73,6 +83,12 @@ export const useCart = create<CartState>()(
           // Update quantity
           await get().updateQuantity(existingItem.id, existingItem.quantity + params.quantity);
         } else {
+          // Determine fulfillment type
+          let fulfillmentType: 'direct' | 'ffl_non_dropship' | 'ffl_dropship' = 'direct';
+          if (params.requiresFFL) {
+            fulfillmentType = params.dropShippable ? 'ffl_dropship' : 'ffl_non_dropship';
+          }
+
           // Add new item
           const newItem: CartItem = {
             id: `${params.productId}_${params.productSku}_${Date.now()}`,
@@ -89,6 +105,8 @@ export const useCart = create<CartState>()(
             selectedFFL: params.selectedFFL,
             manufacturer: params.manufacturer,
             addedAt: new Date().toISOString(),
+            fulfillmentType,
+            dropShippable: params.dropShippable,
           };
 
           set(state => ({
@@ -125,8 +143,76 @@ export const useCart = create<CartState>()(
       },
 
       clearCart: async () => {
-        set({ items: [] });
+        set({ items: [], guestCartBackup: [] });
         await get().syncWithServer();
+      },
+
+      mergeGuestCart: async (user: User) => {
+        const { items: guestItems } = get();
+        
+        if (guestItems.length === 0) {
+          await get().loadUserCart(user);
+          return;
+        }
+
+        try {
+          set({ isLoading: true });
+          
+          // Backup guest cart
+          set(state => ({ guestCartBackup: [...state.items] }));
+          
+          // Fetch user's existing cart from server
+          const response = await apiRequest('GET', `/api/cart/${user.id}`);
+          const userCart = await response.json();
+          
+          // Merge carts avoiding duplicates
+          const mergedItems = [...userCart.items];
+          
+          guestItems.forEach(guestItem => {
+            const existingIndex = mergedItems.findIndex(item => 
+              item.productId === guestItem.productId && 
+              item.productSku === guestItem.productSku &&
+              Math.abs(item.price - guestItem.price) < 0.01
+            );
+            
+            if (existingIndex >= 0) {
+              // Increase quantity
+              mergedItems[existingIndex].quantity += guestItem.quantity;
+            } else {
+              // Add new item
+              mergedItems.push(guestItem);
+            }
+          });
+          
+          set({ items: mergedItems });
+          await get().syncWithServer();
+          
+        } catch (error) {
+          console.error('Failed to merge guest cart:', error);
+          // Keep guest cart on error
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      loadUserCart: async (user: User) => {
+        try {
+          set({ isLoading: true });
+          
+          const response = await apiRequest('GET', `/api/cart/${user.id}`);
+          const userCart = await response.json();
+          
+          set({ items: userCart.items || [] });
+          
+        } catch (error) {
+          console.error('Failed to load user cart:', error);
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      clearOnLogout: () => {
+        set({ items: [], guestCartBackup: [], isCartOpen: false });
       },
 
       syncWithServer: async () => {
@@ -160,6 +246,27 @@ export const useCart = create<CartState>()(
       hasFirearms: () => {
         const { items } = get();
         return items.some(item => item.requiresFFL);
+      },
+
+      getFulfillmentGroups: () => {
+        const { items } = get();
+        const groups: Record<string, CartItem[]> = {
+          direct: [],
+          ffl_non_dropship: [],
+          ffl_dropship: []
+        };
+        
+        items.forEach(item => {
+          const type = item.fulfillmentType || 'direct';
+          groups[type].push(item);
+        });
+        
+        return groups;
+      },
+
+      requiresFflSelection: () => {
+        const { items } = get();
+        return items.some(item => item.requiresFFL && !item.selectedFFL);
       }
     }),
     {
@@ -167,6 +274,7 @@ export const useCart = create<CartState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         items: state.items,
+        guestCartBackup: state.guestCartBackup,
         // Don't persist loading states or cart open state
       }),
     }

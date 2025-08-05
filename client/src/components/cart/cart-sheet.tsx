@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Link } from 'wouter';
 import { useAuth } from '@/hooks/use-auth';
+import { CheckoutButton } from './checkout-button';
 
 export function CartSheet() {
   const { user } = useAuth();

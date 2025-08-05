@@ -1,0 +1,94 @@
+TheGunFirm.com – Checkout & Cart Integration Requirements (Replit Dev Brief)
+1. Authentication & Cart Persistence
+a. Unauthenticated Users
+If a user is not logged in, they must be prompted to create or log into an account before proceeding to checkout.
+
+After login/signup, the user is immediately offered the three membership tiers (e.g., Bronze, Gold, Platinum) before continuing.
+
+The shopping cart should persist across login—items added before login must carry over and combine with any saved cart data.
+
+b. Cart Merge Logic
+If both a guest cart and a logged-in user’s existing cart exist:
+
+The system must combine the contents, avoiding duplicate SKUs (but increasing quantity appropriately).
+
+If conflicts exist (e.g., different variant options of the same SKU), flag visually for user review.
+
+c. Cart Clearance on Logout
+When the user logs out:
+
+The cart must be fully cleared to prevent residual data from being shown to other users on shared devices.
+
+2. Shipping Logic & Delivery Breakdown
+a. Three Fulfillment Paths (Per Item)
+Each cart item must be tagged with its fulfillment type, and the frontend must group delivery estimates accordingly:
+
+Fulfillment Type	Description	Delivery Path
+Direct-to-Consumer	Items like accessories or magazines.	Shipped directly to user’s home.
+Non-Dropship to FFL	Firearms that cannot be dropshipped.	Shipped to TheGunFirm first, then to FFL.
+Dropship to FFL	Firearms dropshippable to the FFL directly.	Shipped from distributor to FFL.
+
+CMS Integration Required: Delivery times for all three fulfillment types must be editable in the CMS.
+
+Each item in checkout must display estimated delivery time and address (FFL or user).
+
+Mimic Amazon-style "Delivery Summary" view showing grouped delivery info.
+
+3. FFL Selection Workflow
+a. Default FFL Logic
+The system must pull FFL data from two possible sources:
+
+ATF database feed
+
+RSR on-file FFL list
+
+A CMS toggle will determine which source(s) to use.
+
+If RSR feed is active:
+
+Items should be tagged as “On File” or “Not On File” for FFL handling.
+
+Blue/Green/Red visual tags:
+
+Green = FFL is on file
+
+Red = Not on file
+
+Blue = Preferred FFL (marked in CMS)
+
+b. FFL Address Resolution
+If the order includes an FFL item:
+
+The system must require user selection of FFL before allowing payment.
+
+The selected FFL address must appear in the checkout summary, specific to the items being shipped there.
+
+4. Authorize.net Payment Routing
+a. Two Accounts
+There are two Authorize.net accounts in use:
+
+Free American People (FAP) – for membership subscriptions
+
+TheGunFirm.com – for product sales
+
+b. Routing Logic
+If a new user is signing up:
+
+First payment (membership) is routed through FAP’s Authorize.net.
+
+Subsequent product purchases (via cart checkout) must go through TheGunFirm’s Authorize.net.
+
+If a user has already paid for membership, skip the FAP payment and proceed directly to cart checkout under TheGunFirm.
+
+5. Summary of Key Features to Build
+Cart persistence and merge across login/logout.
+
+Membership tier selection as part of account creation.
+
+Fulfillment logic and editable shipping ETA per item group.
+
+CMS-controlled FFL feed toggle (ATF, RSR).
+
+Visual confirmation of delivery addresses and times in checkout.
+
+Split Authorize.net routing depending on subscription or product context.

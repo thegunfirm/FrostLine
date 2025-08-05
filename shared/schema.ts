@@ -18,6 +18,9 @@ export const users = pgTable("users", {
   shippingAddress: json("shipping_address"),
   role: text("role").notNull().default("user"), // user, admin, support, dealer
   isBanned: boolean("is_banned").default(false),
+  membershipPaid: boolean("membership_paid").default(false), // Track FAP payment status
+  stripeCustomerId: text("stripe_customer_id"), // For product payments
+  fapCustomerId: text("fap_customer_id"), // For membership payments
 });
 
 export const products = pgTable("products", {
@@ -96,6 +99,9 @@ export const orders = pgTable("orders", {
   shippingAddress: json("shipping_address"),
   trackingNumber: text("tracking_number"),
   savingsRealized: decimal("savings_realized", { precision: 10, scale: 2 }).default("0.00"),
+  fulfillmentGroups: json("fulfillment_groups"), // Direct, FFL Non-Dropship, FFL Dropship
+  authorizeNetTransactionId: text("authorize_net_transaction_id"),
+  paymentMethod: text("payment_method").default("authorize_net"), // authorize_net, stripe, etc
 });
 
 export const ffls = pgTable("ffls", {
@@ -111,6 +117,33 @@ export const ffls = pgTable("ffls", {
   isAvailableToUser: boolean("is_available_to_user").default(true),
   regionRestrictions: json("region_restrictions"),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Cart persistence for authenticated users
+export const carts = pgTable("carts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  items: json("items").notNull(), // Array of cart items
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// CMS settings for checkout configuration
+export const checkoutSettings = pgTable("checkout_settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  description: text("description"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Fulfillment configuration
+export const fulfillmentSettings = pgTable("fulfillment_settings", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(), // "direct", "ffl_non_dropship", "ffl_dropship"  
+  deliveryDaysMin: integer("delivery_days_min").notNull(),
+  deliveryDaysMax: integer("delivery_days_max").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
 });
 
 export const stateShippingPolicies = pgTable("state_shipping_policies", {
@@ -153,143 +186,29 @@ export const heroCarouselSlides = pgTable("hero_carousel_slides", {
   id: serial("id").primaryKey(),
   title: text("title"),
   subtitle: text("subtitle"),
-  imageUrl: text("image_url").notNull(),
   buttonText: text("button_text"),
   buttonLink: text("button_link"),
-  displayOrder: integer("display_order").default(0),
+  backgroundImage: text("background_image"),
   isActive: boolean("is_active").default(true),
+  sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow()
 });
 
-// Cart system tables
-export const carts = pgTable("carts", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  sessionId: text("session_id"), // For anonymous users
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const cartItems = pgTable("cart_items", {
-  id: serial("id").primaryKey(),
-  cartId: integer("cart_id").notNull(),
-  productId: integer("product_id").notNull(),
-  quantity: integer("quantity").notNull().default(1),
-  tierPriceUsed: text("tier_price_used").notNull().default("Bronze"), // Bronze, Gold, Platinum
-  priceSnapshot: decimal("price_snapshot", { precision: 10, scale: 2 }).notNull(), // Price at time of adding to cart
-  addedAt: timestamp("added_at").defaultNow(),
-});
-
-// FFL system for firearm orders
-export const fflLookupHistory = pgTable("ffl_lookup_history", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id"),
-  searchZip: text("search_zip").notNull(),
-  searchRadius: integer("search_radius").default(25), // miles
-  resultsFound: integer("results_found").default(0),
-  searchTimestamp: timestamp("search_timestamp").defaultNow(),
-  sourceType: text("source_type").notNull(), // RSR, ATF, Internal
-});
-
-// Orders flagged for manual handling (non-RSR FFLs)
-export const orderFlags = pgTable("order_flags", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id").notNull(),
-  flagType: text("flag_type").notNull(), // "non_rsr_ffl", "compliance_review", "manual_processing"
-  flagReason: text("flag_reason").notNull(),
-  isResolved: boolean("is_resolved").default(false),
-  resolvedBy: integer("resolved_by"), // Admin user ID
-  resolvedAt: timestamp("resolved_at"),
-  flaggedAt: timestamp("flagged_at").defaultNow(),
-  notes: text("notes"),
-});
-
-// AI Search Learning System Tables
-export const searchCache = pgTable("search_cache", {
-  id: serial("id").primaryKey(),
-  originalQuery: text("original_query").notNull().unique(),
-  expandedQuery: text("expanded_query").notNull(),
-  results: json("results").notNull(),
-  metadata: json("metadata").notNull(),
-  timestamp: timestamp("timestamp").defaultNow(),
-});
-
-export const searchLearning = pgTable("search_learning", {
-  id: serial("id").primaryKey(),
-  originalQuery: text("original_query").notNull(),
-  expandedQuery: text("expanded_query").notNull(),
-  resultCount: integer("result_count").notNull(),
-  userInteractions: json("user_interactions").notNull(),
-  relevanceScore: decimal("relevance_score", { precision: 3, scale: 2 }).notNull(),
-  learningData: json("learning_data"),
-  timestamp: timestamp("timestamp").defaultNow(),
-});
-
-export const searchFeedback = pgTable("search_feedback", {
-  id: serial("id").primaryKey(),
-  searchQuery: text("search_query").notNull(),
-  feedbackText: text("feedback_text").notNull(),
-  category: text("category"),
-  timestamp: timestamp("timestamp").defaultNow(),
-  isResolved: boolean("is_resolved").default(false),
-});
-
-// Category ribbon management for CMS
 export const categoryRibbons = pgTable("category_ribbons", {
   id: serial("id").primaryKey(),
-  categoryName: text("category_name").notNull().unique(),
-  ribbonText: text("ribbon_text").notNull(),
-  displayOrder: integer("display_order").default(0),
+  categoryName: text("category_name").notNull(),
+  displayName: text("display_name"),
+  sortOrder: integer("sort_order").default(0),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// System settings for various configurations
-export const systemSettings = pgTable("system_settings", {
+export const adminSettings = pgTable("admin_settings", {
   id: serial("id").primaryKey(),
   key: text("key").notNull().unique(),
   value: text("value").notNull(),
   description: text("description"),
   category: text("category").default("general"),
-  isEditable: boolean("is_editable").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Product image management for custom uploads
-export const productImages = pgTable("product_images", {
-  id: serial("id").primaryKey(),
-  productSku: text("product_sku").notNull(),
-  imageUrl: text("image_url").notNull(),
-  angle: text("angle").default("1"), // Image angle (1, 2, 3, etc.)
-  isCustom: boolean("is_custom").default(true), // Custom uploaded vs RSR
-  uploadedBy: integer("uploaded_by"), // Admin user who uploaded
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Filter configurations for CMS-controlled search filtering
-export const filterConfigurations = pgTable("filter_configurations", {
-  id: serial("id").primaryKey(),
-  filterType: text("filter_type").notNull(), // "category", "manufacturer", "price_range", etc.
-  displayName: text("display_name").notNull(),
-  isEnabled: boolean("is_enabled").default(true),
-  defaultValue: text("default_value").default("all"),
-  displayOrder: integer("display_order").default(0),
-  isRequired: boolean("is_required").default(false),
-  options: json("options"), // Array of available options for dropdown filters
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Category settings for CMS control
-export const categorySettings = pgTable("category_settings", {
-  id: serial("id").primaryKey(),
-  categoryName: text("category_name").notNull().unique(),
-  isEnabled: boolean("is_enabled").default(true),
-  displayOrder: integer("display_order").default(0),
-  parentCategory: text("parent_category"),
-  createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -300,10 +219,6 @@ export const usersRelations = relations(users, ({ many, one }) => ({
     fields: [users.preferredFflId],
     references: [ffls.id],
   }),
-}));
-
-export const productsRelations = relations(products, ({ many }) => ({
-  // Add relations as needed for order items, etc.
 }));
 
 export const ordersRelations = relations(orders, ({ one }) => ({
@@ -317,205 +232,61 @@ export const ordersRelations = relations(orders, ({ one }) => ({
   }),
 }));
 
-export const fflsRelations = relations(ffls, ({ many }) => ({
-  orders: many(orders),
-  preferredByUsers: many(users),
-}));
-
-export const cartsRelations = relations(carts, ({ one, many }) => ({
+export const cartsRelations = relations(carts, ({ one }) => ({
   user: one(users, {
     fields: [carts.userId],
     references: [users.id],
   }),
-  items: many(cartItems),
 }));
 
-export const cartItemsRelations = relations(cartItems, ({ one }) => ({
-  cart: one(carts, {
-    fields: [cartItems.cartId],
-    references: [carts.id],
-  }),
-  product: one(products, {
-    fields: [cartItems.productId],
-    references: [products.id],
-  }),
-}));
-
-export const orderFlagsRelations = relations(orderFlags, ({ one }) => ({
-  order: one(orders, {
-    fields: [orderFlags.orderId],
-    references: [orders.id],
-  }),
-}));
-
-export const pricingRules = pgTable("pricing_rules", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  // Bronze tier markup rules
-  bronzeMarkupType: text("bronze_markup_type").notNull().default("percentage"), // 'flat' or 'percentage'
-  bronzeMarkupValue: decimal("bronze_markup_value", { precision: 10, scale: 2 }).notNull().default("10.00"),
-  bronzeThreshold: decimal("bronze_threshold", { precision: 10, scale: 2 }).notNull().default("200.00"),
-  bronzeFlatMarkup: decimal("bronze_flat_markup", { precision: 10, scale: 2 }).notNull().default("20.00"),
-  // Gold tier markup rules
-  goldMarkupType: text("gold_markup_type").notNull().default("percentage"),
-  goldMarkupValue: decimal("gold_markup_value", { precision: 10, scale: 2 }).notNull().default("5.00"),
-  goldThreshold: decimal("gold_threshold", { precision: 10, scale: 2 }).notNull().default("200.00"),
-  goldFlatMarkup: decimal("gold_flat_markup", { precision: 10, scale: 2 }).notNull().default("15.00"),
-  // Platinum tier markup rules
-  platinumMarkupType: text("platinum_markup_type").notNull().default("percentage"),
-  platinumMarkupValue: decimal("platinum_markup_value", { precision: 10, scale: 2 }).notNull().default("2.00"),
-  platinumThreshold: decimal("platinum_threshold", { precision: 10, scale: 2 }).notNull().default("200.00"),
-  platinumFlatMarkup: decimal("platinum_flat_markup", { precision: 10, scale: 2 }).notNull().default("10.00"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Insert schemas
-export const insertUserSchema = createInsertSchema(users).pick({
-  email: true,
-  password: true,
-  firstName: true,
-  lastName: true,
-  subscriptionTier: true,
-  shippingAddress: true,
-});
-
-export const insertProductSchema = createInsertSchema(products).pick({
-  name: true,
-  description: true,
-  category: true,
-  manufacturer: true,
-  sku: true,
-  priceWholesale: true,
-  requiresFFL: true,
-  tags: true,
-  images: true,
-});
-
-export const insertOrderSchema = createInsertSchema(orders).pick({
-  userId: true,
-  totalPrice: true,
-  items: true,
-  fflRecipientId: true,
-  shippingAddress: true,
-});
-
-export const insertFflSchema = createInsertSchema(ffls).pick({
-  businessName: true,
-  licenseNumber: true,
-  contactEmail: true,
-  phone: true,
-  address: true,
-  zip: true,
-});
-
-export const insertHeroCarouselSlideSchema = createInsertSchema(heroCarouselSlides).pick({
-  title: true,
-  subtitle: true,
-  imageUrl: true,
-  buttonText: true,
-  buttonLink: true,
-  displayOrder: true,
-  isActive: true,
-});
-
-export const insertSystemSettingSchema = createInsertSchema(systemSettings).pick({
-  key: true,
-  value: true,
-  description: true,
-  category: true,
-  isEditable: true,
-});
-
-export const insertPricingRuleSchema = createInsertSchema(pricingRules).pick({
-  name: true,
-  bronzeMarkupType: true,
-  bronzeMarkupValue: true,
-  bronzeThreshold: true,
-  bronzeFlatMarkup: true,
-  goldMarkupType: true,
-  goldMarkupValue: true,
-  goldThreshold: true,
-  goldFlatMarkup: true,
-  platinumMarkupType: true,
-  platinumMarkupValue: true,
-  platinumThreshold: true,
-  platinumFlatMarkup: true,
-  isActive: true,
-});
-
-export const insertFilterConfigurationSchema = createInsertSchema(filterConfigurations).pick({
-  filterType: true,
-  displayName: true,
-  isEnabled: true,
-  defaultValue: true,
-  displayOrder: true,
-  isRequired: true,
-  options: true,
-});
-
-export const insertCategorySettingSchema = createInsertSchema(categorySettings).pick({
-  categoryName: true,
-  isEnabled: true,
-  displayOrder: true,
-  parentCategory: true,
-});
-
-export const insertProductImageSchema = createInsertSchema(productImages).pick({
-  productSku: true,
-  imageUrl: true,
-  angle: true,
-  isCustom: true,
-  uploadedBy: true,
-});
-
-export const insertCartSchema = createInsertSchema(carts).pick({
-  userId: true,
-  sessionId: true,
-});
-
-export const insertCartItemSchema = createInsertSchema(cartItems).pick({
-  cartId: true,
-  productId: true,
-  quantity: true,
-  tierPriceUsed: true,
-  priceSnapshot: true,
-});
-
-export const insertOrderFlagSchema = createInsertSchema(orderFlags).pick({
-  orderId: true,
-  flagType: true,
-  flagReason: true,
-  notes: true,
-});
-
-// Types
+// Type exports
 export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertUser = typeof users.$inferInsert;
 export type Product = typeof products.$inferSelect;
-export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type InsertProduct = typeof products.$inferInsert;
 export type Order = typeof orders.$inferSelect;
-export type InsertOrder = z.infer<typeof insertOrderSchema>;
+export type InsertOrder = typeof orders.$inferInsert;
 export type FFL = typeof ffls.$inferSelect;
-export type InsertFFL = z.infer<typeof insertFflSchema>;
+export type InsertFFL = typeof ffls.$inferInsert;
+export type Cart = typeof carts.$inferSelect;
+export type InsertCart = typeof carts.$inferInsert;
+export type CheckoutSetting = typeof checkoutSettings.$inferSelect;
+export type InsertCheckoutSetting = typeof checkoutSettings.$inferInsert;
+export type FulfillmentSetting = typeof fulfillmentSettings.$inferSelect;
+export type InsertFulfillmentSetting = typeof fulfillmentSettings.$inferInsert;
 export type StateShippingPolicy = typeof stateShippingPolicies.$inferSelect;
 export type TierPricingRule = typeof tierPricingRules.$inferSelect;
 export type HeroCarouselSlide = typeof heroCarouselSlides.$inferSelect;
-export type InsertHeroCarouselSlide = z.infer<typeof insertHeroCarouselSlideSchema>;
-export type SystemSetting = typeof systemSettings.$inferSelect;
-export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
-export type PricingRule = typeof pricingRules.$inferSelect;
-export type InsertPricingRule = z.infer<typeof insertPricingRuleSchema>;
-export type FilterConfiguration = typeof filterConfigurations.$inferSelect;
-export type InsertFilterConfiguration = z.infer<typeof insertFilterConfigurationSchema>;
-export type CategorySetting = typeof categorySettings.$inferSelect;
-export type InsertCategorySetting = z.infer<typeof insertCategorySettingSchema>;
-export type ProductImage = typeof productImages.$inferSelect;
-export type InsertProductImage = z.infer<typeof insertProductImageSchema>;
-export type Cart = typeof carts.$inferSelect;
-export type InsertCart = z.infer<typeof insertCartSchema>;
-export type CartItem = typeof cartItems.$inferSelect;
-export type InsertCartItem = z.infer<typeof insertCartItemSchema>;
-export type OrderFlag = typeof orderFlags.$inferSelect;
-export type InsertOrderFlag = z.infer<typeof insertOrderFlagSchema>;
+export type InsertHeroCarouselSlide = typeof heroCarouselSlides.$inferInsert;
+export type CategoryRibbon = typeof categoryRibbons.$inferSelect;
+export type AdminSetting = typeof adminSettings.$inferSelect;
+
+// Zod schemas
+export const insertUserSchema = createInsertSchema(users);
+export const insertProductSchema = createInsertSchema(products);
+export const insertOrderSchema = createInsertSchema(orders);
+export const insertFflSchema = createInsertSchema(ffls);
+export const insertCartSchema = createInsertSchema(carts);
+
+// Validation schemas
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+export const registerSchema = insertUserSchema.omit({
+  id: true,
+  createdAt: true,
+  lifetimeSavings: true,
+  savingsIfGold: true,
+  savingsIfPlatinum: true,
+  role: true,
+  isBanned: true,
+  membershipPaid: true,
+  stripeCustomerId: true,
+  fapCustomerId: true,
+});
+
+export const updateUserTierSchema = z.object({
+  subscriptionTier: z.enum(["Bronze", "Gold", "Platinum"]),
+});

@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { pricingRules, products } from "@shared/schema";
+import { tierPricingRules, products } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 export interface PricingCalculation {
@@ -22,8 +22,8 @@ export class PricingEngine {
     if (!this.activePricingRules || (now - this.lastRulesFetch) > this.CACHE_DURATION) {
       const [rules] = await db
         .select()
-        .from(pricingRules)
-        .where(eq(pricingRules.isActive, true))
+        .from(tierPricingRules)
+        .where(eq(tierPricingRules.isActive, true))
         .limit(1);
       
       this.activePricingRules = rules;

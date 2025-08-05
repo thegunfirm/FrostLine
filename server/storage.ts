@@ -703,6 +703,81 @@ export class DatabaseStorage implements IStorage {
     return ffl;
   }
 
+  async searchFFLsByZip(zip: string, radiusMiles: number = 25): Promise<FFL[]> {
+    // For now, return FFLs with same ZIP and nearby ones
+    // In production, you'd implement proper geolocation search
+    const exactMatches = await db.select().from(ffls)
+      .where(and(
+        eq(ffls.zip, zip),
+        eq(ffls.isAvailableToUser, true)
+      ))
+      .orderBy(asc(ffls.businessName));
+    
+    if (exactMatches.length > 0) {
+      return exactMatches;
+    }
+    
+    // Fallback: return all available FFLs in same state/region
+    // This is a simplified implementation
+    return await db.select().from(ffls)
+      .where(eq(ffls.isAvailableToUser, true))
+      .orderBy(asc(ffls.businessName))
+      .limit(20);
+  }
+
+  // Cart persistence operations
+  async saveUserCart(userId: number, items: any[]): Promise<void> {
+    const existingCart = await db.select().from(carts)
+      .where(eq(carts.userId, userId))
+      .limit(1);
+    
+    if (existingCart.length > 0) {
+      await db.update(carts)
+        .set({ 
+          items: JSON.stringify(items), 
+          updatedAt: new Date() 
+        })
+        .where(eq(carts.userId, userId));
+    } else {
+      await db.insert(carts).values({
+        userId,
+        items: JSON.stringify(items),
+        updatedAt: new Date()
+      });
+    }
+  }
+
+  async getUserCart(userId: number): Promise<{ items: any[] } | undefined> {
+    const [cart] = await db.select().from(carts)
+      .where(eq(carts.userId, userId))
+      .limit(1);
+    
+    if (!cart) return undefined;
+    
+    return {
+      items: typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items
+    };
+  }
+
+  // Fulfillment settings operations
+  async getFulfillmentSettings(): Promise<any[]> {
+    return await db.select().from(fulfillmentSettings)
+      .where(eq(fulfillmentSettings.isActive, true))
+      .orderBy(asc(fulfillmentSettings.type));
+  }
+
+  // Checkout settings operations
+  async getCheckoutSettings(): Promise<Record<string, string>> {
+    const settings = await db.select().from(checkoutSettings);
+    const result: Record<string, string> = {};
+    
+    settings.forEach(setting => {
+      result[setting.key] = setting.value;
+    });
+    
+    return result;
+  }
+
   async updateFFL(id: number, updates: Partial<FFL>): Promise<FFL> {
     const [ffl] = await db.update(ffls).set(updates).where(eq(ffls.id, id)).returning();
     return ffl;

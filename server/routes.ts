@@ -5,7 +5,7 @@ import { join } from "path";
 import { readFileSync, existsSync } from "fs";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
-import { insertUserSchema, insertProductSchema, insertOrderSchema, insertHeroCarouselSlideSchema, type InsertProduct, type Product, systemSettings, pricingRules, insertPricingRuleSchema, products, productImages, insertProductImageSchema, type ProductImage, type InsertProductImage } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertOrderSchema, type InsertProduct, type Product, tierPricingRules, products, heroCarouselSlides, categoryRibbons, adminSettings, type User, type FFL, ffls, orders, carts, checkoutSettings, fulfillmentSettings } from "@shared/schema";
 import { pricingEngine } from "./services/pricing-engine";
 import { db } from "./db";
 import { sql, eq, and, ne, inArray, desc } from "drizzle-orm";
@@ -2116,7 +2116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Pricing Rules Management API endpoints
   app.get("/api/admin/pricing-rules", async (req, res) => {
     try {
-      const rules = await db.select().from(pricingRules);
+      const rules = await db.select().from(tierPricingRules);
       res.json(rules);
     } catch (error) {
       console.error("Pricing rules fetch error:", error);
@@ -4101,21 +4101,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Cart API endpoints
+  // Enhanced cart persistence endpoints
   app.post("/api/cart/sync", async (req, res) => {
     try {
       const { items } = req.body;
       
-      // For now, just validate the cart items structure
-      // In the future, we'll sync with database when user authentication is ready
       if (!Array.isArray(items)) {
         return res.status(400).json({ error: "Invalid cart items format" });
       }
       
-      // Validate each item has required fields (updated for new cart interface)
+      // Validate each item has required fields
       for (const item of items) {
         if (!item.id || !item.productId || !item.quantity || !item.price) {
           return res.status(400).json({ error: "Invalid cart item structure" });
         }
+      }
+      
+      // If user is authenticated, persist to database
+      if (req.user) {
+        await storage.saveUserCart(req.user.id, items);
       }
       
       res.json({ 
@@ -4129,14 +4133,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/cart", async (req, res) => {
+  app.get("/api/cart/:userId", async (req, res) => {
     try {
-      // For now, return empty cart since we don't have user sessions yet
-      // In the future, we'll fetch from database based on user session
-      res.json({ items: [] });
+      const userId = parseInt(req.params.userId);
+      
+      if (!userId || (req.user && req.user.id !== userId)) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const cart = await storage.getUserCart(userId);
+      res.json({ items: cart?.items || [] });
     } catch (error: any) {
       console.error("Cart fetch error:", error);
       res.status(500).json({ error: "Failed to fetch cart" });
+    }
+  });
+
+  // FFL search endpoints
+  app.get("/api/ffls/search/:zip", async (req, res) => {
+    try {
+      const { zip } = req.params;
+      const { radius = 25 } = req.query;
+      
+      const ffls = await storage.searchFFLsByZip(zip, parseInt(radius as string));
+      res.json(ffls);
+    } catch (error: any) {
+      console.error("FFL search error:", error);
+      res.status(500).json({ error: "Failed to search FFLs" });
+    }
+  });
+
+  app.get("/api/ffls", async (req, res) => {
+    try {
+      const { zip, status } = req.query;
+      const filters: any = {};
+      
+      if (zip) filters.zip = zip as string;
+      if (status) filters.status = status as string;
+      
+      const ffls = await storage.getFFLs(filters);
+      res.json(ffls);
+    } catch (error: any) {
+      console.error("FFL fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch FFLs" });
+    }
+  });
+
+  // Fulfillment settings endpoints
+  app.get("/api/fulfillment/settings", async (req, res) => {
+    try {
+      const settings = await storage.getFulfillmentSettings();
+      res.json(settings);
+    } catch (error: any) {
+      console.error("Fulfillment settings fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch fulfillment settings" });
+    }
+  });
+
+  // Checkout configuration endpoints
+  app.get("/api/checkout/settings", async (req, res) => {
+    try {
+      const settings = await storage.getCheckoutSettings();
+      res.json(settings);
+    } catch (error: any) {
+      console.error("Checkout settings fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch checkout settings" });
     }
   });
 
