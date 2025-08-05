@@ -71,6 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Merge guest cart after successful login
       await mergeGuestCart(userData);
+      
+      // Return user data for use in login page
+      return userData;
     } catch (error: any) {
       // Parse the error response if it's a structured error from the API
       let errorData;

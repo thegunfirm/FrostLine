@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,22 +7,47 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
+import { useCart } from "@/hooks/use-cart";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const { login } = useAuth();
+  const { mergeGuestCart } = useCart();
+
+  // Get redirect parameter from URL
+  const getRedirectUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('redirect') || '/';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      setLocation("/");
+      const user = await login(email, password);
+      
+      // Merge guest cart with user cart after successful login
+      if (user) {
+        await mergeGuestCart(user);
+      }
+      
+      // Navigate to the intended destination (checkout if redirected from cart)
+      const redirectUrl = getRedirectUrl();
+      setLocation(redirectUrl);
+      
+      // Show success message if redirecting to checkout
+      if (redirectUrl === '/checkout') {
+        toast({
+          title: "Login Successful",
+          description: "Proceeding to checkout with your saved cart.",
+          variant: "default",
+        });
+      }
     } catch (error: any) {
       // Check if this is a verification required error
       const isVerificationRequired = error.requiresVerification;
@@ -45,7 +70,10 @@ export default function Login() {
             Sign In
           </CardTitle>
           <CardDescription>
-            Use your FreeAmericanPeople account to access TheGunFirm
+            {getRedirectUrl() === '/checkout' 
+              ? 'Sign in to complete your purchase' 
+              : 'Use your FreeAmericanPeople account to access TheGunFirm'
+            }
           </CardDescription>
         </CardHeader>
         

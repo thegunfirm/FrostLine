@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useCart } from "@/hooks/use-cart";
 
 interface CheckoutButtonProps {
   itemCount: number;
@@ -12,9 +13,14 @@ interface CheckoutButtonProps {
 export function CheckoutButton({ itemCount, disabled = false, className = "" }: CheckoutButtonProps) {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const { setCartOpen } = useCart();
 
   const handleCheckout = () => {
+    // Always close the cart first to prevent it staying open during navigation
+    setCartOpen(false);
+    
     if (!user) {
+      // Store current cart state before redirecting to login
       setLocation("/login?redirect=/checkout");
     } else {
       setLocation("/checkout");

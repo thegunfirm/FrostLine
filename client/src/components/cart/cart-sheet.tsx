@@ -195,7 +195,7 @@ export function CartSheet() {
                       className="w-full bg-gradient-to-br from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2 relative overflow-hidden"
                       onClick={() => {
                         setCartOpen(false);
-                        setLocation('/register');
+                        setLocation('/register?redirect=/checkout');
                       }}
                     >
                       <span className="relative z-10 text-sm">Save with membership!</span>
@@ -208,7 +208,7 @@ export function CartSheet() {
                         className="text-xs text-blue-600 underline hover:text-blue-700"
                         onClick={() => {
                           setCartOpen(false);
-                          setLocation('/login');
+                          setLocation('/login?redirect=/checkout');
                         }}
                       >
                         Sign in
@@ -223,7 +223,7 @@ export function CartSheet() {
                       className="w-full bg-gradient-to-br from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2 relative overflow-hidden"
                       onClick={() => {
                         setCartOpen(false);
-                        setLocation('/membership');
+                        setLocation('/membership?redirect=/checkout');
                       }}
                     >
                       <span className="relative z-10 text-sm">Upgrade to {user.subscriptionTier === 'Bronze' ? 'Gold/Platinum' : 'Platinum'}</span>
