@@ -16,7 +16,7 @@ export const users = pgTable("users", {
   savingsIfPlatinum: decimal("savings_if_platinum", { precision: 10, scale: 2 }).default("0.00"),
   preferredFflId: integer("preferred_ffl_id"),
   shippingAddress: json("shipping_address"),
-  role: text("role").notNull().default("user"), // user, admin, support, dealer
+  role: text("role").notNull().default("user"), // user, admin, support, dealer, manager
   isBanned: boolean("is_banned").default(false),
   membershipPaid: boolean("membership_paid").default(false), // Track FAP payment status
   stripeCustomerId: text("stripe_customer_id"), // For product payments
@@ -294,3 +294,193 @@ export const registerSchema = insertUserSchema.omit({
 export const updateUserTierSchema = z.object({
   subscriptionTier: z.enum(["Bronze", "Gold", "Platinum"]),
 });
+
+// CMS Tables for Role-Based Management
+
+// API Configuration Management (Admin Only)
+export const apiConfigurations = pgTable("api_configurations", {
+  id: serial("id").primaryKey(),
+  serviceName: text("service_name").notNull().unique(), // RSR, Algolia, Authorize.Net, etc.
+  configType: text("config_type").notNull(), // endpoint, credentials, settings
+  configKey: text("config_key").notNull(), // specific configuration key
+  configValue: text("config_value").notNull(), // encrypted configuration value
+  isActive: boolean("is_active").default(true),
+  description: text("description"), // Human-readable description
+  lastModifiedBy: integer("last_modified_by").notNull(), // user ID
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Email Templates (Manager/Higher Level Staff)
+export const emailTemplates = pgTable("email_templates", {
+  id: serial("id").primaryKey(),
+  templateName: text("template_name").notNull().unique(), // welcome, order_confirmation, ffl_transfer, etc.
+  subject: text("subject").notNull(),
+  htmlContent: text("html_content").notNull(),
+  textContent: text("text_content"),
+  variables: json("variables"), // Array of available template variables
+  isActive: boolean("is_active").default(true),
+  category: text("category").notNull(), // authentication, orders, shipping, etc.
+  description: text("description"),
+  lastModifiedBy: integer("last_modified_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Customer Support Tickets (Support Staff)
+export const supportTickets = pgTable("support_tickets", {
+  id: serial("id").primaryKey(),
+  ticketNumber: text("ticket_number").notNull().unique(),
+  customerId: integer("customer_id").notNull(),
+  assignedTo: integer("assigned_to"), // support staff user ID
+  subject: text("subject").notNull(),
+  description: text("description").notNull(),
+  priority: text("priority").notNull().default("medium"), // low, medium, high, urgent
+  status: text("status").notNull().default("open"), // open, in_progress, resolved, closed
+  category: text("category").notNull(), // order, shipping, ffl, account, technical
+  relatedOrderId: integer("related_order_id"),
+  internalNotes: text("internal_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+});
+
+// Support Ticket Messages
+export const supportTicketMessages = pgTable("support_ticket_messages", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").notNull(),
+  senderId: integer("sender_id").notNull(), // user ID (customer or support staff)
+  senderType: text("sender_type").notNull(), // customer, support, system
+  message: text("message").notNull(),
+  isInternal: boolean("is_internal").default(false), // internal staff notes
+  attachments: json("attachments"), // Array of attachment objects
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Order Management Extensions (Support Staff)
+export const orderNotes = pgTable("order_notes", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").notNull(),
+  authorId: integer("author_id").notNull(), // support staff user ID
+  noteType: text("note_type").notNull(), // internal, customer_communication, fulfillment
+  content: text("content").notNull(),
+  isVisibleToCustomer: boolean("is_visible_to_customer").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// System Settings (Admin Only)
+export const systemSettings = pgTable("system_settings", {
+  id: serial("id").primaryKey(),
+  settingKey: text("setting_key").notNull().unique(),
+  settingValue: text("setting_value").notNull(),
+  dataType: text("data_type").notNull(), // string, number, boolean, json
+  category: text("category").notNull(), // site, shipping, payments, inventory
+  description: text("description"),
+  isPublic: boolean("is_public").default(false), // whether setting is visible to frontend
+  lastModifiedBy: integer("last_modified_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User Activity Logs (Support/Admin)
+export const userActivityLogs = pgTable("user_activity_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  action: text("action").notNull(), // login, order_placed, password_change, etc.
+  details: json("details"), // Additional context about the action
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// CMS Relations
+export const apiConfigurationsRelations = relations(apiConfigurations, ({ one }) => ({
+  lastModifiedByUser: one(users, {
+    fields: [apiConfigurations.lastModifiedBy],
+    references: [users.id],
+  }),
+}));
+
+export const emailTemplatesRelations = relations(emailTemplates, ({ one }) => ({
+  lastModifiedByUser: one(users, {
+    fields: [emailTemplates.lastModifiedBy],
+    references: [users.id],
+  }),
+}));
+
+export const supportTicketsRelations = relations(supportTickets, ({ one, many }) => ({
+  customer: one(users, {
+    fields: [supportTickets.customerId],
+    references: [users.id],
+  }),
+  assignedToUser: one(users, {
+    fields: [supportTickets.assignedTo],
+    references: [users.id],
+  }),
+  relatedOrder: one(orders, {
+    fields: [supportTickets.relatedOrderId],
+    references: [orders.id],
+  }),
+  messages: many(supportTicketMessages),
+}));
+
+export const supportTicketMessagesRelations = relations(supportTicketMessages, ({ one }) => ({
+  ticket: one(supportTickets, {
+    fields: [supportTicketMessages.ticketId],
+    references: [supportTickets.id],
+  }),
+  sender: one(users, {
+    fields: [supportTicketMessages.senderId],
+    references: [users.id],
+  }),
+}));
+
+export const orderNotesRelations = relations(orderNotes, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderNotes.orderId],
+    references: [orders.id],
+  }),
+  author: one(users, {
+    fields: [orderNotes.authorId],
+    references: [users.id],
+  }),
+}));
+
+export const systemSettingsRelations = relations(systemSettings, ({ one }) => ({
+  lastModifiedByUser: one(users, {
+    fields: [systemSettings.lastModifiedBy],
+    references: [users.id],
+  }),
+}));
+
+export const userActivityLogsRelations = relations(userActivityLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [userActivityLogs.userId],
+    references: [users.id],
+  }),
+}));
+
+// CMS Insert Schemas
+export const insertApiConfigurationSchema = createInsertSchema(apiConfigurations);
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates);
+export const insertSupportTicketSchema = createInsertSchema(supportTickets);
+export const insertSupportTicketMessageSchema = createInsertSchema(supportTicketMessages);
+export const insertOrderNoteSchema = createInsertSchema(orderNotes);
+export const insertSystemSettingSchema = createInsertSchema(systemSettings);
+export const insertUserActivityLogSchema = createInsertSchema(userActivityLogs);
+
+// CMS Types
+export type InsertApiConfiguration = z.infer<typeof insertApiConfigurationSchema>;
+export type ApiConfiguration = typeof apiConfigurations.$inferSelect;
+export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type InsertSupportTicketMessage = z.infer<typeof insertSupportTicketMessageSchema>;
+export type SupportTicketMessage = typeof supportTicketMessages.$inferSelect;
+export type InsertOrderNote = z.infer<typeof insertOrderNoteSchema>;
+export type OrderNote = typeof orderNotes.$inferSelect;
+export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertUserActivityLog = z.infer<typeof insertUserActivityLogSchema>;
+export type UserActivityLog = typeof userActivityLogs.$inferSelect;

@@ -34,6 +34,9 @@ import Categories from "@/pages/categories";
 import Browse from "@/pages/browse";
 import Checkout from "@/pages/checkout";
 import NotFound from "@/pages/not-found";
+import CMSDashboard from "@/pages/cms/cms-dashboard";
+import SupportTickets from "@/pages/cms/support/support-tickets";
+import EmailTemplates from "@/pages/cms/email-templates";
 
 function Router() {
   return (
@@ -65,6 +68,10 @@ function Router() {
       <Route path="/payment-test" component={PaymentTest} />
       <Route path="/categories" component={Categories} />
       <Route path="/browse" component={Browse} />
+      <Route path="/cms" component={CMSDashboard} />
+      <Route path="/cms/dashboard" component={CMSDashboard} />
+      <Route path="/cms/support/tickets" component={SupportTickets} />
+      <Route path="/cms/emails/templates" component={EmailTemplates} />
       <Route component={NotFound} />
     </Switch>
   );

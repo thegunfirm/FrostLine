@@ -4497,6 +4497,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Register CMS Routes for role-based management
+  try {
+    const registerCMSRoutes = (await import('./cms-routes')).default;
+    registerCMSRoutes(app);
+  } catch (error) {
+    console.error("Failed to register CMS routes:", error);
+  }
+
   // TODO: Register FAP routes for authentication and CMS management after schema deployment
   // try {
   //   await registerFapRoutes(app);

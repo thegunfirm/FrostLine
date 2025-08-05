@@ -6,6 +6,13 @@ import {
   stateShippingPolicies,
   tierPricingRules,
   heroCarouselSlides,
+  apiConfigurations,
+  emailTemplates,
+  supportTickets,
+  supportTicketMessages,
+  orderNotes,
+  systemSettings,
+  userActivityLogs,
   type User, 
   type InsertUser,
   type Product,
@@ -17,7 +24,21 @@ import {
   type StateShippingPolicy,
   type TierPricingRule,
   type HeroCarouselSlide,
-  type InsertHeroCarouselSlide
+  type InsertHeroCarouselSlide,
+  type ApiConfiguration,
+  type InsertApiConfiguration,
+  type EmailTemplate,
+  type InsertEmailTemplate,
+  type SupportTicket,
+  type InsertSupportTicket,
+  type SupportTicketMessage,
+  type InsertSupportTicketMessage,
+  type OrderNote,
+  type InsertOrderNote,
+  type SystemSetting,
+  type InsertSystemSetting,
+  type UserActivityLog,
+  type InsertUserActivityLog
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, like, ilike, and, or, desc, asc, ne, sql } from "drizzle-orm";
@@ -83,6 +104,45 @@ export interface IStorage {
   
   // Product management
   clearAllProducts(): Promise<void>;
+  
+  // CMS Operations - API Configuration Management (Admin Only)
+  getApiConfigurations(): Promise<ApiConfiguration[]>;
+  getApiConfiguration(id: number): Promise<ApiConfiguration | undefined>;
+  createApiConfiguration(config: InsertApiConfiguration): Promise<ApiConfiguration>;
+  updateApiConfiguration(id: number, updates: Partial<ApiConfiguration>): Promise<ApiConfiguration>;
+  deleteApiConfiguration(id: number): Promise<void>;
+  
+  // CMS Operations - Email Templates (Manager/Higher Level Staff)
+  getEmailTemplates(): Promise<EmailTemplate[]>;
+  getEmailTemplate(id: number): Promise<EmailTemplate | undefined>;
+  getEmailTemplateByName(templateName: string): Promise<EmailTemplate | undefined>;
+  createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
+  updateEmailTemplate(id: number, updates: Partial<EmailTemplate>): Promise<EmailTemplate>;
+  deleteEmailTemplate(id: number): Promise<void>;
+  
+  // CMS Operations - Support Tickets (Support Staff)
+  getSupportTickets(filters?: { assignedTo?: number; status?: string; priority?: string }): Promise<SupportTicket[]>;
+  getSupportTicket(id: number): Promise<SupportTicket | undefined>;
+  createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
+  updateSupportTicket(id: number, updates: Partial<SupportTicket>): Promise<SupportTicket>;
+  assignSupportTicket(id: number, assignedTo: number): Promise<SupportTicket>;
+  
+  // Support Ticket Messages
+  getSupportTicketMessages(ticketId: number): Promise<SupportTicketMessage[]>;
+  createSupportTicketMessage(message: InsertSupportTicketMessage): Promise<SupportTicketMessage>;
+  
+  // Order Notes (Support Staff)
+  getOrderNotes(orderId: number): Promise<OrderNote[]>;
+  createOrderNote(note: InsertOrderNote): Promise<OrderNote>;
+  
+  // System Settings (Admin Only)
+  getSystemSettings(): Promise<SystemSetting[]>;
+  getSystemSetting(key: string): Promise<SystemSetting | undefined>;
+  updateSystemSetting(key: string, value: string, modifiedBy: number): Promise<SystemSetting>;
+  
+  // User Activity Logs (Support/Admin)
+  getUserActivityLogs(userId?: number, limit?: number): Promise<UserActivityLog[]>;
+  logUserActivity(log: InsertUserActivityLog): Promise<UserActivityLog>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -943,6 +1003,225 @@ export class DatabaseStorage implements IStorage {
 
   async clearAllProducts(): Promise<void> {
     await db.delete(products);
+  }
+
+  // CMS Operations Implementation
+
+  // API Configuration Management (Admin Only)
+  async getApiConfigurations(): Promise<ApiConfiguration[]> {
+    return await db.select().from(apiConfigurations)
+      .orderBy(asc(apiConfigurations.serviceName));
+  }
+
+  async getApiConfiguration(id: number): Promise<ApiConfiguration | undefined> {
+    const [config] = await db.select().from(apiConfigurations)
+      .where(eq(apiConfigurations.id, id));
+    return config || undefined;
+  }
+
+  async createApiConfiguration(config: InsertApiConfiguration): Promise<ApiConfiguration> {
+    const [newConfig] = await db.insert(apiConfigurations)
+      .values(config)
+      .returning();
+    return newConfig;
+  }
+
+  async updateApiConfiguration(id: number, updates: Partial<ApiConfiguration>): Promise<ApiConfiguration> {
+    const [config] = await db.update(apiConfigurations)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(apiConfigurations.id, id))
+      .returning();
+    return config;
+  }
+
+  async deleteApiConfiguration(id: number): Promise<void> {
+    await db.delete(apiConfigurations)
+      .where(eq(apiConfigurations.id, id));
+  }
+
+  // Email Templates (Manager/Higher Level Staff)
+  async getEmailTemplates(): Promise<EmailTemplate[]> {
+    return await db.select().from(emailTemplates)
+      .orderBy(asc(emailTemplates.category), asc(emailTemplates.templateName));
+  }
+
+  async getEmailTemplate(id: number): Promise<EmailTemplate | undefined> {
+    const [template] = await db.select().from(emailTemplates)
+      .where(eq(emailTemplates.id, id));
+    return template || undefined;
+  }
+
+  async getEmailTemplateByName(templateName: string): Promise<EmailTemplate | undefined> {
+    const [template] = await db.select().from(emailTemplates)
+      .where(and(
+        eq(emailTemplates.templateName, templateName),
+        eq(emailTemplates.isActive, true)
+      ));
+    return template || undefined;
+  }
+
+  async createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
+    const [newTemplate] = await db.insert(emailTemplates)
+      .values(template)
+      .returning();
+    return newTemplate;
+  }
+
+  async updateEmailTemplate(id: number, updates: Partial<EmailTemplate>): Promise<EmailTemplate> {
+    const [template] = await db.update(emailTemplates)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(emailTemplates.id, id))
+      .returning();
+    return template;
+  }
+
+  async deleteEmailTemplate(id: number): Promise<void> {
+    await db.delete(emailTemplates)
+      .where(eq(emailTemplates.id, id));
+  }
+
+  // Support Tickets (Support Staff)
+  async getSupportTickets(filters?: { assignedTo?: number; status?: string; priority?: string }): Promise<SupportTicket[]> {
+    let query = db.select().from(supportTickets);
+    
+    const conditions = [];
+    
+    if (filters?.assignedTo) {
+      conditions.push(eq(supportTickets.assignedTo, filters.assignedTo));
+    }
+    
+    if (filters?.status) {
+      conditions.push(eq(supportTickets.status, filters.status));
+    }
+    
+    if (filters?.priority) {
+      conditions.push(eq(supportTickets.priority, filters.priority));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(supportTickets.createdAt));
+  }
+
+  async getSupportTicket(id: number): Promise<SupportTicket | undefined> {
+    const [ticket] = await db.select().from(supportTickets)
+      .where(eq(supportTickets.id, id));
+    return ticket || undefined;
+  }
+
+  async createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket> {
+    // Generate ticket number
+    const ticketNumber = `TK-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    
+    const [newTicket] = await db.insert(supportTickets)
+      .values({ ...ticket, ticketNumber })
+      .returning();
+    return newTicket;
+  }
+
+  async updateSupportTicket(id: number, updates: Partial<SupportTicket>): Promise<SupportTicket> {
+    const [ticket] = await db.update(supportTickets)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(supportTickets.id, id))
+      .returning();
+    return ticket;
+  }
+
+  async assignSupportTicket(id: number, assignedTo: number): Promise<SupportTicket> {
+    const [ticket] = await db.update(supportTickets)
+      .set({ assignedTo, updatedAt: new Date() })
+      .where(eq(supportTickets.id, id))
+      .returning();
+    return ticket;
+  }
+
+  // Support Ticket Messages
+  async getSupportTicketMessages(ticketId: number): Promise<SupportTicketMessage[]> {
+    return await db.select().from(supportTicketMessages)
+      .where(eq(supportTicketMessages.ticketId, ticketId))
+      .orderBy(asc(supportTicketMessages.createdAt));
+  }
+
+  async createSupportTicketMessage(message: InsertSupportTicketMessage): Promise<SupportTicketMessage> {
+    const [newMessage] = await db.insert(supportTicketMessages)
+      .values(message)
+      .returning();
+    return newMessage;
+  }
+
+  // Order Notes (Support Staff)
+  async getOrderNotes(orderId: number): Promise<OrderNote[]> {
+    return await db.select().from(orderNotes)
+      .where(eq(orderNotes.orderId, orderId))
+      .orderBy(desc(orderNotes.createdAt));
+  }
+
+  async createOrderNote(note: InsertOrderNote): Promise<OrderNote> {
+    const [newNote] = await db.insert(orderNotes)
+      .values(note)
+      .returning();
+    return newNote;
+  }
+
+  // System Settings (Admin Only)
+  async getSystemSettings(): Promise<SystemSetting[]> {
+    return await db.select().from(systemSettings)
+      .orderBy(asc(systemSettings.category), asc(systemSettings.settingKey));
+  }
+
+  async getSystemSetting(key: string): Promise<SystemSetting | undefined> {
+    const [setting] = await db.select().from(systemSettings)
+      .where(eq(systemSettings.settingKey, key));
+    return setting || undefined;
+  }
+
+  async updateSystemSetting(key: string, value: string, modifiedBy: number): Promise<SystemSetting> {
+    const existingSetting = await this.getSystemSetting(key);
+    
+    if (existingSetting) {
+      const [setting] = await db.update(systemSettings)
+        .set({ 
+          settingValue: value, 
+          lastModifiedBy: modifiedBy,
+          updatedAt: new Date() 
+        })
+        .where(eq(systemSettings.settingKey, key))
+        .returning();
+      return setting;
+    } else {
+      const [setting] = await db.insert(systemSettings)
+        .values({
+          settingKey: key,
+          settingValue: value,
+          dataType: 'string',
+          category: 'general',
+          lastModifiedBy: modifiedBy
+        })
+        .returning();
+      return setting;
+    }
+  }
+
+  // User Activity Logs (Support/Admin)
+  async getUserActivityLogs(userId?: number, limit = 100): Promise<UserActivityLog[]> {
+    let query = db.select().from(userActivityLogs);
+    
+    if (userId) {
+      query = query.where(eq(userActivityLogs.userId, userId));
+    }
+    
+    return await query
+      .orderBy(desc(userActivityLogs.createdAt))
+      .limit(limit);
+  }
+
+  async logUserActivity(log: InsertUserActivityLog): Promise<UserActivityLog> {
+    const [newLog] = await db.insert(userActivityLogs)
+      .values(log)
+      .returning();
+    return newLog;
   }
 }
 
