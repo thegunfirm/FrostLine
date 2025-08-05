@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Loader2, Database, Cloud, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Loader2, Database, Cloud, Clock, CheckCircle, XCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 interface RSRFTPConfig {
   host: string;
@@ -39,6 +39,7 @@ interface RSRSyncStatus {
 export default function AdminRSRFTP() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [showPassword, setShowPassword] = useState(false);
   const [config, setConfig] = useState<Partial<RSRFTPConfig>>({
     host: '',
     username: '63824',
@@ -281,13 +282,29 @@ export default function AdminRSRFTP() {
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={config.password || ''}
-                onChange={(e) => setConfig(prev => ({ ...prev, password: e.target.value }))}
-                placeholder="Your RSR password"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={config.password || ''}
+                  onChange={(e) => setConfig(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="Your RSR password"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">

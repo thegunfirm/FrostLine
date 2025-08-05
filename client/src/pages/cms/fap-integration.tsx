@@ -24,7 +24,9 @@ import {
   ExternalLink,
   RotateCcw,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Eye,
+  EyeOff
 } from "lucide-react";
 
 const configSchema = z.object({
@@ -38,6 +40,8 @@ type ConfigForm = z.infer<typeof configSchema>;
 export default function FAPIntegration() {
   const [activeSync, setActiveSync] = useState<string | null>(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [showWebhookSecret, setShowWebhookSecret] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -202,7 +206,27 @@ export default function FAPIntegration() {
                       <FormItem>
                         <FormLabel>API Key</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="Enter FAP API key" {...field} />
+                          <div className="relative">
+                            <Input 
+                              type={showApiKey ? "text" : "password"} 
+                              placeholder="Enter FAP API key" 
+                              {...field}
+                              className="pr-10"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                              onClick={() => setShowApiKey(!showApiKey)}
+                            >
+                              {showApiKey ? (
+                                <EyeOff className="h-4 w-4 text-gray-400" />
+                              ) : (
+                                <Eye className="h-4 w-4 text-gray-400" />
+                              )}
+                            </Button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -216,7 +240,27 @@ export default function FAPIntegration() {
                       <FormItem>
                         <FormLabel>Webhook Secret</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="Enter webhook secret" {...field} />
+                          <div className="relative">
+                            <Input 
+                              type={showWebhookSecret ? "text" : "password"} 
+                              placeholder="Enter webhook secret" 
+                              {...field}
+                              className="pr-10"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                              onClick={() => setShowWebhookSecret(!showWebhookSecret)}
+                            >
+                              {showWebhookSecret ? (
+                                <EyeOff className="h-4 w-4 text-gray-400" />
+                              ) : (
+                                <Eye className="h-4 w-4 text-gray-400" />
+                              )}
+                            </Button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
