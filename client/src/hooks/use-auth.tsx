@@ -70,12 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await apiRequest("POST", "/api/register", userData);
       const newUser = await response.json();
       
-      // Auto-login after registration
-      setUser(newUser);
-      localStorage.setItem("user", JSON.stringify(newUser));
-      
-      // Merge guest cart after successful registration
-      await mergeGuestCart(newUser);
+      // No auto-login after registration - user must verify email first
+      // Return the registration response which includes the verification message
+      return newUser;
     } catch (error: any) {
       throw new Error(error.message || "Registration failed");
     }

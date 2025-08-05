@@ -41,9 +41,11 @@ export async function sendVerificationEmail(
   firstName: string,
   verificationToken: string
 ): Promise<boolean> {
-  const baseUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://thegunfirm.com' 
-    : 'http://localhost:5000';
+  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+    : process.env.NODE_ENV === 'production' 
+      ? 'https://thegunfirm.com' 
+      : 'http://localhost:5000';
   
   const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
   

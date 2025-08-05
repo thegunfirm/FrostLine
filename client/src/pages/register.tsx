@@ -45,7 +45,7 @@ export default function Register() {
     }
 
     try {
-      await register({
+      const response = await register({
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
