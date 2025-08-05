@@ -7,7 +7,7 @@ async function throwIfResNotOk(res: Response) {
     // Try to parse JSON error response to extract natural language message
     try {
       const errorData = JSON.parse(text);
-      if (errorData.message) {
+      if (errorData && errorData.message) {
         // Create error with natural language message and preserve metadata
         const error = new Error(errorData.message);
         // Preserve important error metadata for authentication flows
@@ -19,8 +19,9 @@ async function throwIfResNotOk(res: Response) {
         }
         throw error;
       }
-    } catch (parseError) {
-      // If JSON parsing fails, fall back to original behavior
+    } catch (jsonParseError) {
+      // If JSON parsing fails, continue to fallback behavior below
+      console.log('Failed to parse error JSON, using fallback:', jsonParseError);
     }
     
     throw new Error(`${res.status}: ${text}`);
