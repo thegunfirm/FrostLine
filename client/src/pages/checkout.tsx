@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Truck, MapPin, Clock, CreditCard, Shield, AlertTriangle } from "lucide-react";
+import { Truck, MapPin, Clock, CreditCard, Shield, AlertTriangle, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { FflSelector } from "@/components/checkout/ffl-selector";
@@ -29,14 +29,7 @@ function CheckoutPageContent() {
   // Removed requiresMembershipTier state - tier selection now handled on membership page
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Redirect users without paid membership to membership page  
-  useEffect(() => {
-    if (user && (!user.subscriptionTier || user.subscriptionTier === 'Bronze')) {
-      // Redirect to membership page to upgrade instead of blocking checkout
-      setLocation('/membership?redirect=/checkout');
-      return;
-    }
-  }, [user, setLocation]);
+  // No redirect blocking - allow all users to proceed to checkout
 
   // Fetch fulfillment settings
   const { data: fulfillmentSettings } = useQuery({
@@ -198,7 +191,32 @@ function CheckoutPageContent() {
                 </div>
 
                 {/* Member Savings Display */}
-                {user.subscriptionTier !== 'Bronze' && (
+                {user?.subscriptionTier === 'Bronze' || !user?.subscriptionTier ? (
+                  <Alert className="border-blue-200 bg-blue-50">
+                    <Star className="h-4 w-4 text-blue-600" />
+                    <AlertDescription>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-blue-800">
+                            Save More with Membership
+                          </span>
+                          <br />
+                          <span className="text-sm text-blue-600">
+                            Gold members save up to 15%, Platinum saves up to 25%
+                          </span>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setLocation('/membership?redirect=/checkout')}
+                          className="ml-4"
+                        >
+                          Upgrade Now
+                        </Button>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                ) : (
                   <Alert>
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
