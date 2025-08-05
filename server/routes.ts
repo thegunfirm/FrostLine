@@ -107,11 +107,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (err) {
           console.error("Auto-login error after email verification:", err);
           // Fallback to redirect without login
-          return res.redirect(`/?verified=true&email=${encodeURIComponent(user.email)}`);
+          return res.redirect(`/`);
         }
         
-        // Successfully logged in, redirect to homepage with verification success
-        res.redirect(`/?verified=true&email=${encodeURIComponent(user.email)}&loggedIn=true`);
+        // Successfully logged in, redirect to homepage 
+        res.redirect(`/?loggedIn=true`);
       });
     } catch (error) {
       console.error("Email verification error:", error);

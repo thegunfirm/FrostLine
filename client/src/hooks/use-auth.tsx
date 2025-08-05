@@ -36,8 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await mergeGuestCart(userData);
             
             // Clean up URL parameters
-            const newUrl = window.location.pathname + (window.location.search.includes('verified=true') ? '?verified=true&email=' + urlParams.get('email') : '');
-            window.history.replaceState({}, '', newUrl);
+            window.history.replaceState({}, '', window.location.pathname);
             return;
           } catch (error) {
             console.error("Error fetching user after auto-login:", error);
