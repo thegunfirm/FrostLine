@@ -959,29 +959,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchFFLsByZip(zip: string, radius = 25): Promise<FFL[]> {
-    // Search FFLs by ZIP code with proper distance-based ordering
-    const zipPrefix = zip.substring(0, 3);
-    const first2Digits = zip.substring(0, 2);
-    const first1Digit = zip.substring(0, 1);
+    const { calculateZipDistance } = await import('../utils/distance');
     
-    const results = await db.select().from(ffls)
-      .where(eq(ffls.isAvailableToUser, true))
-      .orderBy(
-        // Order by proximity: exact ZIP, then 3-digit prefix, then 2-digit, then 1-digit, then alphabetical
-        sql`CASE 
-          WHEN ${ffls.zip} = ${zip} THEN 1
-          WHEN ${ffls.zip} LIKE ${zipPrefix + '%'} THEN 2
-          WHEN ${ffls.zip} LIKE ${first2Digits + '%'} THEN 3
-          WHEN ${ffls.zip} LIKE ${first1Digit + '%'} THEN 4
-          ELSE 5
-        END`,
-        // Within same proximity level, order by ZIP distance numerically
-        sql`ABS(CAST(SUBSTRING(${ffls.zip}, 1, 5) AS INTEGER) - CAST(${zip} AS INTEGER))`,
-        asc(ffls.businessName)
-      )
-      .limit(50);
+    // Get all available FFLs first
+    const allFFLs = await db.select().from(ffls)
+      .where(eq(ffls.isAvailableToUser, true));
     
-    return results;
+    // Calculate distances and filter by radius
+    const fflsWithDistance = allFFLs
+      .map(ffl => {
+        const distance = calculateZipDistance(zip, ffl.zip.substring(0, 5));
+        return {
+          ...ffl,
+          distance: distance
+        };
+      })
+      .filter(ffl => ffl.distance !== null && ffl.distance <= radius)
+      .sort((a, b) => {
+        // Sort by distance first, then by business name
+        if (a.distance !== b.distance) {
+          return (a.distance || 999) - (b.distance || 999);
+        }
+        return a.businessName.localeCompare(b.businessName);
+      })
+      .slice(0, 50); // Limit to 50 results
+    
+    // Remove the distance property before returning
+    return fflsWithDistance.map(({ distance, ...ffl }) => ffl);
   }
 
   async searchFFLsByName(businessName: string, radius = 25): Promise<FFL[]> {
