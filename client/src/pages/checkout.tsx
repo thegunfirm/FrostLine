@@ -23,7 +23,7 @@ const formatPrice = (price: number | string) => {
 };
 
 function CheckoutPageContent() {
-  const { items, getTotalPrice, hasFirearms, requiresFflSelection } = useCart();
+  const { items, getTotalPrice, hasFirearms, requiresFflSelection, updateQuantity, removeItem } = useCart();
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [selectedFfl, setSelectedFfl] = useState<number | null>(null);
@@ -37,28 +37,6 @@ function CheckoutPageContent() {
     queryKey: ['/api/fulfillment/settings'],
     enabled: !!user,
   });
-
-  // Function to update cart quantity
-  const updateQuantity = async (itemId: string, newQuantity: number) => {
-    if (newQuantity < 1) return;
-    
-    try {
-      await apiRequest('PATCH', `/api/cart/${user?.id}/item/${itemId}`, {
-        quantity: newQuantity
-      });
-    } catch (error) {
-      console.error('Failed to update quantity:', error);
-    }
-  };
-
-  // Function to remove item from cart  
-  const removeItem = async (itemId: string) => {
-    try {
-      await apiRequest('DELETE', `/api/cart/${user?.id}/item/${itemId}`);
-    } catch (error) {
-      console.error('Failed to remove item:', error);
-    }
-  };
 
   // Note: Authentication is handled by SubscriptionEnforcement wrapper
 

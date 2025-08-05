@@ -80,6 +80,13 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
     }
   }, [userZip, searchZip]);
 
+  // Auto-trigger search when ZIP changes or on mount if ZIP provided
+  useEffect(() => {
+    if (searchZip && searchZip.length >= 5) {
+      refetch();
+    }
+  }, [searchZip, refetch]);
+
   return (
     <div className="space-y-4">
       {/* Search Section */}
