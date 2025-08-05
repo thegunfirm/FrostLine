@@ -197,12 +197,13 @@ export function MembershipTierSelector({ onTierSelected, totalCartValue }: Membe
       </div>
       
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h4 className="font-medium text-blue-900 mb-2">Membership Benefits</h4>
+        <h4 className="font-medium text-blue-900 mb-2">About Your Membership</h4>
         <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Higher tiers unlock progressively better pricing on all products</li>
+          <li>• Membership is managed through FreeAmericanPeople.com</li>
+          <li>• Higher tiers unlock progressively better pricing on all TheGunFirm products</li>
           <li>• Membership pricing is applied automatically at checkout</li>
           <li>• Gold and Platinum members get exclusive access to limited-time deals</li>
-          <li>• Cancel your membership anytime from your account settings</li>
+          <li>• Membership benefits apply across all affiliated platforms</li>
         </ul>
       </div>
     </div>

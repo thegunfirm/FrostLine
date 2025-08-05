@@ -77,7 +77,7 @@ export default function Register() {
             Create Account
           </CardTitle>
           <CardDescription>
-            Join TheGunFirm to access exclusive pricing and benefits
+            Create your FreeAmericanPeople account to access TheGunFirm with membership benefits
           </CardDescription>
         </CardHeader>
         

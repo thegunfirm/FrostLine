@@ -46,7 +46,7 @@ export default function Login() {
             Sign In
           </CardTitle>
           <CardDescription>
-            Enter your credentials to access your account
+            Use your FreeAmericanPeople account to access TheGunFirm
           </CardDescription>
         </CardHeader>
         

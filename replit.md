@@ -11,13 +11,15 @@ Code preservation: Always maintain working solutions - never overwrite functioni
 ## System Architecture
 
 ### Core Design Principles
-- **Tier-based Membership**: Bronze, Gold, and Platinum tiers with differentiated pricing and benefits.
+- **Dual Platform Architecture**: FreeAmericanPeople.com manages memberships and user authentication, TheGunFirm.com provides e-commerce platform access.
+- **Tier-based Membership**: Bronze, Gold, and Platinum tiers managed through FAP with differentiated pricing and benefits on TheGunFirm.
+- **Cross-Platform Authentication**: Users authenticate through FreeAmericanPeople.com to access TheGunFirm.com shopping features.
 - **FFL Integration**: Built-in handling for firearms requiring Federal Firearms License transfers.
 - **Specialized Commerce**: Gun-specific categories, manufacturer filtering, and compliance features.
 - **Responsive Design**: Mobile-first approach with custom breakpoints and a brand-focused UI reflecting industry aesthetics.
 - **Hybrid Search**: Multi-layer search system combining RSR API, Algolia indexing, and internal AI learning for product recommendations.
 - **Real-time Inventory**: Live inventory synchronization with RSR distributor data.
-- **Payment Dual System**: Separate Authorize.Net credentials for product vs. membership payments.
+- **Dual Payment System**: FAP Authorize.Net for memberships, TheGunFirm Authorize.Net for product sales.
 
 ### Technical Stack
 - **Frontend**: React 18 (TypeScript), Wouter for routing, TanStack Query for server state, React Context for authentication, Shadcn/ui (Radix UI) for components, Tailwind CSS for styling, Vite for tooling.
@@ -26,7 +28,7 @@ Code preservation: Always maintain working solutions - never overwrite functioni
 
 ### Key Components
 - **Database Schema**: Users (with tiers, FFLs, shipping), Products (with tier pricing, FFL needs, inventory), Orders (with FFL routing), FFLs directory, State Shipping Policies, Tier Pricing Rules.
-- **Authentication**: Session-based with RBAC (user, admin, support, dealer).
+- **Authentication**: Cross-platform authentication via FreeAmericanPeople.com with session-based RBAC (user, admin, support, dealer) for TheGunFirm.com access.
 - **Product Management**: Multi-tier pricing, FFL tracking, inventory, category/manufacturer organization, advanced search.
 - **Membership System**: Three-tier structure with progressive benefits, real-time savings calculations, and upgrade recommendations.
 
@@ -35,6 +37,6 @@ Code preservation: Always maintain working solutions - never overwrite functioni
 - **Frontend Libraries**: React, React Query, React Hook Form, Radix UI, Shadcn/ui, Tailwind CSS, class-variance-authority, Lucide React.
 - **Backend Libraries**: Express, bcrypt, connect-pg-simple, ws (WebSockets).
 - **Development Tools**: Vite, TypeScript, ESLint, Prettier.
-- **Commerce Integration**: Authorize.Net (for payments).
+- **Commerce Integration**: Dual Authorize.Net accounts (FAP for memberships, TheGunFirm for product sales).
 - **Distributor Integration**: RSR (for product data, inventory, and images via FTP and HTTP fallback).
 - **Search**: Algolia (for product indexing and search functionality).
