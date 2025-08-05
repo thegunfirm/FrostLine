@@ -4525,8 +4525,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If user is authenticated, persist to database
       const sessionUser = (req.session as any)?.user;
+      console.log(`🔍 Cart sync - sessionUser:`, sessionUser ? `User ID ${sessionUser.id}` : 'Not logged in');
+      
       if (sessionUser) {
+        console.log(`📦 Calling saveUserCart for user ${sessionUser.id} with ${items.length} items`);
         await storage.saveUserCart(sessionUser.id, items);
+      } else {
+        console.log(`⚠️ No sessionUser found - cart not persisted to database`);
       }
       
       res.json({ 

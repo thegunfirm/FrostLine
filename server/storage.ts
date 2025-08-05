@@ -14,6 +14,8 @@ import {
   orderNotes,
   systemSettings,
   userActivityLogs,
+  checkoutSettings,
+  fulfillmentSettings,
   type User, 
   type InsertUser,
   type Product,
@@ -39,7 +41,11 @@ import {
   type SystemSetting,
   type InsertSystemSetting,
   type UserActivityLog,
-  type InsertUserActivityLog
+  type InsertUserActivityLog,
+  type CheckoutSetting,
+  type InsertCheckoutSetting,
+  type FulfillmentSetting,
+  type InsertFulfillmentSetting
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, like, ilike, and, or, desc, asc, ne, sql } from "drizzle-orm";
@@ -884,55 +890,83 @@ export class DatabaseStorage implements IStorage {
 
   // Cart persistence operations
   async saveUserCart(userId: number, items: any[]): Promise<void> {
-    const existingCart = await db.select().from(carts)
-      .where(eq(carts.userId, userId))
-      .limit(1);
+    console.log(`Saving cart for user ${userId} with ${items.length} items:`, items);
     
-    if (existingCart.length > 0) {
-      await db.update(carts)
-        .set({ 
-          items: JSON.stringify(items), 
-          updatedAt: new Date() 
-        })
-        .where(eq(carts.userId, userId));
-    } else {
-      await db.insert(carts).values({
-        userId,
-        items: JSON.stringify(items),
-        updatedAt: new Date()
-      });
+    try {
+      const existingCart = await db.select().from(carts)
+        .where(eq(carts.userId, userId))
+        .limit(1);
+      
+      if (existingCart.length > 0) {
+        await db.update(carts)
+          .set({ 
+            items: items, // Store as JSON directly, not string
+            updatedAt: new Date() 
+          })
+          .where(eq(carts.userId, userId));
+        console.log(`✅ Updated existing cart for user ${userId}`);
+      } else {
+        await db.insert(carts).values({
+          userId,
+          items: items, // Store as JSON directly, not string
+          updatedAt: new Date()
+        });
+        console.log(`✅ Created new cart for user ${userId}`);
+      }
+    } catch (error) {
+      console.error(`❌ Cart save error for user ${userId}:`, error);
+      throw error;
     }
   }
 
-  async getUserCart(userId: number): Promise<{ items: any[] } | undefined> {
-    const [cart] = await db.select().from(carts)
-      .where(eq(carts.userId, userId))
-      .limit(1);
-    
-    if (!cart) return undefined;
-    
-    return {
-      items: typeof cart.items === 'string' ? JSON.parse(cart.items) : cart.items
-    };
+  async getUserCart(userId: number): Promise<{ items: any[] }> {
+    try {
+      const [cart] = await db.select().from(carts)
+        .where(eq(carts.userId, userId))
+        .limit(1);
+      
+      if (!cart) {
+        console.log(`No cart found for user ${userId}, returning empty cart`);
+        return { items: [] };
+      }
+      
+      const items = Array.isArray(cart.items) ? cart.items : (typeof cart.items === 'string' ? JSON.parse(cart.items) : []);
+      console.log(`✅ Retrieved cart for user ${userId} with ${items.length} items`);
+      
+      return { items };
+    } catch (error) {
+      console.error(`❌ Cart fetch error for user ${userId}:`, error);
+      return { items: [] };
+    }
   }
 
   // Fulfillment settings operations
-  async getFulfillmentSettings(): Promise<any[]> {
-    return await db.select().from(fulfillmentSettings)
-      .where(eq(fulfillmentSettings.isActive, true))
-      .orderBy(asc(fulfillmentSettings.type));
+  async getFulfillmentSettings(): Promise<FulfillmentSetting[]> {
+    try {
+      return await db.select().from(fulfillmentSettings)
+        .where(eq(fulfillmentSettings.isActive, true))
+        .orderBy(asc(fulfillmentSettings.type));
+    } catch (error) {
+      console.error("Fulfillment settings fetch error:", error);
+      throw error;
+    }
   }
 
   // Checkout settings operations
   async getCheckoutSettings(): Promise<Record<string, string>> {
-    const settings = await db.select().from(checkoutSettings);
-    const result: Record<string, string> = {};
-    
-    settings.forEach(setting => {
-      result[setting.key] = setting.value;
-    });
-    
-    return result;
+    try {
+      const settings = await db.select().from(checkoutSettings);
+      const result: Record<string, string> = {};
+      
+      settings.forEach(setting => {
+        result[setting.key] = setting.value;
+      });
+      
+      return result;
+    } catch (error) {
+      console.error("Checkout settings fetch error:", error);
+      throw error;
+    }
   }
 
   async updateFFL(id: number, updates: Partial<FFL>): Promise<FFL> {
