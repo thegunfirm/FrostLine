@@ -634,40 +634,190 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Authorize.Net payment endpoints
+  // Import Authorize.Net service at the top of file (will add import later)
+  
+  // TGF (TheGunFirm.com) - Product payment processing
   app.post("/api/payment/products", async (req, res) => {
     try {
-      const { amount, orderDetails } = req.body;
+      const { 
+        amount, 
+        cardDetails, 
+        billingInfo, 
+        orderDetails,
+        orderId 
+      } = req.body;
+
+      if (!amount || !cardDetails || !billingInfo) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing required payment information" 
+        });
+      }
+
+      // Import service dynamically to avoid startup errors
+      const { authorizeNetService } = await import('./authorize-net-service');
       
-      // This endpoint will handle product payments using Authorize.Net
-      // Implementation depends on your Authorize.Net credentials for products
-      
-      res.json({ 
-        success: true, 
-        message: "Payment endpoint ready for Authorize.Net integration",
+      const result = await authorizeNetService.createProductPayment(
+        parseFloat(amount),
+        cardDetails,
+        billingInfo,
+        orderDetails || `Order #${orderId}`
+      );
+
+      // Update order with transaction ID if successful
+      if (result.success && orderId) {
+        await storage.updateOrderPayment(orderId, {
+          authorizeNetTransactionId: result.transactionId,
+          status: 'Paid'
+        });
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error("TGF Product payment error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: error.message || "Payment processing failed",
         paymentType: "products"
       });
-    } catch (error) {
-      console.error("Product payment error:", error);
-      res.status(500).json({ message: "Payment processing failed" });
     }
   });
 
+  // FAP (FreeAmericanPeople.com) - Membership payment processing
   app.post("/api/payment/membership", async (req, res) => {
     try {
-      const { tier, userId } = req.body;
+      const { 
+        tier, 
+        userId, 
+        cardDetails, 
+        billingInfo,
+        subscriptionType = 'one-time' // 'one-time' or 'recurring'
+      } = req.body;
+
+      if (!tier || !userId || !cardDetails || !billingInfo) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing required membership payment information" 
+        });
+      }
+
+      // Tier pricing
+      const tierPricing = {
+        'Bronze': 29.99,
+        'Gold': 49.99,
+        'Platinum': 99.99
+      };
+
+      const amount = tierPricing[tier as keyof typeof tierPricing];
+      if (!amount) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid membership tier" 
+        });
+      }
+
+      // Import service dynamically to avoid startup errors
+      const { authorizeNetService } = await import('./authorize-net-service');
+
+      let result;
       
-      // This endpoint will handle membership payments using Authorize.Net
-      // Implementation depends on your Authorize.Net credentials for memberships
-      
-      res.json({ 
-        success: true, 
-        message: "Membership payment endpoint ready for Authorize.Net integration",
-        paymentType: "membership"
+      if (subscriptionType === 'recurring') {
+        // Create recurring subscription
+        result = await authorizeNetService.createSubscription(
+          {
+            name: `${tier} Membership`,
+            amount: amount,
+            interval: 30, // 30 days
+            totalOccurrences: 9999 // Ongoing until cancelled
+          },
+          cardDetails,
+          {
+            id: userId.toString(),
+            email: billingInfo.email,
+            firstName: billingInfo.firstName,
+            lastName: billingInfo.lastName
+          }
+        );
+      } else {
+        // One-time membership payment
+        result = await authorizeNetService.createMembershipPayment(
+          amount,
+          cardDetails,
+          billingInfo
+        );
+      }
+
+      // Update user tier if payment successful
+      if (result.success) {
+        await storage.updateUserTier(userId, tier);
+        await storage.updateUser(userId, { membershipPaid: true });
+      }
+
+      res.json({
+        ...result,
+        tier,
+        amount,
+        subscriptionType
       });
     } catch (error) {
-      console.error("Membership payment error:", error);
-      res.status(500).json({ message: "Membership payment processing failed" });
+      console.error("FAP Membership payment error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: error.message || "Membership payment processing failed",
+        paymentType: "membership"
+      });
+    }
+  });
+
+  // Get Authorize.Net public keys for frontend
+  app.get("/api/payment/config", async (req, res) => {
+    try {
+      const { paymentType } = req.query;
+      
+      if (!paymentType || !['fap', 'tgf'].includes(paymentType as string)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid payment type. Use 'fap' or 'tgf'" 
+        });
+      }
+
+      // Import service dynamically
+      const { authorizeNetService } = await import('./authorize-net-service');
+      
+      const publicKey = authorizeNetService.getPublicKey(paymentType as 'fap' | 'tgf');
+      
+      res.json({
+        success: true,
+        publicKey,
+        paymentType,
+        environment: 'sandbox' // Change to 'production' when going live
+      });
+    } catch (error) {
+      console.error("Payment config error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to get payment configuration" 
+      });
+    }
+  });
+
+  // Test card numbers endpoint for development
+  app.get("/api/payment/test-cards", async (req, res) => {
+    try {
+      const { AuthorizeNetService } = await import('./authorize-net-service');
+      const testCards = AuthorizeNetService.getTestCards();
+      
+      res.json({
+        success: true,
+        testCards,
+        note: "These are Authorize.Net sandbox test card numbers"
+      });
+    } catch (error) {
+      console.error("Test cards error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to get test card information" 
+      });
     }
   });
 

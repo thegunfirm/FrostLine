@@ -672,6 +672,20 @@ export class DatabaseStorage implements IStorage {
     return order || undefined;
   }
 
+  async updateOrderPayment(orderId: number, paymentData: { 
+    authorizeNetTransactionId: string; 
+    status: string 
+  }): Promise<Order> {
+    const [order] = await db.update(orders)
+      .set({
+        authorizeNetTransactionId: paymentData.authorizeNetTransactionId,
+        status: paymentData.status
+      })
+      .where(eq(orders.id, orderId))
+      .returning();
+    return order;
+  }
+
   async createOrder(insertOrder: InsertOrder): Promise<Order> {
     const [order] = await db.insert(orders).values(insertOrder).returning();
     return order;

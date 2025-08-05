@@ -29,6 +29,7 @@ import AdminImageSettings from "@/pages/admin-image-settings";
 import AdminProductImages from "@/pages/admin-product-images";
 import AdminFFLManagement from "@/pages/admin-ffl-management";
 import RSRIntelligenceTest from "@/pages/rsr-intelligence-test";
+import PaymentTest from "@/pages/payment-test";
 import Categories from "@/pages/categories";
 import Browse from "@/pages/browse";
 import Checkout from "@/pages/checkout";
@@ -61,6 +62,7 @@ function Router() {
       <Route path="/admin-product-images" component={AdminProductImages} />
       <Route path="/admin-ffl-management" component={AdminFFLManagement} />
       <Route path="/rsr-intelligence-test" component={RSRIntelligenceTest} />
+      <Route path="/payment-test" component={PaymentTest} />
       <Route path="/categories" component={Categories} />
       <Route path="/browse" component={Browse} />
       <Route component={NotFound} />
