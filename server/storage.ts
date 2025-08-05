@@ -229,6 +229,12 @@ export class DatabaseStorage implements IStorage {
         return undefined; // Token invalid or expired
       }
 
+      // Check if new password is the same as current password
+      const isSamePassword = await bcrypt.compare(newPassword, user.password);
+      if (isSamePassword) {
+        throw new Error("Please choose a different password. You cannot reuse your current password.");
+      }
+
       // Hash the new password
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
@@ -245,7 +251,7 @@ export class DatabaseStorage implements IStorage {
       return updatedUser;
     } catch (error) {
       console.error("Error resetting password:", error);
-      return undefined;
+      throw error; // Re-throw to preserve the error message
     }
   }
 

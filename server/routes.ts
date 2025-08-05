@@ -260,8 +260,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ message: "Password reset successful" });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Reset password error:", error);
+      // Check if it's our custom password reuse error
+      if (error.message && error.message.includes("cannot reuse your current password")) {
+        return res.status(400).json({ message: error.message });
+      }
       res.status(500).json({ message: "Failed to reset password" });
     }
   });
