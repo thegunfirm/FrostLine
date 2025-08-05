@@ -135,7 +135,7 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
       {ffls && ffls.length === 0 && searchZip && (
         <Alert>
           <AlertDescription>
-            No FFL dealers found within {searchRadius} miles of ZIP code {searchZip}. Try expanding your search radius or contact customer support for assistance.
+            No FFL dealers found within {searchRadius} miles of ZIP code {searchZip}. Try expanding your search radius.
           </AlertDescription>
         </Alert>
       )}
@@ -222,16 +222,7 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
         </div>
       )}
 
-      {/* Help Section */}
-      <Alert>
-        <AlertDescription className="text-sm">
-          <strong>Need help finding an FFL?</strong>
-          <br />
-          • Use the ATF FFL locator tool
-          • Contact your local gun store
-          • Call our customer support at (555) 123-4567
-        </AlertDescription>
-      </Alert>
+
     </div>
   );
 }

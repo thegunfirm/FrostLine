@@ -273,9 +273,12 @@ export type InsertFulfillmentSetting = typeof fulfillmentSettings.$inferInsert;
 export type StateShippingPolicy = typeof stateShippingPolicies.$inferSelect;
 export type TierPricingRule = typeof tierPricingRules.$inferSelect;
 export type HeroCarouselSlide = typeof heroCarouselSlides.$inferSelect;
+export type AdminSetting = typeof adminSettings.$inferSelect;
+export type InsertAdminSetting = typeof adminSettings.$inferInsert;
+export type OrderRestriction = typeof orderRestrictions.$inferSelect;
+export type InsertOrderRestriction = typeof orderRestrictions.$inferInsert;
 export type InsertHeroCarouselSlide = typeof heroCarouselSlides.$inferInsert;
 export type CategoryRibbon = typeof categoryRibbons.$inferSelect;
-export type AdminSetting = typeof adminSettings.$inferSelect;
 
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users);
