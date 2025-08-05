@@ -1,8 +1,0 @@
-# Sample RSR FFL Dealer Data (for testing format only)
-# Real production data would come from RSR's FTP server
-# Format: License|BusinessName|Street|City|State|Zip|Phone|Email|Status
-1-01-123-45-6A001|Authentic Gun Shop|123 Main St|Phoenix|AZ|85001|602-555-0001|info@authenticsgunshop.com|OnFile
-1-01-234-56-7B002|Desert Firearms LLC|456 Oak Ave|Tucson|AZ|85701|520-555-0002|sales@desertfirearms.com|Preferred
-1-01-345-67-8C003|Arizona Tactical|789 Pine Rd|Mesa|AZ|85201|480-555-0003|contact@aztactical.com|OnFile
-1-01-456-78-9D004|Copper State Arms|321 Elm St|Chandler|AZ|85224|480-555-0004|info@copperstatearms.com|OnFile
-1-01-567-89-0E005|Grand Canyon Guns|654 Cedar Dr|Flagstaff|AZ|86001|928-555-0005|sales@gcguns.com|OnFile
