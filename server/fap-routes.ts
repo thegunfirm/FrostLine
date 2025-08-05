@@ -26,11 +26,11 @@ const verifyFAPWebhook = (req: any, res: any, next: any) => {
 
 // Role-based access middleware for FAP integration
 const requireAdminRole = (req: any, res: any, next: any) => {
-  if (!req.isAuthenticated() || !req.user) {
+  if (!req.session?.user) {
     return res.status(401).json({ message: "Authentication required" });
   }
 
-  if (!['admin'].includes(req.user.role)) {
+  if (!['admin'].includes(req.session.user.role)) {
     return res.status(403).json({ message: "Admin access required" });
   }
 
@@ -38,11 +38,11 @@ const requireAdminRole = (req: any, res: any, next: any) => {
 };
 
 const requireSupportRole = (req: any, res: any, next: any) => {
-  if (!req.isAuthenticated() || !req.user) {
+  if (!req.session?.user) {
     return res.status(401).json({ message: "Authentication required" });
   }
 
-  if (!['admin', 'support', 'manager'].includes(req.user.role)) {
+  if (!['admin', 'support', 'manager'].includes(req.session.user.role)) {
     return res.status(403).json({ message: "Support access required" });
   }
 
