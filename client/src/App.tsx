@@ -9,6 +9,7 @@ import { Footer } from "@/components/layout/footer";
 import Home from "@/pages/home";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import RegistrationSuccess from "@/pages/registration-success";
 import VerifyEmail from "@/pages/verify-email";
 import Products from "@/pages/products";
 import ProductDetail from "@/pages/product-detail";
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/registration-success" component={RegistrationSuccess} />
       <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/products" component={Products} />
       <Route path="/product/:id" component={ProductDetail} />

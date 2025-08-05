@@ -53,11 +53,8 @@ export default function Register() {
         subscriptionTier: formData.subscriptionTier,
       });
       
-      toast({
-        title: "Registration Successful!",
-        description: response.message || "Please check your email to verify your account before signing in.",
-      });
-      // Don't redirect to login, stay on registration page to show verification message
+      // Redirect to success page with email parameter
+      setLocation(`/registration-success?email=${encodeURIComponent(formData.email)}`);
     } catch (error: any) {
       toast({
         title: "Error",
