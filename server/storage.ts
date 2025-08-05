@@ -811,6 +811,64 @@ export class DatabaseStorage implements IStorage {
       .orderBy(asc(ffls.businessName));
   }
 
+  async getAllFFLs(): Promise<FFL[]> {
+    return await db.select().from(ffls)
+      .orderBy(asc(ffls.businessName));
+  }
+
+  async createFFL(fflData: any): Promise<FFL> {
+    const [ffl] = await db.insert(ffls)
+      .values(fflData)
+      .returning();
+    return ffl;
+  }
+
+  async deleteFFL(id: number): Promise<void> {
+    await db.delete(ffls)
+      .where(eq(ffls.id, id));
+  }
+
+  async importFFLsFromCSV(csvData: string): Promise<{ imported: number; skipped: number }> {
+    const lines = csvData.trim().split('\n');
+    let imported = 0;
+    let skipped = 0;
+    
+    for (let i = 1; i < lines.length; i++) { // Skip header
+      try {
+        const [businessName, licenseNumber, email, phone, street, city, state, zip, status] = lines[i].split(',');
+        
+        if (!businessName || !licenseNumber || !zip) {
+          skipped++;
+          continue;
+        }
+        
+        const fflData = {
+          businessName: businessName.trim(),
+          licenseNumber: licenseNumber.trim(),
+          contactEmail: email?.trim() || null,
+          phone: phone?.trim() || null,
+          address: {
+            street: street?.trim() || '',
+            city: city?.trim() || '',
+            state: state?.trim() || '',
+            zip: zip?.trim() || ''
+          },
+          zip: zip.trim(),
+          status: (status?.trim() as 'NotOnFile' | 'OnFile' | 'Preferred') || 'OnFile',
+          isAvailableToUser: true
+        };
+        
+        await this.createFFL(fflData);
+        imported++;
+      } catch (error) {
+        console.error('Error importing FFL:', error);
+        skipped++;
+      }
+    }
+    
+    return { imported, skipped };
+  }
+
   // State shipping policies
   async getStateShippingPolicies(): Promise<StateShippingPolicy[]> {
     return await db.select().from(stateShippingPolicies);

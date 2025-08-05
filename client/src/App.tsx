@@ -27,6 +27,7 @@ import AdminSyncHealth from "@/pages/admin-sync-health";
 import AdminDepartmentPricing from "@/pages/admin-department-pricing";
 import AdminImageSettings from "@/pages/admin-image-settings";
 import AdminProductImages from "@/pages/admin-product-images";
+import AdminFFLManagement from "@/pages/admin-ffl-management";
 import RSRIntelligenceTest from "@/pages/rsr-intelligence-test";
 import Categories from "@/pages/categories";
 import Browse from "@/pages/browse";
@@ -58,6 +59,7 @@ function Router() {
       <Route path="/admin-department-pricing" component={AdminDepartmentPricing} />
       <Route path="/admin-image-settings" component={AdminImageSettings} />
       <Route path="/admin-product-images" component={AdminProductImages} />
+      <Route path="/admin-ffl-management" component={AdminFFLManagement} />
       <Route path="/rsr-intelligence-test" component={RSRIntelligenceTest} />
       <Route path="/categories" component={Categories} />
       <Route path="/browse" component={Browse} />

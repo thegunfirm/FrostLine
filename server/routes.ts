@@ -474,6 +474,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin FFL management routes
+  app.get("/api/admin/ffls", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const ffls = await storage.getAllFFLs();
+      res.json(ffls);
+    } catch (error) {
+      console.error("Get all FFLs error:", error);
+      res.status(500).json({ message: "Failed to fetch FFLs" });
+    }
+  });
+
+  app.post("/api/admin/ffls", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const ffl = await storage.createFFL(req.body);
+      res.status(201).json(ffl);
+    } catch (error) {
+      console.error("Create FFL error:", error);
+      res.status(500).json({ message: "Failed to create FFL" });
+    }
+  });
+
+  app.patch("/api/admin/ffls/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const fflId = parseInt(req.params.id);
+      const ffl = await storage.updateFFL(fflId, req.body);
+      res.json(ffl);
+    } catch (error) {
+      console.error("Update FFL error:", error);
+      res.status(500).json({ message: "Failed to update FFL" });
+    }
+  });
+
+  app.delete("/api/admin/ffls/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const fflId = parseInt(req.params.id);
+      await storage.deleteFFL(fflId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Delete FFL error:", error);
+      res.status(500).json({ message: "Failed to delete FFL" });
+    }
+  });
+
+  app.post("/api/admin/ffls/import", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { csvData } = req.body;
+      const result = await storage.importFFLsFromCSV(csvData);
+      res.json(result);
+    } catch (error) {
+      console.error("Import FFLs error:", error);
+      res.status(500).json({ message: "Failed to import FFLs" });
+    }
+  });
+
   // Add placeholder endpoint for missing routes
   app.get("/api/placeholder/:width/:height", (req, res) => {
     const { width, height } = req.params;
