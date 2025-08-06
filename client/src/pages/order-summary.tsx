@@ -136,13 +136,8 @@ function OrderSummaryPageContent() {
     setIsProcessing(true);
     
     try {
-      // If order has firearms, go to FFL selection first
-      if (hasFirearms()) {
-        setLocation('/ffl-selection');
-      } else {
-        // Go directly to shipping
-        setLocation('/shipping');
-      }
+      // Always go to shipping first - FFL selection will be handled within the checkout flow
+      setLocation('/shipping');
     } catch (error) {
       console.error('Error proceeding to checkout:', error);
     } finally {
@@ -196,11 +191,11 @@ function OrderSummaryPageContent() {
                 
                 return (
                   <div key={item.id} className="flex items-start gap-3 p-3 border rounded-lg">
-                    <div className="bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center w-16 h-16 flex-shrink-0">
+                    <div className="bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center w-20 h-20 flex-shrink-0">
                       <img
                         src={`/api/rsr-image/${item.productSku || item.sku}`}
                         alt={item.productName}
-                        className="w-full h-auto object-contain transition-opacity duration-300 max-w-full"
+                        className="w-full h-full object-contain transition-opacity duration-300"
                         onError={(e) => {
                           e.currentTarget.src = "/fallback-logo.png";
                           e.currentTarget.onerror = null;
