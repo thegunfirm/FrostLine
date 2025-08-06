@@ -65,6 +65,7 @@ function CheckoutPageContent() {
     if (!deliveryTimeSettings) return '3-5 business days';
     
     const setting = deliveryTimeSettings.find((s: any) => s.fulfillmentType === fulfillmentType);
+
     return setting?.estimatedDays || '3-5 business days';
   };
 
