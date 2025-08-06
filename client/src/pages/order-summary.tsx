@@ -235,7 +235,12 @@ function OrderSummaryPageContent() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => updateQuantity(item.id, Math.max(0, item.quantity - 1))}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const newQty = Math.max(0, item.quantity - 1);
+                              updateQuantity(item.id, newQty);
+                            }}
                             className="h-8 w-8 p-0"
                           >
                             <Minus className="w-3 h-3" />
@@ -246,7 +251,11 @@ function OrderSummaryPageContent() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              updateQuantity(item.id, item.quantity + 1);
+                            }}
                             className="h-8 w-8 p-0"
                           >
                             <Plus className="w-3 h-3" />
@@ -255,7 +264,11 @@ function OrderSummaryPageContent() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeItem(item.id)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            removeItem(item.id);
+                          }}
                           className="text-red-600 hover:text-red-700"
                         >
                           Remove

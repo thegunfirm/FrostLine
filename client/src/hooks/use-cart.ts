@@ -176,8 +176,11 @@ export const useCart = create<CartState>()(
             );
             
             if (existingIndex >= 0) {
-              // Increase quantity
-              mergedItems[existingIndex].quantity += guestItem.quantity;
+              // Increase quantity - ensure we don't duplicate
+              mergedItems[existingIndex].quantity = Math.max(
+                mergedItems[existingIndex].quantity, 
+                guestItem.quantity
+              );
             } else {
               // Add new item
               mergedItems.push(guestItem);
