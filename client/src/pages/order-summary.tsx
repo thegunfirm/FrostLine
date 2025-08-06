@@ -191,7 +191,7 @@ function OrderSummaryPageContent() {
                 
                 return (
                   <div key={item.id} className="flex items-start gap-3 p-3 border rounded-lg">
-                    <div className="bg-gray-100 rounded-lg mb-2 sm:mb-1 overflow-hidden flex items-center justify-center min-h-[80px] w-20 flex-shrink-0">
+                    <div className="bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center min-h-[80px] w-20 flex-shrink-0">
                       <img
                         src={`/api/rsr-image/${item.productSku || item.sku}`}
                         alt={item.productName}
