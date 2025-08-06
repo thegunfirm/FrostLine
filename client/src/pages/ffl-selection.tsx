@@ -92,7 +92,11 @@ function UpgradeBenefits({ user }: { user: any }) {
 function FflSelectionPageContent() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
-  const [selectedFfl, setSelectedFfl] = useState<number | null>(null);
+  const [selectedFfl, setSelectedFfl] = useState<number | null>(() => {
+    // Initialize from sessionStorage if available
+    const stored = sessionStorage.getItem('selected_ffl_id');
+    return stored ? parseInt(stored) : null;
+  });
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFflSelected = (fflId: number | null) => {
@@ -153,7 +157,6 @@ function FflSelectionPageContent() {
           <FflSelector
             selectedFflId={selectedFfl}
             onFflSelected={handleFflSelected}
-            userZip={user?.zip || ''}
           />
         </div>
 

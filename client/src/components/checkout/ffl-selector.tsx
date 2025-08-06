@@ -60,6 +60,8 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
     enabled: !!selectedFflId,
     retry: 1,
     retryDelay: 500,
+    staleTime: 5 * 60 * 1000, // Keep data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
   const handleSearch = async () => {
@@ -159,6 +161,12 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
                 )}
                 
                 <p className="text-xs text-gray-500 mt-2">License: {selectedFflDetails.licenseNumber}</p>
+                
+                {(selectedFflDetails.status === 'OnFile' || selectedFflDetails.isRsrPartner) && (
+                  <p className="text-xs text-blue-600 mt-2">
+                    ✓ The FFL is already on file for faster processing
+                  </p>
+                )}
               </div>
             </div>
             
@@ -245,6 +253,12 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
                               )}
                               
                               <p className="text-xs text-gray-500 mt-1">License: {ffl.licenseNumber}</p>
+                              
+                              {(ffl.status === 'OnFile' || ffl.isRsrPartner) && (
+                                <p className="text-xs text-blue-600 mt-1">
+                                  ✓ The FFL is already on file for faster processing
+                                </p>
+                              )}
                             </div>
                             
                             <Button 
