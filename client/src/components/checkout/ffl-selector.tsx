@@ -158,33 +158,35 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
           </div>
         ) : (
           <>
-            {/* Search Interface */}
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Enter ZIP code to find FFLs near you"
-                  value={searchZip}
-                  onChange={(e) => setSearchZip(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  className="flex-1"
-                />
-                <Button onClick={handleSearch} disabled={searchZip.length < 5 || isSearching}>
-                  <Search className="w-4 h-4 mr-2" />
-                  {isSearching ? 'Searching...' : 'Search'}
-                </Button>
+            {/* Search Interface - Only show if no FFL is selected */}
+            {!selectedFflId && (
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter ZIP code to find FFLs near you"
+                    value={searchZip}
+                    onChange={(e) => setSearchZip(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    className="flex-1"
+                  />
+                  <Button onClick={handleSearch} disabled={searchZip.length < 5 || isSearching}>
+                    <Search className="w-4 h-4 mr-2" />
+                    {isSearching ? 'Searching...' : 'Search'}
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Loading State */}
-            {(isLoading || isSearching) && (
+            {/* Loading State - Only show if no FFL is selected */}
+            {!selectedFflId && (isLoading || isSearching) && (
               <div className="text-center py-4">
                 <div className="animate-spin w-6 h-6 border-2 border-amber-600 border-t-transparent rounded-full mx-auto mb-2"></div>
                 <p className="text-sm text-gray-600">Searching for FFLs...</p>
               </div>
             )}
 
-            {/* Results */}
-            {ffls && ffls.length > 0 && (
+            {/* Results - Only show if no FFL is selected */}
+            {!selectedFflId && ffls && ffls.length > 0 && (
               <div className="space-y-3">
                 <p className="text-sm text-gray-600">{ffls.length} FFL dealers found near {searchZip}</p>
                 
@@ -263,8 +265,8 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
               </div>
             )}
 
-            {/* No Results */}
-            {searchZip && ffls && ffls.length === 0 && !isLoading && !isSearching && (
+            {/* No Results - Only show if no FFL is selected */}
+            {!selectedFflId && searchZip && ffls && ffls.length === 0 && !isLoading && !isSearching && (
               <div className="text-center py-8">
                 <Building className="w-12 h-12 mx-auto text-gray-400 mb-3" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No FFLs found</h3>
