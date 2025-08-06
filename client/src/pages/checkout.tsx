@@ -149,52 +149,22 @@ function CheckoutPageContent() {
                     <Shield className="w-5 h-5 text-amber-600" />
                     <div>
                       <h3 className="font-medium text-gray-900">Items shipping to your FFL dealer</h3>
-                      {fflItems.length > 0 && (
-                        <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
-                          <Clock className="w-3 h-3" />
-                          {(() => {
-                            // Check all FFL items to find the slowest delivery time
-                            let slowestFulfillmentType = 'no_drop_to_ffl';
-                            let slowestDays = 0;
-                            
-                            for (const item of fflItems) {
-                              const fulfillmentType = getFulfillmentType(item);
-                              console.log('Item fulfillment type:', item.productName, fulfillmentType);
-                              
-                              // Map fulfillment types to priority (higher = slower)
-                              const typePriority = {
-                                'drop_to_consumer': 1,
-                                'no_drop_to_ffl': 2,
-                                'drop_to_ffl': 3  // Slowest
-                              };
-                              
-                              const currentPriority = typePriority[fulfillmentType] || 0;
-                              const slowestPriority = typePriority[slowestFulfillmentType] || 0;
-                              
-                              if (currentPriority > slowestPriority) {
-                                slowestFulfillmentType = fulfillmentType;
-                                console.log('Updated slowest to:', fulfillmentType);
-                              }
-                            }
-                            
-                            const deliveryTime = getDeliveryTime(slowestFulfillmentType);
-                            const description = getDeliveryDescription(slowestFulfillmentType);
-                            return (
-                              <span>
-                                Estimated delivery: {deliveryTime}
-                                {description && (
-                                  <span className="text-gray-500"> • {description}</span>
-                                )}
-                              </span>
-                            );
-                          })()}
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
+                        <Clock className="w-3 h-3" />
+                        <span>
+                          Estimated delivery varies by manufacturer
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="space-y-3 pl-7">
-                    {fflItems.map((item) => (
-                      <div key={item.id} className="flex gap-3 p-3 border rounded-lg">
+                    {fflItems.map((item) => {
+                      const fulfillmentType = getFulfillmentType(item);
+                      const deliveryTime = getDeliveryTime(fulfillmentType);
+                      const description = getDeliveryDescription(fulfillmentType);
+                      
+                      return (
+                        <div key={item.id} className="flex gap-3 p-3 border rounded-lg">
                         <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                           <img
                             src={item.productImage}
@@ -210,9 +180,15 @@ function CheckoutPageContent() {
                             {item.productName}
                           </h4>
                           <p className="text-xs text-gray-600">{item.manufacturer}</p>
-                          <Badge variant="outline" className="text-xs mt-1">
-                            FFL Required
-                          </Badge>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-xs">
+                              FFL Required
+                            </Badge>
+                            <div className="flex items-center gap-1 text-xs text-gray-600">
+                              <Clock className="w-3 h-3" />
+                              <span>{deliveryTime}</span>
+                            </div>
+                          </div>
                           
                           {/* Quantity Controls */}
                           <div className="flex items-center justify-between mt-2">
@@ -262,8 +238,9 @@ function CheckoutPageContent() {
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
