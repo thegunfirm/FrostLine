@@ -79,6 +79,17 @@ function BillingPageContent() {
     window.open('https://www.freeamericanpeople.com/upgrade', '_blank');
   };
 
+  const handleUpgradeOffer = (upgrade: boolean) => {
+    if (upgrade) {
+      // Redirect to upgrade page with return URL
+      handleUpgrade();
+    } else {
+      // Continue to payment
+      setLocation('/payment');
+    }
+    setShowUpgradeOffer(false);
+  };
+
   // Calculate potential savings
   const totalPrice = getTotalPrice();
   const currentTier = user?.subscriptionTier || 'basic';
@@ -94,6 +105,11 @@ function BillingPageContent() {
   } else if (currentTier === 'basic') {
     potentialSavings = totalPrice * 0.15; // 15% off with platinum
   }
+
+  const savings = {
+    standard: currentTier === 'basic' ? totalPrice * 0.10 : null,
+    premium: potentialSavings
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
