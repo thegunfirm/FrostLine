@@ -25,6 +25,7 @@ function CheckoutPageContent() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [selectedFfl, setSelectedFfl] = useState<number | null>(null);
+  const [currentStep, setCurrentStep] = useState<'ffl' | 'shipping' | 'billing' | 'upgrade' | 'payment'>('ffl');
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Fetch fulfillment settings

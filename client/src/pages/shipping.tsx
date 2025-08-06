@@ -1,16 +1,31 @@
-import { useCart } from "@/hooks/use-cart";
-import { useAuth } from "@/hooks/use-auth";
-import { SubscriptionEnforcement } from "@/components/auth/subscription-enforcement";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Truck, MapPin, CreditCard, ArrowLeft, AlertTriangle, User } from "lucide-react";
-import { PaymentSection } from "@/components/checkout/payment-section";
+import { ArrowLeft, Truck, Clock, Package } from "lucide-react";
+import { useCart } from "@/hooks/use-cart";
+import { useAuth } from "@/hooks/use-auth";
+import { SubscriptionEnforcement } from "@/components/auth/subscription-enforcement";
+
+const shippingSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  address: z.string().min(1, "Address is required"),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  zip: z.string().min(5, "ZIP code must be at least 5 digits"),
+  phone: z.string().min(10, "Phone number is required"),
+});
+
+type ShippingFormData = z.infer<typeof shippingSchema>;
 
 const formatPrice = (price: number | string) => {
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
@@ -18,294 +33,345 @@ const formatPrice = (price: number | string) => {
 };
 
 function ShippingPageContent() {
-  const { items, getTotalPrice } = useCart();
+  const { items, getTotalPrice, hasFirearms } = useCart();
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [isProcessing, setIsProcessing] = useState(false);
-  
-  // Shipping form state
-  const [shippingData, setShippingData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    phone: '',
-    address: '',
-    address2: '',
-    city: '',
-    state: '',
-    zip: '',
-    driverLicenseNumber: '',
-    driverLicenseState: '',
-  });
-  
-  // Billing same as shipping
-  const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
-  const [billingData, setBillingData] = useState({
-    firstName: '',
-    lastName: '',
-    address: '',
-    address2: '',
-    city: '',
-    state: '',
-    zip: '',
+
+  // Filter non-FFL items that need shipping
+  const nonFflItems = items.filter(item => !item.requiresFFL);
+
+  const form = useForm<ShippingFormData>({
+    resolver: zodResolver(shippingSchema),
+    defaultValues: {
+      firstName: user?.firstName || '',
+      lastName: user?.lastName || '',
+      address: (user?.shippingAddress as any)?.street || '',
+      city: (user?.shippingAddress as any)?.city || '',
+      state: (user?.shippingAddress as any)?.state || '',
+      zip: (user?.shippingAddress as any)?.zip || '',
+      phone: user?.phone || '',
+    },
   });
 
-  if (items.length === 0) {
-    setLocation('/');
+  const onSubmit = async (data: ShippingFormData) => {
+    setIsProcessing(true);
+    try {
+      // Save shipping information
+      console.log('Shipping data:', data);
+      // Move to billing page
+      setLocation('/billing');
+    } catch (error) {
+      console.error('Error saving shipping info:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  if (nonFflItems.length === 0 && hasFirearms()) {
+    // If only FFL items, skip to billing
+    setLocation('/billing');
     return null;
   }
 
-  const hasFirearms = items.some(item => item.requiresFFL);
-
   return (
-    <div className="min-h-screen bg-gray-50 pt-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Shipping & Payment</h1>
-            <Button 
-              variant="ghost" 
-              onClick={() => setLocation('/checkout')}
-              className="text-amber-600 hover:text-amber-700"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              Back to Order Summary
-            </Button>
-          </div>
-
-          {/* Driver's License Requirement for Firearms */}
-          {hasFirearms && (
-            <Alert className="border-amber-200 bg-amber-50">
-              <User className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-800">
-                <strong>Driver's License Required:</strong> Federal law requires that your shipping information matches your government-issued ID for firearm purchases. 
-                Please ensure your name and address exactly match your driver's license.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Return Shipping Warning */}
-          <Alert className="border-red-200 bg-red-50">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
-              <strong>Important Billing Notice:</strong> If your billing address differs from your shipping address, you are responsible for return shipping costs on any returned items. 
-              We recommend using the same address for both shipping and billing to avoid additional charges.
-            </AlertDescription>
-          </Alert>
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Left Column - Forms */}
-            <div className="lg:col-span-2 space-y-6">
-              
-              {/* Shipping Information */}
-              <Card className="bg-white shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Truck className="w-5 h-5" />
-                    Shipping Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="firstName">First Name *</Label>
-                      <Input
-                        id="firstName"
-                        value={shippingData.firstName}
-                        onChange={(e) => setShippingData(prev => ({ ...prev, firstName: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="lastName">Last Name *</Label>
-                      <Input
-                        id="lastName"
-                        value={shippingData.lastName}
-                        onChange={(e) => setShippingData(prev => ({ ...prev, lastName: e.target.value }))}
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="email">Email Address *</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={shippingData.email}
-                        onChange={(e) => setShippingData(prev => ({ ...prev, email: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone">Phone Number *</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={shippingData.phone}
-                        onChange={(e) => setShippingData(prev => ({ ...prev, phone: e.target.value }))}
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="address">Street Address *</Label>
-                    <Input
-                      id="address"
-                      value={shippingData.address}
-                      onChange={(e) => setShippingData(prev => ({ ...prev, address: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="address2">Apartment, Suite, etc.</Label>
-                    <Input
-                      id="address2"
-                      value={shippingData.address2}
-                      onChange={(e) => setShippingData(prev => ({ ...prev, address2: e.target.value }))}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="city">City *</Label>
-                      <Input
-                        id="city"
-                        value={shippingData.city}
-                        onChange={(e) => setShippingData(prev => ({ ...prev, city: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="state">State *</Label>
-                      <Input
-                        id="state"
-                        value={shippingData.state}
-                        onChange={(e) => setShippingData(prev => ({ ...prev, state: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="zip">ZIP Code *</Label>
-                      <Input
-                        id="zip"
-                        value={shippingData.zip}
-                        onChange={(e) => setShippingData(prev => ({ ...prev, zip: e.target.value }))}
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Driver's License Information (required for firearms) */}
-                  {hasFirearms && (
-                    <>
-                      <Separator />
-                      <div className="space-y-4">
-                        <h4 className="font-medium text-gray-900">Driver's License Information</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="driverLicenseNumber">Driver's License Number *</Label>
-                            <Input
-                              id="driverLicenseNumber"
-                              value={shippingData.driverLicenseNumber}
-                              onChange={(e) => setShippingData(prev => ({ ...prev, driverLicenseNumber: e.target.value }))}
-                              required
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="driverLicenseState">Driver's License State *</Label>
-                            <Input
-                              id="driverLicenseState"
-                              value={shippingData.driverLicenseState}
-                              onChange={(e) => setShippingData(prev => ({ ...prev, driverLicenseState: e.target.value }))}
-                              required
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Payment Section */}
-              <Card className="bg-white shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="w-5 h-5" />
-                    Payment Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <PaymentSection 
-                    user={user!}
-                    totalAmount={getTotalPrice()}
-                    canProceed={true}
-                    isProcessing={isProcessing}
-                    onProcessing={setIsProcessing}
-                  />
-                </CardContent>
-              </Card>
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Header */}
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLocation('/checkout')}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Cart
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Shipping Information</h1>
+                <p className="text-sm text-gray-600">Where should we ship your non-firearm items?</p>
+              </div>
             </div>
 
-            {/* Right Column - Order Summary */}
-            <div className="lg:col-span-1">
-              <Card className="bg-white shadow-sm sticky top-8">
-                <CardHeader>
-                  <CardTitle>Order Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  
-                  {/* Items Count and Total */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>{items.length} item{items.length !== 1 ? 's' : ''}</span>
-                      <span>Subtotal: {formatPrice(getTotalPrice())}</span>
+            {/* Step Indicator */}
+            <div className="flex items-center justify-center space-x-4 py-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                  ✓
+                </div>
+                <span className="text-sm font-medium text-green-600">FFL Selection</span>
+              </div>
+              <div className="w-12 h-px bg-gray-300"></div>
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                  2
+                </div>
+                <span className="text-sm font-medium text-blue-600">Shipping</span>
+              </div>
+              <div className="w-12 h-px bg-gray-300"></div>
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-medium">
+                  3
+                </div>
+                <span className="text-sm text-gray-500">Billing</span>
+              </div>
+              <div className="w-12 h-px bg-gray-300"></div>
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-medium">
+                  4
+                </div>
+                <span className="text-sm text-gray-500">Payment</span>
+              </div>
+            </div>
+
+            {/* Shipping Form */}
+            <Card className="bg-white shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-blue-600" />
+                  Shipping Address
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="firstName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>First Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="lastName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Last Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
-                    <div className="text-xs text-gray-600">
-                      {hasFirearms && "Firearms shipping to FFL dealer"}
-                      {hasFirearms && items.some(item => !item.requiresFFL) && " • "}
-                      {items.some(item => !item.requiresFFL) && "Other items ship direct"}
+
+                    <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Street Address</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>City</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>State</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select state" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {/* Add state options */}
+                                <SelectItem value="AL">Alabama</SelectItem>
+                                <SelectItem value="AK">Alaska</SelectItem>
+                                <SelectItem value="AZ">Arizona</SelectItem>
+                                <SelectItem value="AR">Arkansas</SelectItem>
+                                <SelectItem value="CA">California</SelectItem>
+                                <SelectItem value="CO">Colorado</SelectItem>
+                                <SelectItem value="CT">Connecticut</SelectItem>
+                                <SelectItem value="DE">Delaware</SelectItem>
+                                <SelectItem value="FL">Florida</SelectItem>
+                                <SelectItem value="GA">Georgia</SelectItem>
+                                <SelectItem value="HI">Hawaii</SelectItem>
+                                <SelectItem value="ID">Idaho</SelectItem>
+                                <SelectItem value="IL">Illinois</SelectItem>
+                                <SelectItem value="IN">Indiana</SelectItem>
+                                <SelectItem value="IA">Iowa</SelectItem>
+                                <SelectItem value="KS">Kansas</SelectItem>
+                                <SelectItem value="KY">Kentucky</SelectItem>
+                                <SelectItem value="LA">Louisiana</SelectItem>
+                                <SelectItem value="ME">Maine</SelectItem>
+                                <SelectItem value="MD">Maryland</SelectItem>
+                                <SelectItem value="MA">Massachusetts</SelectItem>
+                                <SelectItem value="MI">Michigan</SelectItem>
+                                <SelectItem value="MN">Minnesota</SelectItem>
+                                <SelectItem value="MS">Mississippi</SelectItem>
+                                <SelectItem value="MO">Missouri</SelectItem>
+                                <SelectItem value="MT">Montana</SelectItem>
+                                <SelectItem value="NE">Nebraska</SelectItem>
+                                <SelectItem value="NV">Nevada</SelectItem>
+                                <SelectItem value="NH">New Hampshire</SelectItem>
+                                <SelectItem value="NJ">New Jersey</SelectItem>
+                                <SelectItem value="NM">New Mexico</SelectItem>
+                                <SelectItem value="NY">New York</SelectItem>
+                                <SelectItem value="NC">North Carolina</SelectItem>
+                                <SelectItem value="ND">North Dakota</SelectItem>
+                                <SelectItem value="OH">Ohio</SelectItem>
+                                <SelectItem value="OK">Oklahoma</SelectItem>
+                                <SelectItem value="OR">Oregon</SelectItem>
+                                <SelectItem value="PA">Pennsylvania</SelectItem>
+                                <SelectItem value="RI">Rhode Island</SelectItem>
+                                <SelectItem value="SC">South Carolina</SelectItem>
+                                <SelectItem value="SD">South Dakota</SelectItem>
+                                <SelectItem value="TN">Tennessee</SelectItem>
+                                <SelectItem value="TX">Texas</SelectItem>
+                                <SelectItem value="UT">Utah</SelectItem>
+                                <SelectItem value="VT">Vermont</SelectItem>
+                                <SelectItem value="VA">Virginia</SelectItem>
+                                <SelectItem value="WA">Washington</SelectItem>
+                                <SelectItem value="WV">West Virginia</SelectItem>
+                                <SelectItem value="WI">Wisconsin</SelectItem>
+                                <SelectItem value="WY">Wyoming</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="zip"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>ZIP Code</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="(555) 123-4567" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="flex justify-end pt-4">
+                      <Button 
+                        type="submit" 
+                        size="lg" 
+                        disabled={isProcessing}
+                        className="min-w-[200px]"
+                      >
+                        {isProcessing ? 'Saving...' : 'Continue to Billing'}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <Card className="bg-white shadow-sm sticky top-8">
+              <CardHeader>
+                <CardTitle>Order Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                
+                {/* Non-FFL Items */}
+                {nonFflItems.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Package className="w-4 h-4 text-blue-600" />
+                      <h3 className="font-medium text-gray-900">Items shipping to you</h3>
+                    </div>
+                    <div className="space-y-2 pl-6">
+                      {nonFflItems.map((item) => (
+                        <div key={item.id} className="flex justify-between items-start text-sm">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-gray-900 truncate">{item.productName}</p>
+                            <p className="text-gray-600">Qty: {item.quantity}</p>
+                          </div>
+                          <span className="text-gray-900 font-medium ml-2">
+                            {formatPrice(item.price * item.quantity)}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
+                )}
 
-                  {/* Quick Items List */}
-                  <div className="max-h-48 overflow-y-auto space-y-2">
-                    {items.map((item) => (
-                      <div key={item.id} className="flex gap-2 text-sm">
-                        <div className="w-8 h-8 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                          <img
-                            src={item.productImage}
-                            alt={item.productName}
-                            className="w-full h-full object-contain"
-                            onError={(e) => {
-                              e.currentTarget.src = "/api/admin/fallback-image";
-                            }}
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-gray-900 truncate">{item.productName}</p>
-                          <p className="text-gray-600">Qty: {item.quantity} × {formatPrice(item.price)}</p>
-                        </div>
-                      </div>
-                    ))}
+                {/* FFL Items Note */}
+                {hasFirearms() && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-amber-800">
+                      Firearms will be shipped directly to your selected FFL dealer.
+                    </p>
                   </div>
+                )}
 
+                <Separator />
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span className="font-medium">{formatPrice(getTotalPrice())}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Shipping</span>
+                    <span className="font-medium">Calculated at next step</span>
+                  </div>
                   <Separator />
-
-                  {/* Total */}
-                  <div className="flex justify-between items-center text-lg font-medium">
+                  <div className="flex justify-between items-center text-lg font-semibold">
                     <span>Total</span>
                     <span>{formatPrice(getTotalPrice())}</span>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

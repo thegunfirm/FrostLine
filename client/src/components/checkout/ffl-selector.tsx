@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Search, MapPin, Phone, Mail, ExternalLink } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { MapPin, Search, Building, Phone, CheckCircle, ChevronDown } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface FFL {
@@ -19,6 +18,7 @@ interface FFL {
   zip: string;
   status: 'NotOnFile' | 'OnFile' | 'Preferred';
   tradeNameDba?: string;
+  isRsrPartner: boolean;
 }
 
 interface FflSelectorProps {
@@ -31,6 +31,7 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
   const [searchZip, setSearchZip] = useState(userZip || '');
   const [searchRadius, setSearchRadius] = useState(25);
   const [isSearching, setIsSearching] = useState(false);
+  const [displayCount, setDisplayCount] = useState(10);
 
   const { data: ffls, isLoading, refetch } = useQuery({
     queryKey: ['/api/ffls/search', searchZip, searchRadius],
@@ -59,289 +60,211 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
   const handleSearch = async () => {
     if (!searchZip.trim()) return;
     setIsSearching(true);
+    setDisplayCount(10); // Reset display count on new search
     await refetch();
     setIsSearching(false);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Preferred':
-        return 'bg-blue-100 text-blue-800 border border-blue-200';
-      case 'OnFile':
-        return 'bg-green-100 text-green-800 border border-green-200';
-      case 'NotOnFile':
-        return 'bg-orange-100 text-orange-800 border border-orange-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border border-gray-200';
-    }
+  const loadMore = () => {
+    setDisplayCount(prev => prev + 10);
   };
 
-  const getStatusDescription = (status: string) => {
-    switch (status) {
-      case 'Preferred':
-        return 'TheGunFirm preferred dealer - fastest processing';
-      case 'OnFile':
-        return 'ATF licensed dealer - on file with distributor';
-      case 'NotOnFile':
-        return 'ATF licensed dealer - license verification needed';
-      default:
-        return 'Status unknown';
-    }
+  const formatAddress = (ffl: FFL) => {
+    const { address, zip } = ffl;
+    return `${address.street}, ${address.city}, ${address.state} ${zip}`;
   };
 
-  useEffect(() => {
-    if (userZip && !searchZip) {
-      setSearchZip(userZip);
+  const getStatusInfo = (status: string, isRsrPartner: boolean) => {
+    if (status === 'OnFile' || isRsrPartner) {
+      return { label: 'On File', color: 'bg-green-100 text-green-800', icon: CheckCircle };
     }
-  }, [userZip, searchZip]);
-
-  // Auto-trigger search when ZIP changes or on mount if ZIP provided
-  useEffect(() => {
-    if (searchZip && searchZip.length >= 5) {
-      console.log(`🚀 Auto-triggering FFL search for ZIP: ${searchZip}`);
-      refetch();
+    if (status === 'Preferred') {
+      return { label: 'Preferred', color: 'bg-blue-100 text-blue-800', icon: CheckCircle };
     }
-  }, [searchZip, refetch]);
+    return { label: 'Not On File', color: 'bg-yellow-100 text-yellow-800', icon: Building };
+  };
 
-  // If an FFL is selected, show only that FFL with option to change
-  if (selectedFflDetails) {
-    return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="font-medium text-gray-900">Selected FFL Dealer</h3>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => onFflSelected(0)} // Clear selection to show search again
-            className="text-blue-600 border-blue-200 hover:bg-blue-50"
-          >
-            Change FFL
-          </Button>
-        </div>
-        
-        <Card className="bg-green-50 border-green-200">
-          <CardContent className="p-4">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h4 className="font-medium text-gray-900">
-                  {selectedFflDetails.tradeNameDba || selectedFflDetails.businessName}
-                </h4>
-                <p className="text-sm text-gray-600">License: {selectedFflDetails.licenseNumber}</p>
-                {selectedFflDetails.tradeNameDba && (
-                  <p className="text-sm text-gray-600">{selectedFflDetails.businessName}</p>
-                )}
-              </div>
-              <Badge className={getStatusColor(selectedFflDetails.status)}>
-                {selectedFflDetails.status === 'NotOnFile' ? 'Not On File' : 
-                 selectedFflDetails.status === 'OnFile' ? 'On File' : 
-                 selectedFflDetails.status === 'Preferred' ? '⭐ Preferred' : selectedFflDetails.status}
-              </Badge>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-gray-900">
-                    {selectedFflDetails.address?.street || 'Address not available'}
-                  </p>
-                  <p className="text-gray-600">
-                    {selectedFflDetails.address?.city || ''}, {selectedFflDetails.address?.state || ''} {selectedFflDetails.zip}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                {selectedFflDetails.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-900">{selectedFflDetails.phone}</span>
-                  </div>
-                )}
-                {selectedFflDetails.contactEmail && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-900">{selectedFflDetails.contactEmail}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-3 pt-3 border-t border-green-200">
-              <p className="text-xs text-gray-600">
-                {getStatusDescription(selectedFflDetails.status)}
-              </p>
-              {selectedFflDetails.status === 'Preferred' && (
-                <p className="text-xs text-blue-600 mt-1 font-medium">
-                  ⚡ Priority processing - fastest fulfillment
-                </p>
-              )}
-              {selectedFflDetails.status === 'NotOnFile' && (
-                <p className="text-xs text-orange-600 mt-1">
-                  ⏱️ Processing may require additional verification time
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const displayedFfls = ffls?.slice(0, displayCount) || [];
+  const hasMore = ffls && ffls.length > displayCount;
 
   return (
-    <div className="space-y-4">
-      {/* Search Section */}
-      <div className="space-y-3">
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <Input
-              type="text"
-              placeholder="Enter ZIP code or business name to find FFL dealers"
-              value={searchZip}
-              onChange={(e) => setSearchZip(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            />
-          </div>
-          <div className="w-32">
-            <Select value={searchRadius.toString()} onValueChange={(value) => setSearchRadius(parseInt(value))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5 miles</SelectItem>
-                <SelectItem value="10">10 miles</SelectItem>
-                <SelectItem value="25">25 miles</SelectItem>
-                <SelectItem value="50">50 miles</SelectItem>
-                <SelectItem value="100">100 miles</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <Button 
-            onClick={handleSearch}
-            disabled={!searchZip.trim() || isSearching}
-            className="flex items-center gap-2"
-          >
-            <Search className="w-4 h-4" />
-            Search
-          </Button>
-        </div>
-        {searchZip && (
-          <p className="text-sm text-gray-600">
-            Searching within {searchRadius} miles of {searchZip}
-          </p>
-        )}
-      </div>
-
-      {/* Search Results */}
-      {isLoading && (
-        <div className="text-center py-8">
-          <div className="animate-spin w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Searching for FFL dealers...</p>
-        </div>
-      )}
-
-      {ffls && ffls.length === 0 && searchZip && (
-        <Alert>
-          <AlertDescription>
-            No FFL dealers found within {searchRadius} miles of ZIP code {searchZip}. Try expanding your search radius.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {ffls && ffls.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="font-medium text-gray-900">
-            Found {ffls.length} FFL dealer{ffls.length !== 1 ? 's' : ''} within {searchRadius} miles of {searchZip}
-          </h3>
-          
-          {ffls.map((ffl: FFL) => (
-            <Card 
-              key={ffl.id} 
-              className={`cursor-pointer transition-all hover:shadow-md ${
-                selectedFflId === ffl.id 
-                  ? 'ring-2 ring-amber-500 bg-amber-50' 
-                  : 'hover:bg-gray-50'
-              }`}
-              onClick={() => onFflSelected(ffl.id)}
-            >
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h4 className="font-medium text-gray-900">
-                      {ffl.tradeNameDba || ffl.businessName}
-                    </h4>
-                    <p className="text-sm text-gray-600">License: {ffl.licenseNumber}</p>
-                    {ffl.tradeNameDba && (
-                      <p className="text-sm text-gray-600">{ffl.businessName}</p>
-                    )}
+    <Card className="bg-white shadow-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Building className="w-5 h-5 text-amber-600" />
+          Select Your FFL Dealer
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        
+        {/* Show selected FFL if one is chosen */}
+        {selectedFflDetails ? (
+          <div className="space-y-4">
+            <div className="p-4 border-2 border-green-200 bg-green-50 rounded-lg">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="font-semibold text-gray-900">
+                      {selectedFflDetails.tradeNameDba || selectedFflDetails.businessName}
+                    </h3>
+                    {(() => {
+                      const statusInfo = getStatusInfo(selectedFflDetails.status, selectedFflDetails.isRsrPartner);
+                      const StatusIcon = statusInfo.icon;
+                      return (
+                        <Badge className={`text-xs ${statusInfo.color}`}>
+                          <StatusIcon className="w-3 h-3 mr-1" />
+                          {statusInfo.label}
+                        </Badge>
+                      );
+                    })()}
                   </div>
-                  <div className="flex gap-2">
-                    <Badge className={getStatusColor(ffl.status)}>
-                      {ffl.status === 'NotOnFile' ? 'Not On File' : 
-                       ffl.status === 'OnFile' ? 'On File' : 
-                       ffl.status === 'Preferred' ? '⭐ Preferred' : ffl.status}
-                    </Badge>
-                    {selectedFflId === ffl.id && (
-                      <Badge className="bg-amber-100 text-amber-800 border border-amber-200">
-                        ✓ Selected
-                      </Badge>
-                    )}
+                  
+                  {selectedFflDetails.tradeNameDba && (
+                    <p className="text-xs text-gray-600 mb-1">{selectedFflDetails.businessName}</p>
+                  )}
+                  
+                  <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
+                    <MapPin className="w-4 h-4" />
+                    <span>{formatAddress(selectedFflDetails)}</span>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                  {/* Address */}
-                  <div className="flex items-start gap-2">
-                    <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-gray-900">
-                        {ffl.address?.street || 'Address not available'}
-                      </p>
-                      <p className="text-gray-600">
-                        {ffl.address?.city || ''}, {ffl.address?.state || ''} {ffl.zip}
-                      </p>
+                  
+                  {selectedFflDetails.phone && (
+                    <div className="flex items-center gap-1 text-sm text-gray-600">
+                      <Phone className="w-4 h-4" />
+                      <span>{selectedFflDetails.phone}</span>
                     </div>
-                  </div>
+                  )}
+                  
+                  <p className="text-xs text-gray-500 mt-2">License: {selectedFflDetails.licenseNumber}</p>
+                </div>
+                <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+              </div>
+            </div>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => onFflSelected(null)} 
+              className="w-full"
+            >
+              Change FFL Dealer
+            </Button>
+          </div>
+        ) : (
+          <>
+            {/* Search Interface */}
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter ZIP code to find FFLs near you"
+                  value={searchZip}
+                  onChange={(e) => setSearchZip(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  className="flex-1"
+                />
+                <Button onClick={handleSearch} disabled={searchZip.length < 5 || isSearching}>
+                  <Search className="w-4 h-4 mr-2" />
+                  {isSearching ? 'Searching...' : 'Search'}
+                </Button>
+              </div>
+            </div>
 
-                  {/* Contact Info */}
-                  <div className="space-y-1">
-                    {ffl.phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-900">{ffl.phone}</span>
+            {/* Loading State */}
+            {(isLoading || isSearching) && (
+              <div className="text-center py-4">
+                <div className="animate-spin w-6 h-6 border-2 border-amber-600 border-t-transparent rounded-full mx-auto mb-2"></div>
+                <p className="text-sm text-gray-600">Searching for FFLs...</p>
+              </div>
+            )}
+
+            {/* Results */}
+            {ffls && ffls.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600">{ffls.length} FFL dealers found near {searchZip}</p>
+                
+                <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+                  <div className="space-y-3">
+                    {displayedFfls.map((ffl: FFL) => {
+                      const statusInfo = getStatusInfo(ffl.status, ffl.isRsrPartner);
+                      const StatusIcon = statusInfo.icon;
+                      
+                      return (
+                        <div 
+                          key={ffl.id} 
+                          className="p-3 border rounded-lg hover:border-amber-300 hover:bg-amber-50 cursor-pointer transition-colors"
+                          onClick={() => onFflSelected(ffl.id)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-medium text-gray-900 truncate">
+                                  {ffl.tradeNameDba || ffl.businessName}
+                                </h4>
+                                <Badge className={`text-xs ${statusInfo.color}`}>
+                                  <StatusIcon className="w-3 h-3 mr-1" />
+                                  {statusInfo.label}
+                                </Badge>
+                              </div>
+                              
+                              {ffl.tradeNameDba && (
+                                <p className="text-xs text-gray-600 mb-1">{ffl.businessName}</p>
+                              )}
+                              
+                              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
+                                <MapPin className="w-4 h-4 flex-shrink-0" />
+                                <span className="truncate">{formatAddress(ffl)}</span>
+                              </div>
+                              
+                              {ffl.phone && (
+                                <div className="flex items-center gap-1 text-sm text-gray-600">
+                                  <Phone className="w-4 h-4 flex-shrink-0" />
+                                  <span>{ffl.phone}</span>
+                                </div>
+                              )}
+                              
+                              <p className="text-xs text-gray-500 mt-1">License: {ffl.licenseNumber}</p>
+                            </div>
+                            
+                            <Button size="sm" className="ml-3 flex-shrink-0">
+                              Select
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    
+                    {hasMore && (
+                      <div className="pt-4">
+                        <Button 
+                          variant="outline" 
+                          onClick={loadMore}
+                          className="w-full"
+                        >
+                          <ChevronDown className="w-4 h-4 mr-2" />
+                          Load More FFLs ({ffls.length - displayCount} remaining)
+                        </Button>
                       </div>
                     )}
-                    {ffl.contactEmail && (
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-900">{ffl.contactEmail}</span>
-                      </div>
-                    )}
                   </div>
-                </div>
+                </ScrollArea>
+              </div>
+            )}
 
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <p className="text-xs text-gray-600">
-                    {getStatusDescription(ffl.status)}
-                  </p>
-                  {ffl.status === 'Preferred' && (
-                    <p className="text-xs text-blue-600 mt-1 font-medium">
-                      ⚡ Priority processing - fastest fulfillment
-                    </p>
-                  )}
-                  {ffl.status === 'NotOnFile' && (
-                    <p className="text-xs text-orange-600 mt-1">
-                      ⏱️ Processing may require additional verification time
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-
-    </div>
+            {/* No Results */}
+            {searchZip && ffls && ffls.length === 0 && !isLoading && !isSearching && (
+              <div className="text-center py-8">
+                <Building className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No FFLs found</h3>
+                <p className="text-gray-600 mb-4">
+                  We couldn't find any FFL dealers near ZIP code {searchZip}.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Try searching with a different ZIP code or contact us for assistance.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
