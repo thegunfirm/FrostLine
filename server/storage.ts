@@ -1073,21 +1073,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchFFLsByName(businessName: string, radius = 25): Promise<FFL[]> {
-    // Search FFLs by business name using fuzzy matching
+    // Search FFLs by business name OR trade name (DBA) using fuzzy matching
     const searchTerm = `%${businessName.toLowerCase()}%`;
     
     return await db.select().from(ffls)
       .where(
         and(
           eq(ffls.isAvailableToUser, true),
-          sql`LOWER(${ffls.businessName}) LIKE ${searchTerm}`
+          sql`(LOWER(${ffls.businessName}) LIKE ${searchTerm} OR LOWER(COALESCE(${ffls.tradeNameDba}, '')) LIKE ${searchTerm})`
         )
       )
       .orderBy(
-        // Order by relevance: starts with search term first, then contains
+        // Order by relevance: 
+        // 1. Trade name (DBA) exact matches first (like "Guns Plus")
+        // 2. Business name starts with search term 
+        // 3. Trade name starts with search term
+        // 4. Contains match in business name
+        // 5. Contains match in trade name
         sql`CASE 
-          WHEN LOWER(${ffls.businessName}) LIKE ${businessName.toLowerCase() + '%'} THEN 1
-          ELSE 2
+          WHEN LOWER(COALESCE(${ffls.tradeNameDba}, '')) = ${businessName.toLowerCase()} THEN 1
+          WHEN LOWER(${ffls.businessName}) LIKE ${businessName.toLowerCase() + '%'} THEN 2
+          WHEN LOWER(COALESCE(${ffls.tradeNameDba}, '')) LIKE ${businessName.toLowerCase() + '%'} THEN 3
+          WHEN LOWER(${ffls.businessName}) LIKE ${searchTerm} THEN 4
+          ELSE 5
         END`,
         asc(ffls.businessName)
       )
