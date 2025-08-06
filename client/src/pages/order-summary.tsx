@@ -87,7 +87,7 @@ function UpgradeBenefits({ user }: { user: any }) {
           <Button 
             onClick={handleUpgrade}
             size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white animate-pulse hover:animate-none"
+            className="bg-green-600 hover:bg-green-700 text-white animate-pulse hover:animate-none"
           >
             Upgrade Now
           </Button>
