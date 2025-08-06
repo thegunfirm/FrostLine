@@ -610,6 +610,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get single FFL by ID
+  app.get("/api/ffls/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const ffl = await storage.getFFL(parseInt(id));
+      
+      if (!ffl) {
+        return res.status(404).json({ message: "FFL not found" });
+      }
+      
+      res.set('Cache-Control', 'public, max-age=1800'); // 30 minutes
+      res.json(ffl);
+    } catch (error) {
+      console.error("Get FFL error:", error);
+      res.status(500).json({ message: "Failed to fetch FFL" });
+    }
+  });
+
   // Admin FFL management routes
   app.get("/api/admin/ffls", async (req, res) => {
     try {
