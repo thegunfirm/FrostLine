@@ -47,21 +47,19 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
   });
 
   // Get selected FFL details
-  const { data: selectedFflDetails, isLoading: isLoadingSelected } = useQuery({
+  const { data: selectedFflDetails, isLoading: isLoadingSelected, error: selectedFflError } = useQuery({
     queryKey: ['/api/ffls', selectedFflId],
     queryFn: async () => {
       if (!selectedFflId) return null;
-      try {
-        const response = await apiRequest('GET', `/api/ffls/${selectedFflId}`);
-        return response.json();
-      } catch (error) {
-        console.error('Failed to fetch FFL details:', error);
-        return null;
-      }
+      console.log('🔍 Fetching FFL details for ID:', selectedFflId);
+      const response = await apiRequest('GET', `/api/ffls/${selectedFflId}`);
+      const data = await response.json();
+      console.log('✅ FFL details received:', data);
+      return data;
     },
     enabled: !!selectedFflId,
-    retry: 2, // Only retry twice
-    retryDelay: 1000, // Wait 1 second between retries
+    retry: 1,
+    retryDelay: 500,
   });
 
   const handleSearch = async () => {
@@ -297,9 +295,11 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
           </div>
         )}
         
-        {selectedFflId && !isLoadingSelected && !selectedFflDetails && (
+        {selectedFflId && !isLoadingSelected && selectedFflError && (
           <div className="p-4 border rounded-lg bg-red-50 text-red-700">
             Failed to load FFL details. Please try selecting again.
+            <br />
+            <small className="text-red-600">Error: {selectedFflError.message}</small>
           </div>
         )}
       </CardContent>
