@@ -194,14 +194,14 @@ function OrderSummaryPageContent() {
                     <img
                       src={`/api/rsr-image/${item.productSku || item.sku}`}
                       alt={item.productName}
-                      className="w-20 h-auto object-contain rounded-lg flex-shrink-0"
+                      className="w-32 h-auto object-contain rounded-lg flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src = "/fallback-logo.png";
                         e.currentTarget.onerror = null;
                       }}
                     />
                     
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 ml-2">
                       <h3 className="font-semibold text-gray-900 mb-1">{item.productName}</h3>
                       
                       <div className="flex items-center gap-2 mb-2">
