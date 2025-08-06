@@ -54,6 +54,7 @@ interface CartState {
   mergeGuestCart: (user: User) => Promise<void>;
   loadUserCart: (user: User) => Promise<void>;
   clearOnLogout: () => void;
+  forceRefreshFromServer: () => Promise<void>;
   
   // Computed properties
   getTotalPrice: () => number;
@@ -144,6 +145,8 @@ export const useCart = create<CartState>()(
 
       clearCart: async () => {
         set({ items: [], guestCartBackup: [] });
+        // Also clear localStorage to prevent state corruption
+        localStorage.removeItem('gun-firm-cart');
         await get().syncWithServer();
       },
 
@@ -176,10 +179,10 @@ export const useCart = create<CartState>()(
             );
             
             if (existingIndex >= 0) {
-              // Increase quantity - ensure we don't duplicate
-              mergedItems[existingIndex].quantity = Math.max(
-                mergedItems[existingIndex].quantity, 
-                guestItem.quantity
+              // Add quantities together, but cap at reasonable limit
+              mergedItems[existingIndex].quantity = Math.min(
+                10,
+                mergedItems[existingIndex].quantity + guestItem.quantity
               );
             } else {
               // Add new item
@@ -216,6 +219,29 @@ export const useCart = create<CartState>()(
 
       clearOnLogout: () => {
         set({ items: [], guestCartBackup: [], isCartOpen: false });
+        // Clear localStorage to prevent corruption
+        localStorage.removeItem('gun-firm-cart');
+      },
+
+      // Force refresh cart from server - useful for fixing corrupted state
+      forceRefreshFromServer: async () => {
+        try {
+          set({ isLoading: true });
+          
+          // Clear localStorage completely
+          localStorage.removeItem('gun-firm-cart');
+          
+          // Clear server cart first
+          await apiRequest('POST', '/api/cart/sync', { items: [] });
+          
+          // Reset local state
+          set({ items: [], guestCartBackup: [] });
+          
+        } catch (error) {
+          console.error('Failed to force refresh cart:', error);
+        } finally {
+          set({ isLoading: false });
+        }
       },
 
       syncWithServer: async () => {
