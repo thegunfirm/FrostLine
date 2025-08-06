@@ -23,7 +23,7 @@ interface FFL {
 
 interface FflSelectorProps {
   selectedFflId: number | null;
-  onFflSelected: (fflId: number) => void;
+  onFflSelected: (fflId: number | null) => void;
   userZip: string;
 }
 
@@ -98,46 +98,53 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
       <CardContent className="space-y-4">
         
         {/* Show selected FFL if one is chosen */}
-        {selectedFflDetails ? (
+        {selectedFflId && selectedFflDetails ? (
           <div className="space-y-4">
-            <div className="p-4 border-2 border-green-200 bg-green-50 rounded-lg">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold text-gray-900">
-                      {selectedFflDetails.tradeNameDba || selectedFflDetails.businessName}
-                    </h3>
-                    {(() => {
-                      const statusInfo = getStatusInfo(selectedFflDetails.status, selectedFflDetails.isRsrPartner);
-                      const StatusIcon = statusInfo.icon;
-                      return (
-                        <Badge className={`text-xs ${statusInfo.color}`}>
-                          <StatusIcon className="w-3 h-3 mr-1" />
-                          {statusInfo.label}
-                        </Badge>
-                      );
-                    })()}
-                  </div>
-                  
-                  {selectedFflDetails.tradeNameDba && (
-                    <p className="text-xs text-gray-600 mb-1">{selectedFflDetails.businessName}</p>
-                  )}
-                  
-                  <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                    <MapPin className="w-4 h-4" />
-                    <span>{formatAddress(selectedFflDetails)}</span>
-                  </div>
-                  
-                  {selectedFflDetails.phone && (
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <Phone className="w-4 h-4" />
-                      <span>{selectedFflDetails.phone}</span>
-                    </div>
-                  )}
-                  
-                  <p className="text-xs text-gray-500 mt-2">License: {selectedFflDetails.licenseNumber}</p>
-                </div>
+            {/* Success confirmation */}
+            <div className="p-4 border-2 border-green-500 bg-green-50 rounded-lg">
+              <div className="flex items-center gap-3 mb-3">
                 <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-green-800">FFL Dealer Selected</h3>
+                  <p className="text-sm text-green-600">You can now proceed to checkout</p>
+                </div>
+              </div>
+              
+              <div className="ml-9">
+                <h4 className="font-medium text-gray-900 mb-1">
+                  {selectedFflDetails.tradeNameDba || selectedFflDetails.businessName}
+                </h4>
+                
+                <div className="flex items-center gap-2 mb-2">
+                  {(() => {
+                    const statusInfo = getStatusInfo(selectedFflDetails.status, selectedFflDetails.isRsrPartner);
+                    const StatusIcon = statusInfo.icon;
+                    return (
+                      <Badge className={`text-xs ${statusInfo.color}`}>
+                        <StatusIcon className="w-3 h-3 mr-1" />
+                        {statusInfo.label}
+                      </Badge>
+                    );
+                  })()}
+                </div>
+                
+                {selectedFflDetails.tradeNameDba && (
+                  <p className="text-xs text-gray-600 mb-1">{selectedFflDetails.businessName}</p>
+                )}
+                
+                <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
+                  <MapPin className="w-4 h-4" />
+                  <span>{formatAddress(selectedFflDetails)}</span>
+                </div>
+                
+                {selectedFflDetails.phone && (
+                  <div className="flex items-center gap-1 text-sm text-gray-600">
+                    <Phone className="w-4 h-4" />
+                    <span>{selectedFflDetails.phone}</span>
+                  </div>
+                )}
+                
+                <p className="text-xs text-gray-500 mt-2">License: {selectedFflDetails.licenseNumber}</p>
               </div>
             </div>
             
