@@ -366,8 +366,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       transactionRequest.setAmount(amount);
       transactionRequest.setBillTo(billTo);
 
-      // Set line items
-      const lineItems = new ApiContracts.ArrayOfLineItem();
+      // Set line items - simplified approach
+      const lineItemsArray = [];
       orderItems.forEach((item: any, index: number) => {
         const lineItem = new ApiContracts.LineItemType();
         lineItem.setItemId(item.rsrStock || `item-${index}`);
@@ -375,9 +375,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lineItem.setName(itemName.substring(0, 31)); // Max 31 chars
         lineItem.setQuantity(item.quantity);
         lineItem.setUnitPrice(item.price);
-        lineItems.getLineItem().push(lineItem);
+        lineItemsArray.push(lineItem);
       });
-      transactionRequest.setLineItems(lineItems);
+      
+      if (lineItemsArray.length > 0) {
+        const lineItems = new ApiContracts.ArrayOfLineItem();
+        lineItems.setLineItem(lineItemsArray);
+        transactionRequest.setLineItems(lineItems);
+      }
 
       const createRequest = new ApiContracts.CreateTransactionRequest();
       createRequest.setMerchantAuthentication(merchantAuth);
