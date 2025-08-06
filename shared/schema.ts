@@ -286,6 +286,10 @@ export type OrderRestriction = typeof orderRestrictions.$inferSelect;
 export type InsertOrderRestriction = typeof orderRestrictions.$inferInsert;
 export type InsertHeroCarouselSlide = typeof heroCarouselSlides.$inferInsert;
 export type CategoryRibbon = typeof categoryRibbons.$inferSelect;
+export type AtfDirectoryFile = typeof atfDirectoryFiles.$inferSelect;
+export type InsertAtfDirectoryFile = typeof atfDirectoryFiles.$inferInsert;
+export type FflDataSource = typeof fflDataSources.$inferSelect;
+export type InsertFflDataSource = typeof fflDataSources.$inferInsert;
 
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users);
@@ -421,6 +425,40 @@ export const membershipTierSettings = pgTable("membership_tier_settings", {
   lastModifiedBy: integer("last_modified_by"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ATF Directory File Management (Management Level Staff)
+export const atfDirectoryFiles = pgTable("atf_directory_files", {
+  id: serial("id").primaryKey(),
+  fileName: text("file_name").notNull(),
+  filePath: text("file_path").notNull(), // Object storage path
+  fileSize: integer("file_size").notNull(), // Size in bytes
+  fileType: text("file_type").notNull(), // xlsx, txt, csv
+  periodMonth: integer("period_month").notNull(), // 1-12
+  periodYear: integer("period_year").notNull(), // 2025, etc.
+  uploadedBy: integer("uploaded_by").notNull(), // management staff user ID
+  processedAt: timestamp("processed_at"), // When file was processed into FFLs
+  processingStatus: text("processing_status").notNull().default("pending"), // pending, processing, completed, failed
+  recordsTotal: integer("records_total"), // Total records in file
+  recordsProcessed: integer("records_processed"), // Successfully processed
+  recordsSkipped: integer("records_skipped"), // Skipped (duplicates, errors)
+  errorLog: text("error_log"), // Processing errors
+  isActive: boolean("is_active").default(true), // Current active directory
+  notes: text("notes"), // Management notes
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// FFL Data Source Tracking
+export const fflDataSources = pgTable("ffl_data_sources", {
+  id: serial("id").primaryKey(),
+  sourceType: text("source_type").notNull(), // 'rsr', 'atf', 'manual'
+  sourceName: text("source_name").notNull(), // 'RSR Distribution', 'ATF Directory July 2025', etc.
+  lastUpdated: timestamp("last_updated").notNull(),
+  recordCount: integer("record_count").notNull(),
+  isActive: boolean("is_active").default(true),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // User Activity Logs (Support/Admin)

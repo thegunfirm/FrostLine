@@ -16,6 +16,8 @@ import {
   userActivityLogs,
   checkoutSettings,
   fulfillmentSettings,
+  atfDirectoryFiles,
+  fflDataSources,
   type User, 
   type InsertUser,
   type Product,
@@ -45,7 +47,11 @@ import {
   type CheckoutSetting,
   type InsertCheckoutSetting,
   type FulfillmentSetting,
-  type InsertFulfillmentSetting
+  type InsertFulfillmentSetting,
+  type AtfDirectoryFile,
+  type InsertAtfDirectoryFile,
+  type FflDataSource,
+  type InsertFflDataSource
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, like, ilike, and, or, desc, asc, ne, sql } from "drizzle-orm";
@@ -161,6 +167,17 @@ export interface IStorage {
   // User Activity Logs (Support/Admin)
   getUserActivityLogs(userId?: number, limit?: number): Promise<UserActivityLog[]>;
   logUserActivity(log: InsertUserActivityLog): Promise<UserActivityLog>;
+
+  // ATF Directory Management (Management Level Staff)
+  getAtfDirectoryFiles(): Promise<AtfDirectoryFile[]>;
+  getAtfDirectoryFile(id: number): Promise<AtfDirectoryFile | undefined>;
+  createAtfDirectoryFile(file: InsertAtfDirectoryFile): Promise<AtfDirectoryFile>;
+  updateAtfDirectoryFile(id: number, updates: Partial<AtfDirectoryFile>): Promise<AtfDirectoryFile>;
+  
+  // FFL Data Source Tracking
+  getFflDataSources(): Promise<FflDataSource[]>;
+  createFflDataSource(source: InsertFflDataSource): Promise<FflDataSource>;
+  updateFflDataSource(id: number, updates: Partial<FflDataSource>): Promise<FflDataSource>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1486,6 +1503,57 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return user;
+  }
+
+  // ATF Directory Management (Management Level Staff)
+  async getAtfDirectoryFiles(): Promise<AtfDirectoryFile[]> {
+    return await db.select()
+      .from(atfDirectoryFiles)
+      .orderBy(desc(atfDirectoryFiles.createdAt));
+  }
+
+  async getAtfDirectoryFile(id: number): Promise<AtfDirectoryFile | undefined> {
+    const [file] = await db.select()
+      .from(atfDirectoryFiles)
+      .where(eq(atfDirectoryFiles.id, id));
+    return file || undefined;
+  }
+
+  async createAtfDirectoryFile(file: InsertAtfDirectoryFile): Promise<AtfDirectoryFile> {
+    const [newFile] = await db.insert(atfDirectoryFiles)
+      .values(file)
+      .returning();
+    return newFile;
+  }
+
+  async updateAtfDirectoryFile(id: number, updates: Partial<AtfDirectoryFile>): Promise<AtfDirectoryFile> {
+    const [updatedFile] = await db.update(atfDirectoryFiles)
+      .set(updates)
+      .where(eq(atfDirectoryFiles.id, id))
+      .returning();
+    return updatedFile;
+  }
+
+  // FFL Data Source Tracking
+  async getFflDataSources(): Promise<FflDataSource[]> {
+    return await db.select()
+      .from(fflDataSources)
+      .orderBy(desc(fflDataSources.lastUpdated));
+  }
+
+  async createFflDataSource(source: InsertFflDataSource): Promise<FflDataSource> {
+    const [newSource] = await db.insert(fflDataSources)
+      .values(source)
+      .returning();
+    return newSource;
+  }
+
+  async updateFflDataSource(id: number, updates: Partial<FflDataSource>): Promise<FflDataSource> {
+    const [updatedSource] = await db.update(fflDataSources)
+      .set(updates)
+      .where(eq(fflDataSources.id, id))
+      .returning();
+    return updatedSource;
   }
 }
 

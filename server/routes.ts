@@ -42,6 +42,23 @@ function getDepartmentName(department: string): string {
   return departmentNames[department] || `Department ${department}`;
 }
 
+// Configure multer for file uploads
+const upload = multer({
+  dest: 'uploads/', // Files will be stored in uploads/ directory
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit for ATF directory files
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept Excel files only
+    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+        file.mimetype === 'application/vnd.ms-excel') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only Excel files are allowed'));
+    }
+  }
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
   app.post("/api/register", async (req, res) => {
@@ -4762,6 +4779,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Tier settings update error:", error);
       res.status(500).json({ error: "Failed to update tier settings" });
+    }
+  });
+
+  // Management ATF Directory Routes (Management Role Only)
+  const requireManagementRole = (req: any, res: any, next: any) => {
+    if (!req.session?.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    if (!['admin', 'manager'].includes(req.session.user.role)) {
+      return res.status(403).json({ message: "Management access required" });
+    }
+    
+    next();
+  };
+
+  // Get ATF directory files
+  app.get("/api/management/atf-directory/files", requireManagementRole, async (req, res) => {
+    try {
+      const files = await storage.getAtfDirectoryFiles();
+      res.json(files);
+    } catch (error) {
+      console.error("Get ATF directory files error:", error);
+      res.status(500).json({ message: "Failed to fetch ATF directory files" });
+    }
+  });
+
+  // Upload ATF directory file
+  app.post("/api/management/atf-directory/upload", requireManagementRole, upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const { periodMonth, periodYear, notes } = req.body;
+      
+      if (!periodMonth || !periodYear) {
+        return res.status(400).json({ message: "Period month and year are required" });
+      }
+
+      const fileRecord = await storage.createAtfDirectoryFile({
+        fileName: req.file.originalname,
+        filePath: req.file.path,
+        fileSize: req.file.size,
+        fileType: req.file.mimetype,
+        periodMonth: parseInt(periodMonth),
+        periodYear: parseInt(periodYear),
+        uploadedBy: req.session.user.id,
+        notes: notes || null,
+      });
+
+      res.json({ 
+        message: "File uploaded successfully", 
+        fileId: fileRecord.id 
+      });
+    } catch (error) {
+      console.error("ATF directory file upload error:", error);
+      res.status(500).json({ message: "Failed to upload ATF directory file" });
+    }
+  });
+
+  // Process ATF directory file
+  app.post("/api/management/atf-directory/process/:fileId", requireManagementRole, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.fileId);
+      const file = await storage.getAtfDirectoryFile(fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: "ATF directory file not found" });
+      }
+
+      // Update status to processing
+      await storage.updateAtfDirectoryFile(fileId, {
+        processingStatus: "processing",
+        updatedAt: new Date(),
+      });
+
+      // Start background processing
+      const { spawn } = require('child_process');
+      const process = spawn('node', ['scripts/process-atf-directory.js', fileId.toString()], {
+        stdio: 'inherit',
+        detached: true
+      });
+      
+      process.unref();
+
+      res.json({ message: "ATF directory file processing started" });
+    } catch (error) {
+      console.error("ATF directory file processing error:", error);
+      res.status(500).json({ message: "Failed to start processing ATF directory file" });
+    }
+  });
+
+  // Download ATF directory file
+  app.get("/api/management/atf-directory/download/:fileId", requireManagementRole, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.fileId);
+      const file = await storage.getAtfDirectoryFile(fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: "ATF directory file not found" });
+      }
+
+      res.download(file.filePath, file.fileName);
+    } catch (error) {
+      console.error("ATF directory file download error:", error);
+      res.status(500).json({ message: "Failed to download ATF directory file" });
     }
   });
 
