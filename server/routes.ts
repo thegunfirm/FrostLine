@@ -10,7 +10,7 @@ import { pricingEngine } from "./services/pricing-engine";
 import { db } from "./db";
 import { sql, eq, and, ne, inArray, desc } from "drizzle-orm";
 import { z } from "zod";
-import * as authorizenet from "authorizenet";
+// Authorize.Net will be imported dynamically in the payment endpoint
 // import { hybridSearch } from "./services/hybrid-search";
 import { rsrAPI, type RSRProduct } from "./services/rsr-api";
 import { inventorySync } from "./services/inventory-sync";
@@ -319,8 +319,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post('/api/process-payment', async (req, res) => {
     console.log('💳 Processing payment request...');
-    // For now, we'll allow payment processing without strict session auth
-    // In production, this would verify proper user authentication
+    // TODO: Re-enable authentication for production
+    // if (!req.session?.user) {
+    //   return res.status(401).json({ success: false, error: 'Authentication required' });
+    // }
     try {
       const { 
         cardNumber, 
@@ -331,7 +333,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orderItems 
       } = req.body;
 
-      // Use Authorize.Net SDK
+      // Dynamic import for Authorize.Net SDK in ES modules
+      const authorizenet = await import('authorizenet');
       const ApiContracts = authorizenet.APIContracts;
       const ApiControllers = authorizenet.APIControllers;
 
