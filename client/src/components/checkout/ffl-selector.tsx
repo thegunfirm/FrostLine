@@ -47,14 +47,21 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
   });
 
   // Get selected FFL details
-  const { data: selectedFflDetails } = useQuery({
+  const { data: selectedFflDetails, isLoading: isLoadingSelected } = useQuery({
     queryKey: ['/api/ffls', selectedFflId],
     queryFn: async () => {
       if (!selectedFflId) return null;
-      const response = await apiRequest('GET', `/api/ffls/${selectedFflId}`);
-      return response.json();
+      try {
+        const response = await apiRequest('GET', `/api/ffls/${selectedFflId}`);
+        return response.json();
+      } catch (error) {
+        console.error('Failed to fetch FFL details:', error);
+        return null;
+      }
     },
     enabled: !!selectedFflId,
+    retry: 2, // Only retry twice
+    retryDelay: 1000, // Wait 1 second between retries
   });
 
   const handleSearch = async () => {
@@ -98,7 +105,16 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
       <CardContent className="space-y-4">
         
         {/* Show selected FFL if one is chosen */}
-        {selectedFflId && selectedFflDetails ? (
+        {selectedFflId && isLoadingSelected && (
+          <div className="p-4 border rounded-lg bg-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin w-5 h-5 border-2 border-amber-600 border-t-transparent rounded-full"></div>
+              <span>Loading FFL details...</span>
+            </div>
+          </div>
+        )}
+        
+        {selectedFflId && !isLoadingSelected && selectedFflDetails && (
           <div className="space-y-4">
             {/* Success confirmation */}
             <div className="p-4 border-2 border-green-500 bg-green-50 rounded-lg">
@@ -156,16 +172,12 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
               Change FFL Dealer
             </Button>
           </div>
-        ) : selectedFflId ? (
-          <div className="text-center py-4">
-            <div className="animate-spin w-6 h-6 border-2 border-amber-600 border-t-transparent rounded-full mx-auto mb-2"></div>
-            <p className="text-sm text-gray-600">Loading FFL details...</p>
-          </div>
-        ) : (
-          <>
-            {/* Search Interface - Only show if no FFL is selected */}
-            {!selectedFflId && (
-              <div className="space-y-3">
+        )}
+        
+        {/* Search Interface - Only show if no FFL is selected */}
+        {!selectedFflId && (
+          <div className="space-y-4">
+            <div className="space-y-3">
                 <div className="flex gap-2">
                   <Input
                     placeholder="Enter ZIP code to find FFLs near you"
@@ -180,10 +192,9 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
                   </Button>
                 </div>
               </div>
-            )}
 
             {/* Loading State - Only show if no FFL is selected */}
-            {!selectedFflId && (isLoading || isSearching) && (
+            {(isLoading || isSearching) && (
               <div className="text-center py-4">
                 <div className="animate-spin w-6 h-6 border-2 border-amber-600 border-t-transparent rounded-full mx-auto mb-2"></div>
                 <p className="text-sm text-gray-600">Searching for FFLs...</p>
@@ -191,7 +202,7 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
             )}
 
             {/* Results - Only show if no FFL is selected */}
-            {!selectedFflId && ffls && ffls.length > 0 && (
+            {ffls && ffls.length > 0 && (
               <div className="space-y-3">
                 <p className="text-sm text-gray-600">{ffls.length} FFL dealers found near {searchZip}</p>
                 
@@ -271,7 +282,7 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
             )}
 
             {/* No Results - Only show if no FFL is selected */}
-            {!selectedFflId && searchZip && ffls && ffls.length === 0 && !isLoading && !isSearching && (
+            {searchZip && ffls && ffls.length === 0 && !isLoading && !isSearching && (
               <div className="text-center py-8">
                 <Building className="w-12 h-12 mx-auto text-gray-400 mb-3" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No FFLs found</h3>
@@ -283,7 +294,13 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
                 </p>
               </div>
             )}
-          </>
+          </div>
+        )}
+        
+        {selectedFflId && !isLoadingSelected && !selectedFflDetails && (
+          <div className="p-4 border rounded-lg bg-red-50 text-red-700">
+            Failed to load FFL details. Please try selecting again.
+          </div>
         )}
       </CardContent>
     </Card>

@@ -11,6 +11,10 @@ Email verification: Users must verify their email address before being able to s
 Testing policy: No assumptions - use test or dummy data ONLY FOR FAKE USERS. Inventory must always remain intact with authentic RSR data. No test data should ever be added to real product inventory. FFL directory must use only authentic FFL data - no fake dealers should be added to the system.
 **CRITICAL IMAGE HANDLING RULE (2025-08-06)**: For product images in cart/order displays, NEVER use containers with gray backgrounds or fixed heights. Use direct image elements with `w-[size] h-auto object-contain` classes only. This prevents background showing through and maintains natural image proportions. This has been an issue multiple times - always use this simple approach.
 
+**CART CORRUPTION SOLUTION (2025-08-06)**: Cart items persistently reappearing due to localStorage persistence issues. Fixed with comprehensive clearing mechanism including both localStorage removal and server-side force-clear endpoint. Script provided for manual clearing when corruption occurs.
+
+**FFL SELECTOR IMPROVEMENTS (2025-08-06)**: Fixed indefinite loading issues in FFL selector component by adding proper error handling, loading states, and retry logic. Component now gracefully handles network timeouts and provides clear user feedback.
+
 ## System Architecture
 
 ### Dual Platform Infrastructure
