@@ -192,7 +192,7 @@ function OrderSummaryPageContent() {
                 return (
                   <div key={item.id} className="flex items-start gap-3 p-3 border rounded-lg">
                     <img
-                      src={`/api/rsr-image/${item.productSku || item.sku}`}
+                      src={`/api/rsr-image/${item.productSku}`}
                       alt={item.productName}
                       className="w-32 h-auto object-contain rounded-lg flex-shrink-0"
                       onError={(e) => {
@@ -342,13 +342,9 @@ function OrderSummaryPageContent() {
               >
                 {isProcessing ? (
                   'Processing...'
-                ) : hasFirearms() ? (
-                  <>
-                    Select FFL Dealer <ArrowRight className="w-4 h-4 ml-2" />
-                  </>
                 ) : (
                   <>
-                    Proceed to Shipping <ArrowRight className="w-4 h-4 ml-2" />
+                    Proceed to Checkout <ArrowRight className="w-4 h-4 ml-2" />
                   </>
                 )}
               </Button>
