@@ -136,8 +136,13 @@ function OrderSummaryPageContent() {
     setIsProcessing(true);
     
     try {
-      // Always go to shipping first - FFL selection will be handled within the checkout flow
-      setLocation('/shipping');
+      // If cart has firearms, go to FFL selection first
+      if (hasFirearms()) {
+        setLocation('/ffl-selection');
+      } else {
+        // No firearms, skip FFL selection and go directly to shipping
+        setLocation('/shipping');
+      }
     } catch (error) {
       console.error('Error proceeding to checkout:', error);
     } finally {
