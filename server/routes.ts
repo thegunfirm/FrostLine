@@ -3892,6 +3892,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== DELIVERY TIME SETTINGS API =====
+  
+  // Get delivery time settings
+  app.get("/api/delivery-time-settings", async (req, res) => {
+    try {
+      const { deliveryTimeSettings } = await import("../shared/schema");
+      const settings = await db.select().from(deliveryTimeSettings).where(eq(deliveryTimeSettings.isActive, true));
+      res.json(settings);
+    } catch (error) {
+      console.error('Delivery time settings error:', error);
+      res.status(500).json({ error: 'Failed to load delivery time settings' });
+    }
+  });
+
+  // Get all delivery time settings (admin)
+  app.get("/api/admin/delivery-time-settings", async (req, res) => {
+    try {
+      const { deliveryTimeSettings } = await import("../shared/schema");
+      const settings = await db.select().from(deliveryTimeSettings);
+      res.json(settings);
+    } catch (error) {
+      console.error('Admin delivery time settings error:', error);
+      res.status(500).json({ error: 'Failed to load delivery time settings' });
+    }
+  });
+
+  // Update delivery time setting
+  app.put("/api/admin/delivery-time-settings/:id", async (req, res) => {
+    try {
+      const { deliveryTimeSettings } = await import("../shared/schema");
+      const { id } = req.params;
+      const { estimatedDays, description, isActive } = req.body;
+      
+      const [setting] = await db.update(deliveryTimeSettings)
+        .set({
+          estimatedDays,
+          description,
+          isActive,
+          updatedAt: new Date()
+        })
+        .where(eq(deliveryTimeSettings.id, parseInt(id)))
+        .returning();
+      
+      res.json(setting);
+    } catch (error) {
+      console.error('Delivery time setting update error:', error);
+      res.status(500).json({ error: 'Failed to update delivery time setting' });
+    }
+  });
+
   // ===== FILTER CONFIGURATION ADMIN =====
   
   // Get all filter configurations

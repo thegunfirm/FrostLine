@@ -235,6 +235,16 @@ export const orderRestrictions = pgTable("order_restrictions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Estimated delivery times for different fulfillment types
+export const deliveryTimeSettings = pgTable("delivery_time_settings", {
+  id: serial("id").primaryKey(),
+  fulfillmentType: text("fulfillment_type").notNull().unique(), // "drop_to_ffl", "no_drop_to_ffl", "drop_to_consumer"
+  estimatedDays: text("estimated_days").notNull(), // "7-10 business days"
+  description: text("description"), // "Items ship to us first, then to your FFL dealer"
+  isActive: boolean("is_active").default(true),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many, one }) => ({
   orders: many(orders),
@@ -273,6 +283,8 @@ export type FFL = typeof ffls.$inferSelect;
 export type InsertFFL = typeof ffls.$inferInsert;
 export type Cart = typeof carts.$inferSelect;
 export type InsertCart = typeof carts.$inferInsert;
+export type DeliveryTimeSetting = typeof deliveryTimeSettings.$inferSelect;
+export type InsertDeliveryTimeSetting = typeof deliveryTimeSettings.$inferInsert;
 export type CheckoutSetting = typeof checkoutSettings.$inferSelect;
 export type InsertCheckoutSetting = typeof checkoutSettings.$inferInsert;
 export type FulfillmentSetting = typeof fulfillmentSettings.$inferSelect;

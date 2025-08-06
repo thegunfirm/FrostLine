@@ -33,6 +33,45 @@ function CheckoutPageContent() {
     enabled: !!user,
   });
 
+  // Fetch delivery time settings
+  const { data: deliveryTimeSettings } = useQuery({
+    queryKey: ['/api/delivery-time-settings'],
+  });
+
+  // Helper function to determine fulfillment type for a product
+  const getFulfillmentType = (item: any) => {
+    if (!item.requiresFFL) {
+      return 'drop_to_consumer';
+    }
+    
+    // For firearms, check if it's a "drop to FFL" item (like Glock)
+    // Items that need to come to us first before going to FFL
+    const dropToFflBrands = ['GLOCK', 'SMITH & WESSON', 'SIG SAUER']; // Configurable list
+    const manufacturer = item.manufacturer?.toUpperCase() || '';
+    
+    if (dropToFflBrands.some(brand => manufacturer.includes(brand))) {
+      return 'drop_to_ffl';
+    }
+    
+    return 'no_drop_to_ffl';
+  };
+
+  // Helper function to get delivery time for a fulfillment type
+  const getDeliveryTime = (fulfillmentType: string) => {
+    if (!deliveryTimeSettings) return '3-5 business days';
+    
+    const setting = deliveryTimeSettings.find((s: any) => s.fulfillmentType === fulfillmentType);
+    return setting?.estimatedDays || '3-5 business days';
+  };
+
+  // Helper function to get delivery description
+  const getDeliveryDescription = (fulfillmentType: string) => {
+    if (!deliveryTimeSettings) return '';
+    
+    const setting = deliveryTimeSettings.find((s: any) => s.fulfillmentType === fulfillmentType);
+    return setting?.description || '';
+  };
+
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -104,7 +143,28 @@ function CheckoutPageContent() {
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <Shield className="w-5 h-5 text-amber-600" />
-                    <h3 className="font-medium text-gray-900">Items shipping to your FFL dealer</h3>
+                    <div>
+                      <h3 className="font-medium text-gray-900">Items shipping to your FFL dealer</h3>
+                      {fflItems.length > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
+                          <Clock className="w-3 h-3" />
+                          {(() => {
+                            const firstItem = fflItems[0];
+                            const fulfillmentType = getFulfillmentType(firstItem);
+                            const deliveryTime = getDeliveryTime(fulfillmentType);
+                            const description = getDeliveryDescription(fulfillmentType);
+                            return (
+                              <span>
+                                Estimated delivery: {deliveryTime}
+                                {description && (
+                                  <span className="text-gray-500"> • {description}</span>
+                                )}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-3 pl-7">
                     {fflItems.map((item) => (
@@ -187,7 +247,16 @@ function CheckoutPageContent() {
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <Truck className="w-5 h-5 text-green-600" />
-                    <h3 className="font-medium text-gray-900">These items ship directly to you</h3>
+                    <div>
+                      <h3 className="font-medium text-gray-900">These items ship directly to you</h3>
+                      <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
+                        <Clock className="w-3 h-3" />
+                        <span>
+                          Estimated delivery: {getDeliveryTime('drop_to_consumer')}
+                          <span className="text-gray-500"> • {getDeliveryDescription('drop_to_consumer')}</span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div className="space-y-3 pl-7">
                     {directShipItems.map((item) => (
