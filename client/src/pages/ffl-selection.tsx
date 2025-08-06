@@ -30,6 +30,11 @@ function UpgradeBenefits({ user }: { user: any }) {
   const potentialSavings = totalPrice * platinumDiscount;
   const additionalSavings = potentialSavings - currentSavings;
 
+  // Safety check for NaN values
+  if (isNaN(totalPrice) || isNaN(currentSavings) || isNaN(potentialSavings) || isNaN(additionalSavings)) {
+    return null;
+  }
+
   const handleUpgrade = () => {
     // Store current location to return after upgrade
     sessionStorage.setItem('checkout_return_url', '/ffl-selection');

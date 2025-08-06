@@ -235,7 +235,11 @@ export const useCart = create<CartState>()(
 
       getTotalPrice: () => {
         const { items } = get();
-        return items.reduce((total, item) => total + (item.price * item.quantity), 0);
+        return items.reduce((total, item) => {
+          const itemPrice = typeof item.price === 'number' && !isNaN(item.price) ? item.price : 0;
+          const itemQuantity = typeof item.quantity === 'number' && !isNaN(item.quantity) ? item.quantity : 0;
+          return total + (itemPrice * itemQuantity);
+        }, 0);
       },
 
       getItemCount: () => {

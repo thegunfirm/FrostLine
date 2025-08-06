@@ -38,6 +38,11 @@ function UpgradeBenefits({ user }: { user: any }) {
   const potentialSavings = totalPrice * platinumDiscount;
   const additionalSavings = potentialSavings - currentSavings;
 
+  // Safety check for NaN values
+  if (isNaN(totalPrice) || isNaN(currentSavings) || isNaN(potentialSavings) || isNaN(additionalSavings)) {
+    return null;
+  }
+
   const handleUpgrade = () => {
     // Store current location to return after upgrade
     sessionStorage.setItem('checkout_return_url', '/order-summary');
@@ -260,11 +265,11 @@ function OrderSummaryPageContent() {
                     
                     <div className="text-right">
                       <div className="font-semibold text-lg">
-                        {formatPrice((item as any).finalPrice * item.quantity)}
+                        {formatPrice(item.price * item.quantity)}
                       </div>
-                      {(item as any).originalPrice > (item as any).finalPrice && (
+                      {(item as any).priceBronze && (item as any).priceBronze > item.price && (
                         <div className="text-sm text-gray-500 line-through">
-                          {formatPrice((item as any).originalPrice * item.quantity)}
+                          {formatPrice((item as any).priceBronze * item.quantity)}
                         </div>
                       )}
                     </div>
