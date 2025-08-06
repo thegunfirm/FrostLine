@@ -196,11 +196,11 @@ function OrderSummaryPageContent() {
                 
                 return (
                   <div key={item.id} className="flex items-start gap-3 p-3 border rounded-lg">
-                    <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
-                      <img 
+                    <div className="bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center w-16 h-16 flex-shrink-0">
+                      <img
                         src={`/api/rsr-image/${item.productSku || item.sku}`}
                         alt={item.productName}
-                        className="w-full h-auto object-contain max-w-full"
+                        className="w-full h-auto object-contain transition-opacity duration-300 max-w-full"
                         onError={(e) => {
                           e.currentTarget.src = "/fallback-logo.png";
                           e.currentTarget.onerror = null;
