@@ -9,6 +9,7 @@ Image policy: NEVER use Unsplash or any placeholder images. Only use authentic d
 Code preservation: Always maintain working solutions - never overwrite functioning code without explicit user request.
 Email verification: Users must verify their email address before being able to sign in (implemented 2025-08-05).
 Testing policy: No assumptions - use test or dummy data ONLY FOR FAKE USERS. Inventory must always remain intact with authentic RSR data. No test data should ever be added to real product inventory. FFL directory must use only authentic FFL data - no fake dealers should be added to the system.
+**CRITICAL IMAGE HANDLING RULE (2025-08-06)**: For product images in cart/order displays, NEVER use containers with gray backgrounds or fixed heights. Use direct image elements with `w-[size] h-auto object-contain` classes only. This prevents background showing through and maintains natural image proportions. This has been an issue multiple times - always use this simple approach.
 
 ## System Architecture
 
