@@ -960,81 +960,113 @@ export class DatabaseStorage implements IStorage {
 
   async searchFFLsByZip(zip: string, radius = 25): Promise<FFL[]> {
     try {
-      console.log(`🔍 ZIP ${zip} search: Smart distance-based search within ${radius} miles`);
+      console.log(`🔍 ZIP ${zip} search: True distance-based search within ${radius} miles`);
       
       const targetZip = zip.substring(0, 5);
       
-      // Strategy: Use smart ZIP-based filtering that approximates distance
-      // This avoids database overload while still providing distance-relevant results
-      
-      // For small radius, prioritize exact ZIP and immediate neighbors
-      if (radius <= 10) {
-        console.log(`📍 Small radius search (${radius} miles) - exact ZIP priority`);
-        
-        // Try exact ZIP first
-        const exactMatches = await db.select().from(ffls)
-          .where(
-            and(
-              eq(ffls.isAvailableToUser, true),
-              sql`LEFT(${ffls.zip}, 5) = ${targetZip}`
-            )
-          )
-          .orderBy(asc(ffls.businessName))
-          .limit(15);
-        
-        if (exactMatches.length > 0) {
-          console.log(`✅ Found ${exactMatches.length} FFLs in exact ZIP ${targetZip}`);
-          return exactMatches;
-        }
-        
-        // Fallback to regional if no exact matches
-        const zipPrefix = targetZip.substring(0, 3);
-        const regional = await db.select().from(ffls)
-          .where(
-            and(
-              eq(ffls.isAvailableToUser, true),
-              sql`LEFT(${ffls.zip}, 3) = ${zipPrefix}`
-            )
-          )
-          .orderBy(asc(ffls.businessName))
-          .limit(10);
-          
-        console.log(`✅ Found ${regional.length} FFLs in ${zipPrefix}xx region (small radius fallback)`);
-        return regional;
+      // Get coordinates for target ZIP using free geocoding service
+      const targetCoords = await this.getZipCoordinates(targetZip);
+      if (!targetCoords) {
+        console.log(`❌ Could not geocode ZIP ${targetZip}`);
+        return [];
       }
       
-      // For larger radius, use regional search with smart sorting
-      const zipPrefix = targetZip.substring(0, 3);
-      console.log(`📍 Standard radius search (${radius} miles) - regional approach`);
+      console.log(`📍 Target: ${targetZip} at ${targetCoords.lat}, ${targetCoords.lon}`);
       
+      // Get regional FFLs to limit database load (use broader region for more candidates)
+      const zipPrefix = targetZip.substring(0, 2); // Broader region (first 2 digits)
       const regionalFFLs = await db.select().from(ffls)
         .where(
           and(
             eq(ffls.isAvailableToUser, true),
-            sql`LEFT(${ffls.zip}, 3) = ${zipPrefix}`
+            sql`LEFT(${ffls.zip}, 2) = ${zipPrefix}`
           )
         )
-        .orderBy(asc(ffls.businessName))
-        .limit(25);
-        
-      // Smart sorting: prioritize FFLs with ZIPs closer to target numerically
-      // This approximates geographic closeness without complex calculations
-      const smartSorted = regionalFFLs.sort((a, b) => {
-        const aZipDiff = Math.abs(parseInt(a.zip.substring(0, 5)) - parseInt(targetZip));
-        const bZipDiff = Math.abs(parseInt(b.zip.substring(0, 5)) - parseInt(targetZip));
-        
-        if (aZipDiff !== bZipDiff) {
-          return aZipDiff - bZipDiff; // Closer ZIP numbers first
-        }
-        return a.businessName.localeCompare(b.businessName);
-      });
+        .limit(200); // Get more candidates for better distance filtering
       
-      console.log(`✅ Found ${smartSorted.length} FFLs in ${zipPrefix}xx region (smart sorted)`);
-      return smartSorted;
+      console.log(`📊 Checking ${regionalFFLs.length} FFLs in ${zipPrefix}xx region`);
+      
+      // Calculate real distances for each FFL
+      const fflsWithDistance = [];
+      
+      for (const ffl of regionalFFLs) {
+        const fflZip = ffl.zip.substring(0, 5);
+        const fflCoords = await this.getZipCoordinates(fflZip);
+        
+        if (!fflCoords) continue;
+        
+        const distance = this.calculateHaversineDistance(
+          targetCoords.lat, targetCoords.lon,
+          fflCoords.lat, fflCoords.lon
+        );
+        
+        if (distance <= radius) {
+          fflsWithDistance.push({
+            ...ffl,
+            distance: Math.round(distance * 10) / 10
+          });
+        }
+      }
+      
+      // Sort by actual distance
+      fflsWithDistance.sort((a, b) => a.distance - b.distance);
+      
+      console.log(`✅ Found ${fflsWithDistance.length} FFLs within ${radius} miles`);
+      
+      // Return top 25 results without distance property
+      return fflsWithDistance.slice(0, 25).map(({ distance, ...ffl }) => ffl);
     } catch (error) {
       console.error(`❌ ZIP search error for ${zip}:`, error);
       throw error;
     }
+  }
+
+  // Cache for ZIP coordinates to avoid repeated API calls
+  private zipCoordinatesCache = new Map<string, { lat: number; lon: number } | null>();
+
+  private async getZipCoordinates(zip: string): Promise<{ lat: number; lon: number } | null> {
+    // Check cache first
+    if (this.zipCoordinatesCache.has(zip)) {
+      return this.zipCoordinatesCache.get(zip)!;
+    }
+
+    try {
+      // Import zipcodes using dynamic import for ES modules
+      const { default: zipcodes } = await import('zipcodes');
+      const location = zipcodes.lookup(zip);
+      
+      if (location && location.latitude && location.longitude) {
+        const coords = {
+          lat: parseFloat(location.latitude),
+          lon: parseFloat(location.longitude)
+        };
+        
+        console.log(`📍 Geocoded ZIP ${zip}: ${coords.lat}, ${coords.lon}`);
+        this.zipCoordinatesCache.set(zip, coords);
+        return coords;
+      }
+      
+      console.log(`❌ No coordinates found for ZIP ${zip}`);
+      this.zipCoordinatesCache.set(zip, null);
+      return null;
+    } catch (error) {
+      console.error(`Error geocoding ZIP ${zip}:`, error);
+      this.zipCoordinatesCache.set(zip, null);
+      return null;
+    }
+  }
+
+  private calculateHaversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 3959; // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
   }
 
   async searchFFLsByName(businessName: string, radius = 25): Promise<FFL[]> {
