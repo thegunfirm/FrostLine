@@ -501,10 +501,14 @@ function BillingPageContent() {
 
                     <div className="flex justify-end pt-4">
                       <Button 
-                        type="submit" 
+                        type="button" 
                         size="lg" 
                         disabled={isProcessing}
                         className="min-w-[200px]"
+                        onClick={() => {
+                          console.log('Button clicked - navigating to payment');
+                          setLocation('/payment');
+                        }}
                       >
                         {isProcessing ? 'Saving...' : 'Continue to Payment'}
                       </Button>
