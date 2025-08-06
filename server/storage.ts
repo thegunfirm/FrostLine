@@ -960,30 +960,54 @@ export class DatabaseStorage implements IStorage {
 
   async searchFFLsByZip(zip: string, radius = 25): Promise<FFL[]> {
     try {
-      console.log(`🔍 ZIP ${zip} search: Starting simple regional search`);
+      console.log(`🔍 ZIP ${zip} search: Smart distance-based search within ${radius} miles`);
       
-      // Simple approach: return FFLs from the same ZIP code first, then nearby ones
       const targetZip = zip.substring(0, 5);
       
-      // First try exact ZIP match
-      const exactMatches = await db.select().from(ffls)
-        .where(
-          and(
-            eq(ffls.isAvailableToUser, true),
-            sql`LEFT(${ffls.zip}, 5) = ${targetZip}`
-          )
-        )
-        .orderBy(asc(ffls.businessName))
-        .limit(20);
+      // Strategy: Use smart ZIP-based filtering that approximates distance
+      // This avoids database overload while still providing distance-relevant results
       
-      if (exactMatches.length > 0) {
-        console.log(`✅ Found ${exactMatches.length} FFLs in ZIP ${targetZip}`);
-        return exactMatches;
+      // For small radius, prioritize exact ZIP and immediate neighbors
+      if (radius <= 10) {
+        console.log(`📍 Small radius search (${radius} miles) - exact ZIP priority`);
+        
+        // Try exact ZIP first
+        const exactMatches = await db.select().from(ffls)
+          .where(
+            and(
+              eq(ffls.isAvailableToUser, true),
+              sql`LEFT(${ffls.zip}, 5) = ${targetZip}`
+            )
+          )
+          .orderBy(asc(ffls.businessName))
+          .limit(15);
+        
+        if (exactMatches.length > 0) {
+          console.log(`✅ Found ${exactMatches.length} FFLs in exact ZIP ${targetZip}`);
+          return exactMatches;
+        }
+        
+        // Fallback to regional if no exact matches
+        const zipPrefix = targetZip.substring(0, 3);
+        const regional = await db.select().from(ffls)
+          .where(
+            and(
+              eq(ffls.isAvailableToUser, true),
+              sql`LEFT(${ffls.zip}, 3) = ${zipPrefix}`
+            )
+          )
+          .orderBy(asc(ffls.businessName))
+          .limit(10);
+          
+        console.log(`✅ Found ${regional.length} FFLs in ${zipPrefix}xx region (small radius fallback)`);
+        return regional;
       }
       
-      // If no exact matches, try regional search
+      // For larger radius, use regional search with smart sorting
       const zipPrefix = targetZip.substring(0, 3);
-      const regionalMatches = await db.select().from(ffls)
+      console.log(`📍 Standard radius search (${radius} miles) - regional approach`);
+      
+      const regionalFFLs = await db.select().from(ffls)
         .where(
           and(
             eq(ffls.isAvailableToUser, true),
@@ -991,10 +1015,22 @@ export class DatabaseStorage implements IStorage {
           )
         )
         .orderBy(asc(ffls.businessName))
-        .limit(20);
+        .limit(25);
         
-      console.log(`✅ Found ${regionalMatches.length} FFLs in ${zipPrefix}xx region`);
-      return regionalMatches;
+      // Smart sorting: prioritize FFLs with ZIPs closer to target numerically
+      // This approximates geographic closeness without complex calculations
+      const smartSorted = regionalFFLs.sort((a, b) => {
+        const aZipDiff = Math.abs(parseInt(a.zip.substring(0, 5)) - parseInt(targetZip));
+        const bZipDiff = Math.abs(parseInt(b.zip.substring(0, 5)) - parseInt(targetZip));
+        
+        if (aZipDiff !== bZipDiff) {
+          return aZipDiff - bZipDiff; // Closer ZIP numbers first
+        }
+        return a.businessName.localeCompare(b.businessName);
+      });
+      
+      console.log(`✅ Found ${smartSorted.length} FFLs in ${zipPrefix}xx region (smart sorted)`);
+      return smartSorted;
     } catch (error) {
       console.error(`❌ ZIP search error for ${zip}:`, error);
       throw error;
