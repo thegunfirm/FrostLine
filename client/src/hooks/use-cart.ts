@@ -208,7 +208,23 @@ export const useCart = create<CartState>()(
           const response = await apiRequest('GET', `/api/cart/${user.id}`);
           const userCart = await response.json();
           
-          set({ items: userCart.items || [] });
+          // Validate and filter items from server
+          const validItems = (userCart.items || []).filter((item: any) => 
+            item && 
+            typeof item.quantity === 'number' && 
+            item.quantity > 0 && 
+            item.quantity <= 10 &&
+            item.productId &&
+            item.productSku
+          );
+          
+          // If server had corrupted data, sync the cleaned version back
+          if (validItems.length !== (userCart.items || []).length) {
+            console.warn(`Server had ${(userCart.items || []).length - validItems.length} corrupted items, cleaning up`);
+            await apiRequest('POST', '/api/cart/sync', { items: validItems });
+          }
+          
+          set({ items: validItems });
           
         } catch (error) {
           console.error('Failed to load user cart:', error);
@@ -249,7 +265,24 @@ export const useCart = create<CartState>()(
           set({ isLoading: true });
           
           const { items } = get();
-          await apiRequest('POST', '/api/cart/sync', { items });
+          
+          // Validate items before syncing to prevent corruption
+          const validItems = items.filter(item => 
+            item && 
+            typeof item.quantity === 'number' && 
+            item.quantity > 0 && 
+            item.quantity <= 10 &&
+            item.productId &&
+            item.productSku
+          );
+          
+          // If items were filtered out due to corruption, update local state
+          if (validItems.length !== items.length) {
+            console.warn(`Filtered out ${items.length - validItems.length} corrupted cart items`);
+            set({ items: validItems });
+          }
+          
+          await apiRequest('POST', '/api/cart/sync', { items: validItems });
           
         } catch (error) {
           console.error('Failed to sync cart with server:', error);
