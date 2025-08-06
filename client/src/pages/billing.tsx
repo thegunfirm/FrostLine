@@ -61,11 +61,15 @@ function BillingPageContent() {
   const sameAsShipping = form.watch('sameAsShipping');
 
   const onSubmit = async (data: BillingFormData) => {
+    console.log('Form submitted with data:', data);
+    console.log('Form errors:', form.formState.errors);
+    
     setIsProcessing(true);
     try {
       // Save billing information
       console.log('Billing data:', data);
       // Move to payment page
+      console.log('Navigating to payment page...');
       setLocation('/payment');
     } catch (error) {
       console.error('Error saving billing info:', error);
