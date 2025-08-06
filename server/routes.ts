@@ -333,8 +333,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orderItems 
       } = req.body;
 
-      // Dynamic import for Authorize.Net SDK in ES modules
-      const authorizenet = await import('authorizenet');
+      // Use createRequire for CommonJS modules in ES modules
+      const { createRequire } = await import('module');
+      const require = createRequire(import.meta.url);
+      const authorizenet = require('authorizenet');
       const ApiContracts = authorizenet.APIContracts;
       const ApiControllers = authorizenet.APIControllers;
 
