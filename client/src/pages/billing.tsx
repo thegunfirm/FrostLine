@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, CreditCard, AlertTriangle, Shield, Package, Crown, Zap } from "lucide-react";
+import { ArrowLeft, CreditCard, AlertTriangle, Shield, Package, Crown, Zap, Star } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { SubscriptionEnforcement } from "@/components/auth/subscription-enforcement";

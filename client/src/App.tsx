@@ -35,6 +35,8 @@ import RSRIntelligenceTest from "@/pages/rsr-intelligence-test";
 import PaymentTest from "@/pages/payment-test";
 import Categories from "@/pages/categories";
 import Browse from "@/pages/browse";
+import OrderSummary from "@/pages/order-summary";
+import FflSelection from "@/pages/ffl-selection";
 import Checkout from "@/pages/checkout";
 import Shipping from "@/pages/shipping";
 import Billing from "@/pages/billing";
@@ -62,6 +64,8 @@ function Router() {
       <Route path="/products" component={Products} />
       <Route path="/product/:id" component={ProductDetail} />
       <Route path="/cart" component={Cart} />
+      <Route path="/order-summary" component={OrderSummary} />
+      <Route path="/ffl-selection" component={FflSelection} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/shipping" component={Shipping} />
       <Route path="/billing" component={Billing} />

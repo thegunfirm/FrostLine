@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Truck, Clock, Package } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft, Truck, Clock, Package, Star } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { SubscriptionEnforcement } from "@/components/auth/subscription-enforcement";
@@ -31,6 +32,81 @@ const formatPrice = (price: number | string) => {
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
   return `$${numPrice.toFixed(2)}`;
 };
+
+// Upgrade Benefits Component
+function UpgradeBenefits({ user }: { user: any }) {
+  const { getTotalPrice } = useCart();
+  const [, setLocation] = useLocation();
+  
+  if (!user) return null;
+
+  const currentTier = user.membershipTier || 'bronze';
+  const totalPrice = getTotalPrice();
+  
+  // Calculate savings based on tier
+  const bronzeDiscount = 0;
+  const goldDiscount = 0.05; // 5%
+  const platinumDiscount = 0.15; // 15%
+  
+  const currentSavings = currentTier === 'platinum' ? totalPrice * platinumDiscount :
+                        currentTier === 'gold' ? totalPrice * goldDiscount : 0;
+  
+  const potentialSavings = totalPrice * platinumDiscount;
+  const additionalSavings = potentialSavings - currentSavings;
+
+  const handleUpgrade = () => {
+    // Store current location to return after upgrade
+    sessionStorage.setItem('checkout_return_url', '/shipping');
+    setLocation('/membership');
+  };
+
+  if (currentTier === 'platinum') {
+    return (
+      <Alert className="bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200 mb-6">
+        <Star className="w-4 h-4 text-amber-600" />
+        <AlertDescription className="text-amber-800">
+          <div className="flex items-center justify-between">
+            <span>
+              <strong>Platinum Member Benefits:</strong> You're saving {formatPrice(currentSavings)} on this order with your 15% discount!
+            </span>
+            <Badge className="bg-amber-100 text-amber-800 border-amber-300">
+              Premium Member
+            </Badge>
+          </div>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <Alert className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 mb-6">
+      <Star className="w-4 h-4 text-blue-600" />
+      <AlertDescription className="text-blue-800">
+        <div className="flex items-center justify-between">
+          <div>
+            {currentTier === 'gold' ? (
+              <>
+                <strong>Gold Member:</strong> You're saving {formatPrice(currentSavings)} on this order. 
+                Upgrade to Platinum and save an additional {formatPrice(additionalSavings)}!
+              </>
+            ) : (
+              <>
+                <strong>Upgrade to Platinum:</strong> Save {formatPrice(potentialSavings)} on this order with 15% off everything!
+              </>
+            )}
+          </div>
+          <Button 
+            onClick={handleUpgrade}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Upgrade Now
+          </Button>
+        </div>
+      </AlertDescription>
+    </Alert>
+  );
+}
 
 function ShippingPageContent() {
   const { items, getTotalPrice, hasFirearms } = useCart();
@@ -87,17 +163,27 @@ function ShippingPageContent() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setLocation('/checkout')}
+                onClick={() => {
+                  // Go back to FFL selection if we have firearms, otherwise to order summary
+                  if (hasFirearms()) {
+                    setLocation('/ffl-selection');
+                  } else {
+                    setLocation('/order-summary');
+                  }
+                }}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Cart
+                {hasFirearms() ? 'Back to FFL Selection' : 'Back to Order Summary'}
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Shipping Information</h1>
                 <p className="text-sm text-gray-600">Where should we ship your non-firearm items?</p>
               </div>
             </div>
+            
+            {/* Upgrade Benefits */}
+            <UpgradeBenefits user={user} />
 
             {/* Step Indicator */}
             <div className="flex items-center justify-center space-x-4 py-4">
