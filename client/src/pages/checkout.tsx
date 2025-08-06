@@ -159,12 +159,21 @@ function CheckoutPageContent() {
                             
                             for (const item of fflItems) {
                               const fulfillmentType = getFulfillmentType(item);
-                              const timeText = getDeliveryTime(fulfillmentType);
-                              const days = parseInt(timeText.split('-')[1] || timeText.split(' ')[0]);
+                              console.log('Item fulfillment type:', item.productName, fulfillmentType);
                               
-                              if (days > slowestDays) {
-                                slowestDays = days;
+                              // Map fulfillment types to priority (higher = slower)
+                              const typePriority = {
+                                'drop_to_consumer': 1,
+                                'no_drop_to_ffl': 2,
+                                'drop_to_ffl': 3  // Slowest
+                              };
+                              
+                              const currentPriority = typePriority[fulfillmentType] || 0;
+                              const slowestPriority = typePriority[slowestFulfillmentType] || 0;
+                              
+                              if (currentPriority > slowestPriority) {
                                 slowestFulfillmentType = fulfillmentType;
+                                console.log('Updated slowest to:', fulfillmentType);
                               }
                             }
                             
