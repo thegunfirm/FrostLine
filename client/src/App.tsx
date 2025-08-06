@@ -36,6 +36,7 @@ import PaymentTest from "@/pages/payment-test";
 import Categories from "@/pages/categories";
 import Browse from "@/pages/browse";
 import Checkout from "@/pages/checkout";
+import Shipping from "@/pages/shipping";
 import NotFound from "@/pages/not-found";
 import CMSDashboard from "@/pages/cms/cms-dashboard";
 import SupportTickets from "@/pages/cms/support/support-tickets";
@@ -59,6 +60,7 @@ function Router() {
       <Route path="/product/:id" component={ProductDetail} />
       <Route path="/cart" component={Cart} />
       <Route path="/checkout" component={Checkout} />
+      <Route path="/shipping" component={Shipping} />
       <Route path="/account" component={Account} />
       <Route path="/membership" component={Membership} />
       <Route path="/image-test" component={ImageTest} />

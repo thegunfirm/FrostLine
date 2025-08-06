@@ -18,6 +18,7 @@ interface FFL {
   address: any;
   zip: string;
   status: 'NotOnFile' | 'OnFile' | 'Preferred';
+  tradeNameDba?: string;
 }
 
 interface FflSelectorProps {
@@ -42,6 +43,17 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
       return data;
     },
     enabled: !!searchZip.trim(),
+  });
+
+  // Get selected FFL details
+  const { data: selectedFflDetails } = useQuery({
+    queryKey: ['/api/ffls', selectedFflId],
+    queryFn: async () => {
+      if (!selectedFflId) return null;
+      const response = await apiRequest('GET', `/api/ffls/${selectedFflId}`);
+      return response.json();
+    },
+    enabled: !!selectedFflId,
   });
 
   const handleSearch = async () => {
@@ -69,7 +81,7 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
       case 'Preferred':
         return 'TheGunFirm preferred dealer - fastest processing';
       case 'OnFile':
-        return 'RSR partner dealer - documents verified';
+        return 'ATF licensed dealer - on file with distributor';
       case 'NotOnFile':
         return 'ATF licensed dealer - license verification needed';
       default:
@@ -90,6 +102,91 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
       refetch();
     }
   }, [searchZip, refetch]);
+
+  // If an FFL is selected, show only that FFL with option to change
+  if (selectedFflDetails) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="font-medium text-gray-900">Selected FFL Dealer</h3>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => onFflSelected(0)} // Clear selection to show search again
+            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+          >
+            Change FFL
+          </Button>
+        </div>
+        
+        <Card className="bg-green-50 border-green-200">
+          <CardContent className="p-4">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h4 className="font-medium text-gray-900">
+                  {selectedFflDetails.tradeNameDba || selectedFflDetails.businessName}
+                </h4>
+                <p className="text-sm text-gray-600">License: {selectedFflDetails.licenseNumber}</p>
+                {selectedFflDetails.tradeNameDba && (
+                  <p className="text-sm text-gray-600">{selectedFflDetails.businessName}</p>
+                )}
+              </div>
+              <Badge className={getStatusColor(selectedFflDetails.status)}>
+                {selectedFflDetails.status === 'NotOnFile' ? 'Not On File' : 
+                 selectedFflDetails.status === 'OnFile' ? 'On File' : 
+                 selectedFflDetails.status === 'Preferred' ? '⭐ Preferred' : selectedFflDetails.status}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-gray-900">
+                    {selectedFflDetails.address?.street || 'Address not available'}
+                  </p>
+                  <p className="text-gray-600">
+                    {selectedFflDetails.address?.city || ''}, {selectedFflDetails.address?.state || ''} {selectedFflDetails.zip}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                {selectedFflDetails.phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-900">{selectedFflDetails.phone}</span>
+                  </div>
+                )}
+                {selectedFflDetails.contactEmail && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-900">{selectedFflDetails.contactEmail}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-green-200">
+              <p className="text-xs text-gray-600">
+                {getStatusDescription(selectedFflDetails.status)}
+              </p>
+              {selectedFflDetails.status === 'Preferred' && (
+                <p className="text-xs text-blue-600 mt-1 font-medium">
+                  ⚡ Priority processing - fastest fulfillment
+                </p>
+              )}
+              {selectedFflDetails.status === 'NotOnFile' && (
+                <p className="text-xs text-orange-600 mt-1">
+                  ⏱️ Processing may require additional verification time
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

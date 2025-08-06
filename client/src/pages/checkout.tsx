@@ -13,8 +13,6 @@ import { Truck, MapPin, Clock, CreditCard, Shield, AlertTriangle, Star, Minus, P
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { FflSelector } from "@/components/checkout/ffl-selector";
-// Removed MembershipTierSelector import - tier selection now happens on membership page
-import { DeliveryGroups } from "@/components/checkout/delivery-groups";
 import { PaymentSection } from "@/components/checkout/payment-section";
 
 const formatPrice = (price: number | string) => {
@@ -27,18 +25,13 @@ function CheckoutPageContent() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [selectedFfl, setSelectedFfl] = useState<number | null>(null);
-  // Removed requiresMembershipTier state - tier selection now handled on membership page
   const [isProcessing, setIsProcessing] = useState(false);
-
-  // No redirect blocking - allow all users to proceed to checkout
 
   // Fetch fulfillment settings
   const { data: fulfillmentSettings } = useQuery({
     queryKey: ['/api/fulfillment/settings'],
     enabled: !!user,
   });
-
-  // Note: Authentication is handled by SubscriptionEnforcement wrapper
 
   if (items.length === 0) {
     return (
@@ -55,248 +48,247 @@ function CheckoutPageContent() {
     );
   }
 
-  // This section has been removed - tier selection is now handled on the membership page
-
   const canProceed = !hasFirearms() || (hasFirearms() && !requiresFflSelection());
+  const fflItems = items.filter(item => item.requiresFFL);
+  const directShipItems = items.filter(item => !item.requiresFFL);
 
   return (
     <div className="min-h-screen bg-gray-50 pt-8">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - Checkout Forms */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* FFL Selection */}
-            {hasFirearms() && (
-              <Card className="bg-white shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5" />
-                    Federal Firearms License (FFL) Selection
-                  </CardTitle>
-                  <p className="text-sm text-gray-600">
-                    Your order contains firearms that must be shipped to a licensed FFL dealer.
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <FflSelector 
-                    selectedFflId={selectedFfl}
-                    onFflSelected={setSelectedFfl}
-                    userZip={(user?.shippingAddress as any)?.zip || ''}
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Delivery Groups */}
-            <Card className="bg-white shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Truck className="w-5 h-5" />
-                  Delivery Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <DeliveryGroups 
-                  items={items}
-                  fulfillmentSettings={Array.isArray(fulfillmentSettings) ? fulfillmentSettings : []}
-                  selectedFfl={selectedFfl}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Payment Section */}
-            <Card className="bg-white shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="w-5 h-5" />
-                  Payment Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <PaymentSection 
-                  user={user!}
-                  totalAmount={getTotalPrice()}
-                  canProceed={canProceed}
-                  isProcessing={isProcessing}
-                  onProcessing={setIsProcessing}
-                />
-              </CardContent>
-            </Card>
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="space-y-6">
+          
+          {/* Order Summary Header */}
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-900">Order Summary</h1>
+            <Button 
+              variant="ghost" 
+              onClick={() => setLocation('/')}
+              className="text-amber-600 hover:text-amber-700"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Back to Shopping
+            </Button>
           </div>
 
-          {/* Right Column - Order Summary */}
-          <div className="lg:col-span-1">
-            <Card className="bg-white shadow-sm sticky top-8">
+          {/* FFL Selection */}
+          {hasFirearms() && (
+            <Card className="bg-white shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Order Summary
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setLocation('/')}
-                    className="text-amber-600 hover:text-amber-700"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-1" />
-                    Back to Shopping
-                  </Button>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5" />
+                  Federal Firearms License (FFL) Selection
                 </CardTitle>
+                <p className="text-sm text-gray-600">
+                  Your order contains firearms that must be shipped to a licensed FFL dealer.
+                </p>
               </CardHeader>
-              <CardContent className="space-y-4">
-                
-                {/* Items List */}
-                <div className="space-y-3">
-                  {items.map((item) => (
-                    <div key={item.id} className="flex gap-3 p-3 border rounded-lg">
-                      <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                        <img
-                          src={item.productImage}
-                          alt={item.productName}
-                          className="w-full h-full object-contain"
-                          onError={(e) => {
-                            e.currentTarget.src = "/api/admin/fallback-image";
-                          }}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium text-gray-900 truncate">
-                          {item.productName}
-                        </h4>
-                        <p className="text-xs text-gray-600">{item.manufacturer}</p>
-                        {item.requiresFFL && (
+              <CardContent>
+                <FflSelector 
+                  selectedFflId={selectedFfl}
+                  onFflSelected={setSelectedFfl}
+                  userZip={(user?.shippingAddress as any)?.zip || ''}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Combined Order Summary */}
+          <Card className="bg-white shadow-sm">
+            <CardHeader>
+              <CardTitle>Your Order</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              
+              {/* FFL Items Section */}
+              {fflItems.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Shield className="w-5 h-5 text-amber-600" />
+                    <h3 className="font-medium text-gray-900">Items shipping to your FFL dealer</h3>
+                  </div>
+                  <div className="space-y-3 pl-7">
+                    {fflItems.map((item) => (
+                      <div key={item.id} className="flex gap-3 p-3 border rounded-lg">
+                        <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                          <img
+                            src={item.productImage}
+                            alt={item.productName}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.currentTarget.src = "/api/admin/fallback-image";
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-gray-900 truncate">
+                            {item.productName}
+                          </h4>
+                          <p className="text-xs text-gray-600">{item.manufacturer}</p>
                           <Badge variant="outline" className="text-xs mt-1">
                             FFL Required
                           </Badge>
-                        )}
-                        
-                        {/* Quantity Controls */}
-                        <div className="flex items-center justify-between mt-2">
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              disabled={item.quantity <= 1}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <Input
-                              type="number"
-                              min="1"
-                              value={item.quantity}
-                              onChange={(e) => {
-                                const newQty = parseInt(e.target.value) || 1;
-                                if (newQty !== item.quantity) {
-                                  updateQuantity(item.id, newQty);
-                                }
-                              }}
-                              className="h-8 w-16 text-center"
-                            />
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm font-medium">
-                              {formatPrice(item.price * item.quantity)}
+                          
+                          {/* Quantity Controls */}
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                disabled={item.quantity <= 1}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const newQty = parseInt(e.target.value) || 1;
+                                  if (newQty !== item.quantity) {
+                                    updateQuantity(item.id, newQty);
+                                  }
+                                }}
+                                className="h-8 w-16 text-center"
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeItem(item.id)}
-                              className="text-xs text-red-600 hover:text-red-700 h-auto p-0"
-                            >
-                              Remove
-                            </Button>
+                            <div className="text-right">
+                              <div className="text-sm font-medium">
+                                {formatPrice(item.price * item.quantity)}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeItem(item.id)}
+                                className="text-xs text-red-600 hover:text-red-700 h-auto p-0"
+                              >
+                                Remove
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-
-                <Separator />
-
-                {/* Pricing Breakdown */}
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span>{formatPrice(getTotalPrice())}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Shipping</span>
-                    <span className="text-green-600">Calculated at delivery</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tax</span>
-                    <span className="text-green-600">Calculated at delivery</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Total</span>
-                    <span>{formatPrice(getTotalPrice())}</span>
+                    ))}
                   </div>
                 </div>
+              )}
 
-                {/* Member Savings Display */}
-                {user?.subscriptionTier === 'Bronze' || !user?.subscriptionTier ? (
-                  <Alert className="border-blue-200 bg-blue-50">
-                    <Star className="h-4 w-4 text-blue-600" />
-                    <AlertDescription>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-medium text-blue-800">
-                            Save More with Membership
-                          </span>
-                          <br />
-                          <span className="text-sm text-blue-600">
-                            Gold members save up to 15%, Platinum saves up to 25%
-                          </span>
+              {/* Direct Ship Items Section */}
+              {directShipItems.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Truck className="w-5 h-5 text-green-600" />
+                    <h3 className="font-medium text-gray-900">These items ship directly to you</h3>
+                  </div>
+                  <div className="space-y-3 pl-7">
+                    {directShipItems.map((item) => (
+                      <div key={item.id} className="flex gap-3 p-3 border rounded-lg">
+                        <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                          <img
+                            src={item.productImage}
+                            alt={item.productName}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.currentTarget.src = "/api/admin/fallback-image";
+                            }}
+                          />
                         </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setLocation('/membership?redirect=/checkout')}
-                          className="ml-4"
-                        >
-                          Upgrade Now
-                        </Button>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-gray-900 truncate">
+                            {item.productName}
+                          </h4>
+                          <p className="text-xs text-gray-600">{item.manufacturer}</p>
+                          <p className="text-xs text-green-600 mt-1">Ships directly to your address</p>
+                          
+                          {/* Quantity Controls */}
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                disabled={item.quantity <= 1}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const newQty = parseInt(e.target.value) || 1;
+                                  if (newQty !== item.quantity) {
+                                    updateQuantity(item.id, newQty);
+                                  }
+                                }}
+                                className="h-8 w-16 text-center"
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-medium">
+                                {formatPrice(item.price * item.quantity)}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeItem(item.id)}
+                                className="text-xs text-red-600 hover:text-red-700 h-auto p-0"
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <Alert>
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      <span className="font-medium text-green-600">
-                        {user.subscriptionTier} Member Savings Applied
-                      </span>
-                      <br />
-                      <span className="text-sm text-gray-600">
-                        You're already seeing your discounted prices!
-                      </span>
-                    </AlertDescription>
-                  </Alert>
-                )}
+                    ))}
+                  </div>
+                </div>
+              )}
 
-                {/* FFL Warning */}
-                {hasFirearms() && requiresFflSelection() && (
-                  <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      Please select an FFL dealer above to complete your order.
-                    </AlertDescription>
-                  </Alert>
+              <Separator />
+
+              {/* Order Total */}
+              <div className="flex justify-between items-center text-lg font-medium">
+                <span>Total</span>
+                <span>{formatPrice(getTotalPrice())}</span>
+              </div>
+
+              {/* Continue to Payment Button */}
+              <div className="pt-4">
+                <Button 
+                  onClick={() => setLocation('/shipping')} 
+                  size="lg" 
+                  className="w-full"
+                  disabled={hasFirearms() && !selectedFfl}
+                >
+                  Continue to Shipping & Payment
+                </Button>
+                {hasFirearms() && !selectedFfl && (
+                  <p className="text-sm text-red-600 mt-2 text-center">
+                    Please select an FFL dealer to continue
+                  </p>
                 )}
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
@@ -305,7 +297,7 @@ function CheckoutPageContent() {
 
 export default function CheckoutPage() {
   return (
-    <SubscriptionEnforcement requiredForCheckout={true}>
+    <SubscriptionEnforcement>
       <CheckoutPageContent />
     </SubscriptionEnforcement>
   );
