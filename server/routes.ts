@@ -318,10 +318,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ================================
   
   app.post('/api/process-payment', async (req, res) => {
-    // Skip authentication check for testing - in production this would verify user session
-    // if (!req.session?.user) {
-    //   return res.status(401).json({ success: false, error: 'Authentication required' });
-    // }
+    console.log('💳 Processing payment request...');
+    // For now, we'll allow payment processing without strict session auth
+    // In production, this would verify proper user authentication
     try {
       const { 
         cardNumber, 
@@ -372,7 +371,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       orderItems.forEach((item: any, index: number) => {
         const lineItem = new ApiContracts.LineItemType();
         lineItem.setItemId(item.rsrStock || `item-${index}`);
-        lineItem.setName(item.description.substring(0, 31)); // Max 31 chars
+        const itemName = item.description || item.name || `Item ${index + 1}`;
+        lineItem.setName(itemName.substring(0, 31)); // Max 31 chars
         lineItem.setQuantity(item.quantity);
         lineItem.setUnitPrice(item.price);
         lineItems.getLineItem().push(lineItem);
