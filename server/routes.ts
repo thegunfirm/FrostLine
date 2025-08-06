@@ -302,6 +302,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ================================
+  // GOOGLE MAPS CONFIGURATION
+  // ================================
+  
+  app.get('/api/google-maps/config', (req, res) => {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Google Maps API key not configured' });
+    }
+    res.json({ apiKey });
+  });
+
   // Product routes - Hybrid Search Integration
   app.get("/api/products", async (req, res) => {
     try {

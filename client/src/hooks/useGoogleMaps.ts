@@ -1,17 +1,35 @@
 import { useEffect, useState } from 'react';
 
 interface UseGoogleMapsOptions {
-  apiKey?: string;
   libraries?: string[];
 }
 
 export function useGoogleMaps({ 
-  apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
   libraries = ['places'] 
 }: UseGoogleMapsOptions = {}) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+
+  // Fetch API key from backend
+  useEffect(() => {
+    const fetchApiKey = async () => {
+      try {
+        const response = await fetch('/api/google-maps/config');
+        if (!response.ok) {
+          throw new Error('Failed to fetch Google Maps configuration');
+        }
+        const config = await response.json();
+        setApiKey(config.apiKey);
+      } catch (err) {
+        setError('Failed to load Google Maps configuration');
+        console.error('Google Maps config error:', err);
+      }
+    };
+
+    fetchApiKey();
+  }, []);
 
   useEffect(() => {
     // Check if already loaded
@@ -22,8 +40,7 @@ export function useGoogleMaps({
 
     // Check if API key is available
     if (!apiKey) {
-      setError('Google Maps API key not provided');
-      return;
+      return; // Wait for API key to be fetched
     }
 
     // Check if script is already loading
