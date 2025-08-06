@@ -21,9 +21,9 @@ export function CheckoutButton({ itemCount, disabled = false, className = "" }: 
     
     if (!user) {
       // Store current cart state before redirecting to login
-      setLocation("/login?redirect=/checkout");
+      setLocation("/login?redirect=/order-summary");
     } else {
-      setLocation("/checkout");
+      setLocation("/order-summary");
     }
   };
 

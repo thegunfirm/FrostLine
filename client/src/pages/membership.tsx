@@ -73,11 +73,11 @@ export default function Membership() {
         {/* Header */}
         <div className="text-center mb-12">
           {/* Back to Checkout Button */}
-          {typeof window !== 'undefined' && sessionStorage.getItem('tierUpgradeRedirect') === '/checkout' && (
+          {typeof window !== 'undefined' && (sessionStorage.getItem('tierUpgradeRedirect') === '/checkout' || sessionStorage.getItem('tierUpgradeRedirect') === '/order-summary') && (
             <div className="mb-6">
               <Button
                 variant="outline"
-                onClick={() => setLocation('/checkout')}
+                onClick={() => setLocation('/order-summary')}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -94,7 +94,7 @@ export default function Membership() {
           </p>
           
           {/* Upgrade Notice for Checkout Users */}
-          {typeof window !== 'undefined' && sessionStorage.getItem('tierUpgradeRedirect') === '/checkout' && (
+          {typeof window !== 'undefined' && (sessionStorage.getItem('tierUpgradeRedirect') === '/checkout' || sessionStorage.getItem('tierUpgradeRedirect') === '/order-summary') && (
             <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-blue-800 font-medium">
                 Upgrade to Gold or Platinum tier to access checkout and get better pricing on your order.
