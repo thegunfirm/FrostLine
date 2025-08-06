@@ -10,8 +10,7 @@ import { pricingEngine } from "./services/pricing-engine";
 import { db } from "./db";
 import { sql, eq, and, ne, inArray, desc } from "drizzle-orm";
 import { z } from "zod";
-// Temporarily disabled while fixing import issues
-// import ApiContracts from "authorizenet";
+import * as authorizenet from "authorizenet";
 // import { hybridSearch } from "./services/hybrid-search";
 import { rsrAPI, type RSRProduct } from "./services/rsr-api";
 import { inventorySync } from "./services/inventory-sync";
@@ -333,9 +332,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orderItems 
       } = req.body;
 
-      // Import Authorize.Net SDK
-      const ApiContracts = require('authorizenet').APIContracts;
-      const ApiControllers = require('authorizenet').APIControllers;
+      // Use Authorize.Net SDK
+      const ApiContracts = authorizenet.APIContracts;
+      const ApiControllers = authorizenet.APIControllers;
 
       // Create merchant authentication
       const merchantAuth = new ApiContracts.MerchantAuthenticationType();
