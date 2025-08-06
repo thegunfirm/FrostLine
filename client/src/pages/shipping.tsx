@@ -15,6 +15,8 @@ import { ArrowLeft, Truck, Clock, Package, Star } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { SubscriptionEnforcement } from "@/components/auth/subscription-enforcement";
+import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 
 const shippingSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -118,6 +120,7 @@ function ShippingPageContent() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [isProcessing, setIsProcessing] = useState(false);
+  const { isLoaded: googleMapsLoaded, error: googleMapsError } = useGoogleMaps();
 
   // Filter non-FFL items that need shipping
   const nonFflItems = items.filter(item => !item.requiresFFL);
@@ -134,6 +137,22 @@ function ShippingPageContent() {
       phone: user?.phone || '',
     },
   });
+
+  // Handle address selection from Google Places
+  const handleAddressSelect = (components: any) => {
+    if (components.streetNumber && components.route) {
+      form.setValue('address', `${components.streetNumber} ${components.route}`);
+    }
+    if (components.locality) {
+      form.setValue('city', components.locality);
+    }
+    if (components.administrativeAreaLevel1) {
+      form.setValue('state', components.administrativeAreaLevel1);
+    }
+    if (components.postalCode) {
+      form.setValue('zip', components.postalCode);
+    }
+  };
 
   const onSubmit = async (data: ShippingFormData) => {
     setIsProcessing(true);
@@ -266,9 +285,34 @@ function ShippingPageContent() {
                       name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Street Address</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            {googleMapsLoaded ? (
+                              <AddressAutocomplete
+                                label="Street Address"
+                                placeholder="Start typing your address..."
+                                value={field.value}
+                                onChange={field.onChange}
+                                onAddressSelect={handleAddressSelect}
+                                error={form.formState.errors.address?.message}
+                                required
+                              />
+                            ) : googleMapsError ? (
+                              <div>
+                                <FormLabel>Street Address</FormLabel>
+                                <Input {...field} placeholder="Street Address" />
+                                <p className="text-sm text-amber-600 mt-1">
+                                  Address suggestions unavailable, please enter manually
+                                </p>
+                              </div>
+                            ) : (
+                              <div>
+                                <FormLabel>Street Address</FormLabel>
+                                <Input {...field} placeholder="Loading address verification..." disabled />
+                                <p className="text-sm text-gray-500 mt-1">
+                                  Loading Google address verification...
+                                </p>
+                              </div>
+                            )}
                           </FormControl>
                           <FormMessage />
                         </FormItem>
