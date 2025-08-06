@@ -65,15 +65,6 @@ function BillingPageContent() {
     try {
       // Save billing information
       console.log('Billing data:', data);
-      
-      // Check if user would benefit from an upgrade
-      const currentTier = user?.subscriptionTier || 'basic';
-      if (currentTier === 'basic' || currentTier === 'standard') {
-        setShowUpgradeOffer(true);
-        setIsProcessing(false);
-        return;
-      }
-      
       // Move to payment page
       setLocation('/payment');
     } catch (error) {
@@ -83,42 +74,67 @@ function BillingPageContent() {
     }
   };
 
-  const handleUpgradeOffer = (upgrade: boolean) => {
-    if (upgrade) {
-      // Redirect to upgrade page with return URL
-      setLocation('/upgrade?return=/payment');
-    } else {
-      // Continue to payment
-      setLocation('/payment');
-    }
-    setShowUpgradeOffer(false);
+  const handleUpgrade = () => {
+    // Redirect to FAP upgrade
+    window.open('https://www.freeamericanpeople.com/upgrade', '_blank');
   };
 
-  const calculatePotentialSavings = () => {
-    const total = getTotalPrice();
-    const currentTier = user?.subscriptionTier || 'basic';
-    
-    if (currentTier === 'basic') {
-      // 10% savings with Standard, 15% with Premium
-      const standardSavings = total * 0.10;
-      const premiumSavings = total * 0.15;
-      return { standard: standardSavings, premium: premiumSavings };
-    } else if (currentTier === 'standard') {
-      // 5% additional savings with Premium
-      const premiumSavings = total * 0.05;
-      return { premium: premiumSavings };
-    }
-    
-    return {};
-  };
-
-  const savings = calculatePotentialSavings();
+  // Calculate potential savings
+  const totalPrice = getTotalPrice();
+  const currentTier = user?.subscriptionTier || 'basic';
+  
+  let currentSavings = 0;
+  let potentialSavings = 0;
+  let additionalSavings = 0;
+  
+  if (currentTier === 'standard') {
+    currentSavings = totalPrice * 0.10; // 10% off
+    potentialSavings = totalPrice * 0.15; // 15% off
+    additionalSavings = potentialSavings - currentSavings;
+  } else if (currentTier === 'basic') {
+    potentialSavings = totalPrice * 0.15; // 15% off with platinum
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           
+          {/* Last Chance Upgrade Alert */}
+          {(currentTier === 'basic' || currentTier === 'standard') && (
+            <div className="lg:col-span-3 mb-6">
+              <Alert className="border-red-200 bg-red-50">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <AlertDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <strong className="text-red-800">🚨 LAST CHANCE TO SAVE!</strong>
+                      <div className="text-red-700 mt-1">
+                        {currentTier === 'standard' ? (
+                          <>
+                            Upgrade to Platinum and save an additional <strong>{formatPrice(additionalSavings)}</strong> on this order!
+                          </>
+                        ) : (
+                          <>
+                            Upgrade to Platinum and save <strong>{formatPrice(potentialSavings)}</strong> on this order with 15% off everything!
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={handleUpgrade}
+                      size="sm"
+                      className="bg-red-600 hover:bg-red-700 text-white ml-4"
+                    >
+                      <Crown className="w-4 h-4 mr-2" />
+                      Upgrade Now
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             

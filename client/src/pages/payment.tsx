@@ -1,15 +1,28 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, CreditCard, Shield, Lock, CheckCircle, Package } from "lucide-react";
+import { ArrowLeft, CreditCard, Shield, CheckCircle } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { SubscriptionEnforcement } from "@/components/auth/subscription-enforcement";
+import { apiRequest } from "@/lib/queryClient";
+
+const paymentSchema = z.object({
+  cardNumber: z.string().min(15, "Card number must be at least 15 digits").max(19, "Card number must be at most 19 digits"),
+  expirationMonth: z.string().min(2, "Month required"),
+  expirationYear: z.string().min(2, "Year required"),
+  cardCode: z.string().min(3, "CVV must be at least 3 digits").max(4, "CVV must be at most 4 digits"),
+});
+
+type PaymentFormData = z.infer<typeof paymentSchema>;
 
 const formatPrice = (price: number | string) => {
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
@@ -17,102 +30,71 @@ const formatPrice = (price: number | string) => {
 };
 
 function PaymentPageContent() {
-  const { items, getTotalPrice, hasFirearms, clearCart } = useCart();
+  const { items, getTotalPrice, clearCart } = useCart();
   const { user } = useAuth();
   const [, setLocation] = useLocation();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [orderComplete, setOrderComplete] = useState(false);
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
-  const [cvv, setCvv] = useState('');
-  const [cardName, setCardName] = useState('');
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-  // Calculate totals (in a real app, this would come from the backend)
-  const subtotal = getTotalPrice();
-  const shipping = 15.99; // Example shipping cost
-  const tax = subtotal * 0.08; // Example 8% tax
-  const total = subtotal + shipping + tax;
+  const form = useForm<PaymentFormData>({
+    resolver: zodResolver(paymentSchema),
+    defaultValues: {
+      cardNumber: '',
+      expirationMonth: '',
+      expirationYear: '',
+      cardCode: '',
+    },
+  });
 
-  const handlePayment = async () => {
-    setIsProcessing(true);
-    
-    try {
-      // Simulate payment processing delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+  const paymentMutation = useMutation({
+    mutationFn: async (data: PaymentFormData) => {
+      const expirationDate = `${data.expirationMonth}${data.expirationYear}`;
       
-      // In a real implementation, this would:
-      // 1. Send payment data to your backend
-      // 2. Process payment via Authorize.Net or Stripe sandbox
-      // 3. Create order record
-      // 4. Send confirmation emails
-      // 5. Clear cart on success
-      
-      console.log('Processing payment with sandbox data:', {
-        cardNumber: cardNumber.slice(-4), // Only log last 4 digits
-        amount: total,
-        items: items.length,
-        user: user?.id
+      return apiRequest('POST', '/api/process-payment', {
+        cardNumber: data.cardNumber.replace(/\s/g, ''),
+        expirationDate,
+        cardCode: data.cardCode,
+        amount: getTotalPrice(),
+        billingInfo: {
+          firstName: user?.firstName,
+          lastName: user?.lastName,
+          address: '123 Test St', // This would come from saved billing info
+          city: 'Test City',
+          state: 'AZ',
+          zip: '12345'
+        },
+        orderItems: items.map(item => ({
+          rsrStock: item.rsrStock,
+          description: item.description,
+          quantity: item.quantity,
+          price: parseFloat(item.price)
+        }))
       });
-      
-      // Simulate successful payment
-      setOrderComplete(true);
-      clearCart();
-      
-    } catch (error) {
-      console.error('Payment failed:', error);
-      alert('Payment failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
+    },
+    onSuccess: (response) => {
+      if (response.success) {
+        setPaymentSuccess(true);
+        clearCart();
+        setTimeout(() => {
+          setLocation('/order-confirmation');
+        }, 3000);
+      }
     }
+  });
+
+  const onSubmit = (data: PaymentFormData) => {
+    paymentMutation.mutate(data);
   };
 
-  const formatCardNumber = (value: string) => {
-    // Remove all non-digits
-    const cleaned = value.replace(/\D/g, '');
-    // Add spaces every 4 digits
-    const formatted = cleaned.replace(/(\d{4})(?=\d)/g, '$1 ');
-    return formatted;
-  };
-
-  const formatExpiry = (value: string) => {
-    // Remove all non-digits
-    const cleaned = value.replace(/\D/g, '');
-    // Add slash after 2 digits
-    if (cleaned.length >= 2) {
-      return cleaned.slice(0, 2) + '/' + cleaned.slice(2, 4);
-    }
-    return cleaned;
-  };
-
-  if (orderComplete) {
+  if (paymentSuccess) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md mx-auto">
-          <Card className="bg-white shadow-lg">
-            <CardContent className="text-center p-8">
-              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Order Complete!</h1>
-              <p className="text-gray-600 mb-6">
-                Thank you for your purchase. You'll receive a confirmation email shortly.
-              </p>
-              <div className="space-y-3">
-                <Button 
-                  onClick={() => setLocation('/')} 
-                  className="w-full"
-                >
-                  Continue Shopping
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setLocation('/orders')} 
-                  className="w-full"
-                >
-                  View My Orders
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="max-w-md mx-auto text-center">
+          <CardContent className="pt-8">
+            <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
+            <p className="text-gray-600 mb-4">Thank you for your purchase. Redirecting to order confirmation...</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -138,7 +120,7 @@ function PaymentPageContent() {
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Payment</h1>
-                <p className="text-sm text-gray-600">Secure checkout powered by sandbox environment</p>
+                <p className="text-sm text-gray-600">Complete your purchase</p>
               </div>
             </div>
 
@@ -177,150 +159,139 @@ function PaymentPageContent() {
             <Alert className="border-green-200 bg-green-50">
               <Shield className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">
-                <strong>Secure Payment:</strong> This is a sandbox environment for testing. 
-                Your payment information is encrypted and secure. Use test card: 4242 4242 4242 4242
+                Your payment is secured with industry-standard encryption. We never store your credit card information.
               </AlertDescription>
             </Alert>
 
             {/* Payment Form */}
-            <Card className="bg-white shadow-sm">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-blue-600" />
+                  <CreditCard className="w-5 h-5" />
                   Credit Card Information
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cardholder Name
-                  </label>
-                  <Input
-                    value={cardName}
-                    onChange={(e) => setCardName(e.target.value)}
-                    placeholder="Full name as shown on card"
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Card Number
-                  </label>
-                  <Input
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                    placeholder="4242 4242 4242 4242"
-                    maxLength={19}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Test card number for sandbox: 4242 4242 4242 4242
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Expiry Date
-                    </label>
-                    <Input
-                      value={expiryDate}
-                      onChange={(e) => setExpiryDate(formatExpiry(e.target.value))}
-                      placeholder="MM/YY"
-                      maxLength={5}
+              <CardContent>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="cardNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Card Number</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              placeholder="1234 5678 9012 3456"
+                              className="font-mono"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      CVV
-                    </label>
-                    <Input
-                      value={cvv}
-                      onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      placeholder="123"
-                      maxLength={4}
-                    />
-                  </div>
-                </div>
 
-                <div className="border-t pt-6">
-                  <Button 
-                    onClick={handlePayment}
-                    size="lg" 
-                    disabled={isProcessing || !cardNumber || !expiryDate || !cvv || !cardName}
-                    className="w-full"
-                  >
-                    <Lock className="w-4 h-4 mr-2" />
-                    {isProcessing ? 'Processing Payment...' : `Complete Order • ${formatPrice(total)}`}
-                  </Button>
-                  
-                  <p className="text-xs text-center text-gray-500 mt-3">
-                    By clicking "Complete Order", you agree to our Terms of Service and Privacy Policy.
-                  </p>
-                </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="expirationMonth"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Month</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="MM" maxLength={2} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="expirationYear"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Year</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="YY" maxLength={2} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="cardCode"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>CVV</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="123" maxLength={4} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {paymentMutation.error && (
+                      <Alert className="border-red-200 bg-red-50">
+                        <AlertDescription className="text-red-800">
+                          Payment failed: {paymentMutation.error.message}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    <Button
+                      type="submit"
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      disabled={paymentMutation.isPending}
+                    >
+                      {paymentMutation.isPending ? (
+                        "Processing Payment..."
+                      ) : (
+                        `Complete Purchase - ${formatPrice(getTotalPrice())}`
+                      )}
+                    </Button>
+                  </form>
+                </Form>
               </CardContent>
             </Card>
           </div>
 
-          {/* Order Summary */}
+          {/* Order Summary Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="bg-white shadow-sm sticky top-8">
+            <Card className="sticky top-8">
               <CardHeader>
-                <CardTitle>Final Order Summary</CardTitle>
+                <CardTitle className="text-lg">Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                
-                <div className="space-y-3">
-                  {items.map((item) => (
-                    <div key={item.id} className="flex justify-between items-start text-sm">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-gray-900 truncate">{item.productName}</p>
-                        <div className="flex items-center gap-2">
-                          <p className="text-gray-600">Qty: {item.quantity}</p>
-                          {item.requiresFFL && (
-                            <Badge variant="outline" className="text-xs">FFL</Badge>
-                          )}
-                        </div>
-                      </div>
-                      <span className="text-gray-900 font-medium ml-2">
-                        {formatPrice(item.price * item.quantity)}
-                      </span>
+                {items.map((item) => (
+                  <div key={item.id} className="flex justify-between items-start space-x-3 pb-3 border-b border-gray-200 last:border-b-0">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {item.description}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Qty: {item.quantity}
+                      </p>
                     </div>
-                  ))}
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium">{formatPrice(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Shipping</span>
-                    <span className="font-medium">{formatPrice(shipping)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Tax</span>
-                    <span className="font-medium">{formatPrice(tax)}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between items-center text-lg font-semibold">
-                    <span>Total</span>
-                    <span>{formatPrice(total)}</span>
-                  </div>
-                </div>
-
-                {hasFirearms() && (
-                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <p className="text-sm text-amber-800">
-                      <Package className="w-4 h-4 inline mr-1" />
-                      Firearms will be shipped to your selected FFL dealer for pickup.
+                    <p className="text-sm font-medium text-gray-900 flex-shrink-0">
+                      {formatPrice(parseFloat(item.price) * item.quantity)}
                     </p>
                   </div>
-                )}
+                ))}
+                
+                <div className="pt-4 border-t">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-gray-900">Total</span>
+                    <span className="text-lg font-bold text-gray-900">
+                      {formatPrice(getTotalPrice())}
+                    </span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -330,10 +301,12 @@ function PaymentPageContent() {
   );
 }
 
-export default function PaymentPage() {
+function PaymentPage() {
   return (
     <SubscriptionEnforcement>
       <PaymentPageContent />
     </SubscriptionEnforcement>
   );
 }
+
+export default PaymentPage;

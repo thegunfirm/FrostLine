@@ -314,6 +314,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ apiKey });
   });
 
+  // ================================
+  // AUTHORIZE.NET PAYMENT PROCESSING
+  // ================================
+  
+  app.post('/api/process-payment', async (req, res) => {
+    // Check authentication
+    if (!req.session?.user) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+    try {
+      const { 
+        cardNumber, 
+        expirationDate, 
+        cardCode, 
+        amount, 
+        billingInfo,
+        orderItems 
+      } = req.body;
+
+      // Import Authorize.Net SDK
+      const ApiContracts = require('authorizenet').APIContracts;
+      const ApiControllers = require('authorizenet').APIControllers;
+
+      // Create merchant authentication
+      const merchantAuth = new ApiContracts.MerchantAuthenticationType();
+      merchantAuth.setName(process.env.tgfAPILoginID);
+      merchantAuth.setTransactionKey(process.env.tgfTransactionKey);
+
+      // Create credit card info
+      const creditCard = new ApiContracts.CreditCardType();
+      creditCard.setCardNumber(cardNumber);
+      creditCard.setExpirationDate(expirationDate);
+      creditCard.setCardCode(cardCode);
+
+      const paymentType = new ApiContracts.PaymentType();
+      paymentType.setCreditCard(creditCard);
+
+      // Create billing address
+      const billTo = new ApiContracts.CustomerAddressType();
+      billTo.setFirstName(billingInfo.firstName);
+      billTo.setLastName(billingInfo.lastName);
+      billTo.setAddress(billingInfo.address);
+      billTo.setCity(billingInfo.city);
+      billTo.setState(billingInfo.state);
+      billTo.setZip(billingInfo.zip);
+      billTo.setCountry('US');
+
+      // Create transaction request
+      const transactionRequest = new ApiContracts.TransactionRequestType();
+      transactionRequest.setTransactionType(ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION);
+      transactionRequest.setPayment(paymentType);
+      transactionRequest.setAmount(amount);
+      transactionRequest.setBillTo(billTo);
+
+      // Set line items
+      const lineItems = new ApiContracts.ArrayOfLineItem();
+      orderItems.forEach((item: any, index: number) => {
+        const lineItem = new ApiContracts.LineItemType();
+        lineItem.setItemId(item.rsrStock || `item-${index}`);
+        lineItem.setName(item.description.substring(0, 31)); // Max 31 chars
+        lineItem.setQuantity(item.quantity);
+        lineItem.setUnitPrice(item.price);
+        lineItems.getLineItem().push(lineItem);
+      });
+      transactionRequest.setLineItems(lineItems);
+
+      const createRequest = new ApiContracts.CreateTransactionRequest();
+      createRequest.setMerchantAuthentication(merchantAuth);
+      createRequest.setTransactionRequest(transactionRequest);
+
+      const ctrl = new ApiControllers.CreateTransactionController(createRequest.getJSON());
+      ctrl.setEnvironment('sandbox'); // Use 'production' for live transactions
+
+      ctrl.execute(function() {
+        const apiResponse = ctrl.getResponse();
+        const response = new ApiContracts.CreateTransactionResponse(apiResponse);
+
+        if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
+          const transactionResponse = response.getTransactionResponse();
+          if (transactionResponse.getMessages().getMessage().length > 0) {
+            // Payment successful
+            res.json({
+              success: true,
+              transactionId: transactionResponse.getTransId(),
+              authCode: transactionResponse.getAuthCode(),
+              messageCode: transactionResponse.getMessages().getMessage()[0].getCode(),
+              description: transactionResponse.getMessages().getMessage()[0].getDescription()
+            });
+          } else {
+            // Payment failed
+            const errorMessage = transactionResponse.getErrors() ? 
+              transactionResponse.getErrors().getError()[0].getErrorText() : 
+              'Transaction failed';
+            res.status(400).json({
+              success: false,
+              error: errorMessage
+            });
+          }
+        } else {
+          // API error
+          const errorMessage = response.getMessages().getMessage()[0].getText();
+          res.status(500).json({
+            success: false,
+            error: errorMessage
+          });
+        }
+      });
+
+    } catch (error) {
+      console.error('Payment processing error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Payment processing failed'
+      });
+    }
+  });
+
   // Product routes - Hybrid Search Integration
   app.get("/api/products", async (req, res) => {
     try {
