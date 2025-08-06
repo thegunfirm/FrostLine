@@ -56,7 +56,7 @@ function UpgradeBenefits({ user }: { user: any }) {
         <AlertDescription className="text-amber-800">
           <div className="flex items-center justify-between">
             <span>
-              <strong>Platinum Member Benefits:</strong> You're saving {formatPrice(currentSavings)} on this order with your 15% discount!
+              <strong>Platinum Member Benefits:</strong> You're saving <span className="font-bold text-red-600">{formatPrice(currentSavings)}</span> on this order with your 15% discount!
             </span>
             <Badge className="bg-amber-100 text-amber-800 border-amber-300">
               Premium Member
@@ -75,19 +75,19 @@ function UpgradeBenefits({ user }: { user: any }) {
           <div>
             {currentTier === 'gold' ? (
               <>
-                <strong>Gold Member:</strong> You're saving {formatPrice(currentSavings)} on this order. 
-                Upgrade to Platinum and save an additional {formatPrice(additionalSavings)}!
+                <strong>Gold Member:</strong> You're saving <span className="font-bold text-red-600">{formatPrice(currentSavings)}</span> on this order. 
+                Upgrade to Platinum and save an additional <span className="font-bold text-red-600">{formatPrice(additionalSavings)}</span>!
               </>
             ) : (
               <>
-                <strong>Upgrade to Platinum:</strong> Save {formatPrice(potentialSavings)} on this order with 15% off everything!
+                <strong>Upgrade to Platinum:</strong> Save <span className="font-bold text-red-600">{formatPrice(potentialSavings)}</span> on this order with 15% off everything!
               </>
             )}
           </div>
           <Button 
             onClick={handleUpgrade}
             size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white animate-pulse hover:animate-none"
           >
             Upgrade Now
           </Button>
@@ -186,26 +186,24 @@ function OrderSummaryPageContent() {
         {/* Order Items */}
         <div className="lg:col-span-2">
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle>Items in Your Order</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               {items.map((item) => {
                 const fulfillmentType = getFulfillmentType(item);
                 const deliveryTime = getDeliveryTime(fulfillmentType);
                 
                 return (
-                  <div key={item.id} className="flex items-start gap-4 p-4 border rounded-lg">
-                    {(item as any).imageUrl && (
-                      <img 
-                        src={(item as any).imageUrl} 
-                        alt={item.productName}
-                        className="w-20 h-20 object-cover rounded-md flex-shrink-0"
-                        onError={(e) => {
-                          e.currentTarget.src = '/api/placeholder-image';
-                        }}
-                      />
-                    )}
+                  <div key={item.id} className="flex items-start gap-3 p-3 border rounded-lg">
+                    <img 
+                      src={item.productImage}
+                      alt={item.productName}
+                      className="w-16 h-16 object-cover rounded flex-shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.src = "/api/placeholder/64/64";
+                      }}
+                    />
                     
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-900 mb-1">{item.productName}</h3>
@@ -245,9 +243,18 @@ function OrderSummaryPageContent() {
                           >
                             <Minus className="w-3 h-3" />
                           </Button>
-                          <span className="px-3 py-1 text-sm min-w-[40px] text-center">
-                            {item.quantity}
-                          </span>
+                          <input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              if (value >= 0) {
+                                updateQuantity(item.id, value);
+                              }
+                            }}
+                            className="w-12 text-center text-sm border-0 bg-transparent focus:outline-none focus:ring-0"
+                            min="0"
+                          />
                           <Button
                             variant="ghost"
                             size="sm"
@@ -294,16 +301,16 @@ function OrderSummaryPageContent() {
         </div>
 
         {/* Order Totals & Upgrade Section */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Upgrade Benefits */}
           <UpgradeBenefits user={user} />
           
           {/* Order Total */}
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle>Order Total</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               <div className="flex justify-between">
                 <span>Subtotal</span>
                 <span>{formatPrice(getTotalPrice())}</span>
