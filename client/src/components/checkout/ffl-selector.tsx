@@ -54,24 +54,24 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Preferred':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 border border-blue-200';
       case 'OnFile':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 border border-green-200';
       case 'NotOnFile':
-        return 'bg-red-100 text-red-800';
+        return 'bg-orange-100 text-orange-800 border border-orange-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border border-gray-200';
     }
   };
 
   const getStatusDescription = (status: string) => {
     switch (status) {
       case 'Preferred':
-        return 'Fast processing - documents verified';
+        return 'TheGunFirm preferred dealer - fastest processing';
       case 'OnFile':
-        return 'FFL license on file';
+        return 'RSR partner dealer - documents verified';
       case 'NotOnFile':
-        return 'License verification required';
+        return 'ATF licensed dealer - license verification needed';
       default:
         return 'Status unknown';
     }
@@ -176,11 +176,12 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
                   <div className="flex gap-2">
                     <Badge className={getStatusColor(ffl.status)}>
                       {ffl.status === 'NotOnFile' ? 'Not On File' : 
-                       ffl.status === 'OnFile' ? 'On File' : 'Preferred'}
+                       ffl.status === 'OnFile' ? 'On File' : 
+                       ffl.status === 'Preferred' ? '⭐ Preferred' : ffl.status}
                     </Badge>
                     {selectedFflId === ffl.id && (
-                      <Badge className="bg-amber-100 text-amber-800">
-                        Selected
+                      <Badge className="bg-amber-100 text-amber-800 border border-amber-200">
+                        ✓ Selected
                       </Badge>
                     )}
                   </div>
@@ -221,9 +222,14 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
                   <p className="text-xs text-gray-600">
                     {getStatusDescription(ffl.status)}
                   </p>
+                  {ffl.status === 'Preferred' && (
+                    <p className="text-xs text-blue-600 mt-1 font-medium">
+                      ⚡ Priority processing - fastest fulfillment
+                    </p>
+                  )}
                   {ffl.status === 'NotOnFile' && (
                     <p className="text-xs text-orange-600 mt-1">
-                      Processing may be delayed while we verify FFL documentation.
+                      ⏱️ Processing may require additional verification time
                     </p>
                   )}
                 </div>

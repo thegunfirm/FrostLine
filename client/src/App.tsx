@@ -30,6 +30,7 @@ import AdminDepartmentPricing from "@/pages/admin-department-pricing";
 import AdminImageSettings from "@/pages/admin-image-settings";
 import AdminProductImages from "@/pages/admin-product-images";
 import AdminFFLManagement from "@/pages/admin-ffl-management";
+import FflManagement from "@/pages/admin/ffl-management";
 import RSRIntelligenceTest from "@/pages/rsr-intelligence-test";
 import PaymentTest from "@/pages/payment-test";
 import Categories from "@/pages/categories";
@@ -72,6 +73,7 @@ function Router() {
       <Route path="/admin-image-settings" component={AdminImageSettings} />
       <Route path="/admin-product-images" component={AdminProductImages} />
       <Route path="/admin-ffl-management" component={AdminFFLManagement} />
+      <Route path="/cms/ffls/management" component={FflManagement} />
       <Route path="/rsr-intelligence-test" component={RSRIntelligenceTest} />
       <Route path="/payment-test" component={PaymentTest} />
       <Route path="/categories" component={Categories} />

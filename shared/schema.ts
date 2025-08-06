@@ -120,6 +120,13 @@ export const ffls = pgTable("ffls", {
   licenseDocumentUrl: text("license_document_url"),
   isAvailableToUser: boolean("is_available_to_user").default(true),
   regionRestrictions: json("region_restrictions"),
+  isRsrPartner: boolean("is_rsr_partner").default(false), // True if on RSR list
+  isAtfActive: boolean("is_atf_active").default(true), // True if on current ATF list
+  licenseType: text("license_type"), // 01-Dealer, 07-Manufacturer, etc.
+  tradeNameDba: text("trade_name_dba"), // Doing Business As name
+  mailingAddress: json("mailing_address"),
+  licenseExpiration: timestamp("license_expiration"),
+  lastAtfUpdate: timestamp("last_atf_update"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -100,6 +100,9 @@ export interface IStorage {
   getAllFFLs(): Promise<FFL[]>;
   searchFFLsByZip(zip: string, radius?: number): Promise<FFL[]>;
   clearAllFFLs(): Promise<void>;
+  markFflAsPreferred(id: number): Promise<FFL>;
+  markFflAsNotPreferred(id: number): Promise<FFL>;
+  getPreferredFFLs(): Promise<FFL[]>;
   
   // State shipping policies
   getStateShippingPolicies(): Promise<StateShippingPolicy[]>;
@@ -1110,6 +1113,36 @@ export class DatabaseStorage implements IStorage {
   async deleteFFL(id: number): Promise<void> {
     await db.delete(ffls)
       .where(eq(ffls.id, id));
+  }
+
+  async updateFFL(id: number, updates: Partial<FFL>): Promise<FFL> {
+    const [ffl] = await db.update(ffls)
+      .set(updates)
+      .where(eq(ffls.id, id))
+      .returning();
+    return ffl;
+  }
+
+  async markFflAsPreferred(id: number): Promise<FFL> {
+    const [ffl] = await db.update(ffls)
+      .set({ status: 'Preferred' })
+      .where(eq(ffls.id, id))
+      .returning();
+    return ffl;
+  }
+
+  async markFflAsNotPreferred(id: number): Promise<FFL> {
+    const [ffl] = await db.update(ffls)
+      .set({ status: ffls.isRsrPartner ? 'OnFile' : 'NotOnFile' })
+      .where(eq(ffls.id, id))
+      .returning();
+    return ffl;
+  }
+
+  async getPreferredFFLs(): Promise<FFL[]> {
+    return await db.select().from(ffls)
+      .where(eq(ffls.status, 'Preferred'))
+      .orderBy(asc(ffls.businessName));
   }
 
   async importFFLsFromCSV(csvData: string): Promise<{ imported: number; skipped: number }> {

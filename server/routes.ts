@@ -652,6 +652,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // FFL preference management for support staff
+  app.post("/api/admin/ffls/:id/mark-preferred", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !['admin', 'support'].includes(req.user?.role)) {
+        return res.status(403).json({ message: "Support role or higher required" });
+      }
+      
+      const { id } = req.params;
+      const ffl = await storage.markFflAsPreferred(Number(id));
+      res.json({ message: "FFL marked as preferred", ffl });
+    } catch (error) {
+      console.error("Error marking FFL as preferred:", error);
+      res.status(500).json({ message: "Error updating FFL status" });
+    }
+  });
+
+  app.delete("/api/admin/ffls/:id/preferred", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !['admin', 'support'].includes(req.user?.role)) {
+        return res.status(403).json({ message: "Support role or higher required" });
+      }
+      
+      const { id } = req.params;
+      const ffl = await storage.markFflAsNotPreferred(Number(id));
+      res.json({ message: "FFL preferred status removed", ffl });
+    } catch (error) {
+      console.error("Error removing preferred status:", error);
+      res.status(500).json({ message: "Error updating FFL status" });
+    }
+  });
+
+  app.get("/api/admin/ffls/preferred", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !['admin', 'support'].includes(req.user?.role)) {
+        return res.status(403).json({ message: "Support role or higher required" });
+      }
+      
+      const ffls = await storage.getPreferredFFLs();
+      res.json(ffls);
+    } catch (error) {
+      console.error("Error fetching preferred FFLs:", error);
+      res.status(500).json({ message: "Error fetching preferred FFLs" });
+    }
+  });
+
   app.post("/api/admin/ffls/import", async (req, res) => {
     try {
       if (!req.isAuthenticated() || req.user?.role !== 'admin') {
