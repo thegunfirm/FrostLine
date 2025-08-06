@@ -224,7 +224,14 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
                               <p className="text-xs text-gray-500 mt-1">License: {ffl.licenseNumber}</p>
                             </div>
                             
-                            <Button size="sm" className="ml-3 flex-shrink-0">
+                            <Button 
+                              size="sm" 
+                              className="ml-3 flex-shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onFflSelected(ffl.id);
+                              }}
+                            >
                               Select
                             </Button>
                           </div>
