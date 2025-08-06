@@ -171,6 +171,9 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <h4 className="font-medium text-gray-900">{ffl.businessName}</h4>
+                    {ffl.tradeNameDba && (
+                      <p className="text-sm text-blue-600 font-medium">DBA: {ffl.tradeNameDba}</p>
+                    )}
                     <p className="text-sm text-gray-600">License: {ffl.licenseNumber}</p>
                   </div>
                   <div className="flex gap-2">
