@@ -46,13 +46,17 @@ function CheckoutPageContent() {
     
     // For firearms, check if it's a "drop to FFL" item (like Glock)
     // Items that need to come to us first before going to FFL
-    const dropToFflBrands = ['GLOCK', 'SMITH & WESSON', 'SIG SAUER']; // Configurable list
-    const manufacturer = item.manufacturer?.toUpperCase() || '';
+    const dropToFflBrands = ['GLOCK', 'SMITH & WESSON', 'SIG SAUER', 'S&W', 'SIG']; // Configurable list
+    const manufacturer = (item.manufacturer || '').toUpperCase();
+    
+    console.log('Checking fulfillment type for:', item.productName, 'Manufacturer:', manufacturer);
     
     if (dropToFflBrands.some(brand => manufacturer.includes(brand))) {
+      console.log('Matched drop_to_ffl for:', manufacturer);
       return 'drop_to_ffl';
     }
     
+    console.log('Using no_drop_to_ffl for:', manufacturer);
     return 'no_drop_to_ffl';
   };
 
