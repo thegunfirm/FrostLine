@@ -333,6 +333,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orderItems 
       } = req.body;
 
+      console.log('💳 Payment request data:', {
+        cardNumber: cardNumber ? '****' + cardNumber.slice(-4) : 'missing',
+        expirationDate: expirationDate ? 'present' : 'missing',
+        cardCode: cardCode ? 'present' : 'missing',
+        amount: amount || 'missing',
+        billingInfo: billingInfo ? 'present' : 'missing',
+        orderItems: orderItems ? `${orderItems.length} items` : 'missing'
+      });
+
       // Use createRequire for CommonJS modules in ES modules
       const { createRequire } = await import('module');
       const require = createRequire(import.meta.url);
@@ -396,38 +405,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ctrl = new ApiControllers.CreateTransactionController(createRequest.getJSON());
       ctrl.setEnvironment('sandbox'); // Use 'production' for live transactions
 
-      ctrl.execute(function() {
-        const apiResponse = ctrl.getResponse();
-        const response = new ApiContracts.CreateTransactionResponse(apiResponse);
+      // Add timeout and better error handling
+      const timeout = setTimeout(() => {
+        console.error('❌ Payment processing timeout after 30 seconds');
+        if (!res.headersSent) {
+          res.status(408).json({
+            success: false,
+            error: 'Payment processing timeout'
+          });
+        }
+      }, 30000);
 
-        if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-          const transactionResponse = response.getTransactionResponse();
-          if (transactionResponse.getMessages().getMessage().length > 0) {
-            // Payment successful
-            res.json({
-              success: true,
-              transactionId: transactionResponse.getTransId(),
-              authCode: transactionResponse.getAuthCode(),
-              messageCode: transactionResponse.getMessages().getMessage()[0].getCode(),
-              description: transactionResponse.getMessages().getMessage()[0].getDescription()
-            });
+      ctrl.execute(function() {
+        clearTimeout(timeout);
+        console.log('📨 Received response from Authorize.Net');
+        
+        try {
+          const apiResponse = ctrl.getResponse();
+          console.log('🔍 API Response received:', JSON.stringify(apiResponse, null, 2));
+          
+          const response = new ApiContracts.CreateTransactionResponse(apiResponse);
+
+          if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
+            const transactionResponse = response.getTransactionResponse();
+            if (transactionResponse && transactionResponse.getMessages() && transactionResponse.getMessages().getMessage().length > 0) {
+              // Payment successful
+              console.log('✅ Payment successful');
+              res.json({
+                success: true,
+                transactionId: transactionResponse.getTransId(),
+                authCode: transactionResponse.getAuthCode(),
+                messageCode: transactionResponse.getMessages().getMessage()[0].getCode(),
+                description: transactionResponse.getMessages().getMessage()[0].getDescription()
+              });
+            } else {
+              // Payment failed
+              console.log('❌ Payment failed - transaction response errors');
+              const errorMessage = transactionResponse && transactionResponse.getErrors() ? 
+                transactionResponse.getErrors().getError()[0].getErrorText() : 
+                'Transaction failed';
+              res.status(400).json({
+                success: false,
+                error: errorMessage
+              });
+            }
           } else {
-            // Payment failed
-            const errorMessage = transactionResponse.getErrors() ? 
-              transactionResponse.getErrors().getError()[0].getErrorText() : 
-              'Transaction failed';
-            res.status(400).json({
+            // API error
+            console.log('❌ API error from Authorize.Net');
+            const errorMessage = response.getMessages().getMessage()[0].getText();
+            res.status(500).json({
               success: false,
               error: errorMessage
             });
           }
-        } else {
-          // API error
-          const errorMessage = response.getMessages().getMessage()[0].getText();
-          res.status(500).json({
-            success: false,
-            error: errorMessage
-          });
+        } catch (responseError) {
+          console.error('❌ Error processing Authorize.Net response:', responseError);
+          if (!res.headersSent) {
+            res.status(500).json({
+              success: false,
+              error: 'Error processing payment response'
+            });
+          }
         }
       });
 
