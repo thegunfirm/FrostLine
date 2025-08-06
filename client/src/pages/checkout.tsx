@@ -153,10 +153,23 @@ function CheckoutPageContent() {
                         <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
                           <Clock className="w-3 h-3" />
                           {(() => {
-                            const firstItem = fflItems[0];
-                            const fulfillmentType = getFulfillmentType(firstItem);
-                            const deliveryTime = getDeliveryTime(fulfillmentType);
-                            const description = getDeliveryDescription(fulfillmentType);
+                            // Check all FFL items to find the slowest delivery time
+                            let slowestFulfillmentType = 'no_drop_to_ffl';
+                            let slowestDays = 0;
+                            
+                            for (const item of fflItems) {
+                              const fulfillmentType = getFulfillmentType(item);
+                              const timeText = getDeliveryTime(fulfillmentType);
+                              const days = parseInt(timeText.split('-')[1] || timeText.split(' ')[0]);
+                              
+                              if (days > slowestDays) {
+                                slowestDays = days;
+                                slowestFulfillmentType = fulfillmentType;
+                              }
+                            }
+                            
+                            const deliveryTime = getDeliveryTime(slowestFulfillmentType);
+                            const description = getDeliveryDescription(slowestFulfillmentType);
                             return (
                               <span>
                                 Estimated delivery: {deliveryTime}
