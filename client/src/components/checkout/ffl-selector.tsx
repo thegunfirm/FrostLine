@@ -170,11 +170,13 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
               <CardContent className="p-4">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <h4 className="font-medium text-gray-900">{ffl.businessName}</h4>
-                    {ffl.tradeNameDba && (
-                      <p className="text-sm text-blue-600 font-medium">DBA: {ffl.tradeNameDba}</p>
-                    )}
+                    <h4 className="font-medium text-gray-900">
+                      {ffl.tradeNameDba || ffl.businessName}
+                    </h4>
                     <p className="text-sm text-gray-600">License: {ffl.licenseNumber}</p>
+                    {ffl.tradeNameDba && (
+                      <p className="text-sm text-gray-600">{ffl.businessName}</p>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Badge className={getStatusColor(ffl.status)}>
