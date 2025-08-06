@@ -156,6 +156,11 @@ export function FflSelector({ selectedFflId, onFflSelected, userZip }: FflSelect
               Change FFL Dealer
             </Button>
           </div>
+        ) : selectedFflId ? (
+          <div className="text-center py-4">
+            <div className="animate-spin w-6 h-6 border-2 border-amber-600 border-t-transparent rounded-full mx-auto mb-2"></div>
+            <p className="text-sm text-gray-600">Loading FFL details...</p>
+          </div>
         ) : (
           <>
             {/* Search Interface - Only show if no FFL is selected */}
