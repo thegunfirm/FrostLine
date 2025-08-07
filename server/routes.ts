@@ -342,12 +342,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orderItems: orderItems ? `${orderItems.length} items` : 'missing'
       });
 
-      // Use createRequire for CommonJS modules in ES modules
-      const { createRequire } = await import('module');
-      const require = createRequire(import.meta.url);
-      const authorizenet = require('authorizenet');
-      const ApiContracts = authorizenet.APIContracts;
-      const ApiControllers = authorizenet.APIControllers;
+      // Use direct HTTP request instead of SDK to avoid hanging issues
+      console.log('🌐 Using direct HTTP request to Authorize.Net API...');
 
       // Validate environment variables
       const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
@@ -365,136 +361,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create merchant authentication
-      const merchantAuth = new ApiContracts.MerchantAuthenticationType();
-      merchantAuth.setName(apiLoginId);
-      merchantAuth.setTransactionKey(transactionKey);
-
-      // Create credit card info
-      const creditCard = new ApiContracts.CreditCardType();
-      creditCard.setCardNumber(cardNumber);
-      creditCard.setExpirationDate(expirationDate);
-      creditCard.setCardCode(cardCode);
-
-      const paymentType = new ApiContracts.PaymentType();
-      paymentType.setCreditCard(creditCard);
-
-      // Create billing address
-      const billTo = new ApiContracts.CustomerAddressType();
-      billTo.setFirstName(billingInfo.firstName);
-      billTo.setLastName(billingInfo.lastName);
-      billTo.setAddress(billingInfo.address);
-      billTo.setCity(billingInfo.city);
-      billTo.setState(billingInfo.state);
-      billTo.setZip(billingInfo.zip);
-      billTo.setCountry('US');
-
-      // Create transaction request
-      const transactionRequest = new ApiContracts.TransactionRequestType();
-      transactionRequest.setTransactionType(ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION);
-      transactionRequest.setPayment(paymentType);
-      transactionRequest.setAmount(amount);
-      transactionRequest.setBillTo(billTo);
-
-      // Set line items - simplified approach
-      const lineItemsArray = [];
-      orderItems.forEach((item: any, index: number) => {
-        const lineItem = new ApiContracts.LineItemType();
-        lineItem.setItemId(item.rsrStock || `item-${index}`);
-        const itemName = item.description || item.name || `Item ${index + 1}`;
-        lineItem.setName(itemName.substring(0, 31)); // Max 31 chars
-        lineItem.setQuantity(item.quantity);
-        lineItem.setUnitPrice(item.price);
-        lineItemsArray.push(lineItem);
-      });
-      
-      if (lineItemsArray.length > 0) {
-        const lineItems = new ApiContracts.ArrayOfLineItem();
-        lineItems.setLineItem(lineItemsArray);
-        transactionRequest.setLineItems(lineItems);
-      }
-
-      const createRequest = new ApiContracts.CreateTransactionRequest();
-      createRequest.setMerchantAuthentication(merchantAuth);
-      createRequest.setTransactionRequest(transactionRequest);
-
-      console.log('📤 Creating transaction controller...');
-      const requestJSON = createRequest.getJSON();
-      console.log('📋 Transaction request structure:', {
-        hasAuth: !!requestJSON.createTransactionRequest?.merchantAuthentication,
-        hasTransactionRequest: !!requestJSON.createTransactionRequest?.transactionRequest,
-        amount: requestJSON.createTransactionRequest?.transactionRequest?.amount,
-        transactionType: requestJSON.createTransactionRequest?.transactionRequest?.transactionType
-      });
-
-      const ctrl = new ApiControllers.CreateTransactionController(requestJSON);
-      ctrl.setEnvironment('sandbox'); // Use 'production' for live transactions
-      
-      console.log('🌐 Executing Authorize.Net API call...');
-
-      // Add timeout and better error handling
-      const timeout = setTimeout(() => {
-        console.error('❌ Payment processing timeout after 30 seconds');
-        if (!res.headersSent) {
-          res.status(408).json({
-            success: false,
-            error: 'Payment processing timeout'
-          });
+      // Create direct HTTP request payload
+      const requestPayload = {
+        createTransactionRequest: {
+          merchantAuthentication: {
+            name: apiLoginId,
+            transactionKey: transactionKey
+          },
+          transactionRequest: {
+            transactionType: "authCaptureTransaction",
+            amount: amount,
+            payment: {
+              creditCard: {
+                cardNumber: cardNumber,
+                expirationDate: expirationDate,
+                cardCode: cardCode
+              }
+            },
+            billTo: {
+              firstName: billingInfo.firstName,
+              lastName: billingInfo.lastName,
+              address: billingInfo.address,
+              city: billingInfo.city,
+              state: billingInfo.state,
+              zip: billingInfo.zip,
+              country: "US"
+            },
+            lineItems: orderItems.map((item: any, index: number) => ({
+              itemId: item.rsrStock || `item-${index}`,
+              name: (item.description || item.name || `Item ${index + 1}`).substring(0, 31),
+              quantity: item.quantity,
+              unitPrice: item.price
+            }))
+          }
         }
-      }, 30000);
+      };
 
-      ctrl.execute(function() {
-        clearTimeout(timeout);
-        console.log('📨 Received response from Authorize.Net');
+      console.log('📤 Sending direct HTTP request to Authorize.Net');
+      
+      // Use fetch with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 15000); // 15 second timeout
+
+      try {
+        const response = await fetch('https://apitest.authorize.net/xml/v1/request.api', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(requestPayload),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
         
-        try {
-          const apiResponse = ctrl.getResponse();
-          console.log('🔍 API Response received:', JSON.stringify(apiResponse, null, 2));
-          
-          const response = new ApiContracts.CreateTransactionResponse(apiResponse);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
 
-          if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-            const transactionResponse = response.getTransactionResponse();
-            if (transactionResponse && transactionResponse.getMessages() && transactionResponse.getMessages().getMessage().length > 0) {
-              // Payment successful
-              console.log('✅ Payment successful');
-              res.json({
-                success: true,
-                transactionId: transactionResponse.getTransId(),
-                authCode: transactionResponse.getAuthCode(),
-                messageCode: transactionResponse.getMessages().getMessage()[0].getCode(),
-                description: transactionResponse.getMessages().getMessage()[0].getDescription()
-              });
-            } else {
-              // Payment failed
-              console.log('❌ Payment failed - transaction response errors');
-              const errorMessage = transactionResponse && transactionResponse.getErrors() ? 
-                transactionResponse.getErrors().getError()[0].getErrorText() : 
-                'Transaction failed';
-              res.status(400).json({
-                success: false,
-                error: errorMessage
-              });
-            }
+        const result = await response.json();
+        console.log('🔍 API Response received:', JSON.stringify(result, null, 2));
+
+        const transactionResponse = result.transactionResponse;
+        const messages = result.messages;
+
+        if (messages.resultCode === 'Ok' && transactionResponse) {
+          if (transactionResponse.responseCode === '1') {
+            // Payment successful
+            console.log('✅ Payment successful');
+            res.json({
+              success: true,
+              transactionId: transactionResponse.transId,
+              authCode: transactionResponse.authCode,
+              messageCode: transactionResponse.messages[0]?.code,
+              description: transactionResponse.messages[0]?.description || 'Payment processed successfully'
+            });
           } else {
-            // API error
-            console.log('❌ API error from Authorize.Net');
-            const errorMessage = response.getMessages().getMessage()[0].getText();
-            res.status(500).json({
+            // Payment declined
+            console.log('❌ Payment declined');
+            const errorMessage = transactionResponse.errors?.[0]?.errorText || 
+                               transactionResponse.messages?.[0]?.description || 
+                               'Payment was declined';
+            res.status(400).json({
               success: false,
               error: errorMessage
             });
           }
-        } catch (responseError) {
-          console.error('❌ Error processing Authorize.Net response:', responseError);
-          if (!res.headersSent) {
-            res.status(500).json({
-              success: false,
-              error: 'Error processing payment response'
-            });
-          }
+        } else {
+          // API error
+          console.log('❌ API error from Authorize.Net');
+          const errorMessage = messages.message?.[0]?.text || 'API Error';
+          res.status(500).json({
+            success: false,
+            error: errorMessage
+          });
         }
-      });
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          console.error('❌ Request timeout');
+          res.status(408).json({
+            success: false,
+            error: 'Payment processing timeout'
+          });
+        } else {
+          console.error('❌ Fetch error:', fetchError);
+          res.status(500).json({
+            success: false,
+            error: `Network error: ${fetchError.message}`
+          });
+        }
+      }
 
     } catch (error) {
       console.error('Payment processing error:', error);
