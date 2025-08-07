@@ -52,12 +52,24 @@ export function Header() {
 
           {/* Navigation Icons - Right */}
           <div className="justify-self-end flex items-center space-x-1 sm:space-x-2 md:space-x-4">
-            <Link href="/account">
-              <Button variant="ghost" size="sm" className="text-white hover:text-gun-gold">
-                <User className="h-5 w-5" />
-                <span className="sr-only">My Account</span>
-              </Button>
-            </Link>
+            {user ? (
+              <Link href="/account">
+                <Button variant="ghost" size="sm" className="text-white hover:text-gun-gold flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <div className="hidden md:flex flex-col items-start text-xs leading-tight">
+                    <span className="font-medium">{user.firstName}</span>
+                    <span className="text-gun-gold capitalize">{user.membershipTier || 'Bronze'}</span>
+                  </div>
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/login">
+                <Button variant="ghost" size="sm" className="text-white hover:text-gun-gold">
+                  <User className="h-5 w-5" />
+                  <span className="hidden md:inline ml-1">Sign In</span>
+                </Button>
+              </Link>
+            )}
             <CartIcon />
             
             {/* Mobile Menu Button */}
