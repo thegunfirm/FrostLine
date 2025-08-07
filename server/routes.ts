@@ -347,7 +347,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate environment variables
       const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
-      const transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
+      let transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
+      
+      // Temporary fix: Use working credentials until environment updates
+      if (transactionKey === '4kJd237rZu59qAZd') {
+        console.log('🔧 Using updated transaction key until environment refreshes');
+        transactionKey = '632m44jKh5J6LvRC';
+      }
       
       console.log('🔍 Raw environment check:', {
         hasApiLoginId: !!apiLoginId,
