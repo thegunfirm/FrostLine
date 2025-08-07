@@ -14,6 +14,9 @@ export default function OrderConfirmation() {
   const [orderData, setOrderData] = useState<any>(null);
 
   useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0);
+    
     // Get order data from session storage (set during payment success)
     const storedOrderData = sessionStorage.getItem('lastOrderData');
     if (storedOrderData) {

@@ -135,6 +135,7 @@ function PaymentPageContent() {
         cardCode: data.cardCode,
         amount: getTotalPrice(),
         billingInfo: {
+          email: user?.email,
           firstName: user?.firstName,
           lastName: user?.lastName,
           address: '123 Test St', // This would come from saved billing info

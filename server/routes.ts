@@ -1181,49 +1181,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orderDetails || `Order #${orderId}`
       );
 
-      // Update order with transaction ID if successful
-      if (result.success && orderId) {
-        await storage.updateOrderPayment(orderId, {
-          authorizeNetTransactionId: result.transactionId,
-          status: 'Paid'
-        });
+      // Handle successful payment
+      if (result.success) {
+        console.log('💳 Payment successful, processing order confirmation...');
+        
+        // If orderId exists, update existing order
+        if (orderId) {
+          await storage.updateOrderPayment(orderId, {
+            authorizeNetTransactionId: result.transactionId,
+            status: 'Paid'
+          });
+          console.log(`✅ Updated existing order ${orderId} with transaction ID`);
+        }
 
-        // Send order confirmation email
+        // Send order confirmation email regardless of orderId
         try {
           const { sendOrderConfirmationEmail } = await import('./emailService');
-          const order = await storage.getOrderById(orderId);
           
-          if (order && order.customerEmail) {
-            // Format order data for email
+          // Get order data from request body since we might not have a DB order
+          const customerEmail = billingInfo?.email || req.session?.user?.email;
+          const customerName = `${billingInfo?.firstName || ''} ${billingInfo?.lastName || ''}`.trim() || 'Customer';
+          
+          console.log('📧 Email debug info:', {
+            customerEmail,
+            customerName,
+            billingInfo: billingInfo ? 'present' : 'missing',
+            sessionUser: req.session?.user ? 'present' : 'missing',
+            orderItems: orderItems ? orderItems.length : 0
+          });
+          
+          if (customerEmail) {
             const orderEmailData = {
-              orderNumber: order.orderNumber || orderId.toString(),
-              customerEmail: order.customerEmail,
-              customerName: `${order.shippingAddress?.firstName || ''} ${order.shippingAddress?.lastName || ''}`.trim() || 'Customer',
-              items: (order.items || []).map((item: any) => ({
-                name: item.productName || item.name || 'Product',
-                sku: item.sku || item.productId?.toString() || '',
+              orderNumber: orderId?.toString() || `TXN-${result.transactionId}`,
+              customerEmail,
+              customerName,
+              items: (orderItems || []).map((item: any) => ({
+                name: item.description || item.name || 'Product',
+                sku: item.rsrStock || item.sku || '',
                 quantity: item.quantity || 1,
-                price: parseFloat(item.unitPrice || item.price || '0'),
-                total: parseFloat(item.totalPrice || item.total || '0'),
+                price: parseFloat(item.price || '0'),
+                total: parseFloat(item.price || '0') * (item.quantity || 1),
                 requiresFFL: item.requiresFFL || false
               })),
-              subtotal: parseFloat(order.subtotal || '0'),
-              tax: parseFloat(order.tax || '0'),
-              shipping: parseFloat(order.shipping || '0'),
-              total: parseFloat(order.total || '0'),
-              shippingAddress: order.shippingAddress || {},
-              billingAddress: order.billingAddress || {},
-              fflDealer: order.fflDealer || null,
+              subtotal: parseFloat(amount) || 0,
+              tax: 0, // Tax calculation would go here
+              shipping: 0, // Shipping calculation would go here  
+              total: parseFloat(amount) || 0,
+              shippingAddress: billingInfo || {},
+              billingAddress: billingInfo || {},
+              fflDealer: null, // FFL dealer would be retrieved here if needed
               transactionId: result.transactionId,
-              orderDate: new Date(order.createdAt || Date.now()).toLocaleDateString('en-US', {
+              orderDate: new Date().toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
               })
             };
 
-            await sendOrderConfirmationEmail(orderEmailData);
-            console.log(`✅ Order confirmation email sent for order ${orderId}`);
+            const emailSent = await sendOrderConfirmationEmail(orderEmailData);
+            console.log(`📧 Order confirmation email ${emailSent ? 'sent successfully' : 'failed'} to ${customerEmail}`);
+          } else {
+            console.log('⚠️ No customer email found for order confirmation');
           }
         } catch (emailError) {
           console.error('❌ Failed to send order confirmation email:', emailError);
