@@ -29,6 +29,13 @@ Testing policy: No assumptions - use test or dummy data ONLY FOR FAKE USERS. Inv
 - ✅ **EMAIL CONFIRMATION SYSTEM (2025-08-07)**: Automated order confirmation emails with Gun Firm branding, transaction details, FFL information, and professional HTML design using SendGrid integration
 - ✅ **ORDER DATABASE STORAGE (2025-08-07)**: Fixed critical bug where successful payments weren't creating order records - orders now properly saved with transaction IDs, fulfillment groups, and user association
 
+**CMS/CRM SEPARATION ARCHITECTURE (2025-08-07)**:
+- **CMS (Replit)**: Content management, system configuration, inventory management (RSR), compliance, platform administration, branding management
+- **CRM (Zoho)**: Customer profiles, order history tracking, email marketing, support tickets, live chat, FFL vendor management, lead management
+- **CRITICAL**: Inventory resides exclusively in TheGunFirm database from RSR - Zoho never handles inventory data
+- **Order Flow**: When orders placed, item details recorded in order record and synced to Zoho for customer history - inventory never pulled from Zoho
+- **FFL Management**: Using Zoho CRM Vendors module for FFL dealer relationships and preferred dealer assignments
+
 ## System Architecture
 
 ### Dual Platform Infrastructure
