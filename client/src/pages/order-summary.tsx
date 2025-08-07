@@ -73,22 +73,16 @@ function UpgradeBenefits({ user }: { user: any }) {
       <AlertDescription className="text-blue-800">
         <div className="flex items-center justify-between">
           <div>
-            {currentTier === 'gold' ? (
-              <>
-                <strong>Gold Member:</strong> You're saving <span className="font-bold text-red-600">{formatPrice(currentSavings)}</span> on this order. 
-                Upgrade to Platinum and save an additional <span className="font-bold text-red-600">{formatPrice(additionalSavings)}</span>!
-              </>
-            ) : (
-              <>
-                <strong>Upgrade to Platinum:</strong> Save <span className="font-bold text-red-600">{formatPrice(potentialSavings)}</span> on this order with 15% off everything!
-              </>
-            )}
+            <span className="font-semibold">Upgrade Your Membership Now!</span><br />
+            Save an additional <span className="font-bold text-red-600">{formatPrice(additionalSavings)}</span> on this order with Platinum membership. 
+            {currentTier === 'bronze' && <span> That's {formatPrice(potentialSavings)} total savings!</span>}
           </div>
           <Button 
             onClick={handleUpgrade}
-            size="sm"
-            className="bg-green-600 hover:bg-green-700 text-white animate-pulse hover:animate-none"
+            size="sm" 
+            className="bg-blue-600 hover:bg-blue-700 text-white ml-4 whitespace-nowrap"
           >
+            <Star className="w-4 h-4 mr-1" />
             Upgrade Now
           </Button>
         </div>

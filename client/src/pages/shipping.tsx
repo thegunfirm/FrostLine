@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, Truck, Clock, Package, Star } from "lucide-react";
+import { ArrowLeft, Truck, Clock, Package, Star, Zap } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { SubscriptionEnforcement } from "@/components/auth/subscription-enforcement";
@@ -74,7 +74,7 @@ function UpgradeBenefits({ user }: { user: any }) {
         <AlertDescription className="text-amber-800">
           <div className="flex items-center justify-between">
             <span>
-              <strong>Platinum Member Benefits:</strong> You're saving {formatPrice(currentSavings)} on this order with your 15% discount!
+              <strong>Platinum Member Benefits:</strong> You're saving <span className="font-bold text-red-600">{formatPrice(currentSavings)}</span> on this order with your 15% discount!
             </span>
             <Badge className="bg-amber-100 text-amber-800 border-amber-300">
               Premium Member
@@ -86,28 +86,22 @@ function UpgradeBenefits({ user }: { user: any }) {
   }
 
   return (
-    <Alert className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 mb-6">
-      <Star className="w-4 h-4 text-blue-600" />
-      <AlertDescription className="text-blue-800">
+    <Alert className="bg-gradient-to-r from-orange-50 to-red-50 border-orange-200 mb-6">
+      <Star className="w-4 h-4 text-orange-600" />
+      <AlertDescription className="text-orange-800">
         <div className="flex items-center justify-between">
           <div>
-            {currentTier === 'gold' ? (
-              <>
-                <strong>Gold Member:</strong> You're saving {formatPrice(currentSavings)} on this order. 
-                Upgrade to Platinum and save an additional {formatPrice(additionalSavings)}!
-              </>
-            ) : (
-              <>
-                <strong>Upgrade to Platinum:</strong> Save {formatPrice(potentialSavings)} on this order with 15% off everything!
-              </>
-            )}
+            <span className="font-semibold text-red-700">Don't Miss Out on Savings!</span><br />
+            Save an additional <span className="font-bold text-red-600">{formatPrice(additionalSavings)}</span> on this order. 
+            {currentTier === 'bronze' && <span> Upgrade now for {formatPrice(potentialSavings)} total savings!</span>}
           </div>
           <Button 
             onClick={handleUpgrade}
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            size="sm" 
+            className="bg-red-600 hover:bg-red-700 text-white ml-4 whitespace-nowrap animate-pulse hover:animate-none"
           >
-            Upgrade Now
+            <Star className="w-4 h-4 mr-1" />
+            Save Now
           </Button>
         </div>
       </AlertDescription>

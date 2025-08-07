@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, CreditCard, Shield, CheckCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, CreditCard, Shield, CheckCircle, Star, AlertTriangle } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { SubscriptionEnforcement } from "@/components/auth/subscription-enforcement";
@@ -28,6 +29,85 @@ const formatPrice = (price: number | string) => {
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
   return `$${numPrice.toFixed(2)}`;
 };
+
+// Final Urgency Upgrade Benefits Component  
+function FinalUpgradeBenefits({ user }: { user: any }) {
+  const { getTotalPrice } = useCart();
+  const [, setLocation] = useLocation();
+  
+  if (!user) return null;
+
+  const currentTier = user.membershipTier || 'bronze';
+  const totalPrice = getTotalPrice();
+  
+  const bronzeDiscount = 0;
+  const goldDiscount = 0.05;
+  const platinumDiscount = 0.15;
+  
+  const currentSavings = currentTier === 'platinum' ? totalPrice * platinumDiscount :
+                        currentTier === 'gold' ? totalPrice * goldDiscount : 0;
+  
+  const potentialSavings = totalPrice * platinumDiscount;
+  const additionalSavings = potentialSavings - currentSavings;
+
+  if (isNaN(totalPrice) || isNaN(currentSavings) || isNaN(potentialSavings) || isNaN(additionalSavings)) {
+    return null;
+  }
+
+  const handleUpgrade = () => {
+    sessionStorage.setItem('checkout_return_url', '/payment');
+    setLocation('/membership');
+  };
+
+  if (currentTier === 'platinum') {
+    return (
+      <Alert className="bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200 mb-6">
+        <Star className="w-4 h-4 text-amber-600" />
+        <AlertDescription className="text-amber-800">
+          <div className="flex items-center justify-between">
+            <span>
+              <strong>Platinum Member Benefits:</strong> You're saving <span className="font-bold text-red-600">{formatPrice(currentSavings)}</span> on this order!
+            </span>
+            <Badge className="bg-amber-100 text-amber-800 border-amber-300">
+              Premium Member
+            </Badge>
+          </div>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <Alert className="bg-gradient-to-r from-red-100 to-red-200 border-red-500 border-3 mb-6 shadow-xl">
+      <AlertTriangle className="w-5 h-5 text-red-700 animate-pulse" />
+      <AlertDescription className="text-red-900">
+        <div className="text-center py-3">
+          <div className="text-xl font-bold text-red-800 mb-2">
+            🚨 FINAL CHANCE TO SAVE! 🚨
+          </div>
+          <div className="text-lg font-semibold mb-3">
+            This is your LAST opportunity to save <span className="font-bold text-red-700 text-xl bg-yellow-200 px-2 py-1 rounded">{formatPrice(additionalSavings)}</span> on this order!
+          </div>
+          {currentTier === 'bronze' && (
+            <div className="text-base mb-4">
+              Upgrade now for <span className="font-bold text-red-700 text-xl bg-yellow-200 px-2 py-1 rounded">{formatPrice(potentialSavings)}</span> total savings - that's 15% off everything!
+            </div>
+          )}
+          <div className="text-sm text-red-700 mb-4">
+            ⏰ Once you submit payment, this offer expires forever for this order!
+          </div>
+          <Button 
+            onClick={handleUpgrade}
+            size="lg" 
+            className="bg-red-700 hover:bg-red-800 text-white px-8 py-3 text-lg font-bold shadow-2xl border-4 border-yellow-300 animate-pulse hover:animate-none transform hover:scale-105"
+          >
+            🔥 SAVE {formatPrice(additionalSavings)} NOW! 🔥
+          </Button>
+        </div>
+      </AlertDescription>
+    </Alert>
+  );
+}
 
 function PaymentPageContent() {
   const { items, getTotalPrice, clearCart } = useCart();
@@ -124,6 +204,11 @@ function PaymentPageContent() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           
+          {/* Final Upgrade Alert - Full Width */}
+          <div className="lg:col-span-3 mb-6">
+            <FinalUpgradeBenefits user={user} />
+          </div>
+
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             

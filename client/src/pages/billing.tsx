@@ -78,6 +78,77 @@ function BillingPageContent() {
     }
   };
 
+  // Upgrade Benefits Component for Billing
+  const UpgradeBenefits = ({ user }: { user: any }) => {
+    const { getTotalPrice } = useCart();
+    const [, setLocation] = useLocation();
+    
+    if (!user) return null;
+
+    const currentTier = user.membershipTier || 'bronze';
+    const totalPrice = getTotalPrice();
+    
+    const bronzeDiscount = 0;
+    const goldDiscount = 0.05;
+    const platinumDiscount = 0.15;
+    
+    const currentSavings = currentTier === 'platinum' ? totalPrice * platinumDiscount :
+                          currentTier === 'gold' ? totalPrice * goldDiscount : 0;
+    
+    const potentialSavings = totalPrice * platinumDiscount;
+    const additionalSavings = potentialSavings - currentSavings;
+
+    if (isNaN(totalPrice) || isNaN(currentSavings) || isNaN(potentialSavings) || isNaN(additionalSavings)) {
+      return null;
+    }
+
+    const handleUpgrade = () => {
+      sessionStorage.setItem('checkout_return_url', '/billing');
+      setLocation('/membership');
+    };
+
+    if (currentTier === 'platinum') {
+      return (
+        <Alert className="bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200 mb-6">
+          <Star className="w-4 h-4 text-amber-600" />
+          <AlertDescription className="text-amber-800">
+            <div className="flex items-center justify-between">
+              <span>
+                <strong>Platinum Member Benefits:</strong> You're saving <span className="font-bold text-red-600">{formatPrice(currentSavings)}</span> on this order!
+              </span>
+              <Badge className="bg-amber-100 text-amber-800 border-amber-300">
+                Premium Member
+              </Badge>
+            </div>
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    return (
+      <Alert className="bg-gradient-to-r from-red-50 to-orange-50 border-red-300 mb-6 border-2">
+        <Crown className="w-4 h-4 text-red-600" />
+        <AlertDescription className="text-red-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="font-bold text-red-700">⚠️ Almost There! Don't Lose These Savings!</span><br />
+              You can still save <span className="font-bold text-red-600 text-lg">{formatPrice(additionalSavings)}</span> on this order. 
+              {currentTier === 'bronze' && <span> Upgrade now for <span className="font-bold text-red-600 text-lg">{formatPrice(potentialSavings)}</span> total savings!</span>}
+            </div>
+            <Button 
+              onClick={handleUpgrade}
+              size="sm" 
+              className="bg-red-600 hover:bg-red-700 text-white ml-4 whitespace-nowrap shadow-lg border-2 border-red-400 animate-bounce hover:animate-none"
+            >
+              <Zap className="w-4 h-4 mr-1" />
+              Save Now!
+            </Button>
+          </div>
+        </AlertDescription>
+      </Alert>
+    );
+  };
+
   const handleUpgrade = () => {
     // Redirect to FAP upgrade
     window.open('https://www.freeamericanpeople.com/upgrade', '_blank');
@@ -120,40 +191,10 @@ function BillingPageContent() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Last Chance Upgrade Alert */}
-          {(currentTier === 'basic' || currentTier === 'standard') && (
-            <div className="lg:col-span-3 mb-6">
-              <Alert className="border-red-200 bg-red-50">
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-                <AlertDescription>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <strong className="text-red-800">🚨 LAST CHANCE TO SAVE!</strong>
-                      <div className="text-red-700 mt-1">
-                        {currentTier === 'standard' ? (
-                          <>
-                            Upgrade to Platinum and save an additional <strong>{formatPrice(additionalSavings)}</strong> on this order!
-                          </>
-                        ) : (
-                          <>
-                            Upgrade to Platinum and save <strong>{formatPrice(potentialSavings)}</strong> on this order with 15% off everything!
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <Button 
-                      onClick={handleUpgrade}
-                      size="sm"
-                      className="bg-red-600 hover:bg-red-700 text-white ml-4"
-                    >
-                      <Crown className="w-4 h-4 mr-2" />
-                      Upgrade Now
-                    </Button>
-                  </div>
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
+          {/* Billing Page Upgrade Alert */}
+          <div className="lg:col-span-3 mb-6">
+            <UpgradeBenefits user={user} />
+          </div>
 
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
