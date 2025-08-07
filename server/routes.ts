@@ -4078,13 +4078,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { categoryRibbons } = await import("../shared/schema");
       // Use raw SQL query since there's a schema mismatch
       const result = await db.execute(sql`
-        SELECT id, category_name, ribbon_text as displayName, display_order as sortOrder, is_active as isActive, created_at 
+        SELECT id, category_name as categoryName, ribbon_text as displayName, display_order as sortOrder, is_active as isActive, created_at 
         FROM category_ribbons 
         WHERE is_active = true 
         ORDER BY display_order ASC
       `);
       
-      const ribbons = result.rows;
+      // Map the raw result to proper camelCase format
+      const ribbons = result.rows.map((row: any) => ({
+        id: row.id,
+        categoryName: row.categoryname || row.category_name,
+        displayName: row.displayname || row.display_name,
+        sortOrder: row.sortorder || row.sort_order,
+        isActive: row.isactive || row.is_active,
+        createdAt: row.created_at
+      }));
       
       // Update cache
       categoryRibbonCache = ribbons;
