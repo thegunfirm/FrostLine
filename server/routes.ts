@@ -387,12 +387,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               zip: billingInfo.zip,
               country: "US"
             },
-            lineItems: orderItems.map((item: any, index: number) => ({
-              itemId: item.rsrStock || `item-${index}`,
-              name: (item.description || item.name || `Item ${index + 1}`).substring(0, 31),
-              quantity: item.quantity,
-              unitPrice: item.price
-            }))
+            lineItems: {
+              lineItem: orderItems.map((item: any, index: number) => ({
+                itemId: item.rsrStock || `item-${index}`,
+                name: (item.description || item.name || `Item ${index + 1}`).substring(0, 31),
+                quantity: item.quantity,
+                unitPrice: item.price
+              }))
+            }
           }
         }
       };
