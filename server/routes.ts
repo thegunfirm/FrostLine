@@ -369,6 +369,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Test credentials with a simple authentication request first
+      console.log('🧪 Testing credentials with authentication request...');
+      try {
+        const authTestResponse = await fetch('https://apitest.authorize.net/xml/v1/request.api', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            authenticateTestRequest: {
+              merchantAuthentication: {
+                name: apiLoginId,
+                transactionKey: transactionKey
+              }
+            }
+          })
+        });
+
+        const authTestResult = await authTestResponse.json();
+        console.log('🔍 Auth test result:', JSON.stringify(authTestResult, null, 2));
+        
+        if (authTestResult.messages?.resultCode === 'Error') {
+          return res.status(401).json({
+            success: false,
+            error: `Credential validation failed: ${authTestResult.messages.message[0]?.text || 'Invalid credentials'}`,
+            details: 'Please verify your Authorize.Net API Login ID and Transaction Key in the sandbox dashboard'
+          });
+        }
+      } catch (authError) {
+        console.log('⚠️ Auth test failed:', authError);
+      }
+
       // Create direct HTTP request payload
       const requestPayload = {
         createTransactionRequest: {
