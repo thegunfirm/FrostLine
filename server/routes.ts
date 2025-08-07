@@ -345,9 +345,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use direct HTTP request instead of SDK to avoid hanging issues
       console.log('🌐 Using direct HTTP request to Authorize.Net API...');
 
-      // Validate environment variables - using TGF naming convention
-      const apiLoginId = process.env.tgfAPILoginID;
-      const transactionKey = process.env.tgfTransactionKey;
+      // Validate environment variables
+      const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
+      const transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
       
       console.log('🔍 Raw environment check:', {
         hasApiLoginId: !!apiLoginId,
