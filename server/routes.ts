@@ -351,7 +351,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('🔐 API Credentials check:', {
         apiLoginId: apiLoginId ? `${apiLoginId.substring(0, 3)}***` : 'MISSING',
-        transactionKey: transactionKey ? `${transactionKey.substring(0, 3)}***` : 'MISSING'
+        transactionKey: transactionKey ? `${transactionKey.substring(0, 3)}***` : 'MISSING',
+        apiLoginIdLength: apiLoginId?.length,
+        transactionKeyLength: transactionKey?.length
       });
 
       if (!apiLoginId || !transactionKey) {
@@ -400,8 +402,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, 15000); // 15 second timeout
 
       const endpoints = [
-        { url: 'https://api.authorize.net/xml/v1/request.api', env: 'production' },
-        { url: 'https://apitest.authorize.net/xml/v1/request.api', env: 'sandbox' }
+        { url: 'https://apitest.authorize.net/xml/v1/request.api', env: 'sandbox' },
+        { url: 'https://api.authorize.net/xml/v1/request.api', env: 'production' }
       ];
 
       let result = null;
