@@ -4076,10 +4076,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Fetch from database
       const { categoryRibbons } = await import("../shared/schema");
-      const ribbons = await db.select()
-        .from(categoryRibbons)
-        .where(eq(categoryRibbons.isActive, true))
-        .orderBy(categoryRibbons.sortOrder);
+      // Use raw SQL query since there's a schema mismatch
+      const result = await db.execute(sql`
+        SELECT id, category_name, ribbon_text as displayName, display_order as sortOrder, is_active as isActive, created_at 
+        FROM category_ribbons 
+        WHERE is_active = true 
+        ORDER BY display_order ASC
+      `);
+      
+      const ribbons = result.rows;
       
       // Update cache
       categoryRibbonCache = ribbons;
