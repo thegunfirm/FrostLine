@@ -349,10 +349,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ApiContracts = authorizenet.APIContracts;
       const ApiControllers = authorizenet.APIControllers;
 
+      // Validate environment variables
+      const apiLoginId = process.env.tgfAPILoginID;
+      const transactionKey = process.env.tgfTransactionKey;
+      
+      console.log('🔐 API Credentials check:', {
+        apiLoginId: apiLoginId ? `${apiLoginId.substring(0, 3)}***` : 'MISSING',
+        transactionKey: transactionKey ? `${transactionKey.substring(0, 3)}***` : 'MISSING'
+      });
+
+      if (!apiLoginId || !transactionKey) {
+        return res.status(500).json({
+          success: false,
+          error: 'Authorize.Net credentials not configured'
+        });
+      }
+
       // Create merchant authentication
       const merchantAuth = new ApiContracts.MerchantAuthenticationType();
-      merchantAuth.setName(process.env.tgfAPILoginID);
-      merchantAuth.setTransactionKey(process.env.tgfTransactionKey);
+      merchantAuth.setName(apiLoginId);
+      merchantAuth.setTransactionKey(transactionKey);
 
       // Create credit card info
       const creditCard = new ApiContracts.CreditCardType();
@@ -402,8 +418,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       createRequest.setMerchantAuthentication(merchantAuth);
       createRequest.setTransactionRequest(transactionRequest);
 
-      const ctrl = new ApiControllers.CreateTransactionController(createRequest.getJSON());
+      console.log('📤 Creating transaction controller...');
+      const requestJSON = createRequest.getJSON();
+      console.log('📋 Transaction request structure:', {
+        hasAuth: !!requestJSON.createTransactionRequest?.merchantAuthentication,
+        hasTransactionRequest: !!requestJSON.createTransactionRequest?.transactionRequest,
+        amount: requestJSON.createTransactionRequest?.transactionRequest?.amount,
+        transactionType: requestJSON.createTransactionRequest?.transactionRequest?.transactionType
+      });
+
+      const ctrl = new ApiControllers.CreateTransactionController(requestJSON);
       ctrl.setEnvironment('sandbox'); // Use 'production' for live transactions
+      
+      console.log('🌐 Executing Authorize.Net API call...');
 
       // Add timeout and better error handling
       const timeout = setTimeout(() => {
