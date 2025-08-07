@@ -408,8 +408,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('⚠️ Auth test failed:', authError);
       }
 
-      // Create direct HTTP request payload with unique transaction ID
-      const uniqueTransactionId = `TGF-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // Create direct HTTP request payload with unique transaction ID (max 20 chars for Authorize.Net)
+      const uniqueTransactionId = `${Date.now().toString().slice(-8)}${Math.random().toString(36).substr(2, 4)}`;
       
       const requestPayload = {
         createTransactionRequest: {
@@ -422,7 +422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             amount: amount,
             order: {
               invoiceNumber: uniqueTransactionId,
-              description: `TheGunFirm Order - ${orderItems.length} items`
+              description: `TGF Order - ${orderItems.length} items`
             },
             payment: {
               creditCard: {
