@@ -4079,7 +4079,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ribbons = await db.select()
         .from(categoryRibbons)
         .where(eq(categoryRibbons.isActive, true))
-        .orderBy(categoryRibbons.displayOrder);
+        .orderBy(categoryRibbons.sortOrder);
       
       // Update cache
       categoryRibbonCache = ribbons;
@@ -4097,7 +4097,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/category-ribbons", async (req, res) => {
     try {
       const { categoryRibbons } = await import("../shared/schema");
-      const ribbons = await db.select().from(categoryRibbons).orderBy(categoryRibbons.displayOrder);
+      const ribbons = await db.select().from(categoryRibbons).orderBy(categoryRibbons.sortOrder);
       res.json(ribbons);
     } catch (error) {
       console.error('Category ribbons error:', error);
@@ -4109,18 +4109,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/category-ribbons", async (req, res) => {
     try {
       const { categoryRibbons } = await import("../shared/schema");
-      const { categoryName, ribbonText, displayOrder, isActive } = req.body;
+      const { categoryName, displayName, sortOrder, isActive } = req.body;
       
       const ribbon = await db.insert(categoryRibbons).values({
         categoryName,
-        ribbonText,
-        displayOrder: displayOrder || 0,
+        displayName,
+        sortOrder: sortOrder || 0,
         isActive: isActive !== false
       }).onConflictDoUpdate({
         target: categoryRibbons.categoryName,
         set: {
-          ribbonText,
-          displayOrder: displayOrder || 0,
+          displayName,
+          sortOrder: sortOrder || 0,
           isActive: isActive !== false
         }
       }).returning();
