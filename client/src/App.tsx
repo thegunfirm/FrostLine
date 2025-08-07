@@ -54,6 +54,7 @@ import AtfDirectoryManagement from "@/pages/management/atf-directory";
 import Account from "@/pages/account";
 import AccountOrders from "@/pages/account-orders";
 import CMSOrderManagement from "@/pages/cms-order-management";
+import BrandingManagement from "@/pages/cms/admin/branding";
 
 // Global scroll-to-top component that monitors route changes
 function ScrollToTop() {
@@ -117,6 +118,7 @@ function Router() {
         <Route path="/cms/fap/integration" component={FAPIntegration} />
         <Route path="/cms/tier-pricing" component={TierPricing} />
         <Route path="/cms/delivery-settings" component={DeliverySettings} />
+        <Route path="/cms/admin/branding" component={BrandingManagement} />
         <Route path="/management/atf-directory" component={AtfDirectoryManagement} />
         <Route component={NotFound} />
       </Switch>

@@ -287,6 +287,12 @@ export default function CMSDashboard() {
                     FAP Integration
                   </Button>
                 </Link>
+                <Link href="/cms/admin/branding">
+                  <Button variant="outline" className="w-full justify-start">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Branding Management
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </TabsContent>
