@@ -399,25 +399,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         controller.abort();
       }, 15000); // 15 second timeout
 
-      try {
-        const response = await fetch('https://apitest.authorize.net/xml/v1/request.api', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(requestPayload),
-          signal: controller.signal
-        });
+      const endpoints = [
+        { url: 'https://api.authorize.net/xml/v1/request.api', env: 'production' },
+        { url: 'https://apitest.authorize.net/xml/v1/request.api', env: 'sandbox' }
+      ];
 
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      let result = null;
+      let lastError = null;
+
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`🌐 Trying ${endpoint.env} endpoint: ${endpoint.url}`);
+          
+          const response = await fetch(endpoint.url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(requestPayload),
+            signal: controller.signal
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          result = await response.json();
+          console.log(`✅ ${endpoint.env} endpoint successful`);
+          console.log('🔍 API Response received:', JSON.stringify(result, null, 2));
+          break;
+        } catch (endpointError: any) {
+          console.log(`❌ ${endpoint.env} endpoint failed:`, endpointError.message);
+          lastError = endpointError;
+          continue;
         }
+      }
 
-        const result = await response.json();
-        console.log('🔍 API Response received:', JSON.stringify(result, null, 2));
+      clearTimeout(timeoutId);
+
+      if (!result) {
+        throw lastError || new Error('All endpoints failed');
+      }
 
         const transactionResponse = result.transactionResponse;
         const messages = result.messages;
@@ -469,14 +492,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
-
-    } catch (error) {
-      console.error('Payment processing error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Payment processing failed'
-      });
-    }
   });
 
   // Product routes - Hybrid Search Integration
