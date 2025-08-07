@@ -71,13 +71,17 @@ function PaymentPageContent() {
       });
     },
     onSuccess: (response) => {
-      if (response.success) {
+      console.log('Payment response:', response);
+      if (response?.success) {
         setPaymentSuccess(true);
         clearCart();
         setTimeout(() => {
           setLocation('/order-confirmation');
         }, 3000);
       }
+    },
+    onError: (error) => {
+      console.error('Payment error:', error);
     }
   });
 
