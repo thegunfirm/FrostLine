@@ -408,7 +408,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('⚠️ Auth test failed:', authError);
       }
 
-      // Create direct HTTP request payload
+      // Create direct HTTP request payload with unique transaction ID
+      const uniqueTransactionId = `TGF-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
       const requestPayload = {
         createTransactionRequest: {
           merchantAuthentication: {
@@ -418,6 +420,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           transactionRequest: {
             transactionType: "authCaptureTransaction",
             amount: amount,
+            order: {
+              invoiceNumber: uniqueTransactionId,
+              description: `TheGunFirm Order - ${orderItems.length} items`
+            },
             payment: {
               creditCard: {
                 cardNumber: cardNumber,
