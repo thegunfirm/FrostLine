@@ -420,16 +420,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           transactionRequest: {
             transactionType: "authCaptureTransaction",
             amount: amount,
-            order: {
-              invoiceNumber: uniqueTransactionId,
-              description: `TGF Order - ${orderItems.length} items`
-            },
             payment: {
               creditCard: {
                 cardNumber: cardNumber,
                 expirationDate: expirationDate,
                 cardCode: cardCode
               }
+            },
+            order: {
+              invoiceNumber: uniqueTransactionId,
+              description: `TGF Order - ${orderItems.length} items`
             },
             billTo: {
               firstName: billingInfo.firstName,
