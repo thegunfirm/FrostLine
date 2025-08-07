@@ -350,8 +350,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ApiControllers = authorizenet.APIControllers;
 
       // Validate environment variables
-      const apiLoginId = process.env.tgfAPILoginID;
-      const transactionKey = process.env.tgfTransactionKey;
+      const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
+      const transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
       
       console.log('🔐 API Credentials check:', {
         apiLoginId: apiLoginId ? `${apiLoginId.substring(0, 3)}***` : 'MISSING',
