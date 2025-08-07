@@ -857,6 +857,79 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(orders.orderDate));
   }
 
+  // CMS Admin search methods for orders
+  async searchOrdersForAdmin(params: {
+    orderNumber?: string;
+    customerName?: string;
+    fflId?: number;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ orders: any[], total: number }> {
+    const { orderNumber, customerName, fflId, startDate, endDate, status, page = 1, limit = 20 } = params;
+    
+    // Get all orders first, then filter in-memory for simplicity
+    const allOrders = await db.select().from(orders)
+      .innerJoin(users, eq(orders.userId, users.id))
+      .orderBy(desc(orders.orderDate));
+
+    // Filter orders based on search criteria
+    let filteredOrders = allOrders.filter((orderWithUser: any) => {
+      const order = orderWithUser.orders;
+      const user = orderWithUser.users;
+
+      if (orderNumber && !order.id.toString().includes(orderNumber)) {
+        return false;
+      }
+
+      if (status && status !== 'all' && order.status !== status) {
+        return false;
+      }
+
+      if (fflId && order.fflRecipientId !== fflId) {
+        return false;
+      }
+
+      if (startDate && new Date(order.orderDate) < new Date(startDate)) {
+        return false;
+      }
+
+      if (endDate) {
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        if (new Date(order.orderDate) > endDateTime) {
+          return false;
+        }
+      }
+
+      if (customerName) {
+        const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
+        if (!fullName.includes(customerName.toLowerCase())) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    const total = filteredOrders.length;
+    const offset = (page - 1) * limit;
+    const paginatedOrders = filteredOrders.slice(offset, offset + limit);
+
+    // Format the results
+    const formattedOrders = paginatedOrders.map((orderWithUser: any) => ({
+      ...orderWithUser.orders,
+      user: orderWithUser.users
+    }));
+
+    return {
+      orders: formattedOrders,
+      total
+    };
+  }
+
   // FFL operations
   async getFFLs(filters?: { zip?: string; status?: string }): Promise<FFL[]> {
     let query = db.select().from(ffls);

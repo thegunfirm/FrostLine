@@ -156,6 +156,15 @@ export default function CMSDashboard() {
                     </Button>
                   </Link>
                 )}
+
+                {(hasSupportAccess || hasAdminAccess) && (
+                  <Link href="/cms/orders">
+                    <Button variant="outline" className="w-full justify-start">
+                      <FileText className="mr-2 h-4 w-4" />
+                      Order Management
+                    </Button>
+                  </Link>
+                )}
                 
                 {hasAdminAccess && (
                   <Link href="/cms/admin/settings">

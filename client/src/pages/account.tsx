@@ -94,6 +94,14 @@ export default function AccountPage() {
               <Button 
                 variant="outline" 
                 className="w-full justify-start"
+                onClick={() => setLocation("/account/orders")}
+              >
+                <Package className="w-4 h-4 mr-2" />
+                View My Orders
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
                 onClick={() => setLocation("/membership")}
               >
                 <CreditCard className="w-4 h-4 mr-2" />

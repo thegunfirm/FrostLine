@@ -816,6 +816,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's orders for customer order page
+  app.get("/api/user/orders", async (req, res) => {
+    if (!req.session?.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const orders = await storage.getUserOrders(req.session.user.id);
+      res.json(orders);
+    } catch (error) {
+      console.error("Get user orders error:", error);
+      res.status(500).json({ message: "Failed to get orders" });
+    }
+  });
+
+  // CMS Admin route to search orders
+  app.get("/api/admin/orders/search", async (req, res) => {
+    if (!req.session?.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const user = req.session.user;
+    if (!["admin", "support", "manager"].includes(user.role)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    try {
+      const {
+        orderNumber,
+        customerName,
+        fflId,
+        startDate,
+        endDate,
+        status,
+        page = '1',
+        limit = '20'
+      } = req.query;
+
+      const searchParams = {
+        orderNumber: orderNumber as string,
+        customerName: customerName as string,
+        fflId: fflId ? parseInt(fflId as string) : undefined,
+        startDate: startDate as string,
+        endDate: endDate as string,
+        status: status as string,
+        page: parseInt(page as string),
+        limit: parseInt(limit as string)
+      };
+
+      const result = await storage.searchOrdersForAdmin(searchParams);
+      
+      // Add FFL information if needed
+      const ordersWithFFL = await Promise.all(result.orders.map(async (order) => {
+        if (order.fflRecipientId) {
+          const ffl = await storage.getFFL(order.fflRecipientId);
+          return { ...order, ffl };
+        }
+        return order;
+      }));
+
+      res.json({
+        orders: ordersWithFFL,
+        total: result.total,
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        totalPages: Math.ceil(result.total / parseInt(limit as string))
+      });
+    } catch (error) {
+      console.error("Admin order search error:", error);
+      res.status(500).json({ message: "Failed to search orders" });
+    }
+  });
+
   // FFL routes
   app.get("/api/ffls", async (req, res) => {
     try {

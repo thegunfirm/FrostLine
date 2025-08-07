@@ -51,6 +51,8 @@ import TierPricing from "@/pages/cms/tier-pricing";
 import DeliverySettings from "@/pages/cms/delivery-settings";
 import AtfDirectoryManagement from "@/pages/management/atf-directory";
 import Account from "@/pages/account";
+import AccountOrders from "@/pages/account-orders";
+import CMSOrderManagement from "@/pages/cms-order-management";
 
 function Router() {
   return (
@@ -73,6 +75,8 @@ function Router() {
       <Route path="/payment" component={Payment} />
       <Route path="/order-confirmation" component={OrderConfirmation} />
       <Route path="/account" component={Account} />
+      <Route path="/account/orders" component={AccountOrders} />
+      <Route path="/cms/orders" component={CMSOrderManagement} />
       <Route path="/membership" component={Membership} />
       <Route path="/image-test" component={ImageTest} />
       <Route path="/admin-sync" component={AdminSync} />
