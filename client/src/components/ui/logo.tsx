@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import logoImage from "@assets/The Gun Firm White PNG-modified_1751752670371.png";
+import logoImage from "@assets/The Gun Firm (Gold and White) PNG_1754595606640.png";
 
 interface LogoProps {
   className?: string;

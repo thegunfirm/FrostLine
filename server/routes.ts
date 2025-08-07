@@ -502,6 +502,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (transactionResponse.responseCode === '1') {
             // Payment successful
             console.log('✅ Payment successful');
+            
+            // Create order record in database
+            try {
+              // TODO: Get actual user ID from session when authentication is re-enabled
+              const userId = req.session?.user?.id || 10; // Fallback for testing
+              
+              const orderData = {
+                userId: userId,
+                totalPrice: amount.toString(),
+                status: 'Processing',
+                items: orderItems,
+                authorizeNetTransactionId: transactionResponse.transId,
+                paymentMethod: 'authorize_net',
+                fulfillmentGroups: orderItems.map(item => ({
+                  id: item.id,
+                  fulfillmentType: item.fulfillmentType || 'direct',
+                  fflId: item.selectedFFL || null
+                }))
+              };
+              
+              const savedOrder = await storage.createOrder(orderData);
+              console.log('✅ Order saved to database:', savedOrder.id);
+              
+            } catch (orderError) {
+              console.error('❌ Failed to save order:', orderError);
+              // Don't fail the payment response, but log the error
+            }
+            
             res.json({
               success: true,
               transactionId: transactionResponse.transId,

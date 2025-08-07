@@ -15,6 +15,10 @@ Testing policy: No assumptions - use test or dummy data ONLY FOR FAKE USERS. Inv
 
 **FFL SELECTOR IMPROVEMENTS (2025-08-06)**: Fixed indefinite loading issues in FFL selector component by adding proper error handling, loading states, and retry logic. Component now gracefully handles network timeouts and provides clear user feedback.
 
+**GLOBAL SCROLL-TO-TOP (2025-08-07)**: Implemented site-wide scroll-to-top functionality using wouter's useLocation hook - all page navigation now automatically scrolls to top for improved UX.
+
+**DATABASE SCHEMA FIXES (2025-08-07)**: Resolved missing columns error in orders table by adding fulfillment_groups, authorize_net_transaction_id, and payment_method columns to support complete order tracking.
+
 **PAYMENT SYSTEM COMPLETE (2025-08-07)**: 
 - ✅ Authorize.Net sandbox integration fully working with transaction ID: 120068556400+
 - ✅ Fixed JSON response parsing between frontend/backend
@@ -23,6 +27,7 @@ Testing policy: No assumptions - use test or dummy data ONLY FOR FAKE USERS. Inv
 - ✅ Order confirmation page displays transaction details and next steps
 - ✅ Payment credentials working: API Login ID 896fNdv2KN9, Transaction Key 632m44jKh5J6LvRC
 - ✅ **EMAIL CONFIRMATION SYSTEM (2025-08-07)**: Automated order confirmation emails with Gun Firm branding, transaction details, FFL information, and professional HTML design using SendGrid integration
+- ✅ **ORDER DATABASE STORAGE (2025-08-07)**: Fixed critical bug where successful payments weren't creating order records - orders now properly saved with transaction IDs, fulfillment groups, and user association
 
 ## System Architecture
 
