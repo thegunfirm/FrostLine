@@ -32,8 +32,9 @@ Testing policy: No assumptions - use test or dummy data ONLY FOR FAKE USERS. Inv
 **CMS/CRM SEPARATION ARCHITECTURE (2025-08-07)**:
 - **CMS (Replit)**: Content management, system configuration, inventory management (RSR), compliance, platform administration, branding management
 - **CRM (Zoho)**: Customer profiles, order history tracking, email marketing, support tickets, live chat, FFL vendor management, lead management
-- **CRITICAL**: Inventory resides exclusively in TheGunFirm database from RSR - Zoho never handles inventory data
-- **Order Flow**: When orders placed, item details recorded in order record and synced to Zoho for customer history - inventory never pulled from Zoho
+- **CRITICAL INVENTORY RULE**: Inventory resides exclusively in TheGunFirm database from RSR - Zoho has NO inventory dataset
+- **Order Recording**: Zoho receives purchase data via API at point-of-sale - recording what was bought, not pulling from inventory
+- **Data Flow**: TheGunFirm → API → Zoho (one-way purchase recording only)
 - **FFL Management**: Using Zoho CRM Vendors module for FFL dealer relationships and preferred dealer assignments
 
 ## System Architecture
