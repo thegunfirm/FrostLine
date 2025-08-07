@@ -21,6 +21,7 @@ import { rsrAutoSync } from "./services/rsr-auto-sync";
 import { registerRSRFFLRoutes } from "./routes/rsr-ffl-routes";
 import { syncHealthMonitor } from "./services/sync-health-monitor";
 import { sendVerificationEmail, generateVerificationToken, sendPasswordResetEmail } from "./services/email-service";
+import { registerZohoRoutes } from "./zoho-routes";
 import crypto from "crypto";
 import axios from "axios";
 import multer from "multer";
@@ -5375,6 +5376,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to download ATF directory file" });
     }
   });
+
+  // Register Zoho CRM integration routes
+  registerZohoRoutes(app);
 
   return httpServer;
 }

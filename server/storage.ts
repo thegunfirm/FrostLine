@@ -66,6 +66,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User>;
   updateUserTier(id: number, tier: string): Promise<User>;
+  updateUserZohoId(id: number, zohoContactId: string): Promise<User>;
   verifyUserEmail(token: string): Promise<User | undefined>;
   setPasswordResetToken(email: string, token: string, expiresAt: Date): Promise<boolean>;
   resetPassword(token: string, newPassword: string): Promise<User | undefined>;
@@ -92,8 +93,10 @@ export interface IStorage {
   // Order operations
   getOrders(userId?: number): Promise<Order[]>;
   getOrder(id: number): Promise<Order | undefined>;
+  getOrderWithDetails(id: number): Promise<any>;
   createOrder(order: InsertOrder): Promise<Order>;
   updateOrder(id: number, updates: Partial<Order>): Promise<Order>;
+  updateOrderZohoId(id: number, zohoDealId: string): Promise<Order>;
   getUserOrders(userId: number): Promise<Order[]>;
   
   // FFL operations
@@ -102,6 +105,7 @@ export interface IStorage {
   getFFLByLicense(licenseNumber: string): Promise<FFL | undefined>;
   createFFL(ffl: InsertFFL): Promise<FFL>;
   updateFFL(id: number, updates: Partial<FFL>): Promise<FFL>;
+  updateFFLZohoId(id: number, zohoVendorId: string): Promise<FFL>;
   deleteFFL(id: number): Promise<void>;
   getAllFFLs(): Promise<FFL[]>;
   searchFFLsByZip(zip: string, radius?: number): Promise<FFL[]>;
@@ -210,6 +214,14 @@ export class DatabaseStorage implements IStorage {
   async updateUserTier(id: number, tier: string): Promise<User> {
     const [user] = await db.update(users)
       .set({ subscriptionTier: tier })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async updateUserZohoId(id: number, zohoContactId: string): Promise<User> {
+    const [user] = await db.update(users)
+      .set({ zohoContactId })
       .where(eq(users.id, id))
       .returning();
     return user;
@@ -851,6 +863,29 @@ export class DatabaseStorage implements IStorage {
     return order;
   }
 
+  async updateOrderZohoId(id: number, zohoDealId: string): Promise<Order> {
+    const [order] = await db.update(orders)
+      .set({ zohoDealId })
+      .where(eq(orders.id, id))
+      .returning();
+    return order;
+  }
+
+  async getOrderWithDetails(id: number): Promise<any> {
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+      with: {
+        user: true,
+        orderItems: {
+          with: {
+            product: true
+          }
+        }
+      }
+    });
+    return order;
+  }
+
   async getUserOrders(userId: number): Promise<Order[]> {
     return await db.select().from(orders)
       .where(eq(orders.userId, userId))
@@ -1216,6 +1251,14 @@ export class DatabaseStorage implements IStorage {
   async updateFFL(id: number, updates: Partial<FFL>): Promise<FFL> {
     const [ffl] = await db.update(ffls)
       .set(updates)
+      .where(eq(ffls.id, id))
+      .returning();
+    return ffl;
+  }
+
+  async updateFFLZohoId(id: number, zohoVendorId: string): Promise<FFL> {
+    const [ffl] = await db.update(ffls)
+      .set({ zohoVendorId })
       .where(eq(ffls.id, id))
       .returning();
     return ffl;

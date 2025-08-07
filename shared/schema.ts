@@ -25,6 +25,7 @@ export const users = pgTable("users", {
   emailVerificationToken: text("email_verification_token"),
   passwordResetToken: text("password_reset_token"),
   passwordResetExpires: timestamp("password_reset_expires"),
+  zohoContactId: text("zoho_contact_id"), // Zoho CRM Contact ID
 });
 
 export const products = pgTable("products", {
@@ -106,6 +107,7 @@ export const orders = pgTable("orders", {
   fulfillmentGroups: json("fulfillment_groups"), // Direct, FFL Non-Dropship, FFL Dropship
   authorizeNetTransactionId: text("authorize_net_transaction_id"),
   paymentMethod: text("payment_method").default("authorize_net"), // authorize_net, stripe, etc
+  zohoDealId: text("zoho_deal_id"), // Zoho CRM Deal ID
 });
 
 export const ffls = pgTable("ffls", {
@@ -128,6 +130,7 @@ export const ffls = pgTable("ffls", {
   licenseExpiration: timestamp("license_expiration"),
   lastAtfUpdate: timestamp("last_atf_update"),
   createdAt: timestamp("created_at").defaultNow(),
+  zohoVendorId: text("zoho_vendor_id"), // Zoho CRM Vendor ID
 });
 
 // Cart persistence for authenticated users
