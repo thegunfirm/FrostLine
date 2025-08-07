@@ -1114,6 +1114,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
           authorizeNetTransactionId: result.transactionId,
           status: 'Paid'
         });
+
+        // Send order confirmation email
+        try {
+          const { sendOrderConfirmationEmail } = await import('./emailService');
+          const order = await storage.getOrderById(orderId);
+          
+          if (order && order.customerEmail) {
+            // Format order data for email
+            const orderEmailData = {
+              orderNumber: order.orderNumber || orderId.toString(),
+              customerEmail: order.customerEmail,
+              customerName: `${order.shippingAddress?.firstName || ''} ${order.shippingAddress?.lastName || ''}`.trim() || 'Customer',
+              items: (order.items || []).map((item: any) => ({
+                name: item.productName || item.name || 'Product',
+                sku: item.sku || item.productId?.toString() || '',
+                quantity: item.quantity || 1,
+                price: parseFloat(item.unitPrice || item.price || '0'),
+                total: parseFloat(item.totalPrice || item.total || '0'),
+                requiresFFL: item.requiresFFL || false
+              })),
+              subtotal: parseFloat(order.subtotal || '0'),
+              tax: parseFloat(order.tax || '0'),
+              shipping: parseFloat(order.shipping || '0'),
+              total: parseFloat(order.total || '0'),
+              shippingAddress: order.shippingAddress || {},
+              billingAddress: order.billingAddress || {},
+              fflDealer: order.fflDealer || null,
+              transactionId: result.transactionId,
+              orderDate: new Date(order.createdAt || Date.now()).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })
+            };
+
+            await sendOrderConfirmationEmail(orderEmailData);
+            console.log(`✅ Order confirmation email sent for order ${orderId}`);
+          }
+        } catch (emailError) {
+          console.error('❌ Failed to send order confirmation email:', emailError);
+          // Don't fail the payment if email fails
+        }
       }
 
       res.json(result);
