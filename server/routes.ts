@@ -349,6 +349,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
       const transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
       
+      console.log('🔍 Raw environment check:', {
+        hasApiLoginId: !!apiLoginId,
+        hasTransactionKey: !!transactionKey,
+        firstThreeChars: apiLoginId?.substring(0, 3) || 'none'
+      });
+      
       console.log('🔐 API Credentials check:', {
         apiLoginId: apiLoginId ? `${apiLoginId.substring(0, 3)}***` : 'MISSING',
         transactionKey: transactionKey ? `${transactionKey.substring(0, 3)}***` : 'MISSING',
