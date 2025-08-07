@@ -9,9 +9,10 @@ import { useState, useEffect } from "react";
 interface CategoryRibbon {
   id: number;
   categoryName: string;
-  ribbonText: string;
-  displayOrder: number;
+  displayName: string;
+  sortOrder: number;
   isActive: boolean;
+  createdAt: string;
 }
 
 export function CategoryRibbon() {
@@ -38,7 +39,7 @@ export function CategoryRibbon() {
       return response.json() as Promise<CategoryRibbon[]>;
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
-    cacheTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes (renamed from cacheTime in v5)
     refetchOnWindowFocus: false, // Don't refetch on window focus
     refetchOnMount: true, // Refetch on mount to get latest categories
   });
@@ -94,7 +95,7 @@ export function CategoryRibbon() {
               onClick={() => handleCategoryClick(ribbon.categoryName)}
               className={buttonClass}
             >
-              {ribbon.ribbonText}
+              {ribbon.displayName}
             </button>
           );
         })}
