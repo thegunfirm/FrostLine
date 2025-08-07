@@ -1,4 +1,5 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
+import { useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -54,58 +55,72 @@ import Account from "@/pages/account";
 import AccountOrders from "@/pages/account-orders";
 import CMSOrderManagement from "@/pages/cms-order-management";
 
+// Global scroll-to-top component that monitors route changes
+function ScrollToTop() {
+  const [location] = useLocation();
+  
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
+  
+  return null;
+}
+
 function Router() {
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      <Route path="/forgot-password" component={ForgotPassword} />
-      <Route path="/reset-password" component={ResetPassword} />
-      <Route path="/registration-success" component={RegistrationSuccess} />
-      <Route path="/verify-email" component={VerifyEmail} />
-      <Route path="/products" component={Products} />
-      <Route path="/product/:id" component={ProductDetail} />
-      <Route path="/cart" component={Cart} />
-      <Route path="/order-summary" component={OrderSummary} />
-      <Route path="/ffl-selection" component={FflSelection} />
+    <>
+      <ScrollToTop />
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/login" component={Login} />
+        <Route path="/register" component={Register} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
+        <Route path="/registration-success" component={RegistrationSuccess} />
+        <Route path="/verify-email" component={VerifyEmail} />
+        <Route path="/products" component={Products} />
+        <Route path="/product/:id" component={ProductDetail} />
+        <Route path="/cart" component={Cart} />
+        <Route path="/order-summary" component={OrderSummary} />
+        <Route path="/ffl-selection" component={FflSelection} />
 
-      <Route path="/shipping" component={Shipping} />
-      <Route path="/billing" component={Billing} />
-      <Route path="/payment" component={Payment} />
-      <Route path="/order-confirmation" component={OrderConfirmation} />
-      <Route path="/account" component={Account} />
-      <Route path="/account/orders" component={AccountOrders} />
-      <Route path="/cms/orders" component={CMSOrderManagement} />
-      <Route path="/membership" component={Membership} />
-      <Route path="/image-test" component={ImageTest} />
-      <Route path="/admin-sync" component={AdminSync} />
-      <Route path="/admin-rsr-ftp" component={AdminRSRFTP} />
-      <Route path="/admin-rsr-upload" component={AdminRSRUpload} />
-      <Route path="/admin-sync-settings" component={AdminSyncSettings} />
-      <Route path="/admin-pricing-settings" component={AdminPricingSettings} />
-      <Route path="/admin-category-ribbons" component={AdminCategoryRibbons} />
-      <Route path="/admin-filter-settings" component={AdminFilterSettings} />
-      <Route path="/admin-sync-health" component={AdminSyncHealth} />
-      <Route path="/admin-department-pricing" component={AdminDepartmentPricing} />
-      <Route path="/admin-image-settings" component={AdminImageSettings} />
-      <Route path="/admin-product-images" component={AdminProductImages} />
-      <Route path="/admin-ffl-management" component={AdminFFLManagement} />
-      <Route path="/cms/ffls/management" component={FflManagement} />
-      <Route path="/rsr-intelligence-test" component={RSRIntelligenceTest} />
-      <Route path="/payment-test" component={PaymentTest} />
-      <Route path="/categories" component={Categories} />
-      <Route path="/browse" component={Browse} />
-      <Route path="/cms" component={CMSDashboard} />
-      <Route path="/cms/dashboard" component={CMSDashboard} />
-      <Route path="/cms/support/tickets" component={SupportTickets} />
-      <Route path="/cms/emails/templates" component={EmailTemplates} />
-      <Route path="/cms/fap/integration" component={FAPIntegration} />
-      <Route path="/cms/tier-pricing" component={TierPricing} />
-      <Route path="/cms/delivery-settings" component={DeliverySettings} />
-      <Route path="/management/atf-directory" component={AtfDirectoryManagement} />
-      <Route component={NotFound} />
-    </Switch>
+        <Route path="/shipping" component={Shipping} />
+        <Route path="/billing" component={Billing} />
+        <Route path="/payment" component={Payment} />
+        <Route path="/order-confirmation" component={OrderConfirmation} />
+        <Route path="/account" component={Account} />
+        <Route path="/account/orders" component={AccountOrders} />
+        <Route path="/cms/orders" component={CMSOrderManagement} />
+        <Route path="/membership" component={Membership} />
+        <Route path="/image-test" component={ImageTest} />
+        <Route path="/admin-sync" component={AdminSync} />
+        <Route path="/admin-rsr-ftp" component={AdminRSRFTP} />
+        <Route path="/admin-rsr-upload" component={AdminRSRUpload} />
+        <Route path="/admin-sync-settings" component={AdminSyncSettings} />
+        <Route path="/admin-pricing-settings" component={AdminPricingSettings} />
+        <Route path="/admin-category-ribbons" component={AdminCategoryRibbons} />
+        <Route path="/admin-filter-settings" component={AdminFilterSettings} />
+        <Route path="/admin-sync-health" component={AdminSyncHealth} />
+        <Route path="/admin-department-pricing" component={AdminDepartmentPricing} />
+        <Route path="/admin-image-settings" component={AdminImageSettings} />
+        <Route path="/admin-product-images" component={AdminProductImages} />
+        <Route path="/admin-ffl-management" component={AdminFFLManagement} />
+        <Route path="/cms/ffls/management" component={FflManagement} />
+        <Route path="/rsr-intelligence-test" component={RSRIntelligenceTest} />
+        <Route path="/payment-test" component={PaymentTest} />
+        <Route path="/categories" component={Categories} />
+        <Route path="/browse" component={Browse} />
+        <Route path="/cms" component={CMSDashboard} />
+        <Route path="/cms/dashboard" component={CMSDashboard} />
+        <Route path="/cms/support/tickets" component={SupportTickets} />
+        <Route path="/cms/emails/templates" component={EmailTemplates} />
+        <Route path="/cms/fap/integration" component={FAPIntegration} />
+        <Route path="/cms/tier-pricing" component={TierPricing} />
+        <Route path="/cms/delivery-settings" component={DeliverySettings} />
+        <Route path="/management/atf-directory" component={AtfDirectoryManagement} />
+        <Route component={NotFound} />
+      </Switch>
+    </>
   );
 }
 
