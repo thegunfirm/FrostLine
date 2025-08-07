@@ -49,7 +49,7 @@ function PaymentPageContent() {
     mutationFn: async (data: PaymentFormData) => {
       const expirationDate = `${data.expirationMonth}${data.expirationYear}`;
       
-      return apiRequest('POST', '/api/process-payment', {
+      const response = await apiRequest('POST', '/api/process-payment', {
         cardNumber: data.cardNumber.replace(/\s/g, ''),
         expirationDate,
         cardCode: data.cardCode,
@@ -69,15 +69,31 @@ function PaymentPageContent() {
           price: parseFloat(item.price)
         }))
       });
+      
+      return await response.json();
     },
     onSuccess: (response) => {
       console.log('Payment response:', response);
       if (response?.success) {
+        // Store order data for confirmation page
+        const orderData = {
+          transactionId: response.transactionId,
+          amount: getTotalPrice() * 100, // Convert to cents for display
+          items: items.map(item => ({
+            description: item.description,
+            quantity: item.quantity,
+            price: parseFloat(item.price)
+          }))
+        };
+        sessionStorage.setItem('lastOrderData', JSON.stringify(orderData));
+        
         setPaymentSuccess(true);
         clearCart();
+        
+        // Redirect to confirmation page immediately
         setTimeout(() => {
           setLocation('/order-confirmation');
-        }, 3000);
+        }, 2000);
       }
     },
     onError: (error) => {

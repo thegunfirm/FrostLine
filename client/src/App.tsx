@@ -41,6 +41,7 @@ import FflSelection from "@/pages/ffl-selection";
 import Shipping from "@/pages/shipping";
 import Billing from "@/pages/billing";
 import Payment from "@/pages/payment";
+import OrderConfirmation from "@/pages/order-confirmation";
 import NotFound from "@/pages/not-found";
 import CMSDashboard from "@/pages/cms/cms-dashboard";
 import SupportTickets from "@/pages/cms/support/support-tickets";
@@ -70,6 +71,7 @@ function Router() {
       <Route path="/shipping" component={Shipping} />
       <Route path="/billing" component={Billing} />
       <Route path="/payment" component={Payment} />
+      <Route path="/order-confirmation" component={OrderConfirmation} />
       <Route path="/account" component={Account} />
       <Route path="/membership" component={Membership} />
       <Route path="/image-test" component={ImageTest} />
