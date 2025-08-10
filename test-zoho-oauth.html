@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zoho OAuth Test</title>
+</head>
+<body>
+    <h1>Zoho OAuth Test</h1>
+    <p>Click the button to test OAuth flow:</p>
+    <button onclick="testOAuth()">Start OAuth</button>
+    
+    <div id="status"></div>
+    
+    <script>
+        async function testOAuth() {
+            try {
+                document.getElementById('status').innerHTML = 'Getting OAuth URL...';
+                
+                const response = await fetch('/api/zoho/auth/url');
+                const data = await response.json();
+                
+                document.getElementById('status').innerHTML = 
+                    'OAuth URL: <a href="' + data.authUrl + '" target="_blank">' + data.authUrl + '</a>';
+                    
+                // Auto-open the OAuth URL
+                window.open(data.authUrl, '_blank');
+                
+            } catch (error) {
+                document.getElementById('status').innerHTML = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
