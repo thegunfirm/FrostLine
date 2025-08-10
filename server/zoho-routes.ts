@@ -3,12 +3,11 @@ import { syncCustomerToZoho, recordOrderInZoho, syncFFLToZoho, createZohoSupport
 import { createZohoService } from "./zoho-service";
 
 export function registerZohoRoutes(app: Express): void {
-  const zohoService = createZohoService();
-
   // Check if Zoho service is available
-  const checkZohoService = () => {
+  const checkZohoService = async () => {
+    const zohoService = await createZohoService();
     if (!zohoService) {
-      throw new Error("Zoho service not configured. Please provide ZOHO_CLIENT_ID and ZOHO_CLIENT_SECRET");
+      throw new Error("Zoho service not configured. Please configure through CMS Admin → Zoho Integration");
     }
     return zohoService;
   };
@@ -16,7 +15,7 @@ export function registerZohoRoutes(app: Express): void {
   // OAuth initiation endpoint
   app.get("/api/zoho/auth/url", async (req, res) => {
     try {
-      const service = checkZohoService();
+      const service = await checkZohoService();
       const authUrl = service.getAuthorizationUrl();
       res.json({ authUrl });
     } catch (error: any) {
@@ -28,6 +27,7 @@ export function registerZohoRoutes(app: Express): void {
   // Connection status endpoint
   app.get("/api/zoho/status", async (req, res) => {
     try {
+      const zohoService = await createZohoService();
       if (!zohoService) {
         return res.json({ isConnected: false, error: "Zoho credentials not configured" });
       }

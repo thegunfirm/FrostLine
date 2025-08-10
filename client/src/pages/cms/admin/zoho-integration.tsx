@@ -21,11 +21,26 @@ export default function ZohoIntegration() {
   const [connectionStatus, setConnectionStatus] = useState<ZohoConnectionStatus>({ isConnected: false });
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [credentials, setCredentials] = useState({ clientId: '', clientSecret: '' });
+  const [isConfiguring, setIsConfiguring] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     checkConnectionStatus();
+    loadCredentials();
   }, []);
+
+  const loadCredentials = async () => {
+    try {
+      const response = await apiRequest("GET", "/api/admin/settings");
+      const data = await response.json();
+      const clientId = data.find((s: any) => s.setting_key === 'zoho_client_id')?.setting_value || '';
+      const clientSecret = data.find((s: any) => s.setting_key === 'zoho_client_secret')?.setting_value || '';
+      setCredentials({ clientId, clientSecret });
+    } catch (error) {
+      console.error("Failed to load credentials:", error);
+    }
+  };
 
   const checkConnectionStatus = async () => {
     try {
@@ -161,6 +176,55 @@ export default function ZohoIntegration() {
           Manage customer relationships, order tracking, and FFL vendor management through Zoho CRM
         </p>
       </div>
+
+      {/* Credentials Configuration */}
+      {(!connectionStatus.isConnected || !credentials.clientId) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Configure Zoho Credentials</CardTitle>
+            <CardDescription>
+              Enter your Zoho OAuth credentials to enable CRM integration
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="clientId">Client ID</Label>
+                <Input
+                  id="clientId"
+                  placeholder="Enter Zoho Client ID"
+                  value={credentials.clientId}
+                  onChange={(e) => setCredentials(prev => ({ ...prev, clientId: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="clientSecret">Client Secret</Label>
+                <Input
+                  id="clientSecret"
+                  type="password"
+                  placeholder="Enter Zoho Client Secret"
+                  value={credentials.clientSecret}
+                  onChange={(e) => setCredentials(prev => ({ ...prev, clientSecret: e.target.value }))}
+                />
+              </div>
+            </div>
+            <Button 
+              onClick={saveCredentials} 
+              disabled={isConfiguring}
+              className="w-full"
+            >
+              {isConfiguring ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Credentials'
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Connection Status Card */}
       <Card>

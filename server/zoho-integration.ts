@@ -1,11 +1,10 @@
 import { createZohoService } from './zoho-service';
 import { storage } from './storage';
 
-const zohoService = createZohoService();
-
-function getZohoService() {
+async function getZohoService() {
+  const zohoService = await createZohoService();
   if (!zohoService) {
-    throw new Error("Zoho service not configured. Please provide ZOHO_CLIENT_ID and ZOHO_CLIENT_SECRET");
+    throw new Error("Zoho service not configured. Please configure through CMS Admin → Zoho Integration");
   }
   return zohoService;
 }
@@ -13,7 +12,7 @@ function getZohoService() {
 // Customer synchronization for FAP integration
 export async function syncCustomerToZoho(userId: number): Promise<void> {
   try {
-    const service = getZohoService();
+    const service = await getZohoService();
     const user = await storage.getUser(userId);
     if (!user) {
       throw new Error(`User with ID ${userId} not found`);
@@ -64,7 +63,7 @@ export async function createCustomerInZoho(userData: {
   fapUserId: string;
 }): Promise<string | null> {
   try {
-    const service = getZohoService();
+    const service = await getZohoService();
     
     // Map subscription tier to proper tier label for Zoho
     const { mapSubscriptionToTierLabel } = await import('@shared/tier-utils');
@@ -100,7 +99,7 @@ export async function createCustomerInZoho(userData: {
 // Update customer membership tier in Zoho when changed in FAP
 export async function updateCustomerTierInZoho(userId: number, newTier: string): Promise<void> {
   try {
-    const service = getZohoService();
+    const service = await getZohoService();
     const user = await storage.getUser(userId);
     if (!user) {
       throw new Error(`User with ID ${userId} not found`);
@@ -124,7 +123,7 @@ export async function updateCustomerTierInZoho(userId: number, newTier: string):
 // Record order in Zoho CRM
 export async function recordOrderInZoho(orderId: number): Promise<void> {
   try {
-    const service = getZohoService();
+    const service = await getZohoService();
     const order = await storage.getOrder(orderId);
     if (!order) {
       throw new Error(`Order with ID ${orderId} not found`);
@@ -167,7 +166,7 @@ export async function recordOrderInZoho(orderId: number): Promise<void> {
 // Sync FFL dealer to Zoho as vendor
 export async function syncFFLToZoho(fflId: number): Promise<void> {
   try {
-    const service = getZohoService();
+    const service = await getZohoService();
     const ffl = await storage.getFFL(fflId);
     if (!ffl) {
       throw new Error(`FFL with ID ${fflId} not found`);
@@ -209,7 +208,7 @@ export async function createZohoSupportTicket(ticketData: {
   category?: string;
 }): Promise<string | null> {
   try {
-    const service = getZohoService();
+    const service = await getZohoService();
     const user = await storage.getUser(ticketData.customerId);
     if (!user) {
       throw new Error(`User with ID ${ticketData.customerId} not found`);
