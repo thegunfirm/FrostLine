@@ -142,56 +142,6 @@ export function registerZohoRoutes(app: Express): void {
     }
   });
 
-  // Manual token setup endpoint (bypass OAuth redirect issues)
-  app.post("/api/zoho/manual-setup", async (req, res) => {
-    try {
-      const { accessToken, refreshToken } = req.body;
-      
-      if (!accessToken) {
-        return res.status(400).json({ error: "Access token required" });
-      }
-      
-      // Store tokens
-      process.env.ZOHO_ACCESS_TOKEN = accessToken;
-      if (refreshToken) {
-        process.env.ZOHO_REFRESH_TOKEN = refreshToken;
-      }
-      
-      // Test the connection
-      const service = checkZohoService();
-      const isConnected = await service.testConnection();
-      
-      if (isConnected) {
-        // Create test account
-        const testData = {
-          First_Name: 'Test',
-          Last_Name: 'Account', 
-          Email: 'zoho.test.verification@thegunfirm.com',
-          Phone: '555-0199',
-          Lead_Source: 'Website',
-          Membership_Tier: 'Bronze Monthly',
-          Account_Name: 'Test Account'
-        };
-        
-        const contact = await service.createContact(testData);
-        
-        res.json({ 
-          message: "Zoho manually configured successfully",
-          testAccount: {
-            contactId: contact.id,
-            email: testData.Email
-          }
-        });
-      } else {
-        res.status(400).json({ error: "Invalid token - connection test failed" });
-      }
-      
-    } catch (error: any) {
-      console.error("Manual setup error:", error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
   // Create test account endpoint
   app.post("/api/zoho/create-test-account", async (req, res) => {
     try {
