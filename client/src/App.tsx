@@ -56,6 +56,7 @@ import AccountOrders from "@/pages/account-orders";
 import CMSOrderManagement from "@/pages/cms-order-management";
 import BrandingManagement from "@/pages/cms/admin/branding";
 import ZohoIntegration from "@/pages/cms/admin/zoho-integration";
+import ZohoSetup from "@/pages/cms/admin/zoho-setup";
 
 // Global scroll-to-top component that monitors route changes
 function ScrollToTop() {
@@ -121,6 +122,7 @@ function Router() {
         <Route path="/cms/delivery-settings" component={DeliverySettings} />
         <Route path="/cms/admin/branding" component={BrandingManagement} />
         <Route path="/cms/admin/zoho-integration" component={ZohoIntegration} />
+        <Route path="/cms/admin/zoho-setup" component={ZohoSetup} />
         <Route path="/management/atf-directory" component={AtfDirectoryManagement} />
         <Route component={NotFound} />
       </Switch>
