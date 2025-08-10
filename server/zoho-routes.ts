@@ -66,27 +66,67 @@ export function registerZohoRoutes(app: Express): void {
   // OAuth callback endpoint
   app.get("/api/zoho/auth/callback", async (req, res) => {
     try {
-      const { code } = req.query;
+      const { code, error } = req.query;
+      
+      if (error) {
+        console.error("OAuth error from Zoho:", error);
+        return res.status(400).send(`
+          <html><body>
+            <h2>OAuth Error</h2>
+            <p>Error: ${error}</p>
+            <p>This usually means the Zoho app configuration doesn't match our setup.</p>
+            <p><a href="/">Return to homepage</a></p>
+          </body></html>
+        `);
+      }
+      
       if (!code) {
-        return res.status(400).json({ error: "Authorization code required" });
+        return res.status(400).send(`
+          <html><body>
+            <h2>Missing Authorization Code</h2>
+            <p>No authorization code received from Zoho.</p>
+            <p><a href="/">Return to homepage</a></p>
+          </body></html>
+        `);
       }
 
-      const service = checkZohoService();
+      const service = await checkZohoService();
       const tokens = await service.exchangeCodeForTokens(code as string);
       
-      // Store tokens securely (you may want to encrypt these)
+      // Store tokens securely
       process.env.ZOHO_ACCESS_TOKEN = tokens.access_token;
       if (tokens.refresh_token) {
         process.env.ZOHO_REFRESH_TOKEN = tokens.refresh_token;
       }
 
-      res.json({ 
-        message: "Zoho integration configured successfully",
-        apiDomain: tokens.api_domain
-      });
+      // Success page with test account creation
+      res.send(`
+        <html><body>
+          <h2>✅ Zoho Integration Complete!</h2>
+          <p>Access token obtained successfully.</p>
+          <p>Creating test account...</p>
+          <script>
+            fetch('/api/zoho/create-test-account', { method: 'POST' })
+              .then(r => r.json())
+              .then(data => {
+                document.body.innerHTML += '<p><strong>Test Account Created:</strong> ' + JSON.stringify(data) + '</p>';
+              })
+              .catch(e => {
+                document.body.innerHTML += '<p><strong>Test Account Error:</strong> ' + e.message + '</p>';
+              });
+          </script>
+          <p><a href="/">Return to homepage</a></p>
+        </body></html>
+      `);
     } catch (error: any) {
       console.error("Zoho OAuth callback error:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).send(`
+        <html><body>
+          <h2>OAuth Callback Error</h2>
+          <p>Error: ${error.message}</p>
+          <p><a href="/">Return to homepage</a></p>
+        </body></html>
+      `);
     }
   });
 
@@ -98,6 +138,32 @@ export function registerZohoRoutes(app: Express): void {
       res.json({ message: "Customer synced to Zoho successfully" });
     } catch (error: any) {
       console.error("Customer sync error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create test account endpoint
+  app.post("/api/zoho/create-test-account", async (req, res) => {
+    try {
+      const service = await checkZohoService();
+      const testData = {
+        First_Name: 'Test',
+        Last_Name: 'Account', 
+        Email: 'zoho.test.verification@thegunfirm.com',
+        Phone: '555-0199',
+        Lead_Source: 'Website',
+        Membership_Tier: 'Bronze Monthly',
+        Account_Name: 'Test Account'
+      };
+      
+      const contact = await service.createContact(testData);
+      res.json({ 
+        message: "Test account created successfully",
+        contactId: contact.id,
+        email: testData.Email
+      });
+    } catch (error: any) {
+      console.error("Test account creation error:", error);
       res.status(500).json({ error: error.message });
     }
   });
