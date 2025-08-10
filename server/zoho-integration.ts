@@ -3,6 +3,13 @@ import { storage } from './storage';
 
 const zohoService = createZohoService();
 
+function getZohoService() {
+  if (!zohoService) {
+    throw new Error("Zoho service not configured. Please provide ZOHO_CLIENT_ID and ZOHO_CLIENT_SECRET");
+  }
+  return zohoService;
+}
+
 // Customer synchronization
 export async function syncCustomerToZoho(userId: number): Promise<void> {
   try {

@@ -104,6 +104,56 @@ export class ZohoService {
     return response.data.access_token;
   }
 
+  getAuthorizationUrl(): string {
+    const scope = process.env.ZOHO_SCOPE || 'ZohoCRM.modules.ALL,ZohoCRM.settings.ALL';
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: this.config.clientId,
+      scope: scope,
+      redirect_uri: this.config.redirectUri,
+      access_type: 'offline'
+    });
+    
+    return `https://accounts.zoho.${this.config.region}/oauth/v2/auth?${params.toString()}`;
+  }
+
+  async getConnectionStatus() {
+    return {
+      isConnected: !!this.config.accessToken,
+      accountName: this.config.accessToken ? 'Connected' : null,
+      expiresAt: null,
+      scopes: process.env.ZOHO_SCOPE?.split(',') || [],
+      lastSync: null
+    };
+  }
+
+  async testConnection() {
+    if (!this.config.accessToken) {
+      return { success: false, message: 'No access token available' };
+    }
+
+    try {
+      const response = await this.makeRequest('GET', '/crm/v2/org');
+      return { 
+        success: true, 
+        message: 'Connection successful',
+        data: response 
+      };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        message: error.message 
+      };
+    }
+  }
+
+  async disconnect() {
+    this.config.accessToken = undefined;
+    this.config.refreshToken = undefined;
+    process.env.ZOHO_ACCESS_TOKEN = '';
+    process.env.ZOHO_REFRESH_TOKEN = '';
+  }
+
   private async makeRequest(method: string, endpoint: string, data?: any): Promise<any> {
     if (!this.config.accessToken) {
       throw new Error('No access token available');
@@ -309,11 +359,21 @@ export class ZohoService {
 }
 
 // Environment configuration
-export function createZohoService(): ZohoService {
+export function createZohoService(): ZohoService | null {
+  // Check if credentials are available
+  const clientId = process.env.ZOHO_CLIENT_ID;
+  const clientSecret = process.env.ZOHO_CLIENT_SECRET;
+  const redirectUri = process.env.ZOHO_REDIRECT_URI || "https://4f937a25-00c8-498d-9fa5-eb24f01732eb-00-9p4bpqrd7jc1.janeway.replit.dev/api/zoho/auth/callback";
+  
+  if (!clientId || !clientSecret) {
+    console.warn("Zoho credentials not configured. Please set ZOHO_CLIENT_ID and ZOHO_CLIENT_SECRET");
+    return null;
+  }
+
   const config: ZohoConfig = {
-    clientId: process.env.ZOHO_CLIENT_ID!,
-    clientSecret: process.env.ZOHO_CLIENT_SECRET!,
-    redirectUri: process.env.ZOHO_REDIRECT_URI!,
+    clientId,
+    clientSecret,
+    redirectUri,
     region: (process.env.ZOHO_REGION as any) || 'com',
     accessToken: process.env.ZOHO_ACCESS_TOKEN,
     refreshToken: process.env.ZOHO_REFRESH_TOKEN

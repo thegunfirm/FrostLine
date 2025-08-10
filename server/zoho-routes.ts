@@ -5,6 +5,62 @@ import { createZohoService } from "./zoho-service";
 export function registerZohoRoutes(app: Express): void {
   const zohoService = createZohoService();
 
+  // Check if Zoho service is available
+  const checkZohoService = () => {
+    if (!zohoService) {
+      throw new Error("Zoho service not configured. Please provide ZOHO_CLIENT_ID and ZOHO_CLIENT_SECRET");
+    }
+    return zohoService;
+  };
+
+  // OAuth initiation endpoint
+  app.get("/api/zoho/auth/url", async (req, res) => {
+    try {
+      const service = checkZohoService();
+      const authUrl = service.getAuthorizationUrl();
+      res.json({ authUrl });
+    } catch (error: any) {
+      console.error("Zoho auth URL error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Connection status endpoint
+  app.get("/api/zoho/status", async (req, res) => {
+    try {
+      if (!zohoService) {
+        return res.json({ isConnected: false, error: "Zoho credentials not configured" });
+      }
+      const status = await zohoService.getConnectionStatus();
+      res.json(status);
+    } catch (error: any) {
+      console.error("Zoho status error:", error);
+      res.json({ isConnected: false });
+    }
+  });
+
+  // Test connection endpoint
+  app.get("/api/zoho/test", async (req, res) => {
+    try {
+      const result = await zohoService.testConnection();
+      res.json(result);
+    } catch (error: any) {
+      console.error("Zoho test error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Disconnect endpoint
+  app.post("/api/zoho/disconnect", async (req, res) => {
+    try {
+      await zohoService.disconnect();
+      res.json({ message: "Disconnected from Zoho successfully" });
+    } catch (error: any) {
+      console.error("Zoho disconnect error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // OAuth callback endpoint
   app.get("/api/zoho/callback", async (req, res) => {
     try {
@@ -129,9 +185,13 @@ export function registerZohoRoutes(app: Express): void {
   // Health check endpoint
   app.get("/api/zoho/health", async (req, res) => {
     try {
-      // Simple API call to check if Zoho connection is working
-      await zohoService.makeRequest('GET', '/crm/v6/org');
-      res.json({ status: "connected", message: "Zoho API connection is healthy" });
+      // Use the testConnection method instead of private makeRequest
+      const result = await zohoService.testConnection();
+      if (result.success) {
+        res.json({ status: "connected", message: "Zoho API connection is healthy" });
+      } else {
+        res.status(500).json({ status: "disconnected", error: result.message });
+      }
     } catch (error: any) {
       console.error("Zoho health check failed:", error);
       res.status(500).json({ status: "disconnected", error: error.message });
