@@ -190,8 +190,8 @@ export class ZohoService {
         Email: customerData.email,
         Phone: customerData.phone,
         Lead_Source: "Website",
+        Tier: customerData.membershipTier, // Use "Tier" field instead of custom field
         Custom_Fields: {
-          Membership_Tier: customerData.membershipTier,
           FAP_User_ID: customerData.fapUserId
         }
       }]

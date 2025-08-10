@@ -19,12 +19,25 @@ export async function syncCustomerToZoho(userId: number): Promise<void> {
       throw new Error(`User with ID ${userId} not found`);
     }
 
+    // Map subscription tier to proper tier label for Zoho
+    const { mapSubscriptionToTierLabel } = await import('@shared/tier-utils');
+    
+    // Determine if this is annual or monthly based on subscription tier
+    const isAnnual = user.subscriptionTier.toLowerCase().includes('annual') || 
+                    user.subscriptionTier.toLowerCase().includes('founder');
+    const paymentPeriod: 'monthly' | 'annually' = isAnnual ? 'annually' : 'monthly';
+    
+    // Get base tier from current subscription
+    const baseTier = user.subscriptionTier.replace(/\s+(Monthly|Annually|Founder).*$/i, '');
+    
+    const tierLabel = mapSubscriptionToTierLabel(baseTier, paymentPeriod);
+
     const zohoContactId = await service.createOrUpdateContact({
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
       phone: '', // User model doesn't have phone field
-      membershipTier: user.subscriptionTier,
+      membershipTier: tierLabel,
       fapUserId: user.id.toString()
     });
 
@@ -33,7 +46,7 @@ export async function syncCustomerToZoho(userId: number): Promise<void> {
       await storage.updateUser(user.id, { zohoContactId });
     }
 
-    console.log(`Customer ${user.email} synced to Zoho successfully`);
+    console.log(`Customer ${user.email} synced to Zoho with tier: ${tierLabel}`);
   } catch (error) {
     console.error(`Failed to sync customer to Zoho:`, error);
     throw error;
@@ -47,21 +60,36 @@ export async function createCustomerInZoho(userData: {
   email: string;
   phone?: string | null;
   subscriptionTier: string;
+  paymentPeriod?: 'monthly' | 'annually';
   fapUserId: string;
 }): Promise<string | null> {
   try {
     const service = getZohoService();
+    
+    // Map subscription tier to proper tier label for Zoho
+    const { mapSubscriptionToTierLabel } = await import('@shared/tier-utils');
+    
+    // Default to monthly if not specified, but try to detect from subscriptionTier
+    let paymentPeriod = userData.paymentPeriod;
+    if (!paymentPeriod) {
+      paymentPeriod = (userData.subscriptionTier.toLowerCase().includes('annual') || 
+                      userData.subscriptionTier.toLowerCase().includes('founder')) 
+                      ? 'annually' : 'monthly';
+    }
+    
+    const baseTier = userData.subscriptionTier.replace(/\s+(Monthly|Annually|Founder).*$/i, '');
+    const tierLabel = mapSubscriptionToTierLabel(baseTier, paymentPeriod);
     
     const zohoContactId = await service.createOrUpdateContact({
       firstName: userData.firstName,
       lastName: userData.lastName,
       email: userData.email,
       phone: userData.phone || '',
-      membershipTier: userData.subscriptionTier,
+      membershipTier: tierLabel,
       fapUserId: userData.fapUserId
     });
 
-    console.log(`Customer ${userData.email} created in Zoho with ID: ${zohoContactId}`);
+    console.log(`Customer ${userData.email} created in Zoho with tier: ${tierLabel}`);
     return zohoContactId;
   } catch (error) {
     console.error(`Failed to create customer in Zoho:`, error);

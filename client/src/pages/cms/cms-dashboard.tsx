@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Settings, Mail, MessageSquare, FileText, Activity } from "lucide-react";
+import { Users, Settings, Mail, MessageSquare, FileText, Activity, Crown } from "lucide-react";
 import { Link } from "wouter";
 
 export default function CMSDashboard() {
@@ -303,6 +303,12 @@ export default function CMSDashboard() {
                   <Button variant="outline" className="w-full justify-start">
                     <Users className="mr-2 h-4 w-4" />
                     FAP Customer Profiles
+                  </Button>
+                </Link>
+                <Link href="/cms/admin/tier-labels">
+                  <Button variant="outline" className="w-full justify-start">
+                    <Crown className="mr-2 h-4 w-4" />
+                    Tier Label Management
                   </Button>
                 </Link>
               </CardContent>

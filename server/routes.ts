@@ -26,6 +26,25 @@ import crypto from "crypto";
 import axios from "axios";
 import multer from "multer";
 
+// Authentication middleware
+const isAuthenticated = (req: any, res: any, next: any) => {
+  if (!req.session?.user) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  next();
+};
+
+// Role-based authorization middleware
+const requireRole = (allowedRoles: string[]) => {
+  return (req: any, res: any, next: any) => {
+    const userRole = req.session?.user?.role;
+    if (!userRole || !allowedRoles.includes(userRole)) {
+      return res.status(403).json({ message: "Insufficient permissions" });
+    }
+    next();
+  };
+};
+
 // In-memory cache for category ribbons
 let categoryRibbonCache: any = null;
 let categoryRibbonCacheTime = 0;
@@ -5269,6 +5288,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Tier settings fetch error:", error);
       res.status(500).json({ error: "Failed to fetch tier settings" });
+    }
+  });
+
+  // Tier Label Settings API (Admin Only)
+  app.get("/api/cms/tier-label-settings", isAuthenticated, requireRole(['admin']), async (req, res) => {
+    try {
+      const settings = await storage.getTierLabelSettings();
+      
+      // If no settings exist, create the default Platinum Founder setting
+      if (settings.length === 0) {
+        await storage.createTierLabelSetting({
+          settingKey: 'platinum_annual_to_founder',
+          isEnabled: true,
+          description: 'Label Platinum Annual subscribers as Platinum Founder',
+          lastModifiedBy: (req.user as any)?.id || null
+        });
+        // Fetch again after creating
+        const newSettings = await storage.getTierLabelSettings();
+        res.json(newSettings);
+      } else {
+        res.json(settings);
+      }
+    } catch (error: any) {
+      console.error("Error fetching tier label settings:", error);
+      res.status(500).json({ message: "Failed to fetch tier label settings" });
+    }
+  });
+
+  app.put("/api/cms/tier-label-settings/:settingKey", isAuthenticated, requireRole(['admin']), async (req, res) => {
+    try {
+      const { settingKey } = req.params;
+      const { isEnabled } = req.body;
+      
+      const existingSetting = await storage.getTierLabelSetting(settingKey);
+      
+      if (!existingSetting) {
+        return res.status(404).json({ message: "Setting not found" });
+      }
+      
+      const updatedSetting = await storage.updateTierLabelSetting(settingKey, {
+        isEnabled,
+        lastModifiedBy: (req.user as any)?.id || null
+      });
+      
+      // Update the tier utility function
+      const { setPlatinumAnnualToFounderMode } = await import('@shared/tier-utils');
+      if (settingKey === 'platinum_annual_to_founder') {
+        setPlatinumAnnualToFounderMode(isEnabled);
+      }
+      
+      res.json(updatedSetting);
+    } catch (error: any) {
+      console.error("Error updating tier label setting:", error);
+      res.status(500).json({ message: "Failed to update tier label setting" });
     }
   });
 

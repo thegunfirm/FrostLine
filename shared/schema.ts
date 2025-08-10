@@ -442,6 +442,20 @@ export const membershipTierSettings = pgTable("membership_tier_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Tier Label Control Settings (Admin Only)
+export const tierLabelSettings = pgTable("tier_label_settings", {
+  id: serial("id").primaryKey(),
+  settingKey: text("setting_key").notNull().unique(), // e.g., "platinum_annual_to_founder"
+  isEnabled: boolean("is_enabled").default(true),
+  description: text("description"),
+  lastModifiedBy: integer("last_modified_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type TierLabelSetting = typeof tierLabelSettings.$inferSelect;
+export type InsertTierLabelSetting = typeof tierLabelSettings.$inferInsert;
+
 // ATF Directory File Management (Management Level Staff)
 export const atfDirectoryFiles = pgTable("atf_directory_files", {
   id: serial("id").primaryKey(),

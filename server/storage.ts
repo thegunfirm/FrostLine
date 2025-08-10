@@ -51,7 +51,10 @@ import {
   type AtfDirectoryFile,
   type InsertAtfDirectoryFile,
   type FflDataSource,
-  type InsertFflDataSource
+  type InsertFflDataSource,
+  tierLabelSettings,
+  type TierLabelSetting,
+  type InsertTierLabelSetting
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, like, ilike, and, or, desc, asc, ne, sql } from "drizzle-orm";
@@ -183,6 +186,12 @@ export interface IStorage {
   getFflDataSources(): Promise<FflDataSource[]>;
   createFflDataSource(source: InsertFflDataSource): Promise<FflDataSource>;
   updateFflDataSource(id: number, updates: Partial<FflDataSource>): Promise<FflDataSource>;
+
+  // Tier Label Settings operations
+  getTierLabelSettings(): Promise<TierLabelSetting[]>;
+  getTierLabelSetting(settingKey: string): Promise<TierLabelSetting | undefined>;
+  updateTierLabelSetting(settingKey: string, updates: Partial<TierLabelSetting>): Promise<TierLabelSetting>;
+  createTierLabelSetting(setting: InsertTierLabelSetting): Promise<TierLabelSetting>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1676,6 +1685,35 @@ export class DatabaseStorage implements IStorage {
       .where(eq(fflDataSources.id, id))
       .returning();
     return updatedSource;
+  }
+
+  // Tier Label Settings operations
+  async getTierLabelSettings(): Promise<TierLabelSetting[]> {
+    return await db.select()
+      .from(tierLabelSettings)
+      .orderBy(tierLabelSettings.settingKey);
+  }
+
+  async getTierLabelSetting(settingKey: string): Promise<TierLabelSetting | undefined> {
+    const [setting] = await db.select()
+      .from(tierLabelSettings)
+      .where(eq(tierLabelSettings.settingKey, settingKey));
+    return setting || undefined;
+  }
+
+  async updateTierLabelSetting(settingKey: string, updates: Partial<TierLabelSetting>): Promise<TierLabelSetting> {
+    const [setting] = await db.update(tierLabelSettings)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(tierLabelSettings.settingKey, settingKey))
+      .returning();
+    return setting;
+  }
+
+  async createTierLabelSetting(setting: InsertTierLabelSetting): Promise<TierLabelSetting> {
+    const [newSetting] = await db.insert(tierLabelSettings)
+      .values(setting)
+      .returning();
+    return newSetting;
   }
 }
 

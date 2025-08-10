@@ -58,6 +58,7 @@ import BrandingManagement from "@/pages/cms/admin/branding";
 import ZohoIntegration from "@/pages/cms/admin/zoho-integration";
 import ZohoSetup from "@/pages/cms/admin/zoho-setup";
 import FAPCustomerProfiles from "@/pages/cms/admin/fap-customer-profiles";
+import TierLabels from "@/pages/cms/admin/tier-labels";
 
 // Global scroll-to-top component that monitors route changes
 function ScrollToTop() {
@@ -125,6 +126,7 @@ function Router() {
         <Route path="/cms/admin/zoho-integration" component={ZohoIntegration} />
         <Route path="/cms/admin/zoho-setup" component={ZohoSetup} />
         <Route path="/cms/admin/fap-customer-profiles" component={FAPCustomerProfiles} />
+        <Route path="/cms/admin/tier-labels" component={TierLabels} />
         <Route path="/management/atf-directory" component={AtfDirectoryManagement} />
         <Route component={NotFound} />
       </Switch>
