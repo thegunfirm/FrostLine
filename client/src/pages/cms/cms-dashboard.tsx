@@ -69,44 +69,44 @@ export default function CMSDashboard() {
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {hasSupportAccess && stats?.myTickets && (
+            {hasSupportAccess && (
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">My Tickets</CardTitle>
                   <MessageSquare className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.myTickets.length}</div>
+                  <div className="text-2xl font-bold">{stats?.myTickets?.length || 0}</div>
                   <p className="text-xs text-muted-foreground">
-                    {stats.myTickets.filter((t: any) => t.status === 'open').length} open
+                    {stats?.myTickets?.filter((t: any) => t.status === 'open')?.length || 0} open
                   </p>
                 </CardContent>
               </Card>
             )}
 
-            {hasManagerAccess && stats?.emailTemplates && (
+            {hasManagerAccess && (
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Email Templates</CardTitle>
                   <Mail className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.emailTemplates.length}</div>
+                  <div className="text-2xl font-bold">{stats?.emailTemplates?.length || 0}</div>
                   <p className="text-xs text-muted-foreground">
-                    {stats.emailTemplates.filter((t: any) => t.isActive).length} active
+                    {stats?.emailTemplates?.filter((t: any) => t.isActive)?.length || 0} active
                   </p>
                 </CardContent>
               </Card>
             )}
 
-            {hasAdminAccess && stats?.totalUsers && (
+            {hasAdminAccess && (
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Users</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalUsers[0]?.count || 0}</div>
+                  <div className="text-2xl font-bold">{stats?.totalUsers?.[0]?.count || 0}</div>
                   <p className="text-xs text-muted-foreground">
                     Registered users
                   </p>
@@ -114,14 +114,14 @@ export default function CMSDashboard() {
               </Card>
             )}
 
-            {hasAdminAccess && stats?.totalOrders && (
+            {hasAdminAccess && (
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalOrders[0]?.count || 0}</div>
+                  <div className="text-2xl font-bold">{stats?.totalOrders?.[0]?.count || 0}</div>
                   <p className="text-xs text-muted-foreground">
                     All time orders
                   </p>
@@ -291,6 +291,12 @@ export default function CMSDashboard() {
                   <Button variant="outline" className="w-full justify-start">
                     <FileText className="mr-2 h-4 w-4" />
                     Branding Management
+                  </Button>
+                </Link>
+                <Link href="/cms/admin/zoho-integration">
+                  <Button variant="outline" className="w-full justify-start">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Zoho CRM Integration
                   </Button>
                 </Link>
               </CardContent>
