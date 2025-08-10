@@ -299,6 +299,12 @@ export default function CMSDashboard() {
                     Zoho CRM Integration
                   </Button>
                 </Link>
+                <Link href="/cms/admin/fap-customer-profiles">
+                  <Button variant="outline" className="w-full justify-start">
+                    <Users className="mr-2 h-4 w-4" />
+                    FAP Customer Profiles
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </TabsContent>

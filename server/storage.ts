@@ -98,6 +98,7 @@ export interface IStorage {
   updateOrder(id: number, updates: Partial<Order>): Promise<Order>;
   updateOrderZohoId(id: number, zohoDealId: string): Promise<Order>;
   getUserOrders(userId: number): Promise<Order[]>;
+  getOrderItems(orderId: number): Promise<any[]>;
   
   // FFL operations
   getFFLs(filters?: { zip?: string; status?: string }): Promise<FFL[]>;
@@ -890,6 +891,11 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(orders)
       .where(eq(orders.userId, userId))
       .orderBy(desc(orders.orderDate));
+  }
+
+  async getOrderItems(orderId: number): Promise<any[]> {
+    return await db.select().from(orderItems)
+      .where(eq(orderItems.orderId, orderId));
   }
 
   // CMS Admin search methods for orders

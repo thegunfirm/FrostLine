@@ -42,7 +42,8 @@ export function registerZohoRoutes(app: Express): void {
   // Test connection endpoint
   app.get("/api/zoho/test", async (req, res) => {
     try {
-      const result = await zohoService.testConnection();
+      const service = checkZohoService();
+      const result = await service.testConnection();
       res.json(result);
     } catch (error: any) {
       console.error("Zoho test error:", error);
@@ -53,7 +54,8 @@ export function registerZohoRoutes(app: Express): void {
   // Disconnect endpoint
   app.post("/api/zoho/disconnect", async (req, res) => {
     try {
-      await zohoService.disconnect();
+      const service = checkZohoService();
+      await service.disconnect();
       res.json({ message: "Disconnected from Zoho successfully" });
     } catch (error: any) {
       console.error("Zoho disconnect error:", error);
@@ -62,14 +64,15 @@ export function registerZohoRoutes(app: Express): void {
   });
 
   // OAuth callback endpoint
-  app.get("/api/zoho/callback", async (req, res) => {
+  app.get("/api/zoho/auth/callback", async (req, res) => {
     try {
       const { code } = req.query;
       if (!code) {
         return res.status(400).json({ error: "Authorization code required" });
       }
 
-      const tokens = await zohoService.exchangeCodeForTokens(code as string);
+      const service = checkZohoService();
+      const tokens = await service.exchangeCodeForTokens(code as string);
       
       // Store tokens securely (you may want to encrypt these)
       process.env.ZOHO_ACCESS_TOKEN = tokens.access_token;
@@ -95,6 +98,55 @@ export function registerZohoRoutes(app: Express): void {
       res.json({ message: "Customer synced to Zoho successfully" });
     } catch (error: any) {
       console.error("Customer sync error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create customer in Zoho (for FAP integration)
+  app.post("/api/zoho/customers", async (req, res) => {
+    try {
+      const { firstName, lastName, email, phone, subscriptionTier, fapUserId } = req.body;
+      
+      if (!firstName || !lastName || !email || !subscriptionTier || !fapUserId) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const { createCustomerInZoho } = await import("./zoho-integration");
+      const zohoContactId = await createCustomerInZoho({
+        firstName,
+        lastName,
+        email,
+        phone,
+        subscriptionTier,
+        fapUserId
+      });
+
+      res.json({ 
+        message: "Customer created in Zoho successfully",
+        zohoContactId 
+      });
+    } catch (error: any) {
+      console.error("Customer creation error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update customer tier in Zoho
+  app.put("/api/zoho/customers/:userId/tier", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { tier } = req.body;
+      
+      if (!tier) {
+        return res.status(400).json({ error: "Tier is required" });
+      }
+
+      const { updateCustomerTierInZoho } = await import("./zoho-integration");
+      await updateCustomerTierInZoho(userId, tier);
+      
+      res.json({ message: "Customer tier updated in Zoho successfully" });
+    } catch (error: any) {
+      console.error("Customer tier update error:", error);
       res.status(500).json({ error: error.message });
     }
   });
@@ -169,8 +221,9 @@ export function registerZohoRoutes(app: Express): void {
   // FFL search in Zoho
   app.get("/api/zoho/ffls/search", async (req, res) => {
     try {
+      const service = checkZohoService();
       const { state, zipCode, fflNumber } = req.query;
-      const ffls = await zohoService.searchFFLVendors({
+      const ffls = await service.searchFFLVendors({
         state: state as string,
         zipCode: zipCode as string,
         fflNumber: fflNumber as string
@@ -178,6 +231,109 @@ export function registerZohoRoutes(app: Express): void {
       res.json({ ffls });
     } catch (error: any) {
       console.error("FFL search error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // FAP Authentication endpoint
+  app.post("/api/zoho/auth/fap", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+
+      const { authenticateWithFAP } = await import("./zoho-integration");
+      const result = await authenticateWithFAP(email, password);
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          user: result.user,
+          message: "Authentication successful"
+        });
+      } else {
+        res.status(401).json({ 
+          success: false, 
+          error: result.error 
+        });
+      }
+    } catch (error: any) {
+      console.error("FAP authentication error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Sync user from FAP
+  app.post("/api/zoho/sync/fap-user/:fapUserId", async (req, res) => {
+    try {
+      const { fapUserId } = req.params;
+      
+      const { syncUserFromFAP } = await import("./zoho-integration");
+      await syncUserFromFAP(fapUserId);
+      
+      res.json({ message: "User synced from FAP successfully" });
+    } catch (error: any) {
+      console.error("FAP user sync error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Order tracking endpoints
+  app.post("/api/zoho/orders/:orderId/record", async (req, res) => {
+    try {
+      const orderId = parseInt(req.params.orderId);
+      
+      const { recordOrderInZoho } = await import("./zoho-integration");
+      await recordOrderInZoho(orderId);
+      
+      res.json({ message: "Order recorded in Zoho successfully" });
+    } catch (error: any) {
+      console.error("Order recording error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Support ticket creation
+  app.post("/api/zoho/support/tickets", async (req, res) => {
+    try {
+      const { customerId, subject, description, priority, category } = req.body;
+      
+      if (!customerId || !subject || !description) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const { createZohoSupportTicket } = await import("./zoho-integration");
+      const ticketId = await createZohoSupportTicket({
+        customerId: parseInt(customerId),
+        subject,
+        description,
+        priority: priority || 'Medium',
+        category
+      });
+      
+      res.json({ 
+        message: "Support ticket created successfully",
+        ticketId 
+      });
+    } catch (error: any) {
+      console.error("Support ticket creation error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Batch synchronization
+  app.post("/api/zoho/batch-sync", async (req, res) => {
+    try {
+      const { customers = [], orders = [], ffls = [] } = req.body;
+      
+      const { batchSyncToZoho } = await import("./zoho-integration");
+      await batchSyncToZoho({ customers, orders, ffls });
+      
+      res.json({ message: "Batch synchronization completed successfully" });
+    } catch (error: any) {
+      console.error("Batch sync error:", error);
       res.status(500).json({ error: error.message });
     }
   });
