@@ -189,6 +189,7 @@ export class ZohoService {
         Last_Name: customerData.lastName,
         Email: customerData.email,
         Phone: customerData.phone,
+        Lead_Source: "Website",
         Custom_Fields: {
           Membership_Tier: customerData.membershipTier,
           FAP_User_ID: customerData.fapUserId
@@ -220,6 +221,38 @@ export class ZohoService {
 
   async getCustomer(zohoCustomerId: string): Promise<any> {
     return await this.makeRequest('GET', `/crm/v6/Contacts/${zohoCustomerId}`);
+  }
+
+  async createOrUpdateContact(contactData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    membershipTier: string;
+    fapUserId: string;
+  }): Promise<string> {
+    return await this.createCustomer(contactData);
+  }
+
+  async updateContact(zohoCustomerId: string, updateData: { membershipTier: string }): Promise<void> {
+    const contactUpdateData = {
+      data: [{
+        id: zohoCustomerId,
+        Custom_Fields: {
+          Membership_Tier: updateData.membershipTier
+        }
+      }]
+    };
+    
+    await this.makeRequest('PUT', '/crm/v6/Contacts', contactUpdateData);
+  }
+
+  async createOrder(orderData: any): Promise<string> {
+    return await this.recordOrder(orderData);
+  }
+
+  async createOrUpdateVendor(vendorData: any): Promise<string> {
+    return await this.createFFLVendor(vendorData);
   }
 
   // Order Management

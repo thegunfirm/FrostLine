@@ -23,7 +23,7 @@ export async function syncCustomerToZoho(userId: number): Promise<void> {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      phone: user.phone || '',
+      phone: '', // User model doesn't have phone field
       membershipTier: user.subscriptionTier,
       fapUserId: user.id.toString()
     });
@@ -58,10 +58,7 @@ export async function createCustomerInZoho(userData: {
       email: userData.email,
       phone: userData.phone || '',
       membershipTier: userData.subscriptionTier,
-      fapUserId: userData.fapUserId,
-      leadSource: 'Website Registration',
-      customerType: 'Individual',
-      registrationDate: new Date().toISOString()
+      fapUserId: userData.fapUserId
     });
 
     console.log(`Customer ${userData.email} created in Zoho with ID: ${zohoContactId}`);
@@ -124,11 +121,11 @@ export async function recordOrderInZoho(orderId: number): Promise<void> {
         manufacturer: item.manufacturer || '',
         category: item.category || ''
       })),
-      totalAmount: parseFloat(order.totalAmount),
-      orderDate: order.createdAt || new Date(),
-      fflDealerId: order.fflDealerId?.toString() || '',
+      totalAmount: parseFloat(order.totalPrice),
+      orderDate: order.orderDate || new Date(),
+      fflDealerId: order.fflRecipientId?.toString() || '',
       shippingAddress: order.shippingAddress,
-      billingAddress: order.billingAddress
+      billingAddress: order.shippingAddress // Using shipping address as billing fallback
     };
 
     await service.createOrder(zohoOrderData);
