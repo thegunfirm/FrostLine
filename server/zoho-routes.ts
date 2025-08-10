@@ -90,7 +90,7 @@ export function registerZohoRoutes(app: Express): void {
         `);
       }
 
-      const service = await checkZohoService();
+      const service = checkZohoService();
       const tokens = await service.exchangeCodeForTokens(code as string);
       
       // Store tokens securely
@@ -145,7 +145,7 @@ export function registerZohoRoutes(app: Express): void {
   // Create test account endpoint
   app.post("/api/zoho/create-test-account", async (req, res) => {
     try {
-      const service = await checkZohoService();
+      const service = checkZohoService();
       const testData = {
         First_Name: 'Test',
         Last_Name: 'Account', 
