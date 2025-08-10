@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zoho Manual Setup</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .step { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .code { background: #f5f5f5; padding: 10px; border-radius: 3px; font-family: monospace; }
+        input, textarea { width: 100%; padding: 8px; margin: 5px 0; }
+        button { padding: 10px 20px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Zoho Manual Setup</h1>
+    <p>Since the OAuth redirect isn't working, get tokens manually:</p>
+    
+    <div class="step">
+        <h3>Step 1: Get Access Token</h3>
+        <p>Go to <a href="https://accounts.zoho.com/developerconsole" target="_blank">Zoho Developer Console</a></p>
+        <p>Find your app and use "Generate Access Token" or create a new app</p>
+        <div class="code">
+            Client ID: 1000.6LDDWN3B3QZM.28e7c6bc3adb57c64026cb2bb3a8c8a3<br>
+            Scopes: ZohoCRM.modules.ALL,ZohoCRM.settings.ALL
+        </div>
+    </div>
+    
+    <div class="step">
+        <h3>Step 2: Configure Tokens</h3>
+        <form id="setupForm">
+            <label>Access Token (required):</label>
+            <textarea id="accessToken" placeholder="1000.xxx.xxx" rows="3"></textarea>
+            
+            <label>Refresh Token (optional):</label>
+            <textarea id="refreshToken" placeholder="1000.xxx.xxx" rows="3"></textarea>
+            
+            <button type="submit">Setup Zoho Integration</button>
+        </form>
+    </div>
+    
+    <div id="result"></div>
+    
+    <script>
+        document.getElementById('setupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const accessToken = document.getElementById('accessToken').value.trim();
+            const refreshToken = document.getElementById('refreshToken').value.trim();
+            
+            if (!accessToken) {
+                document.getElementById('result').innerHTML = '<p class="error">Access token is required</p>';
+                return;
+            }
+            
+            try {
+                document.getElementById('result').innerHTML = '<p>Setting up Zoho integration...</p>';
+                
+                const response = await fetch('/api/zoho/manual-setup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accessToken, refreshToken })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('result').innerHTML = 
+                        '<div class="success">' +
+                        '<h3>✅ Success!</h3>' +
+                        '<p>Zoho integration configured successfully</p>' +
+                        '<p>Test account created: ' + data.testAccount.email + '</p>' +
+                        '<p>Contact ID: ' + data.testAccount.contactId + '</p>' +
+                        '</div>';
+                } else {
+                    document.getElementById('result').innerHTML = 
+                        '<p class="error">Error: ' + data.error + '</p>';
+                }
+                
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    '<p class="error">Request failed: ' + error.message + '</p>';
+            }
+        });
+    </script>
+</body>
+</html>
