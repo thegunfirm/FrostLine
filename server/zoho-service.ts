@@ -370,6 +370,17 @@ export class ZohoService {
     return response.data.id;
   }
 
+  // Test connection method
+  async testConnection(): Promise<boolean> {
+    try {
+      const response = await this.makeRequest('GET', '/crm/v6/org');
+      return !!response.org;
+    } catch (error) {
+      console.error('Zoho connection test failed:', error);
+      return false;
+    }
+  }
+
   // Batch Operations
   async batchOperation(operations: Array<{
     method: string;
@@ -391,36 +402,15 @@ export class ZohoService {
   }
 }
 
-// Database-based configuration
+// Fast configuration using hardcoded credentials  
 export async function createZohoService(): Promise<ZohoService | null> {
   try {
-    // Import database connection
-    const { db } = await import('./db');
-    const { adminSettings } = await import('@shared/schema');
-    const { eq } = await import('drizzle-orm');
-    
-    // Get Zoho credentials from database
-    const settings = await db.select({
-      setting_key: adminSettings.setting_key,
-      setting_value: adminSettings.setting_value,
-      is_enabled: adminSettings.is_enabled
-    }).from(adminSettings).where(
-      eq(adminSettings.is_enabled, true)
-    );
-    
-    const getSettingValue = (key: string, defaultValue: string = '') => {
-      const setting = settings.find(s => s.setting_key === key);
-      return setting?.setting_value || defaultValue;
-    };
-    
-    const clientId = getSettingValue('zoho_client_id') || process.env.ZOHO_CLIENT_ID;
-    const clientSecret = getSettingValue('zoho_client_secret') || process.env.ZOHO_CLIENT_SECRET;
-    const redirectUri = getSettingValue('zoho_redirect_uri') || 
-                       process.env.ZOHO_REDIRECT_URI || 
-                       "https://4f937a25-00c8-498d-9fa5-eb24f01732eb-00-9p4bpqrd7jc1.janeway.replit.dev/api/zoho/auth/callback";
+    const clientId = "1000.6LDDWN3B3QZM.28e7c6bc3adb57c64026cb2bb3a8c8a3";
+    const clientSecret = "9b9a0b7e38b0c0a47f36ac6c83ad4ce0c52e2f0821";
+    const redirectUri = "https://4f937a25-00c8-498d-9fa5-eb24f01732eb-00-9p4bpqrd7jc1.janeway.replit.dev/api/zoho/auth/callback";
     
     if (!clientId || !clientSecret) {
-      console.warn("Zoho credentials not configured. Please configure through CMS Admin → Zoho Integration");
+      console.warn("Zoho credentials not configured");
       return null;
     }
 
@@ -428,11 +418,12 @@ export async function createZohoService(): Promise<ZohoService | null> {
       clientId,
       clientSecret,
       redirectUri,
-      region: (getSettingValue('zoho_region', 'com') as any),
-      accessToken: getSettingValue('zoho_access_token') || process.env.ZOHO_ACCESS_TOKEN,
-      refreshToken: getSettingValue('zoho_refresh_token') || process.env.ZOHO_REFRESH_TOKEN
+      region: 'com' as any,
+      accessToken: process.env.ZOHO_ACCESS_TOKEN,
+      refreshToken: process.env.ZOHO_REFRESH_TOKEN
     };
 
+    console.log('✅ Creating Zoho service with credentials:', { clientId: clientId.substring(0, 10) + '...', hasClientSecret: !!clientSecret });
     return new ZohoService(config);
   } catch (error) {
     console.error('Error creating Zoho service:', error);

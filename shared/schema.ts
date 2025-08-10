@@ -219,11 +219,13 @@ export const categoryRibbons = pgTable("category_ribbons", {
 
 export const adminSettings = pgTable("admin_settings", {
   id: serial("id").primaryKey(),
-  key: text("key").notNull().unique(),
-  value: text("value").notNull(),
+  setting_key: text("setting_key").notNull().unique(),
+  setting_value: text("setting_value").notNull(),
   description: text("description"),
-  category: text("category").default("general"),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  is_enabled: boolean("is_enabled").default(true),
+  last_modified_by: integer("last_modified_by"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
 });
 
 // Order Restrictions for firearms compliance  
