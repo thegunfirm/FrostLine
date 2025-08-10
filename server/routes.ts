@@ -5446,5 +5446,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Zoho CRM integration routes
   registerZohoRoutes(app);
 
+  // Direct OAuth initiate endpoint (for easy access)
+  app.get("/api/zoho/auth/initiate", async (req, res) => {
+    try {
+      const authUrl = "https://accounts.zoho.com/oauth/v2/auth?response_type=code&client_id=1000.6LDDWN3B3QZM.28e7c6bc3adb57c64026cb2bb3a8c8a3&scope=ZohoCRM.modules.ALL%2CZohoCRM.settings.ALL&redirect_uri=https%3A%2F%2F4f937a25-00c8-498d-9fa5-eb24f01732eb-00-9p4bpqrd7jc1.janeway.replit.dev%2Fapi%2Fzoho%2Fauth%2Fcallback&access_type=offline";
+      res.redirect(authUrl);
+    } catch (error) {
+      console.error("OAuth initiate error:", error);
+      res.status(500).json({ error: "Failed to initiate OAuth" });
+    }
+  });
+
   return httpServer;
 }
