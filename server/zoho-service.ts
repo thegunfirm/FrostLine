@@ -223,6 +223,16 @@ export class ZohoService {
     return await this.makeRequest('GET', `/crm/v6/Contacts/${zohoCustomerId}`);
   }
 
+  async getContact(zohoContactId: string): Promise<any> {
+    const response = await this.makeRequest('GET', `/crm/v6/Contacts/${zohoContactId}`);
+    return response.data?.[0] || null;
+  }
+
+  async getContactByEmail(email: string): Promise<any> {
+    const response = await this.makeRequest('GET', `/crm/v6/Contacts/search?criteria=Email:equals:${encodeURIComponent(email)}`);
+    return response.data?.[0] || null;
+  }
+
   async createOrUpdateContact(contactData: {
     firstName: string;
     lastName: string;

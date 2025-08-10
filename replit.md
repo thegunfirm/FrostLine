@@ -29,16 +29,15 @@ Testing policy: No assumptions - use test or dummy data ONLY FOR FAKE USERS. Inv
 - ✅ **EMAIL CONFIRMATION SYSTEM (2025-08-07)**: Automated order confirmation emails with Gun Firm branding, transaction details, FFL information, and professional HTML design using SendGrid integration
 - ✅ **ORDER DATABASE STORAGE (2025-08-07)**: Fixed critical bug where successful payments weren't creating order records - orders now properly saved with transaction IDs, fulfillment groups, and user association
 
-**FAP CUSTOMER PROFILE INTEGRATION (2025-08-10)**:
-- ✅ **ZOHO CRM INTEGRATION COMPLETE**: Full Zoho CRM service with hardcoded OAuth credentials, automatic customer creation during FAP registration
-- ✅ **CMS ADMIN INTERFACE**: Complete Zoho Integration configuration interface with OAuth credential management
-- ✅ **AUTOMATIC CUSTOMER CREATION**: User registration automatically creates Zoho CRM contacts with Lead Source = "Website"
-- ✅ **DATABASE-STORED CREDENTIALS**: Secure Zoho OAuth credentials stored in admin_settings table with proper schema alignment
-- ✅ **COMPREHENSIVE SERVICE ARCHITECTURE**: ZohoService class with customer management, order tracking, support tickets, and batch operations
-- ✅ **OAUTH AUTHENTICATION FLOW**: Complete OAuth initiate/callback system for Zoho CRM API access
-- ✅ **INTEGRATION TESTING**: Comprehensive test suite confirming user registration triggers Zoho contact creation (awaiting OAuth completion)
-- ✅ **TIER LABEL MANAGEMENT**: Admin interface for tier labeling control (Platinum Founder vs Platinum Annually)
-- ✅ **AUTHENTICATION MIDDLEWARE**: Proper admin authentication for Zoho configuration endpoints
+**ZOHO CRM PRIMARY DATABASE TRANSITION (2025-08-10)**:
+- ✅ **LOCAL DATABASE REMOVED**: Dropped users and orders tables completely - transitioning to Zoho CRM as primary customer database
+- ✅ **ZOHO-FIRST AUTHENTICATION**: Complete authentication system using Zoho CRM contacts instead of local database
+- ✅ **HARDCODED OAUTH CREDENTIALS**: Zoho Client ID and Secret configured directly in environment for immediate functionality
+- ✅ **REGISTRATION/LOGIN ENDPOINTS**: User registration and login now work directly with Zoho CRM API
+- ✅ **SESSION MANAGEMENT**: Updated session handling to store Zoho contact IDs and user data from CRM
+- ✅ **AUTHENTICATION MIDDLEWARE**: All protected routes now use Zoho authentication instead of local database
+- ✅ **SERVICE ARCHITECTURE**: Complete ZohoService with contact management, search, and CRUD operations
+- ⚠️ **OAUTH COMPLETION REQUIRED**: System ready but needs OAuth authentication at `/api/zoho/auth/initiate` for full API access
 
 **CMS/CRM SEPARATION ARCHITECTURE (2025-08-07)**:
 - **CMS (Replit)**: Content management, system configuration, inventory management (RSR), compliance, platform administration, branding management

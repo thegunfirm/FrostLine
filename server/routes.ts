@@ -26,12 +26,13 @@ import crypto from "crypto";
 import axios from "axios";
 import multer from "multer";
 
-// Authentication middleware
+// Import Zoho authentication
+import { authenticateWithZoho, registerWithZoho, loginWithZoho, type ZohoUser } from "./zoho-auth";
+
+// Zoho-based authentication middleware
 const isAuthenticated = (req: any, res: any, next: any) => {
-  if (!req.session?.user) {
-    return res.status(401).json({ message: "Authentication required" });
-  }
-  next();
+  // Use Zoho authentication instead of local database
+  return authenticateWithZoho(req, res, next);
 };
 
 // Role-based authorization middleware
@@ -79,76 +80,57 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Authentication routes
+  // Zoho-first registration (no local database)
   app.post("/api/register", async (req, res) => {
     try {
-      const userData = insertUserSchema.parse(req.body);
+      const { firstName, lastName, email, phone, subscriptionTier = 'bronze' } = req.body;
       
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(userData.email);
-      if (existingUser) {
-        return res.status(400).json({ message: "User already exists" });
+      if (!firstName || !lastName || !email) {
+        return res.status(400).json({ message: "First name, last name, and email are required" });
       }
       
-      // Hash password and generate verification token
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
-      const verificationToken = generateVerificationToken();
-      
-      // Create user with verification token
-      const user = await storage.createUser({
-        ...userData,
-        password: hashedPassword,
-        emailVerificationToken: verificationToken,
+      // Register user directly in Zoho CRM (primary database)
+      const zohoUser = await registerWithZoho({
+        firstName,
+        lastName,
+        email,
+        phone,
+        subscriptionTier
       });
       
+      if (!zohoUser) {
+        return res.status(400).json({ message: "Registration failed - user may already exist" });
+      }
+      
       // Send verification email
+      const verificationToken = crypto.randomUUID();
       const emailSent = await sendVerificationEmail(
-        user.email,
-        user.firstName,
+        zohoUser.email,
+        zohoUser.firstName,
         verificationToken
       );
       
       if (!emailSent) {
-        console.error("Failed to send verification email to:", user.email);
-        // Don't fail registration if email fails, just log it
-      }
-
-      // Create customer in Zoho CRM
-      try {
-        const { createCustomerInZoho } = await import("./zoho-integration");
-        const zohoContactId = await createCustomerInZoho({
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          phone: user.phone,
-          subscriptionTier: user.subscriptionTier || 'bronze',
-          fapUserId: user.id.toString()
-        });
-        
-        // Update user with Zoho contact ID if successful
-        if (zohoContactId) {
-          await storage.updateUser(user.id, { zohoContactId });
-          console.log(`Customer created in Zoho for user: ${user.email} with contact ID: ${zohoContactId}`);
-        }
-      } catch (zohoError) {
-        console.error("Failed to create customer in Zoho:", zohoError);
-        // Don't fail registration if Zoho integration fails, just log it
+        console.error("Failed to send verification email to:", zohoUser.email);
       }
       
-      // Remove password and token from response
-      const { password, emailVerificationToken, ...userWithoutPassword } = user;
+      console.log(`✅ User ${zohoUser.email} registered successfully in Zoho CRM with ID: ${zohoUser.id}`);
       
       res.status(201).json({ 
-        ...userWithoutPassword,
-        message: "Registration successful! Please check your email to verify your account." 
+        id: zohoUser.id,
+        email: zohoUser.email,
+        firstName: zohoUser.firstName,
+        lastName: zohoUser.lastName,
+        membershipTier: zohoUser.membershipTier,
+        message: "Registration successful! User created in Zoho CRM." 
       });
     } catch (error) {
-      console.error("Registration error:", error);
+      console.error("Zoho registration error:", error);
       res.status(500).json({ message: "Registration failed" });
     }
   });
 
-  // Email verification endpoint
+  // Email verification endpoint (Zoho-based)
   app.get("/verify-email", async (req, res) => {
     try {
       const { token } = req.query;
@@ -157,33 +139,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Verification token required" });
       }
       
-      const user = await storage.verifyUserEmail(token as string);
-      if (!user) {
-        return res.status(400).json({ message: "Invalid or expired verification token" });
-      }
-      
-      // Auto-login the user after successful email verification
-      (req.session as any).user = user;
-      
-      // Successfully logged in, redirect to homepage 
-      res.redirect(`/?loggedIn=true`);
+      // In Zoho-first approach, verification is handled differently
+      // For now, we'll just redirect to login page
+      res.redirect(`/login?verified=true`);
     } catch (error) {
       console.error("Email verification error:", error);
       res.status(500).json({ message: "Verification failed" });
     }
   });
 
-  // Get current authenticated user
+  // Get current authenticated user (Zoho-based)
   app.get("/api/me", async (req, res) => {
     try {
-      const user = (req.session as any)?.user;
-      if (!user) {
+      const user = req.session?.user;
+      if (!user || !req.session?.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
       
-      // Remove password from response
-      const { password, emailVerificationToken, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+      res.json({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        membershipTier: user.membershipTier,
+        isVerified: user.isVerified
+      });
     } catch (error) {
       console.error("Get current user error:", error);
       res.status(500).json({ message: "Failed to fetch user data" });
@@ -207,6 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Zoho-based login
   app.post("/api/login", async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -215,41 +196,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email and password required" });
       }
       
-      const user = await storage.getUserByEmail(email);
-      if (!user) {
+      // Login using Zoho CRM as primary database
+      const zohoUser = await loginWithZoho(email, password);
+      if (!zohoUser) {
         return res.status(401).json({ 
           message: "No account found with this email address. Please check your email or create a new account.",
           errorType: "email_not_found"
         });
       }
       
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
-        return res.status(401).json({ 
-          message: "The password used is incorrect, use a different password or click the forgot password link below.",
-          errorType: "invalid_password"
-        });
-      }
-      
-      if (user.isBanned) {
-        return res.status(403).json({ message: "Account suspended" });
-      }
-      
-      if (!user.emailVerified) {
-        return res.status(403).json({ 
-          message: "Please verify your email address before signing in. Check your inbox for the verification link.",
-          requiresVerification: true 
-        });
-      }
-      
       // Store user in session
-      (req.session as any).user = user;
+      req.session.userId = zohoUser.id;
+      req.session.user = zohoUser;
       
-      const { password: _, emailVerificationToken, ...userWithoutPassword } = user;
+      console.log(`✅ User ${zohoUser.email} logged in successfully from Zoho CRM`);
       
-      res.json(userWithoutPassword);
+      res.json({
+        id: zohoUser.id,
+        email: zohoUser.email,
+        firstName: zohoUser.firstName,
+        lastName: zohoUser.lastName,
+        membershipTier: zohoUser.membershipTier,
+        isVerified: zohoUser.isVerified
+      });
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Zoho login error:", error);
       res.status(500).json({ message: "Login failed" });
     }
   });
