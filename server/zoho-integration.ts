@@ -45,7 +45,7 @@ export async function createCustomerInZoho(userData: {
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
+  phone?: string | null;
   subscriptionTier: string;
   fapUserId: string;
 }): Promise<string | null> {
@@ -58,7 +58,10 @@ export async function createCustomerInZoho(userData: {
       email: userData.email,
       phone: userData.phone || '',
       membershipTier: userData.subscriptionTier,
-      fapUserId: userData.fapUserId
+      fapUserId: userData.fapUserId,
+      leadSource: 'Website Registration',
+      customerType: 'Individual',
+      registrationDate: new Date().toISOString()
     });
 
     console.log(`Customer ${userData.email} created in Zoho with ID: ${zohoContactId}`);

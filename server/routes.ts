@@ -93,6 +93,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Failed to send verification email to:", user.email);
         // Don't fail registration if email fails, just log it
       }
+
+      // Create customer in Zoho CRM
+      try {
+        const { createCustomerInZoho } = await import("./zoho-integration");
+        const zohoContactId = await createCustomerInZoho({
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          phone: user.phone,
+          subscriptionTier: user.subscriptionTier || 'bronze',
+          fapUserId: user.id.toString()
+        });
+        
+        // Update user with Zoho contact ID if successful
+        if (zohoContactId) {
+          await storage.updateUser(user.id, { zohoContactId });
+          console.log(`Customer created in Zoho for user: ${user.email} with contact ID: ${zohoContactId}`);
+        }
+      } catch (zohoError) {
+        console.error("Failed to create customer in Zoho:", zohoError);
+        // Don't fail registration if Zoho integration fails, just log it
+      }
       
       // Remove password and token from response
       const { password, emailVerificationToken, ...userWithoutPassword } = user;
