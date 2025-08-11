@@ -130,7 +130,7 @@ function Router() {
         <Route path="/cms/admin/tier-labels" component={TierLabels} />
         <Route path="/cms/admin/subscription-tier-management" component={SubscriptionTierManagement} />
         <Route path="/fap-membership" component={FAPMembership} />
-        <Route path="/billing" component={BillingManagement} />
+        <Route path="/billing-management" component={BillingManagement} />
         <Route path="/management/atf-directory" component={AtfDirectoryManagement} />
         <Route component={NotFound} />
       </Switch>
