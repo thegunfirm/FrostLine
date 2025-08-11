@@ -132,7 +132,7 @@ router.get('/metadata', requireSamlConfig, (req: Request, res: Response) => {
   try {
     // Generate basic SP metadata
     const spEntityId = process.env.SAML_SP_ENTITY_ID || 'urn:thegunfirm:cms';
-    const acsUrl = process.env.SAML_SP_ASSERTION_CONSUMER || 'https://app.thegunfirm.com/sso/saml/acs';
+    const acsUrl = process.env.SAML_SP_ASSERTION_CONSUMER || `https://${process.env.REPLIT_DEV_DOMAIN || 'app.thegunfirm.com'}/sso/saml/acs`;
     
     const metadata = `<?xml version="1.0" encoding="UTF-8"?>
 <md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="${spEntityId}">

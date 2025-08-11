@@ -16,7 +16,7 @@ interface ExtendedProfile extends Profile {
 export const samlConfig = {
   // Service Provider (SP) settings - TheGunFirm CMS
   issuer: process.env.SAML_SP_ENTITY_ID || 'urn:thegunfirm:cms',
-  callbackUrl: process.env.SAML_SP_ASSERTION_CONSUMER || 'https://app.thegunfirm.com/sso/saml/acs',
+  callbackUrl: process.env.SAML_SP_ASSERTION_CONSUMER || `https://${process.env.REPLIT_DEV_DOMAIN || 'app.thegunfirm.com'}/sso/saml/acs`,
   
   // Identity Provider (IdP) settings - Zoho Directory
   entryPoint: process.env.SAML_IDP_SSO_URL,
