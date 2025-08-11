@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { registerRoutes } from "./routes";
+import samlRoutes from "./saml-routes";
+import passport from 'passport';
 import { setupVite, serveStatic, log } from "./vite";
 import { rsrAutoSync } from "./services/rsr-auto-sync";
 import { pricingService } from "./services/pricing-service";
@@ -21,6 +23,19 @@ app.use(session({
     sameSite: 'lax' // Added for better cross-site compatibility
   }
 }));
+
+// Initialize Passport for SAML authentication
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Passport session serialization
+passport.serializeUser((user: any, done) => {
+  done(null, user);
+});
+
+passport.deserializeUser((user: any, done) => {
+  done(null, user);
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -58,6 +73,9 @@ app.use((req, res, next) => {
   
   // Auto-sync disabled during data integrity work
   // rsrAutoSync.start();
+  
+  // Register SAML routes
+  app.use('/sso/saml', samlRoutes);
   
   const server = await registerRoutes(app);
 

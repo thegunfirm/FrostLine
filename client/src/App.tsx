@@ -61,6 +61,7 @@ import TierLabels from "@/pages/cms/admin/tier-labels";
 import FAPMembership from "@/pages/FAPMembership";
 import SubscriptionTierManagement from "@/pages/cms/admin/subscription-tier-management";
 import BillingManagement from "@/pages/BillingManagement";
+import SamlLogin from "@/pages/SamlLogin";
 
 // Global scroll-to-top component that monitors route changes
 function ScrollToTop() {
@@ -131,6 +132,7 @@ function Router() {
         <Route path="/cms/admin/subscription-tier-management" component={SubscriptionTierManagement} />
         <Route path="/fap-membership" component={FAPMembership} />
         <Route path="/billing-management" component={BillingManagement} />
+        <Route path="/staff-login" component={SamlLogin} />
         <Route path="/management/atf-directory" component={AtfDirectoryManagement} />
         <Route component={NotFound} />
       </Switch>

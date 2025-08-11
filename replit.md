@@ -1,131 +1,63 @@
 # Rest Express - Firearms E-commerce Platform
 
 ## Overview
-This is a full-stack e-commerce platform for firearms and accessories, featuring a React frontend, Node.js Express backend, and PostgreSQL database. It includes a comprehensive tier-based membership system, handles FFL (Federal Firearms License) requirements, specialized shipping policies, and offers tiered pricing benefits. The platform aims to provide a robust, compliance-aware online marketplace for the firearms industry, integrating real-time inventory and advanced search capabilities.
+This project is a full-stack e-commerce platform specializing in firearms and accessories. It provides a robust, compliance-aware online marketplace that addresses the unique requirements of the firearms industry, including FFL (Federal Firearms License) handling, specialized shipping, and a comprehensive tier-based membership system. Key capabilities include real-time inventory, advanced search, and tiered pricing benefits. The platform aims to be a leading online destination for firearms enthusiasts and professionals.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 Image policy: NEVER use Unsplash or any placeholder images. Only use authentic distributor images (RSR, etc.) even if they show "Image Coming Soon" placeholders.
 Code preservation: Always maintain working solutions - never overwrite functioning code without explicit user request.
-Email verification: Users must verify their email address before being able to sign in (implemented 2025-08-05).
+Email verification: Users must verify their email address before being able to sign in.
 Testing policy: No assumptions - use test or dummy data ONLY FOR FAKE USERS. Inventory must always remain intact with authentic RSR data. No test data should ever be added to real product inventory. FFL directory must use only authentic FFL data - no fake dealers should be added to the system.
-**CRITICAL IMAGE HANDLING RULE (2025-08-06)**: For product images in cart/order displays, NEVER use containers with gray backgrounds or fixed heights. Use direct image elements with `w-[size] h-auto object-contain` classes only. This prevents background showing through and maintains natural image proportions. This has been an issue multiple times - always use this simple approach.
-
-**CART CORRUPTION SOLUTION (2025-08-06)**: Cart items persistently reappearing due to localStorage persistence issues. Fixed with comprehensive clearing mechanism including both localStorage removal and server-side force-clear endpoint. Script provided for manual clearing when corruption occurs.
-
-**FFL SELECTOR IMPROVEMENTS (2025-08-06)**: Fixed indefinite loading issues in FFL selector component by adding proper error handling, loading states, and retry logic. Component now gracefully handles network timeouts and provides clear user feedback.
-
-**GLOBAL SCROLL-TO-TOP (2025-08-07)**: Implemented site-wide scroll-to-top functionality using wouter's useLocation hook - all page navigation now automatically scrolls to top for improved UX.
-
-**DATABASE SCHEMA FIXES (2025-08-07)**: Resolved missing columns error in orders table by adding fulfillment_groups, authorize_net_transaction_id, and payment_method columns to support complete order tracking.
-
-**PAYMENT SYSTEM COMPLETE (2025-08-07)**: 
-- ✅ Authorize.Net sandbox integration fully working with transaction ID: 120068556400+
-- ✅ Fixed JSON response parsing between frontend/backend
-- ✅ Complete payment flow: processing → success screen → order confirmation
-- ✅ Professional UX with loading states, disabled buttons, and automatic cart clearing
-- ✅ Order confirmation page displays transaction details and next steps
-- ✅ Payment credentials working: API Login ID 896fNdv2KN9, Transaction Key 632m44jKh5J6LvRC
-- ✅ **EMAIL CONFIRMATION SYSTEM (2025-08-07)**: Automated order confirmation emails with Gun Firm branding, transaction details, FFL information, and professional HTML design using SendGrid integration
-- ✅ **ORDER DATABASE STORAGE (2025-08-07)**: Fixed critical bug where successful payments weren't creating order records - orders now properly saved with transaction IDs, fulfillment groups, and user association
-
-**ZOHO CRM PRIMARY DATABASE TRANSITION (2025-08-10)**:
-- ✅ **LOCAL DATABASE REMOVED**: Dropped users and orders tables completely - transitioning to Zoho CRM as primary customer database
-- ✅ **ZOHO-FIRST AUTHENTICATION**: Complete authentication system using Zoho CRM contacts instead of local database
-- ✅ **HARDCODED OAUTH CREDENTIALS**: Zoho Client ID and Secret configured directly in environment for immediate functionality
-- ✅ **REGISTRATION/LOGIN ENDPOINTS**: User registration and login now work directly with Zoho CRM API
-- ✅ **SESSION MANAGEMENT**: Updated session handling to store Zoho contact IDs and user data from CRM
-- ✅ **AUTHENTICATION MIDDLEWARE**: All protected routes now use Zoho authentication instead of local database
-- ✅ **SERVICE ARCHITECTURE**: Complete ZohoService with contact management, search, and CRUD operations
-- ✅ **OAUTH INTEGRATION COMPLETE (2025-08-11)**: Full OAuth flow functional with access token exchange, session state management, and HTTPS redirect URI configuration
-
-**COMPLETE AUTHENTICATION SYSTEM (2025-08-11)**:
-- ✅ **REGISTRATION FLOW**: Full user registration with Zoho-first contact creation and email verification
-- ✅ **EMAIL VERIFICATION**: SendGrid integration with professional verification emails and token-based activation  
-- ✅ **LOGIN SYSTEM**: Secure login with session management and proper authentication middleware
-- ✅ **FRONTEND PAGES**: Complete Register, Login, and VerifyEmail pages with proper form handling and error states
-- ✅ **DUPLICATE PREVENTION**: Enhanced registration validation to prevent duplicate emails in both Zoho CRM and pending registrations
-- ✅ **ZOHO CRM INTEGRATION**: Direct API integration bypassing service layers, using JSON data storage in Description field
-- ✅ **PASSWORD SECURITY**: Bcrypt password hashing with 12 rounds, stored securely in Zoho CRM
-- ✅ **ACCESS TOKENS**: Active Zoho OAuth tokens configured and validated working
-- ✅ **TEST USER CREATION**: Working test registration endpoint creates users directly in Zoho CRM (Contact ID: 6585331000000906001)
-- ✅ **COMPLETE LOGIN SYSTEM**: Full authentication working with fresh OAuth tokens (Contact ID: 6585331000000906001 login verified)
-- ✅ **OAUTH TOKEN REFRESH**: Fresh Server application tokens configured and working (expires in 3600 seconds)
-- 🔄 **SEARCH INDEXING DELAY**: New contacts require ~5-10 minutes for Zoho search API indexing (expected behavior)
-- ✅ **PRODUCTION READY**: Core authentication system fully functional for existing users, new user login requires indexing wait time
-
-**SUBSCRIPTION TIER MANAGEMENT SYSTEM (2025-08-11)**:
-- ✅ **CMS TIER MANAGEMENT**: Complete subscription tier management interface for admins to update pricing and benefits
-- ✅ **CORRECTED PRICING STRUCTURE**: Platinum Founder $50 lifetime, Platinum Monthly $10, Gold Annually $50, Gold Monthly $5, Bronze Free
-- ✅ **FAP MEMBERSHIP INTEGRATION**: Updated FAP membership page with correct pricing display and tier-specific actions
-- ✅ **ZOHO SYNCHRONIZATION**: API endpoints for syncing tier changes with Zoho CRM and updating user memberships
-- ✅ **DUAL BILLING SUPPORT**: Proper handling of monthly-only, yearly-only, and both billing options per tier
-- ✅ **TYPESCRIPT FIXES**: Resolved all TypeScript errors in tier management and membership pages
-- ✅ **API INTEGRATION**: Complete backend APIs for tier updates and Zoho synchronization
-
-**COMPREHENSIVE BILLING AUDIT LOGGING SYSTEM (2025-08-11)**:
-- ✅ **STRUCTURED MARKDOWN LOGGING**: Complete audit logging system using structured markdown format in app/logs/billing-dunning.md
-- ✅ **WEBHOOK EVENT TRACKING**: All Authorize.Net webhook events logged with eventId, userId, contactId, subscriptionId
-- ✅ **DUNNING EMAIL TRACKING**: Detailed logging of all dunning emails sent with SendGrid messageId tracking
-- ✅ **STATUS CHANGE MONITORING**: Comprehensive logging of subscription status changes and billing updates
-- ✅ **AUTOMATED LOG MANAGEMENT**: Automatic log directory creation and structured daily event organization
-- ✅ **INTEGRATED SERVICE LAYER**: Centralized BillingAuditLogger service integrated into all payment flows
-- ✅ **PRODUCTION READY**: Complete audit trail for billing operations, compliance, and customer support
-
-**CMS/CRM SEPARATION ARCHITECTURE (2025-08-07)**:
-- **CMS (Replit)**: Content management, system configuration, inventory management (RSR), compliance, platform administration, branding management
-- **CRM (Zoho)**: Customer profiles, order history tracking, email marketing, support tickets, live chat, FFL vendor management, lead management
-- **CRITICAL INVENTORY RULE**: Inventory resides exclusively in TheGunFirm database from RSR - Zoho has NO inventory dataset
-- **Order Recording**: Zoho receives purchase data via API at point-of-sale - recording what was bought, not pulling from inventory
-- **Data Flow**: TheGunFirm → API → Zoho (one-way purchase recording only)
-- **FFL Management**: Using Zoho CRM Vendors module for FFL dealer relationships and preferred dealer assignments
+CRITICAL IMAGE HANDLING RULE: For product images in cart/order displays, NEVER use containers with gray backgrounds or fixed heights. Use direct image elements with `w-[size] h-auto object-contain` classes only. This prevents background showing through and maintains natural image proportions.
+CART CORRUPTION SOLUTION: Implement comprehensive clearing mechanism including both localStorage removal and server-side force-clear endpoint for cart items.
+FFL SELECTOR IMPROVEMENTS: Add proper error handling, loading states, and retry logic to the FFL selector component.
+GLOBAL SCROLL-TO-TOP: Implement site-wide scroll-to-top functionality on page navigation.
 
 ## System Architecture
 
 ### Dual Platform Infrastructure
-- **FreeAmericanPeople.com (FAP)**: 
-  - Membership management platform with CMS and backend
-  - User authentication and subscription tier management
-  - Admin controls for delivery timing, subscription enforcement, FFL settings
-  - Authorize.Net integration for membership payments
-  - **NEW (2025-08-05)**: Full API integration with real-time synchronization
-- **TheGunFirm.com**: 
-  - E-commerce platform requiring FAP membership for checkout access
-  - Enforces subscription tier requirements before checkout
-  - Authorize.Net integration for product sales
-  - Advanced cart persistence and intelligent merging during login flow
-  - **NEW (2025-08-05)**: Complete FAP integration with cross-platform features
+- **FreeAmericanPeople.com (FAP)**: Membership management platform handling user authentication, subscription tiers, and admin controls for FFL and subscription enforcement. Integrates with Authorize.Net for membership payments and provides APIs for real-time synchronization.
+- **TheGunFirm.com**: E-commerce platform requiring FAP membership for checkout. Handles product sales via Authorize.Net, features advanced cart persistence, and intelligent merging during login. Integrates comprehensively with FAP for cross-platform features.
 
 ### Core Design Principles
-- **Email Verification System**: Users must verify their email address via SendGrid before account access (2025-08-05)
-- **Mandatory Authentication**: Users must login via FAP and select subscription tier before checkout access
-- **Intelligent Cart Management**: Cart persistence across login, smart merging of guest/user carts, complete clearing on logout
-- **Three-Tier Fulfillment System**: Direct-to-consumer, warehouse-to-FFL, drop-ship-to-FFL with configurable delivery times
-- **CMS-Controlled Operations**: Admin controls for delivery timing, subscription enforcement toggles, FFL management
-- **FFL Integration**: Built-in handling for firearms requiring Federal Firearms License transfers with RSR "on file" status
-- **Specialized Commerce**: Gun-specific categories, manufacturer filtering, and compliance features
-- **Responsive Design**: Mobile-first approach with custom breakpoints and industry-focused UI
-- **Real-time Inventory**: Live inventory synchronization with RSR distributor data
-- **Cross-Platform Integration (2025-08-05)**: Real-time FAP API connections, shared support ticketing, unified email templates, cross-platform analytics
+- **Email Verification**: Mandatory email verification via SendGrid for account access.
+- **Mandatory Authentication**: Users must authenticate via FAP and select a subscription tier to access checkout.
+- **Intelligent Cart Management**: Cart persistence across logins, smart merging of guest and user carts, and complete clearing on logout.
+- **Three-Tier Fulfillment**: Configurable delivery times for direct-to-consumer, warehouse-to-FFL, and drop-ship-to-FFL.
+- **CMS-Controlled Operations**: Admin controls for delivery timing, subscription enforcement, and FFL management.
+- **FFL Integration**: Built-in handling for firearms requiring Federal Firearms License transfers.
+- **Specialized Commerce**: Features gun-specific categories, manufacturer filtering, and compliance.
+- **Responsive Design**: Mobile-first approach with custom breakpoints and industry-focused UI.
+- **Real-time Inventory**: Live inventory synchronization with RSR distributor data.
+- **Cross-Platform Integration**: Real-time FAP API connections, shared support ticketing, unified email templates, and cross-platform analytics.
+- **CMS/CRM Separation**: CMS (Replit) for content, system configuration, inventory, compliance, and administration. CRM (Zoho) for customer profiles, order history, marketing, support, and FFL vendor management. Inventory resides exclusively in TheGunFirm database from RSR; Zoho only receives purchase data.
+- **Zoho CRM as Primary Database**: Transitioned to Zoho CRM for primary customer data, including authentication, user registration, and login. Authentication uses Zoho CRM contacts instead of a local database. Passwords are secured with Bcrypt and stored in Zoho CRM.
+- **Subscription Tier Management**: CMS-driven interface for managing subscription tiers, pricing, and benefits, with synchronization to Zoho CRM.
+- **Billing Audit Logging**: Comprehensive audit logging system using structured markdown for Authorize.Net webhooks, dunning emails, and subscription status changes.
+- **SAML 2.0 Staff Authentication**: Implementation of SAML 2.0 Service Provider for Zoho Directory IdP, supporting role-based access for staff (support, admin, billing, manager).
 
 ### Technical Stack
-- **Frontend**: React 18 (TypeScript), Wouter for routing, TanStack Query for server state, React Context for authentication, Shadcn/ui (Radix UI) for components, Tailwind CSS for styling, Vite for tooling.
-- **Backend**: Node.js (TypeScript), Express framework, PostgreSQL database with Drizzle ORM, Neon serverless PostgreSQL, session-based authentication with bcrypt.
+- **Frontend**: React 18 (TypeScript), Wouter, TanStack Query, React Context, Shadcn/ui (Radix UI), Tailwind CSS, Vite.
+- **Backend**: Node.js (TypeScript), Express, PostgreSQL (Neon serverless), Drizzle ORM, session-based authentication with bcrypt.
 - **API Design**: RESTful endpoints with consistent error handling.
 
 ### Key Components
-- **Database Schema**: Users (with tiers, FFLs, shipping), Products (with tier pricing, FFL needs, inventory), Orders (with FFL routing), FFLs directory, State Shipping Policies, Tier Pricing Rules, CMS Tables (API configs, email templates, support tickets, system settings, user activity logs).
-- **Authentication**: Cross-platform authentication via FreeAmericanPeople.com with session-based RBAC (user, admin, support, dealer) for TheGunFirm.com access.
-- **Product Management**: Multi-tier pricing, FFL tracking, inventory, category/manufacturer organization, advanced search.
+- **Database Schema**: Includes Users (with tiers, FFLs, shipping), Products (with tier pricing, FFL needs, inventory), Orders (with FFL routing), FFLs directory, State Shipping Policies, Tier Pricing Rules, and CMS Tables.
+- **Authentication**: Cross-platform authentication via FreeAmericanPeople.com with session-based RBAC for TheGunFirm.com access. Zoho-first authentication for user and staff access.
+- **Product Management**: Multi-tier pricing, FFL tracking, inventory, category/manufacturer organization, and advanced search.
 - **Membership System**: Three-tier structure with progressive benefits, real-time savings calculations, and upgrade recommendations.
-- **CMS System (2025-08-05)**: Role-based content management with admin (API/development), support (customer relations), manager (email templates) access levels.
-- **FAP Integration (2025-08-05)**: Comprehensive API integration service with real-time user sync, cross-platform support tickets, shared email templates, and unified analytics.
+- **CMS System**: Role-based content management with admin, support, and manager access levels.
+- **FAP Integration**: Comprehensive API integration service for real-time user sync, cross-platform support tickets, shared email templates, and unified analytics.
 
 ## External Dependencies
 - **Database**: Neon (serverless PostgreSQL), Drizzle ORM.
 - **Frontend Libraries**: React, React Query, React Hook Form, Radix UI, Shadcn/ui, Tailwind CSS, class-variance-authority, Lucide React.
 - **Backend Libraries**: Express, bcrypt, connect-pg-simple, ws (WebSockets).
 - **Development Tools**: Vite, TypeScript, ESLint, Prettier.
-- **Commerce Integration**: Dual Authorize.Net accounts (FAP for memberships, TheGunFirm for product sales).
-- **Distributor Integration**: RSR (for product data, inventory, and images via FTP and HTTP fallback).
-- **Search**: Algolia (for product indexing and search functionality).
+- **Commerce Integration**: Authorize.Net (for memberships on FAP, for product sales on TheGunFirm).
+- **Distributor Integration**: RSR (for product data, inventory, and images).
+- **Search**: Algolia (for product indexing and search).
+- **Email Service**: SendGrid (for email verification and order confirmations).
+- **CRM**: Zoho CRM (for customer profiles, user authentication, FFL vendor management, and order recording).
+- **SAML IdP**: Zoho Directory (for staff authentication).

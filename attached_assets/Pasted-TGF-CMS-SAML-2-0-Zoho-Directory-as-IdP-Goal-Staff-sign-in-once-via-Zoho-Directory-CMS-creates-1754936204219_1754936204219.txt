@@ -1,0 +1,119 @@
+TGF CMS — SAML 2.0 (Zoho Directory as IdP)
+Goal: Staff sign in once via Zoho Directory → CMS creates a session from the SAML assertion.
+CMS = Service Provider (SP). Zoho Directory = Identity Provider (IdP).
+
+1) What you’ll get from us (IdP metadata)
+From Zoho Directory Admin → Applications → Add Application → SAML (Custom App) → Download Metadata.
+We will provide:
+
+IdP Entity ID (Issuer)
+
+SSO URL (HTTP-Redirect)
+
+x509 Signing Certificate (PEM)
+
+(Optional) SLO URL
+
+2) What you must expose in the CMS (SP settings)
+Provide these values to me so I can finish the Zoho app config:
+
+ACS (Assertion Consumer) URL:
+https://app.thegunfirm.com/sso/saml/acs
+
+SP Entity ID (Audience URI):
+urn:thegunfirm:cms (or use app URL)
+
+Login URL (optional convenience):
+https://app.thegunfirm.com/sso/saml/login
+
+Bindings: ACS = HTTP-POST
+
+NameID format: urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress
+
+Require signed assertions: YES (verify with IdP cert)
+
+Clock skew: accept ±300s
+
+HTTPS only everywhere
+
+3) Attributes you must read from the assertion
+Configure Zoho Directory to send:
+
+email → user email (also NameID)
+
+firstName
+
+lastName
+
+groups (comma-separated or multi-valued)
+
+CMS mapping:
+
+Look up/create local user by email
+
+Map groups → app roles, e.g.
+
+TGF.Support → role support
+
+TGF.Tech → role tech
+
+TGF.Billing → role billing
+
+4) Routes to implement
+GET /sso/saml/login
+Redirect to IdP SSO URL with RelayState (original dest).
+
+POST /sso/saml/acs
+Parse SAML Response (HTTP-POST), verify signature against IdP cert, validate:
+
+Issuer matches IdP Entity ID
+
+Audience = SP Entity ID
+
+Recipient = ACS URL
+
+NotBefore/NotOnOrAfter with skew
+If valid → create session (userId, email, roles) and 302 to RelayState (or /).
+
+(Optionally) GET /logout and SLO later; not needed for day-1.
+
+5) Sessions & security
+Session TTL: 12–24h
+
+Cookies: HttpOnly + Secure + SameSite=Lax
+
+Rotate IdP cert gracefully (support 2 certs during cutover)
+
+Log userId, email, groups, issuer, assertionId, iat/exp on login (no PII beyond basics)
+
+Deny if assertion signature invalid, audience mismatch, or expired
+
+6) “Zoho-only” requirements (so SSO works first try)
+MFA enforced in Zoho Directory (IdP side)
+
+Only assigned users/groups can access the CMS app
+
+NameID = email
+
+7) Config you’ll need in the CMS (env)
+ini
+Copy
+Edit
+SAML_SP_ENTITY_ID=urn:thegunfirm:cms
+SAML_SP_ASSERTION_CONSUMER=https://app.thegunfirm.com/sso/saml/acs
+SAML_IDP_ENTITY_ID=<from Zoho metadata>
+SAML_IDP_SSO_URL=<from Zoho metadata>
+SAML_IDP_CERT_PEM=<paste PEM or mount file>
+SAML_REQUIRE_SIGNED_ASSERTIONS=true
+SAML_CLOCK_SKEW_SEC=300
+8) Acceptance tests
+Login success: hit /sso/saml/login → Zoho → MFA → back to / signed-in.
+
+Group → role: put user in TGF.Support only → app role = support.
+
+Off-boarding: disable user in Zoho Directory → next login attempt fails.
+
+Assertion validity: tamper (dev test) → signature check blocks login.
+
+RelayState: start at /admin → after SSO you land back on /admin.
+
