@@ -5344,11 +5344,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Zoho CRM integration routes removed - starting fresh
 
   // Register Zoho CRM integration routes
+  // FAP PAYMENT INTEGRATION (Authorize.Net Sandbox)
+  // Import FAP payment service
+  const { FAPPaymentService } = await import('./fap-payment-service');
+  const fapPaymentService = new FAPPaymentService();
+
+  // Get FAP subscription tiers
+  app.get("/api/fap/subscription-tiers", (req, res) => {
+    try {
+      const tiers = fapPaymentService.getAvailableSubscriptionTiers();
+      res.json(tiers);
+    } catch (error) {
+      console.error('FAP subscription tiers error:', error);
+      res.status(500).json({ error: 'Failed to load subscription tiers' });
+    }
+  });
+
+  // Process FAP subscription payment
+  app.post("/api/fap/process-subscription", isAuthenticated, async (req, res) => {
+    try {
+      const { subscriptionTier, billingCycle, amount } = req.body;
+      const user = req.session.user;
+
+      if (!user || !user.id) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      // Validate subscription tier
+      if (!fapPaymentService.isValidSubscriptionTier(subscriptionTier)) {
+        return res.status(400).json({ error: 'Invalid subscription tier' });
+      }
+
+      // Prepare payment data
+      const paymentData = {
+        amount,
+        customerEmail: user.email,
+        customerName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+        subscriptionTier,
+        billingCycle,
+        zohoContactId: user.id
+      };
+
+      console.log('🎯 Processing FAP subscription payment:', paymentData);
+
+      // Process payment through Authorize.Net
+      const result = await fapPaymentService.processSubscriptionPayment(paymentData);
+
+      if (result.success) {
+        // Update user's membership tier in Zoho CRM
+        try {
+          const { authService } = await import('./auth-service');
+          await authService.updateUserMembershipTier(user.id, subscriptionTier);
+          
+          // Update session
+          req.session.user.membershipTier = subscriptionTier;
+
+          console.log('✅ FAP payment successful:', {
+            transactionId: result.transactionId,
+            tier: subscriptionTier,
+            userId: user.id
+          });
+
+          res.json({
+            success: true,
+            transactionId: result.transactionId,
+            authCode: result.authCode,
+            subscriptionTier,
+            message: 'Subscription activated successfully'
+          });
+        } catch (updateError) {
+          console.error('Failed to update membership tier:', updateError);
+          // Payment succeeded but update failed - log for manual resolution
+          res.json({
+            success: true,
+            transactionId: result.transactionId,
+            authCode: result.authCode,
+            warning: 'Payment processed but membership update may require manual verification'
+          });
+        }
+      } else {
+        console.log('❌ FAP payment failed:', result.error);
+        res.status(400).json({
+          success: false,
+          error: result.error || 'Payment processing failed'
+        });
+      }
+    } catch (error) {
+      console.error('FAP subscription processing error:', error);
+      res.status(500).json({ error: 'Payment processing failed' });
+    }
+  });
+
+  // Get user's current FAP membership status
+  app.get("/api/fap/membership-status", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      const tierInfo = fapPaymentService.subscriptionTiers[user.membershipTier];
+      
+      res.json({
+        userId: user.id,
+        email: user.email,
+        currentTier: user.membershipTier,
+        tierInfo: tierInfo || null,
+        isActive: !!tierInfo,
+        canAccessCheckout: !!tierInfo
+      });
+    } catch (error) {
+      console.error('FAP membership status error:', error);
+      res.status(500).json({ error: 'Failed to get membership status' });
+    }
+  });
+
+  // Validate checkout access (TheGunFirm integration point)
+  app.get("/api/fap/validate-checkout-access", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ 
+          hasAccess: false, 
+          reason: 'Authentication required' 
+        });
+      }
+
+      const tierInfo = fapPaymentService.subscriptionTiers[user.membershipTier];
+      
+      if (!tierInfo) {
+        return res.json({
+          hasAccess: false,
+          reason: 'FAP membership required',
+          currentTier: user.membershipTier,
+          availableTiers: fapPaymentService.getAvailableSubscriptionTiers()
+        });
+      }
+
+      res.json({
+        hasAccess: true,
+        currentTier: user.membershipTier,
+        tierInfo,
+        benefits: tierInfo.benefits
+      });
+    } catch (error) {
+      console.error('FAP checkout validation error:', error);
+      res.status(500).json({ 
+        hasAccess: false, 
+        reason: 'Validation failed' 
+      });
+    }
+  });
+
   // Register authentication routes (Zoho-based)
   registerAuthRoutes(app);
 
   const { registerZohoRoutes } = await import('./zoho-routes');
   registerZohoRoutes(app);
+
+  console.log('✓ FAP integration routes registered successfully');
 
   return httpServer;
 }

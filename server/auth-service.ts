@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { ZohoService } from './zoho-service';
-import { sendVerificationEmail } from './email-service';
+// Email service will be imported dynamically when needed
 
 export interface RegistrationData {
   email: string;
@@ -55,7 +55,7 @@ export class AuthService {
       }
       
       // Also check if email is already in pending registrations
-      for (const [token, pendingReg] of this.pendingRegistrations.entries()) {
+      for (const [token, pendingReg] of this.pendingRegistrations) {
         if (pendingReg.email === data.email && new Date() < pendingReg.expiresAt) {
           return { success: false, message: 'Email address already has a pending registration. Please check your email for the verification link.' };
         }
@@ -74,6 +74,7 @@ export class AuthService {
       });
 
       // Send verification email
+      const { sendVerificationEmail } = await import('./services/email-service');
       await sendVerificationEmail(data.email, verificationToken, data.firstName);
 
       return { 
@@ -229,11 +230,11 @@ export class AuthService {
         zohoContactId: zohoContact.id
       };
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Test user creation error:', error);
       return { 
         success: false, 
-        error: error.message || 'Test user creation failed' 
+        error: error?.message || 'Test user creation failed' 
       };
     }
   }
@@ -408,4 +409,53 @@ export class AuthService {
       return false;
     }
   }
+
+  /**
+   * Update user membership tier (FAP integration)
+   */
+  async updateUserMembershipTier(zohoContactId: string, membershipTier: string): Promise<boolean> {
+    try {
+      // Get current contact to preserve additional data
+      const contact = await this.getUserByZohoId(zohoContactId);
+      if (!contact) {
+        throw new Error('Contact not found');
+      }
+
+      // Update using direct API call to preserve JSON structure
+      const updateResponse = await fetch(`https://www.zohoapis.com/crm/v6/Contacts/${zohoContactId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Zoho-oauthtoken ${process.env.ZOHO_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data: [{
+            id: zohoContactId,
+            Description: JSON.stringify({
+              ...JSON.parse(contact.description || '{}'),
+              subscriptionTier: membershipTier,
+              tierUpdatedDate: new Date().toISOString(),
+              lastPaymentDate: new Date().toISOString()
+            })
+          }]
+        })
+      });
+
+      const result = await updateResponse.json();
+      
+      if (!updateResponse.ok || !result.data || result.data[0].status !== 'success') {
+        throw new Error(`Zoho update failed: ${JSON.stringify(result)}`);
+      }
+
+      console.log(`✅ Updated membership tier for ${zohoContactId} to ${membershipTier}`);
+      return true;
+
+    } catch (error) {
+      console.error('Update membership tier error:', error);
+      return false;
+    }
+  }
 }
+
+// Export singleton instance
+export const authService = new AuthService();
