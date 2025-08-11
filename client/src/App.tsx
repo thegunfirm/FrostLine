@@ -1,5 +1,5 @@
 import { Switch, Route, useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, lazy } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -62,6 +62,7 @@ import FAPMembership from "@/pages/FAPMembership";
 import SubscriptionTierManagement from "@/pages/cms/admin/subscription-tier-management";
 import BillingManagement from "@/pages/BillingManagement";
 import SamlLogin from "@/pages/SamlLogin";
+import RoleManagement from "@/pages/cms/role-management";
 
 // Global scroll-to-top component that monitors route changes
 function ScrollToTop() {
@@ -130,6 +131,7 @@ function Router() {
         <Route path="/cms/admin/fap-customer-profiles" component={FAPCustomerProfiles} />
         <Route path="/cms/admin/tier-labels" component={TierLabels} />
         <Route path="/cms/admin/subscription-tier-management" component={SubscriptionTierManagement} />
+        <Route path="/cms/role-management" component={RoleManagement} />
         <Route path="/fap-membership" component={FAPMembership} />
         <Route path="/billing-management" component={BillingManagement} />
         <Route path="/staff-login" component={SamlLogin} />

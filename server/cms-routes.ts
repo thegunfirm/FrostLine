@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { storage } from "./storage";
 import { db } from "./db";
-import { users, orders } from "@shared/schema";
-import { sql } from "drizzle-orm";
+import { users, orders, rolePermissions, type RolePermission, type InsertRolePermission } from "@shared/schema";
+import { sql, eq } from "drizzle-orm";
 
 // Enhanced role-based access middleware (supports both regular and SAML auth)
 const requireRole = (allowedRoles: string[]) => {
@@ -439,6 +439,123 @@ export function registerCMSRoutes(app: Express) {
     } catch (error) {
       console.error("Get dashboard stats error:", error);
       res.status(500).json({ message: "Failed to fetch dashboard statistics" });
+    }
+  });
+
+  // ====================
+  // ROLE PERMISSION MANAGEMENT (Admin Only)
+  // ====================
+
+  // Get all role permissions
+  app.get("/api/cms/admin/role-permissions", requireRole(['admin']), async (req, res) => {
+    try {
+      const permissions = await db.select().from(rolePermissions);
+      res.json(permissions);
+    } catch (error) {
+      console.error("Get role permissions error:", error);
+      res.status(500).json({ message: "Failed to fetch role permissions" });
+    }
+  });
+
+  // Initialize default role permissions
+  app.post("/api/cms/admin/role-permissions/initialize", requireRole(['admin']), async (req, res) => {
+    try {
+      const CMS_PERMISSIONS = {
+        // User Management
+        'users.view': { name: 'View Users', category: 'User Management', description: 'View user profiles and basic information' },
+        'users.edit': { name: 'Edit Users', category: 'User Management', description: 'Modify user profiles and settings' },
+        'users.activity': { name: 'View User Activity', category: 'User Management', description: 'Access user activity logs and history' },
+        
+        // Order Management
+        'orders.view': { name: 'View Orders', category: 'Order Management', description: 'View order details and history' },
+        'orders.edit': { name: 'Edit Orders', category: 'Order Management', description: 'Modify order status and details' },
+        'orders.notes': { name: 'Order Notes', category: 'Order Management', description: 'Add and view order notes' },
+        
+        // Support System
+        'support.tickets': { name: 'Support Tickets', category: 'Support System', description: 'Manage customer support tickets' },
+        'support.chat': { name: 'Customer Chat', category: 'Support System', description: 'Access customer chat system' },
+        'support.email': { name: 'Email Templates', category: 'Support System', description: 'Manage email templates' },
+        
+        // Inventory & Products
+        'inventory.view': { name: 'View Inventory', category: 'Inventory', description: 'View product inventory and stock levels' },
+        'inventory.sync': { name: 'Sync Inventory', category: 'Inventory', description: 'Trigger inventory synchronization' },
+        'products.featured': { name: 'Featured Products', category: 'Inventory', description: 'Manage featured product selections' },
+        
+        // Analytics & Reports
+        'analytics.dashboard': { name: 'Dashboard Stats', category: 'Analytics', description: 'View dashboard statistics and metrics' },
+        'analytics.reports': { name: 'Generate Reports', category: 'Analytics', description: 'Create and download reports' },
+        
+        // Content Management
+        'cms.navigation': { name: 'Site Navigation', category: 'Content', description: 'Manage site navigation and menus' },
+        'cms.carousel': { name: 'Hero Carousel', category: 'Content', description: 'Manage homepage carousel content' },
+        'cms.pages': { name: 'Content Pages', category: 'Content', description: 'Edit website content pages' },
+        
+        // System Administration
+        'admin.api_configs': { name: 'API Configurations', category: 'System Admin', description: 'Manage API keys and configurations' },
+        'admin.role_permissions': { name: 'Role Permissions', category: 'System Admin', description: 'Manage role-based permissions' },
+        'admin.system_settings': { name: 'System Settings', category: 'System Admin', description: 'Configure system-wide settings' },
+      };
+
+      const DEFAULT_ROLE_PERMISSIONS = {
+        support: [
+          'orders.view', 'orders.notes', 'support.tickets', 'support.chat', 
+          'users.view', 'users.activity', 'inventory.view'
+        ],
+        manager: [
+          'orders.view', 'orders.edit', 'orders.notes', 'support.tickets', 'support.chat', 'support.email',
+          'users.view', 'users.edit', 'users.activity', 'inventory.view', 'inventory.sync', 'products.featured',
+          'analytics.dashboard', 'analytics.reports', 'cms.navigation', 'cms.carousel'
+        ],
+        admin: Object.keys(CMS_PERMISSIONS) // Admin has all permissions
+      };
+
+      // Create permissions for each role
+      const permissionsToInsert: InsertRolePermission[] = [];
+      
+      for (const [roleName, permissionKeys] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
+        for (const permissionKey of permissionKeys) {
+          const permission = CMS_PERMISSIONS[permissionKey as keyof typeof CMS_PERMISSIONS];
+          if (permission) {
+            permissionsToInsert.push({
+              roleName,
+              permissionKey,
+              permissionName: permission.name,
+              description: permission.description,
+              category: permission.category,
+              isEnabled: true
+            });
+          }
+        }
+      }
+
+      await db.insert(rolePermissions).values(permissionsToInsert);
+      
+      res.json({ message: "Role permissions initialized successfully", count: permissionsToInsert.length });
+    } catch (error) {
+      console.error("Initialize role permissions error:", error);
+      res.status(500).json({ message: "Failed to initialize role permissions" });
+    }
+  });
+
+  // Update role permission
+  app.put("/api/cms/admin/role-permissions/:id", requireRole(['admin']), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { isEnabled } = req.body;
+      
+      const [updated] = await db
+        .update(rolePermissions)
+        .set({ 
+          isEnabled, 
+          updatedAt: new Date() 
+        })
+        .where(eq(rolePermissions.id, parseInt(id)))
+        .returning();
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Update role permission error:", error);
+      res.status(500).json({ message: "Failed to update role permission" });
     }
   });
 }

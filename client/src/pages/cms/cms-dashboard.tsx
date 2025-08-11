@@ -174,6 +174,15 @@ export default function CMSDashboard() {
                     </Button>
                   </Link>
                 )}
+
+                {hasAdminAccess && (
+                  <Link href="/cms/role-management">
+                    <Button variant="outline" className="w-full justify-start">
+                      <Crown className="mr-2 h-4 w-4" />
+                      Role Permissions
+                    </Button>
+                  </Link>
+                )}
               </CardContent>
             </Card>
 

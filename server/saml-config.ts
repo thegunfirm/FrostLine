@@ -44,8 +44,6 @@ export const samlConfig = {
 export const mapGroupsToRoles = (groups: string[]): string[] => {
   const roleMapping: Record<string, string> = {
     'TGF.Support': 'support',
-    'TGF.Tech': 'admin',
-    'TGF.Billing': 'billing',
     'TGF.Manager': 'manager',
     'TGF.Admin': 'admin'
   };

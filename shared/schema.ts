@@ -594,3 +594,20 @@ export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 export type SystemSetting = typeof systemSettings.$inferSelect;
 export type InsertUserActivityLog = z.infer<typeof insertUserActivityLogSchema>;
 export type UserActivityLog = typeof userActivityLogs.$inferSelect;
+
+// Role permissions table for managing what each role can access
+export const rolePermissions = pgTable('role_permissions', {
+  id: serial('id').primaryKey(),
+  roleName: text('role_name').notNull(),
+  permissionKey: text('permission_key').notNull(),
+  permissionName: text('permission_name').notNull(),
+  description: text('description'),
+  isEnabled: boolean('is_enabled').default(false).notNull(),
+  category: text('category').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions);
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
