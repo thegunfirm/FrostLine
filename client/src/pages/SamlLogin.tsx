@@ -49,8 +49,15 @@ export default function SamlLogin() {
 
   const handleSamlLogin = () => {
     setLoginLoading(true);
-    // Redirect to SAML login endpoint
-    window.location.href = '/sso/saml/login';
+    setError(null);
+    
+    try {
+      // Force a full page navigation to avoid CORS issues
+      window.location.assign('/sso/saml/login');
+    } catch (err) {
+      setError('Failed to initiate SAML login');
+      setLoginLoading(false);
+    }
   };
 
   const handleLogout = () => {
@@ -204,24 +211,35 @@ export default function SamlLogin() {
               </AlertDescription>
             </Alert>
             
-            <Button 
-              onClick={handleSamlLogin}
-              disabled={loginLoading}
-              className="w-full"
-              size="lg"
-            >
-              {loginLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Redirecting...
-                </>
-              ) : (
-                <>
-                  <Shield className="h-4 w-4 mr-2" />
-                  Sign in with Zoho Directory
-                </>
-              )}
-            </Button>
+            <div className="space-y-3">
+              <Button 
+                onClick={handleSamlLogin}
+                disabled={loginLoading}
+                className="w-full"
+                size="lg"
+              >
+                {loginLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Redirecting...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Sign in with Zoho Directory
+                  </>
+                )}
+              </Button>
+              
+              <Button 
+                onClick={() => window.open('/sso/saml/login', '_blank')} 
+                variant="outline"
+                className="w-full"
+                size="sm"
+              >
+                Open in New Tab (if blocked)
+              </Button>
+            </div>
             
             <div className="text-xs text-gray-500 dark:text-gray-400 text-center space-y-1">
               <p>• Multi-factor authentication required</p>
