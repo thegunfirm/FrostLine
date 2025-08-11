@@ -30,21 +30,47 @@ import { billingAuditLogger } from "./services/billing-audit-logger";
 
 // Zoho authentication removed - starting fresh
 
-// Simple authentication middleware (will be replaced with proper auth)
+// Enhanced authentication middleware (supports both regular and SAML auth)
 const isAuthenticated = (req: any, res: any, next: any) => {
+  // Check for regular session authentication
   if (req.session?.user) {
     return next();
   }
+  
+  // Check for SAML authentication
+  if (req.session?.isAuthenticated && req.session?.authMethod === 'saml' && req.session?.user) {
+    return next();
+  }
+  
   return res.status(401).json({ message: "Authentication required" });
 };
 
-// Role-based authorization middleware
+// Enhanced role-based authorization middleware (supports both regular and SAML auth)
 const requireRole = (allowedRoles: string[]) => {
   return (req: any, res: any, next: any) => {
-    const userRole = req.session?.user?.role;
-    if (!userRole || !allowedRoles.includes(userRole)) {
-      return res.status(403).json({ message: "Insufficient permissions" });
+    let userRoles: string[] = [];
+    
+    // Check regular user role
+    if (req.session?.user?.role) {
+      userRoles.push(req.session.user.role);
     }
+    
+    // Check SAML user roles
+    if (req.session?.authMethod === 'saml' && req.session?.user?.roles) {
+      userRoles = userRoles.concat(req.session.user.roles);
+    }
+    
+    // Check if user has any of the required roles
+    const hasRequiredRole = allowedRoles.some(role => userRoles.includes(role));
+    
+    if (!hasRequiredRole) {
+      return res.status(403).json({ 
+        message: "Insufficient permissions",
+        requiredRoles: allowedRoles,
+        userRoles: userRoles
+      });
+    }
+    
     next();
   };
 };
