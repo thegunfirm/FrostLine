@@ -75,22 +75,30 @@ export class ZohoService {
   // Authentication Methods
   async exchangeCodeForTokens(authCode: string): Promise<ZohoTokenResponse> {
     const tokenUrl = `${process.env.ZOHO_ACCOUNTS_HOST}/oauth/v2/token`;
-    const tokenData = {
+    
+    // Use URLSearchParams with form encoding as required by Zoho
+    const params = new URLSearchParams({
       grant_type: 'authorization_code',
       client_id: this.config.clientId,
       client_secret: this.config.clientSecret,
       redirect_uri: this.config.redirectUri,
       code: authCode
-    };
+    });
 
     console.log('🔄 Exchanging code for tokens...');
     console.log('  - Token URL:', tokenUrl);
-    console.log('  - Grant type:', tokenData.grant_type);
-    console.log('  - Client ID:', tokenData.client_id?.substring(0, 10) + '...');
-    console.log('  - Redirect URI:', tokenData.redirect_uri);
+    console.log('  - Grant type: authorization_code');
+    console.log('  - Client ID:', this.config.clientId?.substring(0, 10) + '...');
+    console.log('  - Redirect URI:', this.config.redirectUri);
+    console.log('  - Auth Code:', authCode?.substring(0, 20) + '...');
     
     try {
-      const response = await axios.post(tokenUrl, tokenData);
+      const response = await axios.post(tokenUrl, params, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
+      
       console.log('✅ Token exchange successful');
       console.log('  - Response status:', response.status);
       console.log('  - Access token received:', !!response.data.access_token);
@@ -106,7 +114,6 @@ export class ZohoService {
       console.error('  - Status Text:', error.response?.statusText);
       console.error('  - Response Data:', JSON.stringify(error.response?.data, null, 2));
       console.error('  - Request URL:', tokenUrl);
-      console.error('  - Request Data:', JSON.stringify(tokenData, null, 2));
       console.error('  - Full Error:', error.message);
       throw new Error(`Token exchange failed: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`);
     }
