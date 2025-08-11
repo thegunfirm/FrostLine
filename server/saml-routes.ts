@@ -111,15 +111,20 @@ router.post('/acs', requireSamlConfig, (req: Request, res: Response, next: NextF
       req.session.authMethod = 'saml';
       
       // Determine redirect destination
-      const relayState = req.body.RelayState || req.session.samlRelayState || '/';
+      let redirectTo = req.body.RelayState || req.session.samlRelayState;
+      
+      // If no specific destination or if destination is home, redirect to CMS
+      if (!redirectTo || redirectTo === '/' || redirectTo.endsWith('/')) {
+        redirectTo = '/cms';
+      }
       
       // Clear stored RelayState
       delete req.session.samlRelayState;
       
-      console.log('🔐 SAML session created, redirecting to:', relayState);
+      console.log('🔐 SAML session created, redirecting to:', redirectTo);
       
-      // Redirect to original destination or home
-      res.redirect(relayState);
+      // Redirect to CMS dashboard for staff users
+      res.redirect(redirectTo);
     });
   })(req, res, next);
 });
