@@ -13,11 +13,12 @@ app.use(express.urlencoded({ extended: false }));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key-here',
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true, // Changed to true for OAuth state persistence
   cookie: {
     secure: false, // Set to true if using HTTPS
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    sameSite: 'lax' // Added for better cross-site compatibility
   }
 }));
 
