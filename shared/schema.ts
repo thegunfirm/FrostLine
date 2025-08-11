@@ -25,7 +25,7 @@ export const users = pgTable("users", {
   emailVerificationToken: text("email_verification_token"),
   passwordResetToken: text("password_reset_token"),
   passwordResetExpires: timestamp("password_reset_expires"),
-  zohoContactId: text("zoho_contact_id"), // Zoho CRM Contact ID
+  // Zoho integration removed - starting fresh
 });
 
 export const products = pgTable("products", {

@@ -55,8 +55,7 @@ import Account from "@/pages/account";
 import AccountOrders from "@/pages/account-orders";
 import CMSOrderManagement from "@/pages/cms-order-management";
 import BrandingManagement from "@/pages/cms/admin/branding";
-import ZohoIntegration from "@/pages/cms/admin/zoho-integration";
-import ZohoSetup from "@/pages/cms/admin/zoho-setup";
+// Zoho integration pages removed - starting fresh
 import FAPCustomerProfiles from "@/pages/cms/admin/fap-customer-profiles";
 import TierLabels from "@/pages/cms/admin/tier-labels";
 
@@ -123,8 +122,7 @@ function Router() {
         <Route path="/cms/tier-pricing" component={TierPricing} />
         <Route path="/cms/delivery-settings" component={DeliverySettings} />
         <Route path="/cms/admin/branding" component={BrandingManagement} />
-        <Route path="/cms/admin/zoho-integration" component={ZohoIntegration} />
-        <Route path="/cms/admin/zoho-setup" component={ZohoSetup} />
+        {/* Zoho integration routes removed - starting fresh */}
         <Route path="/cms/admin/fap-customer-profiles" component={FAPCustomerProfiles} />
         <Route path="/cms/admin/tier-labels" component={TierLabels} />
         <Route path="/management/atf-directory" component={AtfDirectoryManagement} />

@@ -21,18 +21,19 @@ import { rsrAutoSync } from "./services/rsr-auto-sync";
 import { registerRSRFFLRoutes } from "./routes/rsr-ffl-routes";
 import { syncHealthMonitor } from "./services/sync-health-monitor";
 import { sendVerificationEmail, generateVerificationToken, sendPasswordResetEmail } from "./services/email-service";
-import { registerZohoRoutes } from "./zoho-routes";
+// Zoho integration removed - starting fresh
 import crypto from "crypto";
 import axios from "axios";
 import multer from "multer";
 
-// Import Zoho authentication
-import { authenticateWithZoho, registerWithZoho, loginWithZoho, type ZohoUser } from "./zoho-auth";
+// Zoho authentication removed - starting fresh
 
-// Zoho-based authentication middleware
+// Simple authentication middleware (will be replaced with proper auth)
 const isAuthenticated = (req: any, res: any, next: any) => {
-  // Use Zoho authentication instead of local database
-  return authenticateWithZoho(req, res, next);
+  if (req.session?.user) {
+    return next();
+  }
+  return res.status(401).json({ message: "Authentication required" });
 };
 
 // Role-based authorization middleware
@@ -5443,57 +5444,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Register Zoho CRM integration routes
-  registerZohoRoutes(app);
+  // Zoho CRM integration routes removed - starting fresh
 
-  // Health check endpoint for Zoho integration
-  app.get("/api/health/zoho", async (req, res) => {
-    const hasRefreshToken = !!process.env.ZOHO_REFRESH_TOKEN;
-    const hasAccessToken = !!process.env.ZOHO_ACCESS_TOKEN;
-    
-    res.json({
-      status: hasRefreshToken ? "connected" : "disconnected",
-      hasRefreshToken,
-      hasAccessToken,
-      timestamp: new Date().toISOString()
-    });
-  });
-
-  // Direct OAuth initiate endpoint (for easy access)
-  app.get("/api/zoho/auth/initiate", async (req, res) => {
-    try {
-      // Generate state token for security
-      const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      req.session.oauthState = state;
-      
-      // Build OAuth URL with environment variables
-      const scope = 'ZohoCRM.modules.ALL ZohoCRM.settings.ALL ZohoCRM.users.ALL ZohoCRM.org.READ';
-      const params = new URLSearchParams({
-        response_type: 'code',
-        client_id: process.env.ZOHO_CLIENT_ID!,
-        scope: scope,
-        redirect_uri: process.env.ZOHO_REDIRECT_URI!,
-        access_type: 'offline',
-        prompt: 'consent',
-        state: state
-      });
-      
-      const authUrl = `${process.env.ZOHO_ACCOUNTS_HOST}/oauth/v2/auth?${params.toString()}`;
-      
-      console.log("🔗 OAuth URL generated:", authUrl);
-      console.log("📋 URL components:");
-      console.log("  - Host:", process.env.ZOHO_ACCOUNTS_HOST);
-      console.log("  - Client ID:", process.env.ZOHO_CLIENT_ID?.substring(0, 10) + "...");
-      console.log("  - Redirect URI:", process.env.ZOHO_REDIRECT_URI);
-      console.log("  - State token:", state);
-      console.log("  - Scope:", scope);
-      
-      res.redirect(authUrl);
-    } catch (error) {
-      console.error("OAuth initiate error:", error);
-      res.status(500).json({ error: "Failed to initiate OAuth" });
-    }
-  });
+  // All Zoho endpoints removed - ready for fresh integration
 
   return httpServer;
 }
