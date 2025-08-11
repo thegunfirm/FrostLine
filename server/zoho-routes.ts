@@ -66,6 +66,7 @@ export function registerZohoRoutes(app: Express): void {
   // OAuth callback endpoint
   app.get("/api/zoho/auth/callback", async (req, res) => {
     try {
+      console.log("OAuth callback received. Query params:", req.query);
       const { code, error } = req.query;
       
       if (error) {
@@ -74,17 +75,19 @@ export function registerZohoRoutes(app: Express): void {
           <html><body>
             <h2>OAuth Error</h2>
             <p>Error: ${error}</p>
-            <p>This usually means the Zoho app configuration doesn't match our setup.</p>
+            <p>Query params: ${JSON.stringify(req.query)}</p>
             <p><a href="/">Return to homepage</a></p>
           </body></html>
         `);
       }
       
       if (!code) {
+        console.log("No authorization code in callback. Full query:", req.query);
         return res.status(400).send(`
           <html><body>
             <h2>Missing Authorization Code</h2>
             <p>No authorization code received from Zoho.</p>
+            <p>Query params received: ${JSON.stringify(req.query)}</p>
             <p><a href="/">Return to homepage</a></p>
           </body></html>
         `);
