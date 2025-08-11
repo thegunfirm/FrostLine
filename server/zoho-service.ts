@@ -92,6 +92,9 @@ export class ZohoService {
     try {
       const response = await axios.post(tokenUrl, tokenData);
       console.log('✅ Token exchange successful');
+      console.log('  - Response status:', response.status);
+      console.log('  - Access token received:', !!response.data.access_token);
+      console.log('  - Refresh token received:', !!response.data.refresh_token);
       
       this.config.accessToken = response.data.access_token;
       this.config.refreshToken = response.data.refresh_token;
@@ -100,9 +103,12 @@ export class ZohoService {
     } catch (error: any) {
       console.error('❌ Token exchange failed:');
       console.error('  - Status:', error.response?.status);
-      console.error('  - Data:', error.response?.data);
-      console.error('  - Message:', error.message);
-      throw error;
+      console.error('  - Status Text:', error.response?.statusText);
+      console.error('  - Response Data:', JSON.stringify(error.response?.data, null, 2));
+      console.error('  - Request URL:', tokenUrl);
+      console.error('  - Request Data:', JSON.stringify(tokenData, null, 2));
+      console.error('  - Full Error:', error.message);
+      throw new Error(`Token exchange failed: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`);
     }
   }
 

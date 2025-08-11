@@ -106,6 +106,7 @@ export function registerZohoRoutes(app: Express): void {
       }
 
       console.log("✅ State validation passed, exchanging code for tokens...");
+      console.log("  - Authorization code received:", code?.toString().substring(0, 20) + "...");
       
       const service = await checkZohoService();
       const tokens = await service.exchangeCodeForTokens(code as string);
