@@ -212,6 +212,44 @@ export class AuthService {
       };
     }
   }
+
+  /**
+   * Verify email token and activate user account
+   */
+  async verifyEmail(token: string): Promise<VerificationResult> {
+    try {
+      // Find pending registration by token
+      const pendingReg = this.pendingRegistrations.get(token);
+      if (!pendingReg) {
+        return { success: false, error: 'Invalid or expired verification token' };
+      }
+
+      // Create user in Zoho CRM
+      const zohoContactData = {
+        Email: pendingReg.email,
+        First_Name: pendingReg.firstName,
+        Last_Name: pendingReg.lastName,
+        Password_Hash: pendingReg.hashedPassword,
+        Subscription_Tier: pendingReg.subscriptionTier,
+        Preferred_FFL: pendingReg.preferredFfl,
+        Registration_Date: new Date().toISOString().split('T')[0],
+        Account_Status: 'Active',
+        Email_Verified: true
+      };
+
+      const zohoContact = await this.zohoService.createContact(zohoContactData);
+      
+      // Remove pending registration
+      this.pendingRegistrations.delete(token);
+      
+      return {
+        success: true,
+        user: {
+          id: zohoContact.id,
+          email: pendingReg.email,
+          firstName: pendingReg.firstName,
+          lastName: pendingReg.lastName,
+          subscriptionTier: pendingReg.subscriptionTier,
           emailVerified: true
         },
         zohoContactId: zohoContact.id

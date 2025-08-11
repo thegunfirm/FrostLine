@@ -83,7 +83,6 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Registration routes are now handled by auth-routes.ts
-  });
 
   // Email verification endpoint (Zoho-based)
   app.get("/verify-email", async (req, res) => {
