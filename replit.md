@@ -35,7 +35,7 @@ GLOBAL SCROLL-TO-TOP: Implement site-wide scroll-to-top functionality on page na
 - **Zoho CRM as Primary Database**: Transitioned to Zoho CRM for primary customer data, including authentication, user registration, and login. Authentication uses Zoho CRM contacts instead of a local database. Passwords are secured with Bcrypt and stored in Zoho CRM.
 - **Subscription Tier Management**: CMS-driven interface for managing subscription tiers, pricing, and benefits, with synchronization to Zoho CRM.
 - **Billing Audit Logging**: Comprehensive audit logging system using structured markdown for Authorize.Net webhooks, dunning emails, and subscription status changes.
-- **SAML 2.0 Staff Authentication**: Implementation of SAML 2.0 Service Provider for Zoho Directory IdP, supporting role-based access for staff (support, admin, billing, manager).
+- **SAML 2.0 Staff Authentication**: Implementation of SAML 2.0 Service Provider for Zoho Directory IdP, supporting role-based access for staff (support, admin, billing, manager). Currently requires Zoho Directory configuration update for development domain testing.
 
 ### Technical Stack
 - **Frontend**: React 18 (TypeScript), Wouter, TanStack Query, React Context, Shadcn/ui (Radix UI), Tailwind CSS, Vite.
