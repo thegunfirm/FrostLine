@@ -147,6 +147,75 @@ export class AuthService {
         },
         zohoContactId: zohoContact.id
       };
+      
+    } catch (error) {
+      console.error('Email verification error:', error);
+      return { success: false, error: 'Email verification failed' };
+    }
+  }
+
+  /**
+   * TEST HELPER: Skip email verification and create user directly in Zoho
+   * This bypasses email verification for testing purposes
+   */
+  async createTestUser(data: RegistrationData): Promise<VerificationResult> {
+    try {
+      console.log('🧪 Creating test user (bypassing email verification):', data.email);
+      
+      // Hash password
+      const hashedPassword = await bcrypt.hash(data.password, 12);
+      
+      // Create user in Zoho CRM if access token is available
+      if (!this.zohoService.accessToken) {
+        console.log('⚠️  No Zoho access token - cannot create test user in CRM');
+        return { success: false, error: 'No Zoho access token available for test user creation. Please configure ZOHO_ACCESS_TOKEN and ZOHO_REFRESH_TOKEN secrets.' };
+      }
+      
+      const zohoContactData = {
+        Email: data.email,
+        First_Name: data.firstName,
+        Last_Name: data.lastName,
+        Phone: data.phone || '',
+        Account_Name: `${data.firstName} ${data.lastName}`,
+        Lead_Source: 'Test Registration',
+        Description: `Test user created on ${new Date().toISOString()}`,
+        Subscription_Tier: data.subscriptionTier || 'Bronze',
+        Password_Hash: hashedPassword,
+        Email_Verified: true,
+        Registration_Date: new Date().toISOString().split('T')[0],
+        Account_Status: 'Active - Test Account',
+        Account_Type: 'Test'
+      };
+      
+      const zohoContact = await this.zohoService.createContact(zohoContactData);
+      console.log('✅ Test user created in Zoho CRM with ID:', zohoContact.id);
+      
+      return {
+        success: true,
+        user: {
+          id: zohoContact.id,
+          email: data.email,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          subscriptionTier: data.subscriptionTier || 'Bronze',
+          emailVerified: true,
+          isTestAccount: true
+        },
+        zohoContactId: zohoContact.id
+      };
+      
+    } catch (error) {
+      console.error('❌ Test user creation error:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Test user creation failed' 
+      };
+    }
+  }
+          emailVerified: true
+        },
+        zohoContactId: zohoContact.id
+      };
 
     } catch (error) {
       console.error('Email verification error:', error);

@@ -82,54 +82,7 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Zoho-first registration (no local database)
-  app.post("/api/register", async (req, res) => {
-    try {
-      const { firstName, lastName, email, phone, subscriptionTier = 'bronze' } = req.body;
-      
-      if (!firstName || !lastName || !email) {
-        return res.status(400).json({ message: "First name, last name, and email are required" });
-      }
-      
-      // Register user directly in Zoho CRM (primary database)
-      const zohoUser = await registerWithZoho({
-        firstName,
-        lastName,
-        email,
-        phone,
-        subscriptionTier
-      });
-      
-      if (!zohoUser) {
-        return res.status(400).json({ message: "Registration failed - user may already exist" });
-      }
-      
-      // Send verification email
-      const verificationToken = crypto.randomUUID();
-      const emailSent = await sendVerificationEmail(
-        zohoUser.email,
-        zohoUser.firstName,
-        verificationToken
-      );
-      
-      if (!emailSent) {
-        console.error("Failed to send verification email to:", zohoUser.email);
-      }
-      
-      console.log(`✅ User ${zohoUser.email} registered successfully in Zoho CRM with ID: ${zohoUser.id}`);
-      
-      res.status(201).json({ 
-        id: zohoUser.id,
-        email: zohoUser.email,
-        firstName: zohoUser.firstName,
-        lastName: zohoUser.lastName,
-        membershipTier: zohoUser.membershipTier,
-        message: "Registration successful! User created in Zoho CRM." 
-      });
-    } catch (error) {
-      console.error("Zoho registration error:", error);
-      res.status(500).json({ message: "Registration failed" });
-    }
+  // Registration routes are now handled by auth-routes.ts
   });
 
   // Email verification endpoint (Zoho-based)

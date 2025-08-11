@@ -35,6 +35,37 @@ export function requireAuth(req: any, res: any, next: any) {
  */
 export function registerAuthRoutes(app: Express) {
   
+  // POST /api/auth/test-register - Create test user bypassing email verification (for testing only)
+  app.post('/api/auth/test-register', async (req, res) => {
+    try {
+      const validatedData = registrationSchema.parse(req.body);
+      
+      console.log('🧪 Creating test user:', validatedData.email);
+      const result = await authService.createTestUser(validatedData);
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          message: 'Test user created successfully in Zoho CRM',
+          user: result.user,
+          zohoContactId: result.zohoContactId
+        });
+      } else {
+        res.status(400).json({ 
+          success: false, 
+          message: result.error || 'Test user creation failed' 
+        });
+      }
+      
+    } catch (error: any) {
+      console.error('Test registration error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Test user creation failed. Please try again.' 
+      });
+    }
+  });
+  
   // POST /api/auth/register - Initiate registration with email verification
   app.post('/api/auth/register', async (req, res) => {
     try {
