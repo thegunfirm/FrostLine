@@ -25,8 +25,8 @@ export class AuthService {
 
   constructor() {
     const config = {
-      clientId: process.env.ZOHO_CLIENT_ID || '1000.EVYOBOT6THABMCRSLYAHR7I32G72PO',
-      clientSecret: process.env.ZOHO_CLIENT_SECRET || '0b1dee669260843330ec2dd6be0630c3e7085b2fa0',
+      clientId: process.env.ZOHO_CLIENT_ID || '1000.8OVSJ4V07OOVJWYAC0KA1JEFNH2W3M',
+      clientSecret: process.env.ZOHO_CLIENT_SECRET || '4d4b2ab7f0f731102c7d15d6754f1f959251db68e0',
       redirectUri: 'https://placeholder.com', // Not needed for service calls
       accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
       apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com'
