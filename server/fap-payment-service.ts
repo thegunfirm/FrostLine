@@ -30,37 +30,25 @@ export class FAPPaymentService {
   private publicKey: string;
   private sandboxUrl = 'https://apitest.authorize.net/xml/v1/request.api';
 
-  // FAP Subscription Tiers
+  // FAP Subscription Tiers - Simplified for testing
   public readonly subscriptionTiers: Record<string, FAPSubscriptionTier> = {
-    'Platinum Founder': {
-      name: 'Platinum Founder',
-      monthlyPrice: 0, // One-time lifetime payment
-      yearlyPrice: 50, // Limited time founder price
-      benefits: ['Lifetime access', 'Maximum discounts', 'Priority support', 'Exclusive products', 'Founder status']
-    },
-    'Platinum Monthly': {
-      name: 'Platinum Monthly',
-      monthlyPrice: 10,
-      yearlyPrice: 0,
-      benefits: ['Maximum discounts', 'Priority support', 'Early access']
-    },
-    'Gold Monthly': {
-      name: 'Gold Monthly',
-      monthlyPrice: 5,
-      yearlyPrice: 0,
-      benefits: ['Enhanced discounts', 'Standard support']
-    },
-    'Gold Annually': {
-      name: 'Gold Annually',
-      monthlyPrice: 0,
-      yearlyPrice: 50,
-      benefits: ['Enhanced discounts', 'Standard support', 'Annual savings']
-    },
     'Bronze': {
       name: 'Bronze',
       monthlyPrice: 0,
       yearlyPrice: 0,
-      benefits: ['Basic access', 'Community support']
+      benefits: ['Basic access', 'Standard pricing', 'Community support', 'Order history']
+    },
+    'Gold': {
+      name: 'Gold',
+      monthlyPrice: 5,
+      yearlyPrice: 50,
+      benefits: ['15% discount on all orders', 'Priority support', 'Free shipping $200+', 'Early access to sales']
+    },
+    'Platinum': {
+      name: 'Platinum',
+      monthlyPrice: 10,
+      yearlyPrice: 100,
+      benefits: ['25% discount on all orders', 'VIP support', 'Free shipping on all orders', 'Exclusive access', 'Priority processing']
     }
   };
 
