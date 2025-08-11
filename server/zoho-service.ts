@@ -84,4 +84,117 @@ export class ZohoService {
       this.config.refreshToken = refreshToken;
     }
   }
+
+  // Get access token property
+  get accessToken(): string | undefined {
+    return this.config.accessToken;
+  }
+
+  /**
+   * Make authenticated API requests to Zoho CRM
+   */
+  async makeAPIRequest(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', data?: any): Promise<any> {
+    if (!this.accessToken) {
+      throw new Error('No access token available. Please complete OAuth first.');
+    }
+
+    const response = await fetch(`${this.config.apiHost}/crm/v2/${endpoint}`, {
+      method,
+      headers: {
+        'Authorization': `Zoho-oauthtoken ${this.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: data ? JSON.stringify(data) : undefined,
+    });
+
+    const result = await response.json();
+    
+    if (!response.ok) {
+      console.error('Zoho API Error:', result);
+      throw new Error(`Zoho API Error: ${result.message || response.statusText}`);
+    }
+
+    return result;
+  }
+
+  /**
+   * Find contact by email address
+   */
+  async findContactByEmail(email: string): Promise<any | null> {
+    try {
+      // Search for contact by email using search API
+      const searchCriteria = `(Email:equals:${email})`;
+      const response = await this.makeAPIRequest(`Contacts/search?criteria=${encodeURIComponent(searchCriteria)}`);
+      
+      if (response.data && response.data.length > 0) {
+        return response.data[0]; // Return first match
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error finding contact by email:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Create a new contact in Zoho CRM
+   */
+  async createContact(contactData: any): Promise<any> {
+    try {
+      const response = await this.makeAPIRequest('Contacts', 'POST', {
+        data: [contactData]
+      });
+
+      if (response.data && response.data.length > 0 && response.data[0].status === 'success') {
+        return {
+          id: response.data[0].details.id,
+          ...contactData
+        };
+      } else {
+        throw new Error('Failed to create contact in Zoho');
+      }
+    } catch (error) {
+      console.error('Error creating contact:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get contact by ID
+   */
+  async getContact(contactId: string): Promise<any | null> {
+    try {
+      const response = await this.makeAPIRequest(`Contacts/${contactId}`);
+      
+      if (response.data && response.data.length > 0) {
+        return response.data[0];
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error getting contact:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Update contact in Zoho CRM
+   */
+  async updateContact(contactId: string, updateData: any): Promise<any> {
+    try {
+      const response = await this.makeAPIRequest(`Contacts/${contactId}`, 'PUT', {
+        data: [updateData]
+      });
+
+      if (response.data && response.data.length > 0 && response.data[0].status === 'success') {
+        return response.data[0];
+      } else {
+        throw new Error('Failed to update contact in Zoho');
+      }
+    } catch (error) {
+      console.error('Error updating contact:', error);
+      throw error;
+    }
+  }
 }

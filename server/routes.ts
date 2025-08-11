@@ -19,6 +19,7 @@ import { rsrFTPClient } from "./services/distributors/rsr/rsr-ftp-client";
 import { rsrFileUpload } from "./services/rsr-file-upload";
 import { rsrAutoSync } from "./services/rsr-auto-sync";
 import { registerRSRFFLRoutes } from "./routes/rsr-ffl-routes";
+import { registerAuthRoutes } from './auth-routes';
 import { syncHealthMonitor } from "./services/sync-health-monitor";
 import { sendVerificationEmail, generateVerificationToken, sendPasswordResetEmail } from "./services/email-service";
 // Zoho integration removed - starting fresh
@@ -5391,10 +5392,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Zoho CRM integration routes removed - starting fresh
 
   // Register Zoho CRM integration routes
+  // Register authentication routes (Zoho-based)
+  registerAuthRoutes(app);
+
   const { registerZohoRoutes } = await import('./zoho-routes');
   registerZohoRoutes(app);
-  
-  // All Zoho endpoints removed - ready for fresh integration
 
   return httpServer;
 }
