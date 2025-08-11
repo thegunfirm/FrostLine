@@ -9,7 +9,7 @@ export function registerZohoRoutes(app: Express): void {
       const config = {
         clientId: process.env.ZOHO_CLIENT_ID || '1000.8OVSJ4V07OOVJWYAC0KA1JEFNH2W3M',
         clientSecret: process.env.ZOHO_CLIENT_SECRET || '4d4b2ab7f0f731102c7d15d6754f1f959251db68e0',
-        redirectUri: `${req.protocol}://${req.get('host')}/api/zoho/auth/callback`,
+        redirectUri: `https://${req.get('host')}/api/zoho/auth/callback`,
         accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
         apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com'
       };
@@ -55,7 +55,7 @@ export function registerZohoRoutes(app: Express): void {
       const config = {
         clientId: process.env.ZOHO_CLIENT_ID || '1000.8OVSJ4V07OOVJWYAC0KA1JEFNH2W3M',
         clientSecret: process.env.ZOHO_CLIENT_SECRET || '4d4b2ab7f0f731102c7d15d6754f1f959251db68e0',
-        redirectUri: `${req.protocol}://${req.get('host')}/api/zoho/auth/callback`,
+        redirectUri: `https://${req.get('host')}/api/zoho/auth/callback`,
         accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
         apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com'
       };
@@ -141,7 +141,7 @@ export function registerZohoRoutes(app: Express): void {
         configured: hasClientId && hasClientSecret,
         hasClientId,
         hasClientSecret,
-        redirectUri: `${req.protocol}://${req.get('host')}/api/zoho/auth/callback`,
+        redirectUri: `https://${req.get('host')}/api/zoho/auth/callback`,
         authUrl: `/api/zoho/auth/initiate`,
         timestamp: new Date().toISOString(),
         note: "Using hardcoded credentials due to environment sync issue"
