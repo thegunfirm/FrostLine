@@ -21,7 +21,7 @@ export class DunningEmailService {
   /**
    * Send dunning email based on day number
    */
-  async sendDunningEmail(emailData: DunningEmailData): Promise<boolean> {
+  async sendDunningEmail(emailData: DunningEmailData): Promise<{ success: boolean; messageId?: string }> {
     try {
       let emailContent;
       
@@ -50,13 +50,15 @@ export class DunningEmailService {
         html: emailContent.html
       };
 
-      await sgMail.send(msg);
+      const response = await sgMail.send(msg);
+      const messageId = response[0]?.headers?.['x-message-id'] || `sg_${Date.now()}`;
+      
       console.log(`Dunning email #${emailData.dayNumber} sent successfully to ${emailData.customerEmail}`);
-      return true;
+      return { success: true, messageId };
       
     } catch (error) {
       console.error('Error sending dunning email:', error);
-      return false;
+      return { success: false };
     }
   }
 

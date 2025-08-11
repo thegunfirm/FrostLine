@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { ZohoService } from './zoho-service';
+import { billingAuditLogger } from './services/billing-audit-logger';
 
 export interface AuthorizeNetConfig {
   apiLoginId: string;
@@ -245,6 +246,9 @@ export class AuthorizeNetService {
     try {
       const subscriptionId = payload.id;
       const customerProfileId = payload.profile?.customerProfileId;
+      const eventId = payload.eventId || `sf_${subscriptionId}_${Date.now()}`;
+      const amount = payload.amount || 0;
+      const reason = payload.reasonText || 'Payment failed';
       
       if (!customerProfileId) {
         console.error('No customer profile ID in webhook payload');
@@ -258,14 +262,25 @@ export class AuthorizeNetService {
         return;
       }
 
+      // Log the subscription failure event
+      billingAuditLogger.logSubscriptionFailed(
+        eventId,
+        contact.id, // userId (using contactId as userId)
+        contact.id, // contactId
+        subscriptionId,
+        amount,
+        reason,
+        1 // attempt number
+      );
+
       // Update status to Past Due
-      await this.updateCustomerProfileStatus(contact.id, 'Past Due', 'Payment failed');
+      await this.updateCustomerProfileStatus(contact.id, 'Past Due', reason);
 
       // Create Zoho task for dunning follow-up
       await this.createDunningTask(contact.id, subscriptionId, 'Day 0 - Payment Failed');
 
       // Queue dunning email #1
-      await this.queueDunningEmail(contact.id, contact.Email, 1);
+      await this.queueDunningEmail(contact.id, contact.Email, 1, subscriptionId);
 
       console.log(`Subscription failed processing complete for contact ${contact.id}`);
     } catch (error) {
@@ -281,7 +296,10 @@ export class AuthorizeNetService {
     console.log('Processing subscription suspended webhook:', payload);
     
     try {
+      const subscriptionId = payload.id;
       const customerProfileId = payload.profile?.customerProfileId;
+      const eventId = payload.eventId || `ss_${subscriptionId}_${Date.now()}`;
+      const reason = payload.reasonText || 'Subscription suspended';
       
       if (!customerProfileId) {
         console.error('No customer profile ID in webhook payload');
@@ -293,6 +311,15 @@ export class AuthorizeNetService {
         console.error(`Contact not found for customer profile ID: ${customerProfileId}`);
         return;
       }
+
+      // Log the subscription suspension event
+      billingAuditLogger.logSubscriptionSuspended(
+        eventId,
+        contact.id, // userId
+        contact.id, // contactId
+        subscriptionId,
+        reason
+      );
 
       // Update status to Suspended but ensure dunning continues
       await this.updateCustomerProfileStatus(contact.id, 'Suspended');
@@ -311,7 +338,9 @@ export class AuthorizeNetService {
     console.log('Processing subscription updated webhook:', payload);
     
     try {
+      const subscriptionId = payload.id;
       const customerProfileId = payload.profile?.customerProfileId;
+      const eventId = payload.eventId || `su_${subscriptionId}_${Date.now()}`;
       
       if (!customerProfileId) {
         console.error('No customer profile ID in webhook payload');
@@ -324,11 +353,28 @@ export class AuthorizeNetService {
         return;
       }
 
+      // Log the subscription update event
+      billingAuditLogger.logSubscriptionUpdated(
+        eventId,
+        contact.id, // userId
+        contact.id, // contactId
+        subscriptionId,
+        'Payment successful - subscription reactivated'
+      );
+
       // Update status to Active and clear failure info
       await this.updateCustomerProfileStatus(contact.id, 'Active');
 
       // Cancel any pending dunning tasks
       await this.cancelDunningTasks(contact.id);
+
+      // Log status change
+      billingAuditLogger.logStatusChange(
+        contact.id,
+        contact.id,
+        subscriptionId,
+        'Past Due → Active after successful payment'
+      );
 
       console.log(`Subscription updated processing complete for contact ${contact.id}`);
     } catch (error) {
@@ -381,7 +427,7 @@ export class AuthorizeNetService {
   /**
    * Queue dunning email
    */
-  private async queueDunningEmail(contactId: string, email: string, emailNumber: number): Promise<void> {
+  private async queueDunningEmail(contactId: string, email: string, emailNumber: number, subscriptionId?: string): Promise<void> {
     try {
       const { DunningEmailService } = await import('./dunning-email-service');
       const emailService = new DunningEmailService();
@@ -400,7 +446,7 @@ export class AuthorizeNetService {
       // Generate billing update URL (temporary token will be generated when accessed)
       const billingUpdateUrl = `${process.env.FRONTEND_URL || 'https://thegunfirm.com'}/billing/update`;
       
-      await emailService.sendDunningEmail({
+      const result = await emailService.sendDunningEmail({
         customerEmail: email,
         customerName,
         subscriptionTier,
@@ -408,6 +454,17 @@ export class AuthorizeNetService {
         billingUpdateUrl,
         dayNumber: emailNumber
       });
+      
+      // Log the email sent event
+      if (result?.messageId) {
+        billingAuditLogger.logEmailSent(
+          result.messageId,
+          contactId, // userId
+          contactId, // contactId
+          subscriptionId || 'unknown',
+          `dunning step ${emailNumber}`
+        );
+      }
       
       console.log(`Dunning email #${emailNumber} sent successfully to ${email}`);
     } catch (error) {

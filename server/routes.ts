@@ -26,6 +26,7 @@ import { sendVerificationEmail, generateVerificationToken, sendPasswordResetEmai
 import crypto from "crypto";
 import axios from "axios";
 import multer from "multer";
+import { billingAuditLogger } from "./services/billing-audit-logger";
 
 // Zoho authentication removed - starting fresh
 
@@ -5522,6 +5523,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const webhookData = JSON.parse(rawBody);
       const eventType = webhookData.eventType;
       const eventId = webhookData.webhookId;
+
+      // Log webhook receipt
+      billingAuditLogger.logWebhookReceived(eventId, `Received ${eventType}`);
 
       // Basic idempotency check (you might want to store processed event IDs)
       console.log(`Processing webhook event: ${eventType} (ID: ${eventId})`);

@@ -1,0 +1,109 @@
+Billing & Dunning Audit Log — MD File Spec
+Location (create if missing):
+/app/logs/billing-dunning.md
+
+Structure:
+
+File title line once at top:
+# Billing & Dunning Audit Log
+
+One section per calendar day (UTC):
+## YYYY-MM-DD
+
+Under each day, append one bullet per event in chronological order.
+
+Line format (one line per event):
+
+php-template
+Copy
+Edit
+- <ISO-8601 UTC timestamp> | type=<eventType> eventId=<uniqueId> userId=<appUserId> contactId=<zohoContactId> subId=<anetSubscriptionId> [profileId=<anetCustomerProfileId>] [msgId=<emailMessageId>] [amount=<number>] [attempt=<n>] [reason="<short text>"] [note="<short text>"]
+Brackets [] = optional fields (include when known).
+
+Keep secrets/PII out (no PANs, no tokens).
+
+Allowed type values (use these exact strings):
+
+net.authorize.customer.subscription.failed
+
+net.authorize.customer.subscription.suspended
+
+net.authorize.customer.subscription.updated
+
+email.sent (dunning emails)
+
+email.bounced (if ESP reports)
+
+webhook.received (optional: for debugging)
+
+status.change (e.g., Active → Past Due)
+
+Field meanings:
+
+timestamp — UTC, e.g., 2025-08-10T20:15:38.129Z
+
+eventId — stable unique id per event (use Authorize.Net event id; for emails use ESP message id prefixed email:)
+
+userId — your internal user id
+
+contactId — Zoho Contact id
+
+subId — Authorize.Net ARB subscription id
+
+profileId — Authorize.Net CIM customer profile id (optional)
+
+msgId — ESP’s message id (for email.sent / email.bounced)
+
+amount — charge amount when relevant
+
+attempt — retry count if you track it
+
+reason — short failure/bounce reason
+
+note — short human-readable note
+
+Idempotency rule (no duplicates):
+
+Do not append if a line with the same eventId already exists under the same day heading.
+
+Day heading rule:
+
+If today’s ## YYYY-MM-DD section is missing, insert it before appending the first line of the day.
+
+Leave one blank line between day sections.
+
+Examples (final render should look like this):
+
+md
+Copy
+Edit
+# Billing & Dunning Audit Log
+
+## 2025-08-10
+- 2025-08-10T20:15:38.129Z | type=net.authorize.customer.subscription.failed eventId=evt_7b1f3 userId=usr_42 contactId=595603500000123456 subId=901234 reason="card_declined" amount=129.99 attempt=1
+- 2025-08-10T20:16:10.402Z | type=email.sent eventId=email:01020192AABBCC userId=usr_42 contactId=595603500000123456 subId=901234 msgId=01020192AABBCC reason="dunning step 1"
+- 2025-08-10T22:05:02.011Z | type=net.authorize.customer.subscription.updated eventId=evt_7b1f4 userId=usr_42 contactId=595603500000123456 subId=901234 note="payment method updated"
+
+## 2025-08-11
+- 2025-08-11T09:02:44.500Z | type=status.change eventId=stat_901234_1 userId=usr_42 contactId=595603500000123456 subId=901234 note="Past Due → Active after retry"
+Operational notes (for Replit to follow):
+
+Append-only. Never edit prior lines; only add new bullets.
+
+UTC always for timestamps.
+
+One event per line; keep lines readable (< ~240 chars).
+
+If the runtime filesystem is ephemeral, also mirror the same line to your DB (simple events table) or push the MD file to object storage nightly.
+
+No secrets in the MD (no PANs, keys, tokens).
+
+Acceptance checks:
+
+Send a sample subscription.failed → one new bullet under today’s heading with type=net.authorize.customer.subscription.failed.
+
+Re-send the same webhook (same eventId) → no duplicate line.
+
+Send a dunning email → one type=email.sent line with msgId.
+
+New UTC day → logger creates a new ## YYYY-MM-DD section automatically before first write.
