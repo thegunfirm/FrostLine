@@ -5496,6 +5496,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== SUBSCRIPTION TIER MANAGEMENT API =====
+  
+  // Update subscription tier
+  app.put("/api/cms/subscription-tiers", async (req, res) => {
+    try {
+      const { originalName, newName, monthlyPrice, yearlyPrice, benefits, isActive } = req.body;
+      
+      // Import FAP payment service
+      const { FAPPaymentService } = await import('./fap-payment-service');
+      const fapService = new FAPPaymentService();
+      
+      // Update the tier in memory (this would typically update a database)
+      if (fapService.subscriptionTiers[originalName]) {
+        // Remove old tier and add updated tier
+        delete fapService.subscriptionTiers[originalName];
+        fapService.subscriptionTiers[newName] = {
+          name: newName,
+          monthlyPrice: parseFloat(monthlyPrice) || 0,
+          yearlyPrice: parseFloat(yearlyPrice) || 0,
+          benefits: Array.isArray(benefits) ? benefits : []
+        };
+        
+        // If tier name changed, update all existing users in Zoho
+        if (originalName !== newName) {
+          const { ZohoService } = await import('./zoho-service');
+          const zohoService = new ZohoService();
+          await zohoService.updateMembershipTierName(originalName, newName);
+        }
+        
+        res.json({ 
+          success: true, 
+          message: 'Subscription tier updated successfully',
+          updatedTier: fapService.subscriptionTiers[newName]
+        });
+      } else {
+        res.status(404).json({ error: 'Subscription tier not found' });
+      }
+    } catch (error: any) {
+      console.error('Subscription tier update error:', error);
+      res.status(500).json({ error: 'Failed to update subscription tier' });
+    }
+  });
+  
+  // Sync all tiers with Zoho CRM
+  app.post("/api/cms/sync-zoho-tiers", async (req, res) => {
+    try {
+      const { FAPPaymentService } = await import('./fap-payment-service');
+      const { ZohoService } = await import('./zoho-service');
+      
+      const fapService = new FAPPaymentService();
+      const zohoService = new ZohoService();
+      
+      // Get all tier names from the current subscription tiers
+      const tierNames = Object.keys(fapService.subscriptionTiers);
+      
+      // Update Zoho CRM with the current tier structure
+      const syncResults = await Promise.allSettled(
+        tierNames.map(tierName => 
+          zohoService.ensureMembershipTierExists(tierName)
+        )
+      );
+      
+      const successful = syncResults.filter(result => result.status === 'fulfilled').length;
+      const failed = syncResults.filter(result => result.status === 'rejected').length;
+      
+      res.json({
+        success: true,
+        message: `Zoho sync completed: ${successful} tiers synced, ${failed} failed`,
+        tierNames,
+        syncResults: syncResults.map((result, index) => ({
+          tierName: tierNames[index],
+          status: result.status,
+          error: result.status === 'rejected' ? result.reason : null
+        }))
+      });
+    } catch (error: any) {
+      console.error('Zoho tier sync error:', error);
+      res.status(500).json({ error: 'Failed to sync tiers with Zoho' });
+    }
+  });
+
   // Register authentication routes (Zoho-based)
   registerAuthRoutes(app);
 

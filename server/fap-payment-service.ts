@@ -34,45 +34,33 @@ export class FAPPaymentService {
   public readonly subscriptionTiers: Record<string, FAPSubscriptionTier> = {
     'Platinum Founder': {
       name: 'Platinum Founder',
-      monthlyPrice: 0, // Lifetime membership
-      yearlyPrice: 0,
-      benefits: ['Lifetime access', 'Maximum discounts', 'Priority support', 'Exclusive products']
+      monthlyPrice: 0, // One-time lifetime payment
+      yearlyPrice: 50, // Limited time founder price
+      benefits: ['Lifetime access', 'Maximum discounts', 'Priority support', 'Exclusive products', 'Founder status']
     },
     'Platinum Monthly': {
       name: 'Platinum Monthly',
-      monthlyPrice: 49.99,
-      yearlyPrice: 499.99,
-      benefits: ['Maximum discounts', 'Priority support', 'Early access']
-    },
-    'Platinum Annually': {
-      name: 'Platinum Annually',
-      monthlyPrice: 0,
-      yearlyPrice: 499.99,
+      monthlyPrice: 10,
+      yearlyPrice: 0,
       benefits: ['Maximum discounts', 'Priority support', 'Early access']
     },
     'Gold Monthly': {
       name: 'Gold Monthly',
-      monthlyPrice: 29.99,
-      yearlyPrice: 299.99,
+      monthlyPrice: 5,
+      yearlyPrice: 0,
       benefits: ['Enhanced discounts', 'Standard support']
     },
     'Gold Annually': {
       name: 'Gold Annually',
       monthlyPrice: 0,
-      yearlyPrice: 299.99,
-      benefits: ['Enhanced discounts', 'Standard support']
+      yearlyPrice: 50,
+      benefits: ['Enhanced discounts', 'Standard support', 'Annual savings']
     },
-    'Bronze Monthly': {
-      name: 'Bronze Monthly',
-      monthlyPrice: 14.99,
-      yearlyPrice: 149.99,
-      benefits: ['Basic discounts', 'Community support']
-    },
-    'Bronze Annually': {
-      name: 'Bronze Annually',
+    'Bronze': {
+      name: 'Bronze',
       monthlyPrice: 0,
-      yearlyPrice: 149.99,
-      benefits: ['Basic discounts', 'Community support']
+      yearlyPrice: 0,
+      benefits: ['Basic access', 'Community support']
     }
   };
 
@@ -113,12 +101,12 @@ export class FAPPaymentService {
         };
       }
 
-      // For Founder members (lifetime access), no payment needed
-      if (paymentData.subscriptionTier === 'Platinum Founder') {
+      // For free Bronze members, no payment needed
+      if (paymentData.subscriptionTier === 'Bronze' || paymentData.amount === 0) {
         return {
           success: true,
-          transactionId: 'FOUNDER_' + Date.now(),
-          authCode: 'FOUNDER_ACCESS'
+          transactionId: 'FREE_' + Date.now(),
+          authCode: 'FREE_ACCESS'
         };
       }
 

@@ -197,4 +197,57 @@ export class ZohoService {
       throw error;
     }
   }
+
+  /**
+   * Update membership tier name for all users with the old tier name
+   */
+  async updateMembershipTierName(oldTierName: string, newTierName: string): Promise<void> {
+    try {
+      // Search for contacts with the old tier name
+      const searchCriteria = `(Subscription_Tier:equals:${oldTierName})`;
+      const response = await this.makeAPIRequest(`Contacts/search?criteria=${encodeURIComponent(searchCriteria)}`);
+      
+      if (response.data && response.data.length > 0) {
+        // Update each contact with the new tier name
+        const updatePromises = response.data.map((contact: any) => 
+          this.updateContact(contact.id, {
+            Subscription_Tier: newTierName
+          })
+        );
+        
+        await Promise.all(updatePromises);
+        console.log(`Updated ${response.data.length} contacts from ${oldTierName} to ${newTierName}`);
+      }
+    } catch (error) {
+      console.error('Error updating membership tier names:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Ensure a membership tier exists in Zoho CRM (for validation purposes)
+   */
+  async ensureMembershipTierExists(tierName: string): Promise<boolean> {
+    try {
+      // For now, this is a simple validation that the tier name is one of our known tiers
+      const validTiers = [
+        'Platinum Founder',
+        'Platinum Monthly', 
+        'Gold Annually',
+        'Gold Monthly',
+        'Bronze'
+      ];
+      
+      if (validTiers.includes(tierName)) {
+        console.log(`Tier ${tierName} is valid`);
+        return true;
+      } else {
+        console.log(`Tier ${tierName} is not a valid tier`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error validating membership tier:', error);
+      return false;
+    }
+  }
 }

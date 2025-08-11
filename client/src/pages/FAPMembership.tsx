@@ -46,13 +46,14 @@ export default function FAPMembership() {
     mutationFn: async ({ tier, billingCycle }: { tier: SubscriptionTier; billingCycle: 'monthly' | 'yearly' }) => {
       const amount = billingCycle === 'monthly' ? tier.monthlyPrice : tier.yearlyPrice;
       
-      return apiRequest("POST", "/api/fap/process-subscription", {
+      const response = await apiRequest("POST", "/api/fap/process-subscription", {
         subscriptionTier: tier.name,
         billingCycle,
         amount
       });
+      return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setProcessingTier(null);
       queryClient.invalidateQueries({ queryKey: ["/api/fap/membership-status"] });
       
@@ -137,9 +138,12 @@ export default function FAPMembership() {
 
       {/* Subscription Tiers */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {subscriptionTiers?.map((tier: SubscriptionTier) => {
+        {subscriptionTiers && Object.values(subscriptionTiers as Record<string, SubscriptionTier>)?.map((tier: SubscriptionTier) => {
           const isCurrentTier = membershipStatus?.currentTier === tier.name;
           const isFounder = tier.name === 'Platinum Founder';
+          const isBronze = tier.name === 'Bronze';
+          const isMonthlyOnly = tier.yearlyPrice === 0;
+          const isYearlyOnly = tier.monthlyPrice === 0 && tier.yearlyPrice > 0;
           
           return (
             <Card key={tier.name} className={`relative ${isCurrentTier ? 'ring-2 ring-green-500' : ''}`}>
@@ -150,16 +154,33 @@ export default function FAPMembership() {
                     <CardTitle className="text-lg">{tier.name}</CardTitle>
                   </div>
                   {isCurrentTier && <Badge className="bg-white text-green-600">CURRENT</Badge>}
+                  {isFounder && <Badge className="bg-red-500 text-white">LIMITED TIME</Badge>}
+                  {isBronze && <Badge className="bg-green-500 text-white">FREE</Badge>}
                 </div>
               </CardHeader>
               
               <CardContent className="p-6">
                 {/* Pricing */}
                 <div className="mb-4">
-                  {isFounder ? (
+                  {isBronze ? (
                     <div className="text-center">
                       <div className="text-3xl font-bold text-green-600">FREE</div>
-                      <div className="text-sm text-gray-500">Lifetime Access</div>
+                      <div className="text-sm text-gray-500">No payment required</div>
+                    </div>
+                  ) : isFounder ? (
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-purple-600">${tier.yearlyPrice}</div>
+                      <div className="text-sm text-gray-500">One-time lifetime payment</div>
+                    </div>
+                  ) : isMonthlyOnly ? (
+                    <div className="text-center">
+                      <div className="text-2xl font-bold">${tier.monthlyPrice}/month</div>
+                      <div className="text-sm text-gray-500">Monthly billing</div>
+                    </div>
+                  ) : isYearlyOnly ? (
+                    <div className="text-center">
+                      <div className="text-2xl font-bold">${tier.yearlyPrice}/year</div>
+                      <div className="text-sm text-gray-500">Annual billing</div>
                     </div>
                   ) : (
                     <div>
@@ -190,13 +211,37 @@ export default function FAPMembership() {
                     <Button disabled className="w-full">
                       Current Plan
                     </Button>
-                  ) : isFounder ? (
+                  ) : isBronze ? (
                     <Button
                       onClick={() => handleSubscription(tier, 'monthly')}
                       disabled={processingTier === tier.name || subscriptionMutation.isPending}
                       className="w-full bg-green-600 hover:bg-green-700"
                     >
-                      {processingTier === tier.name ? 'Activating...' : 'Activate Founder Status'}
+                      {processingTier === tier.name ? 'Activating...' : 'Join Free Bronze'}
+                    </Button>
+                  ) : isFounder ? (
+                    <Button
+                      onClick={() => handleSubscription(tier, 'yearly')}
+                      disabled={processingTier === tier.name || subscriptionMutation.isPending}
+                      className="w-full bg-purple-600 hover:bg-purple-700"
+                    >
+                      {processingTier === tier.name ? 'Processing...' : `Get Lifetime Access - $${tier.yearlyPrice}`}
+                    </Button>
+                  ) : isMonthlyOnly ? (
+                    <Button
+                      onClick={() => handleSubscription(tier, 'monthly')}
+                      disabled={processingTier === tier.name || subscriptionMutation.isPending}
+                      className="w-full"
+                    >
+                      {processingTier === tier.name ? 'Processing...' : `Subscribe Monthly - $${tier.monthlyPrice}`}
+                    </Button>
+                  ) : isYearlyOnly ? (
+                    <Button
+                      onClick={() => handleSubscription(tier, 'yearly')}
+                      disabled={processingTier === tier.name || subscriptionMutation.isPending}
+                      className="w-full"
+                    >
+                      {processingTier === tier.name ? 'Processing...' : `Subscribe Yearly - $${tier.yearlyPrice}`}
                     </Button>
                   ) : (
                     <>

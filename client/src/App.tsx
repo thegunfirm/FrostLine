@@ -59,6 +59,7 @@ import BrandingManagement from "@/pages/cms/admin/branding";
 import FAPCustomerProfiles from "@/pages/cms/admin/fap-customer-profiles";
 import TierLabels from "@/pages/cms/admin/tier-labels";
 import FAPMembership from "@/pages/FAPMembership";
+import SubscriptionTierManagement from "@/pages/cms/admin/subscription-tier-management";
 
 // Global scroll-to-top component that monitors route changes
 function ScrollToTop() {
@@ -126,6 +127,7 @@ function Router() {
         {/* Zoho integration routes removed - starting fresh */}
         <Route path="/cms/admin/fap-customer-profiles" component={FAPCustomerProfiles} />
         <Route path="/cms/admin/tier-labels" component={TierLabels} />
+        <Route path="/cms/admin/subscription-tier-management" component={SubscriptionTierManagement} />
         <Route path="/fap-membership" component={FAPMembership} />
         <Route path="/management/atf-directory" component={AtfDirectoryManagement} />
         <Route component={NotFound} />
