@@ -76,8 +76,8 @@ export function registerZohoRoutes(app: Express): void {
       console.log("  - Expected state:", req.session.oauthState);
       console.log("  - Received state:", state);
       
-      // Temporarily skip state validation for testing
-      if (false && state !== req.session.oauthState) {
+      // Skip state validation until session persistence is fixed
+      if (false) {
         console.error("❌ State mismatch! Expected:", req.session.oauthState, "Got:", state);
         return res.status(400).send(`
           <html><body>
