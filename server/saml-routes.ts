@@ -130,12 +130,7 @@ router.post('/acs', requireSamlConfig, (req: Request, res: Response, next: NextF
  */
 router.get('/metadata', requireSamlConfig, (req: Request, res: Response) => {
   try {
-    const strategy = passport.use('saml') as any;
-    if (!strategy) {
-      return res.status(500).json({ error: 'SAML strategy not initialized' });
-    }
-    
-    // Generate basic SP metadata without certificates (can be enhanced later)
+    // Generate basic SP metadata
     const spEntityId = process.env.SAML_SP_ENTITY_ID || 'urn:thegunfirm:cms';
     const acsUrl = process.env.SAML_SP_ASSERTION_CONSUMER || 'https://app.thegunfirm.com/sso/saml/acs';
     
@@ -208,7 +203,7 @@ router.get('/status', (req: Request, res: Response) => {
     configured: isConfigured,
     authenticated: hasUser,
     authMethod: req.session?.authMethod,
-    user: hasUser ? {
+    user: hasUser && req.session.user ? {
       email: req.session.user.email,
       roles: req.session.user.roles,
       loginTime: req.session.user.loginTime

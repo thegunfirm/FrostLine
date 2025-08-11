@@ -69,23 +69,29 @@ export const mapGroupsToRoles = (groups: string[]): string[] => {
 
 // SAML profile verification function
 export const verifySamlProfile = async (
-  profile: ExtendedProfile, 
+  profile: Profile | null | undefined, 
   done: VerifiedCallback
 ): Promise<void> => {
   try {
+    if (!profile) {
+      return done(new Error('No SAML profile received'));
+    }
+
+    const extendedProfile = profile as ExtendedProfile;
+
     console.log('🔐 SAML Profile received:', {
-      nameID: profile.nameID,
-      nameIDFormat: profile.nameIDFormat,
-      issuer: profile.issuer,
-      sessionIndex: profile.sessionIndex,
-      attributes: profile.attributes
+      nameID: extendedProfile.nameID,
+      nameIDFormat: extendedProfile.nameIDFormat,
+      issuer: extendedProfile.issuer,
+      sessionIndex: extendedProfile.sessionIndex,
+      attributes: extendedProfile.attributes
     });
 
     // Extract user information from SAML assertion
-    const email = profile.nameID || profile.attributes?.email?.[0];
-    const firstName = profile.attributes?.firstName?.[0] || '';
-    const lastName = profile.attributes?.lastName?.[0] || '';
-    const groups = profile.attributes?.groups || profile.attributes?.Department || [];
+    const email = extendedProfile.nameID || extendedProfile.attributes?.email?.[0];
+    const firstName = extendedProfile.attributes?.firstName?.[0] || '';
+    const lastName = extendedProfile.attributes?.lastName?.[0] || '';
+    const groups = extendedProfile.attributes?.groups || extendedProfile.attributes?.Department || [];
     
     if (!email) {
       console.error('❌ SAML assertion missing required email');
@@ -102,8 +108,8 @@ export const verifySamlProfile = async (
       firstName,
       lastName,
       roles,
-      samlSessionIndex: profile.sessionIndex,
-      samlIssuer: profile.issuer,
+      samlSessionIndex: extendedProfile.sessionIndex,
+      samlIssuer: extendedProfile.issuer,
       loginMethod: 'saml',
       loginTime: new Date()
     };
