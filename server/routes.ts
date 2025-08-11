@@ -5446,10 +5446,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Zoho CRM integration routes
   registerZohoRoutes(app);
 
+  // Health check endpoint for Zoho integration
+  app.get("/health/zoho", async (req, res) => {
+    const hasRefreshToken = !!process.env.ZOHO_REFRESH_TOKEN;
+    const hasAccessToken = !!process.env.ZOHO_ACCESS_TOKEN;
+    
+    res.json({
+      status: hasRefreshToken ? "connected" : "disconnected",
+      hasRefreshToken,
+      hasAccessToken,
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // Direct OAuth initiate endpoint (for easy access)
   app.get("/api/zoho/auth/initiate", async (req, res) => {
     try {
-      const authUrl = "https://accounts.zoho.com/oauth/v2/auth?response_type=code&client_id=1000.6LDDWN3B3QZM.28e7c6bc3adb57c64026cb2bb3a8c8a3&scope=ZohoCRM.modules.ALL%2CZohoCRM.settings.ALL&redirect_uri=https%3A%2F%2F4f937a25-00c8-498d-9fa5-eb24f01732eb-00-9p4bpqrd7jc1.janeway.replit.dev%2Fapi%2Fzoho%2Fauth%2Fcallback&access_type=offline";
+      // Generate state token for security
+      const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      req.session.oauthState = state;
+      
+      // Build OAuth URL with environment variables
+      const scope = 'ZohoCRM.modules.ALL ZohoCRM.settings.ALL ZohoCRM.users.ALL ZohoCRM.org.READ';
+      const params = new URLSearchParams({
+        response_type: 'code',
+        client_id: process.env.ZOHO_CLIENT_ID!,
+        scope: scope,
+        redirect_uri: process.env.ZOHO_REDIRECT_URI!,
+        access_type: 'offline',
+        prompt: 'consent',
+        state: state
+      });
+      
+      const authUrl = `${process.env.ZOHO_ACCOUNTS_HOST}/oauth/v2/auth?${params.toString()}`;
+      
+      console.log("🔗 OAuth URL generated:", authUrl);
+      console.log("📋 URL components:");
+      console.log("  - Host:", process.env.ZOHO_ACCOUNTS_HOST);
+      console.log("  - Client ID:", process.env.ZOHO_CLIENT_ID?.substring(0, 10) + "...");
+      console.log("  - Redirect URI:", process.env.ZOHO_REDIRECT_URI);
+      console.log("  - State token:", state);
+      console.log("  - Scope:", scope);
+      
       res.redirect(authUrl);
     } catch (error) {
       console.error("OAuth initiate error:", error);

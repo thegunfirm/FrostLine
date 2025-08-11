@@ -66,8 +66,20 @@ export function registerZohoRoutes(app: Express): void {
   // OAuth callback endpoint
   app.get("/api/zoho/auth/callback", async (req, res) => {
     try {
-      console.log("OAuth callback received. Query params:", req.query);
-      const { code, error } = req.query;
+      console.log("📨 OAuth callback received. Query params:", req.query);
+      const { code, error, state } = req.query;
+      
+      // Validate state token
+      if (state !== req.session.oauthState) {
+        console.error("❌ State mismatch! Expected:", req.session.oauthState, "Got:", state);
+        return res.status(400).send(`
+          <html><body>
+            <h2>Security Error</h2>
+            <p>Invalid state parameter. This could be a security issue.</p>
+            <p><a href="/">Return to homepage</a></p>
+          </body></html>
+        `);
+      }
       
       if (error) {
         console.error("OAuth error from Zoho:", error);
@@ -93,7 +105,9 @@ export function registerZohoRoutes(app: Express): void {
         `);
       }
 
-      const service = checkZohoService();
+      console.log("✅ State validation passed, exchanging code for tokens...");
+      
+      const service = await checkZohoService();
       const tokens = await service.exchangeCodeForTokens(code as string);
       
       // Store tokens securely
@@ -101,6 +115,14 @@ export function registerZohoRoutes(app: Express): void {
       if (tokens.refresh_token) {
         process.env.ZOHO_REFRESH_TOKEN = tokens.refresh_token;
       }
+      
+      console.log("🎉 OAuth flow completed successfully!");
+      console.log("  - Access token stored:", !!tokens.access_token);
+      console.log("  - Refresh token stored:", !!tokens.refresh_token);
+      
+      console.log("🎉 OAuth flow completed successfully!");
+      console.log("  - Access token stored:", !!tokens.access_token);
+      console.log("  - Refresh token stored:", !!tokens.refresh_token);
 
       // Success page with test account creation
       res.send(`

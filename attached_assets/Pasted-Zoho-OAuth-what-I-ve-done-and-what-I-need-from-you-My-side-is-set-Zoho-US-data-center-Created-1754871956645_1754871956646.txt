@@ -1,0 +1,81 @@
+Zoho OAuth – what I’ve done and what I need from you
+
+My side is set:
+
+Zoho US data center.
+
+Created a Server-based OAuth client: TheGunFirm Integration.
+
+Authorized Redirect URI (exact):
+https://4f937a25-00c8-498d-9fa5-eb24f01732eb-00-9p4bpqrd7jc1.janeway.replit.dev/api/zoho/auth/callback
+
+You already have the Client ID and Client Secret.
+
+Callback route is live (direct hit shows “Missing Authorization Code”).
+
+When I hit /api/zoho/auth/initiate, I’m redirected to accounts.zoho.com and see Zoho’s generic “An error occurred” page.
+
+Please do the following on your side:
+
+Deployment env vars (not just account-level): set and redeploy
+
+ZOHO_CLIENT_ID = (the ID I provided)
+
+ZOHO_CLIENT_SECRET = (the secret I provided)
+
+ZOHO_REDIRECT_URI = https://4f937a25-00c8-498d-9fa5-eb24f01732eb-00-9p4bpqrd7jc1.janeway.replit.dev/api/zoho/auth/callback
+
+ZOHO_ACCOUNTS_HOST = https://accounts.zoho.com
+
+ZOHO_CRM_BASE = https://www.zohoapis.com/crm/v2
+
+Initiate endpoint: log the exact auth URL you’re building, including:
+
+host: https://accounts.zoho.com/oauth/v2/auth
+
+scope=ZohoCRM.modules.ALL ZohoCRM.settings.ALL ZohoCRM.users.ALL ZohoCRM.org.READ
+
+client_id=<id>
+
+response_type=code
+
+access_type=offline
+
+redirect_uri=<must match exactly and be URL-encoded>
+
+prompt=consent
+
+state=<random nonce>
+
+Please share that full URL (minus my client secret).
+
+State handling: include a state token on /initiate and validate it on /callback. Log mismatches.
+
+Callback token exchange: on /callback, POST to
+https://accounts.zoho.com/oauth/v2/token
+with:
+grant_type=authorization_code&client_id=...&client_secret=...&redirect_uri=<exactly as registered>&code=<from Zoho>
+
+Log non-200 responses including body so we can see Zoho’s error.
+
+Clear cached tokens for my org (if any) and retry the flow after redeploy.
+
+If Zoho still shows the generic error before returning to our callback, rotate to a fresh Zoho OAuth client (US DC), update env vars, and retry. This often clears stale consent issues.
+
+Acceptance test:
+
+I click /api/zoho/auth/initiate → see Zoho consent → Allow → returned to /api/zoho/auth/callback → tokens stored (refresh+access) → your system can immediately create a test Contact in my Zoho CRM.
+
+Optional: expose /health/zoho that returns whether a valid refresh token is present.
+
+Note: The current …janeway.replit.dev domain is ephemeral. Once working, we should switch to a stable domain and update the Authorized Redirect URI accordingly.
+
+
+
+
+
+
+
+
+
+Ask ChatGPT

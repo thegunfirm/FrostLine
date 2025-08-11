@@ -74,18 +74,36 @@ export class ZohoService {
 
   // Authentication Methods
   async exchangeCodeForTokens(authCode: string): Promise<ZohoTokenResponse> {
-    const response = await axios.post(`https://accounts.zoho.${this.config.region}/oauth/v2/token`, {
+    const tokenUrl = `${process.env.ZOHO_ACCOUNTS_HOST}/oauth/v2/token`;
+    const tokenData = {
       grant_type: 'authorization_code',
       client_id: this.config.clientId,
       client_secret: this.config.clientSecret,
       redirect_uri: this.config.redirectUri,
       code: authCode
-    });
+    };
 
-    this.config.accessToken = response.data.access_token;
-    this.config.refreshToken = response.data.refresh_token;
+    console.log('🔄 Exchanging code for tokens...');
+    console.log('  - Token URL:', tokenUrl);
+    console.log('  - Grant type:', tokenData.grant_type);
+    console.log('  - Client ID:', tokenData.client_id?.substring(0, 10) + '...');
+    console.log('  - Redirect URI:', tokenData.redirect_uri);
     
-    return response.data;
+    try {
+      const response = await axios.post(tokenUrl, tokenData);
+      console.log('✅ Token exchange successful');
+      
+      this.config.accessToken = response.data.access_token;
+      this.config.refreshToken = response.data.refresh_token;
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Token exchange failed:');
+      console.error('  - Status:', error.response?.status);
+      console.error('  - Data:', error.response?.data);
+      console.error('  - Message:', error.message);
+      throw error;
+    }
   }
 
   async refreshAccessToken(): Promise<string> {
@@ -104,17 +122,22 @@ export class ZohoService {
     return response.data.access_token;
   }
 
-  getAuthorizationUrl(): string {
-    const scope = process.env.ZOHO_SCOPE || 'ZohoCRM.modules.ALL,ZohoCRM.settings.ALL';
+  getAuthorizationUrl(state?: string): string {
+    const scope = 'ZohoCRM.modules.ALL ZohoCRM.settings.ALL ZohoCRM.users.ALL ZohoCRM.org.READ';
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: this.config.clientId,
       scope: scope,
       redirect_uri: this.config.redirectUri,
-      access_type: 'offline'
+      access_type: 'offline',
+      prompt: 'consent'
     });
     
-    return `https://accounts.zoho.${this.config.region}/oauth/v2/auth?${params.toString()}`;
+    if (state) {
+      params.append('state', state);
+    }
+    
+    return `${process.env.ZOHO_ACCOUNTS_HOST}/oauth/v2/auth?${params.toString()}`;
   }
 
   async getConnectionStatus() {
@@ -412,12 +435,12 @@ export class ZohoService {
   }
 }
 
-// Fast configuration using hardcoded credentials  
+// Configuration using environment variables
 export async function createZohoService(): Promise<ZohoService | null> {
   try {
-    const clientId = "1000.6LDDWN3B3QZM.28e7c6bc3adb57c64026cb2bb3a8c8a3";
-    const clientSecret = "9b9a0b7e38b0c0a47f36ac6c83ad4ce0c52e2f0821";
-    const redirectUri = "https://4f937a25-00c8-498d-9fa5-eb24f01732eb-00-9p4bpqrd7jc1.janeway.replit.dev/api/zoho/auth/callback";
+    const clientId = process.env.ZOHO_CLIENT_ID;
+    const clientSecret = process.env.ZOHO_CLIENT_SECRET;
+    const redirectUri = process.env.ZOHO_REDIRECT_URI;
     
     if (!clientId || !clientSecret) {
       console.warn("Zoho credentials not configured");
