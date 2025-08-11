@@ -76,31 +76,37 @@ export class ZohoService {
   async exchangeCodeForTokens(authCode: string): Promise<ZohoTokenResponse> {
     const tokenUrl = `${process.env.ZOHO_ACCOUNTS_HOST}/oauth/v2/token`;
     
-    // Use URLSearchParams with form encoding as required by Zoho
-    const params = new URLSearchParams({
+    // Prepare form data exactly as Zoho expects
+    const formData = {
       grant_type: 'authorization_code',
       client_id: this.config.clientId,
       client_secret: this.config.clientSecret,
       redirect_uri: this.config.redirectUri,
       code: authCode
-    });
+    };
 
     console.log('🔄 Exchanging code for tokens...');
     console.log('  - Token URL:', tokenUrl);
     console.log('  - Grant type: authorization_code');
-    console.log('  - Client ID:', this.config.clientId?.substring(0, 10) + '...');
+    console.log('  - Client ID:', this.config.clientId);
+    console.log('  - Client Secret:', this.config.clientSecret ? '[SET]' : '[MISSING]');
     console.log('  - Redirect URI:', this.config.redirectUri);
-    console.log('  - Auth Code:', authCode?.substring(0, 20) + '...');
+    console.log('  - Auth Code:', authCode);
+    console.log('  - Full request data:', JSON.stringify(formData, null, 2));
     
     try {
-      const response = await axios.post(tokenUrl, params, {
+      const response = await axios.post(tokenUrl, formData, {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json'
+        },
+        timeout: 30000
       });
       
       console.log('✅ Token exchange successful');
       console.log('  - Response status:', response.status);
+      console.log('  - Response headers:', response.headers);
+      console.log('  - Response data:', JSON.stringify(response.data, null, 2));
       console.log('  - Access token received:', !!response.data.access_token);
       console.log('  - Refresh token received:', !!response.data.refresh_token);
       
@@ -114,8 +120,17 @@ export class ZohoService {
       console.error('  - Status Text:', error.response?.statusText);
       console.error('  - Response Data:', JSON.stringify(error.response?.data, null, 2));
       console.error('  - Request URL:', tokenUrl);
+      console.error('  - Request Headers:', JSON.stringify(error.config?.headers, null, 2));
+      console.error('  - Request Data:', JSON.stringify(error.config?.data, null, 2));
       console.error('  - Full Error:', error.message);
-      throw new Error(`Token exchange failed: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`);
+      
+      // Check if response is HTML (indicates wrong endpoint or auth issue)
+      if (error.response?.data && typeof error.response.data === 'string' && error.response.data.includes('<html>')) {
+        console.error('❌ Received HTML response instead of JSON - this indicates authentication or endpoint issues');
+        console.error('❌ This usually means: wrong client credentials, wrong data center, or malformed request');
+      }
+      
+      throw new Error(`Token exchange failed: ${error.response?.status} - Check credentials and data center settings`);
     }
   }
 
