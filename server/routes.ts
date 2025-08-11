@@ -5446,6 +5446,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Zoho CRM integration routes removed - starting fresh
 
+  // Register Zoho CRM integration routes
+  const { registerZohoRoutes } = await import('./zoho-routes');
+  registerZohoRoutes(app);
+  
   // All Zoho endpoints removed - ready for fresh integration
 
   return httpServer;
