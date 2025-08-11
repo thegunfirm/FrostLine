@@ -24,6 +24,73 @@ export function registerZohoRoutes(app: Express): void {
     }
   });
 
+  // Manual token setup endpoint (bypass OAuth issues)
+  app.post("/api/zoho/manual-setup", async (req, res) => {
+    try {
+      const { access_token, refresh_token } = req.body;
+      
+      if (!access_token) {
+        return res.status(400).json({ error: "access_token is required" });
+      }
+
+      console.log('🔧 Setting up Zoho manually with provided tokens...');
+      
+      const zohoService = await createZohoService();
+      if (!zohoService) {
+        throw new Error('Failed to create Zoho service');
+      }
+
+      // Manually set the tokens
+      zohoService.config.accessToken = access_token;
+      if (refresh_token) {
+        zohoService.config.refreshToken = refresh_token;
+      }
+
+      console.log('✅ Tokens set successfully');
+      
+      // Test the connection
+      const testResult = await zohoService.getConnectionStatus();
+      console.log('📊 Connection test result:', testResult);
+      
+      res.json({ 
+        success: true, 
+        message: "Zoho tokens configured successfully",
+        status: testResult 
+      });
+    } catch (error: any) {
+      console.error('❌ Manual setup failed:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get token instructions
+  app.get("/api/zoho/token-instructions", (req, res) => {
+    res.json({
+      instructions: `
+📋 How to get Zoho tokens manually:
+
+1. Go to https://api-console.zoho.com/
+2. Select your application: TheGunFirm CRM Integration  
+3. Click "Self Client" tab
+4. Generate tokens with these scopes:
+   - ZohoCRM.modules.ALL
+   - ZohoCRM.settings.ALL
+   - ZohoCRM.users.ALL
+   - ZohoCRM.org.READ
+
+5. Copy the access_token and refresh_token
+6. Send POST to /api/zoho/manual-setup with:
+   {
+     "access_token": "your_token_here",
+     "refresh_token": "your_refresh_token_here"
+   }
+
+⚠️  Tokens expire in 1 hour, but refresh tokens can generate new ones.
+      `,
+      endpoint: "/api/zoho/manual-setup"
+    });
+  });
+
   // Connection status endpoint
   app.get("/api/zoho/status", async (req, res) => {
     try {
