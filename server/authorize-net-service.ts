@@ -32,10 +32,15 @@ export class AuthorizeNetService {
   private zohoService: ZohoService;
 
   constructor() {
+    // Support both naming conventions for environment variables
+    const apiLoginId = process.env.ANET_API_LOGIN_ID || process.env.AUTHORIZE_NET_API_LOGIN_ID;
+    const transactionKey = process.env.ANET_TRANSACTION_KEY || process.env.AUTHORIZE_NET_TRANSACTION_KEY;
+    const signatureKey = process.env.ANET_SIGNATURE_KEY || process.env.AUTHORIZE_NET_SIGNATURE_KEY || 'default_test_key';
+
     this.config = {
-      apiLoginId: process.env.ANET_API_LOGIN_ID!,
-      transactionKey: process.env.ANET_TRANSACTION_KEY!,
-      signatureKey: process.env.ANET_SIGNATURE_KEY!,
+      apiLoginId: apiLoginId!,
+      transactionKey: transactionKey!,
+      signatureKey: signatureKey,
       environment: (process.env.ANET_ENV as 'sandbox' | 'production') || 'sandbox'
     };
 
@@ -49,8 +54,8 @@ export class AuthorizeNetService {
 
     this.zohoService = new ZohoService();
 
-    if (!this.config.apiLoginId || !this.config.transactionKey || !this.config.signatureKey) {
-      throw new Error('Authorize.Net credentials not configured. Required: ANET_API_LOGIN_ID, ANET_TRANSACTION_KEY, ANET_SIGNATURE_KEY');
+    if (!this.config.apiLoginId || !this.config.transactionKey) {
+      throw new Error('Authorize.Net credentials not configured. Required: API_LOGIN_ID, TRANSACTION_KEY');
     }
   }
 
