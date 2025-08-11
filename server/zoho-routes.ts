@@ -119,10 +119,6 @@ export function registerZohoRoutes(app: Express): void {
       console.log("🎉 OAuth flow completed successfully!");
       console.log("  - Access token stored:", !!tokens.access_token);
       console.log("  - Refresh token stored:", !!tokens.refresh_token);
-      
-      console.log("🎉 OAuth flow completed successfully!");
-      console.log("  - Access token stored:", !!tokens.access_token);
-      console.log("  - Refresh token stored:", !!tokens.refresh_token);
 
       // Success page with test account creation
       res.send(`
@@ -170,7 +166,7 @@ export function registerZohoRoutes(app: Express): void {
   // Create test account endpoint
   app.post("/api/zoho/create-test-account", async (req, res) => {
     try {
-      const service = checkZohoService();
+      const service = await checkZohoService();
       const testData = {
         First_Name: 'Test',
         Last_Name: 'Account', 

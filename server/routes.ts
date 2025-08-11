@@ -5447,7 +5447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerZohoRoutes(app);
 
   // Health check endpoint for Zoho integration
-  app.get("/health/zoho", async (req, res) => {
+  app.get("/api/health/zoho", async (req, res) => {
     const hasRefreshToken = !!process.env.ZOHO_REFRESH_TOKEN;
     const hasAccessToken = !!process.env.ZOHO_ACCESS_TOKEN;
     
