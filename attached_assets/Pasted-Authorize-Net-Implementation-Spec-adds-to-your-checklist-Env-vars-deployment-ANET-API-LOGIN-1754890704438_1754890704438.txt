@@ -1,0 +1,89 @@
+Authorize.Net – Implementation Spec (adds to your checklist)
+
+Env vars (deployment):
+
+ANET_API_LOGIN_ID
+
+ANET_TRANSACTION_KEY
+
+ANET_SIGNATURE_KEY (hex)
+
+ANET_ENV = production or sandbox
+
+Data model to persist (per user):
+
+anetCustomerProfileId (CIM)
+
+anetPaymentProfileId (latest default)
+
+anetSubscriptionId (ARB)
+
+membershipStatus (Active | Past Due | Canceled)
+
+lastFailureAt, lastFailureReason
+
+Endpoints:
+
+POST /webhooks/authorizenet
+
+Verify X-ANET-Signature (HMAC-SHA512 over raw body using Signature Key).
+
+Idempotency: dedupe via event ID.
+
+Handle events:
+
+net.authorize.customer.subscription.failed → mark Past Due, email #1
+
+net.authorize.customer.subscription.suspended → ensure dunning continues
+
+net.authorize.customer.subscription.updated → stop dunning, mark Active
+
+(optional) …subscription.expiring/expired → pre-emptive emails
+
+GET /billing/update (auth required)
+
+Ensure/Create CIM customerProfileId for user
+
+Call getHostedProfilePageRequest → get token
+
+302 redirect to https://accept.authorize.net/customer/manage with token (or render iframe)
+
+Don’t embed short-lived tokens in emails; always generate on visit
+
+(Optional) POST /billing/retry
+
+If you want a manual retry button after card update, call ARB update + charge or let ARB auto-retry if enabled
+
+(Optional) GET /billing/cards-expiring?month=YYYY-MM
+
+Monthly job: fetch expiring cards (CIM search) and send pre-expiry emails
+
+Dunning logic (server):
+
+Day 0 fail → Email #1 + set membershipStatus=Past Due + create Zoho Task
+
+Day 3 → Email #2
+
+Day 7 → Email #3 (final)
+
+On subscription.updated → cancel dunning, set membershipStatus=Active
+
+Email content:
+
+Link to your https://thegunfirm.com/billing/update (not Accept directly).
+
+Explain: “Secure page to update your card; we don’t store card numbers.”
+
+Acceptance tests:
+
+Trigger a sample subscription.failed webhook → user marked Past Due, Email #1 queued.
+
+Visit /billing/update → redirected/iframe loads Accept Customer manager.
+
+After card update, receive subscription.updated webhook → dunning stops, status Active.
+
+With Account Updater enabled, simulate updated expiry → no email; status remains Active.
+
+Signature check: send a webhook with bad signature → 401 and ignored.
+
+Idempotency: replay same webhook → no duplicate emails or status flips.

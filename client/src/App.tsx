@@ -8,8 +8,8 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import Home from "@/pages/home";
-import Login from "@/pages/login";
-import Register from "@/pages/register";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import RegistrationSuccess from "@/pages/registration-success";
@@ -60,6 +60,7 @@ import FAPCustomerProfiles from "@/pages/cms/admin/fap-customer-profiles";
 import TierLabels from "@/pages/cms/admin/tier-labels";
 import FAPMembership from "@/pages/FAPMembership";
 import SubscriptionTierManagement from "@/pages/cms/admin/subscription-tier-management";
+import BillingManagement from "@/pages/BillingManagement";
 
 // Global scroll-to-top component that monitors route changes
 function ScrollToTop() {
@@ -129,6 +130,7 @@ function Router() {
         <Route path="/cms/admin/tier-labels" component={TierLabels} />
         <Route path="/cms/admin/subscription-tier-management" component={SubscriptionTierManagement} />
         <Route path="/fap-membership" component={FAPMembership} />
+        <Route path="/billing" component={BillingManagement} />
         <Route path="/management/atf-directory" component={AtfDirectoryManagement} />
         <Route component={NotFound} />
       </Switch>

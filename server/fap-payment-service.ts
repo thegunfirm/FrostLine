@@ -87,7 +87,7 @@ export class FAPPaymentService {
   }
 
   /**
-   * Process a subscription payment through Authorize.Net
+   * Process a subscription payment through Authorize.Net (with CIM/ARB integration)
    */
   async processSubscriptionPayment(paymentData: PaymentRequest): Promise<PaymentResponse> {
     try {

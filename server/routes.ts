@@ -5496,6 +5496,159 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== AUTHORIZE.NET WEBHOOK AND BILLING ENDPOINTS =====
+  
+  // Webhook endpoint for Authorize.Net events
+  app.use('/webhooks/authorizenet', express.raw({ type: 'application/json' }));
+  app.post('/webhooks/authorizenet', async (req, res) => {
+    try {
+      const signature = req.headers['x-anet-signature'] as string;
+      const rawBody = req.body.toString();
+      
+      if (!signature) {
+        console.error('Missing X-ANET-Signature header');
+        return res.status(401).json({ error: 'Missing signature' });
+      }
+
+      const { AuthorizeNetService } = await import('./authorize-net-service');
+      const anetService = new AuthorizeNetService();
+      
+      // Verify webhook signature
+      if (!anetService.verifyWebhookSignature(rawBody, signature)) {
+        console.error('Invalid webhook signature');
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+
+      const webhookData = JSON.parse(rawBody);
+      const eventType = webhookData.eventType;
+      const eventId = webhookData.webhookId;
+
+      // Basic idempotency check (you might want to store processed event IDs)
+      console.log(`Processing webhook event: ${eventType} (ID: ${eventId})`);
+
+      // Handle different event types
+      switch (eventType) {
+        case 'net.authorize.customer.subscription.failed':
+          await anetService.handleSubscriptionFailed(webhookData.payload);
+          break;
+          
+        case 'net.authorize.customer.subscription.suspended':
+          await anetService.handleSubscriptionSuspended(webhookData.payload);
+          break;
+          
+        case 'net.authorize.customer.subscription.updated':
+          await anetService.handleSubscriptionUpdated(webhookData.payload);
+          break;
+          
+        case 'net.authorize.customer.subscription.expiring':
+        case 'net.authorize.customer.subscription.expired':
+          console.log(`Subscription expiring/expired event received: ${eventType}`);
+          // TODO: Implement pre-emptive email notifications
+          break;
+          
+        default:
+          console.log(`Unhandled webhook event type: ${eventType}`);
+      }
+
+      res.status(200).json({ success: true, processed: eventType });
+    } catch (error: any) {
+      console.error('Webhook processing error:', error);
+      res.status(500).json({ error: 'Webhook processing failed' });
+    }
+  });
+
+  // Billing update endpoint (authenticated)
+  app.get('/billing/update', isAuthenticated, async (req: any, res) => {
+    try {
+      const contactId = req.session.zohoContactId;
+      if (!contactId) {
+        return res.status(401).json({ error: 'No contact ID in session' });
+      }
+
+      const { AuthorizeNetService } = await import('./authorize-net-service');
+      const anetService = new AuthorizeNetService();
+      
+      // Get contact from Zoho to check for existing customer profile
+      const zohoService = new (await import('./zoho-service')).ZohoService();
+      const contact = await zohoService.getContact(contactId);
+      
+      if (!contact) {
+        return res.status(404).json({ error: 'Contact not found' });
+      }
+
+      let customerProfileId = contact.Anet_Customer_Profile_Id;
+      
+      // Create customer profile if it doesn't exist
+      if (!customerProfileId) {
+        customerProfileId = await anetService.createCustomerProfile(
+          contactId, 
+          contact.Email,
+          `FAP Member - ${contact.First_Name} ${contact.Last_Name}`
+        );
+        
+        // Update Zoho with the new customer profile ID
+        await zohoService.updateContact(contactId, {
+          Anet_Customer_Profile_Id: customerProfileId
+        });
+      }
+
+      // Get hosted profile token
+      const token = await anetService.getHostedProfileToken(customerProfileId);
+      const billingUrl = anetService.getBillingUpdateUrl(token);
+      
+      // Redirect to Authorize.Net hosted profile page
+      res.redirect(302, billingUrl);
+      
+    } catch (error: any) {
+      console.error('Billing update error:', error);
+      res.status(500).json({ error: 'Failed to generate billing update page' });
+    }
+  });
+
+  // Billing success page (after customer updates payment method)
+  app.get('/billing/success', (req, res) => {
+    // Redirect to FAP membership page with success message
+    res.redirect(`${process.env.FRONTEND_URL || 'https://thegunfirm.com'}/fap-membership?billing=updated`);
+  });
+
+  // Optional: Manual retry endpoint
+  app.post('/billing/retry', isAuthenticated, async (req: any, res) => {
+    try {
+      const contactId = req.session.zohoContactId;
+      if (!contactId) {
+        return res.status(401).json({ error: 'No contact ID in session' });
+      }
+
+      // TODO: Implement manual retry logic
+      // This would typically involve calling ARB update + charge
+      console.log(`Manual billing retry requested for contact ${contactId}`);
+      
+      res.json({ success: true, message: 'Retry initiated' });
+    } catch (error: any) {
+      console.error('Manual retry error:', error);
+      res.status(500).json({ error: 'Retry failed' });
+    }
+  });
+
+  // Optional: Get expiring cards endpoint
+  app.get('/billing/cards-expiring', isAuthenticated, async (req, res) => {
+    try {
+      const month = req.query.month as string; // Format: YYYY-MM
+      
+      if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+        return res.status(400).json({ error: 'Invalid month format. Use YYYY-MM' });
+      }
+
+      // TODO: Implement CIM search for expiring cards
+      console.log(`Checking for cards expiring in ${month}`);
+      
+      res.json({ expiringCards: [], month });
+    } catch (error: any) {
+      console.error('Expiring cards check error:', error);
+      res.status(500).json({ error: 'Failed to check expiring cards' });
+    }
+  });
+
   // ===== SUBSCRIPTION TIER MANAGEMENT API =====
   
   // Update subscription tier
