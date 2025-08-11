@@ -25,8 +25,8 @@ export class AuthService {
 
   constructor() {
     const config = {
-      clientId: process.env.ZOHO_CLIENT_ID || '1000.8OVSJ4V07OOVJWYAC0KA1JEFNH2W3M',
-      clientSecret: process.env.ZOHO_CLIENT_SECRET || '4d4b2ab7f0f731102c7d15d6754f1f959251db68e0',
+      clientId: process.env.ZOHO_CLIENT_ID || '1000.EVYOBOT6THABMCRSLYAHR7I32G72PO',
+      clientSecret: process.env.ZOHO_CLIENT_SECRET || '0b1dee669260843330ec2dd6be0630c3e7085b2fa0',
       redirectUri: 'https://placeholder.com', // Not needed for service calls
       accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
       apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com'
@@ -171,23 +171,48 @@ export class AuthService {
         return { success: false, error: 'No Zoho access token available for test user creation. Please configure ZOHO_ACCESS_TOKEN and ZOHO_REFRESH_TOKEN secrets.' };
       }
       
+      // Store additional data as JSON in Description field since custom fields may not be accessible
+      const additionalData = {
+        passwordHash: hashedPassword,
+        subscriptionTier: data.subscriptionTier || 'Bronze',
+        emailVerified: true,
+        registrationDate: new Date().toISOString().split('T')[0],
+        accountStatus: 'Active - Test Account',
+        accountType: 'Test',
+        createdOn: new Date().toISOString()
+      };
+
       const zohoContactData = {
         Email: data.email,
         First_Name: data.firstName,
         Last_Name: data.lastName,
         Phone: data.phone || '',
-        Account_Name: `${data.firstName} ${data.lastName}`,
         Lead_Source: 'Test Registration',
-        Description: `Test user created on ${new Date().toISOString()}`,
-        Subscription_Tier: data.subscriptionTier || 'Bronze',
-        Password_Hash: hashedPassword,
-        Email_Verified: true,
-        Registration_Date: new Date().toISOString().split('T')[0],
-        Account_Status: 'Active - Test Account',
-        Account_Type: 'Test'
+        Description: JSON.stringify(additionalData)
       };
       
-      const zohoContact = await this.zohoService.createContact(zohoContactData);
+      // Direct API call bypassing ZohoService to avoid version issues
+      const response = await fetch('https://www.zohoapis.com/crm/v6/Contacts', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Zoho-oauthtoken ${process.env.ZOHO_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data: [zohoContactData]
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok || !result.data || result.data[0].status !== 'success') {
+        throw new Error(`Zoho contact creation failed: ${JSON.stringify(result)}`);
+      }
+      
+      const zohoContact = {
+        id: result.data[0].details.id,
+        ...zohoContactData
+      };
       console.log('✅ Test user created in Zoho CRM with ID:', zohoContact.id);
       
       return {
@@ -269,14 +294,48 @@ export class AuthService {
    */
   async loginUser(email: string, password: string): Promise<VerificationResult> {
     try {
-      // Find contact in Zoho
-      const contact = await this.zohoService.findContactByEmail(email);
-      if (!contact) {
+      // Find contact in Zoho using direct API call
+      const searchResponse = await fetch(`https://www.zohoapis.com/crm/v6/Contacts/search?criteria=Email:equals:${email}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Zoho-oauthtoken ${process.env.ZOHO_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      let searchResult;
+      try {
+        const responseText = await searchResponse.text();
+        console.log('Raw Zoho search response:', responseText);
+        
+        if (!responseText.trim()) {
+          console.log('Empty response from Zoho search');
+          return { success: false, error: 'Invalid email or password' };
+        }
+        
+        searchResult = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
         return { success: false, error: 'Invalid email or password' };
       }
+      
+      if (!searchResponse.ok || !searchResult.data || searchResult.data.length === 0) {
+        console.log('No contact found or API error:', searchResult);
+        return { success: false, error: 'Invalid email or password' };
+      }
+      
+      const contact = searchResult.data[0];
 
-      // Verify password (stored in custom field)
-      const storedHash = contact.Password_Hash;
+      // Parse additional data from Description field
+      let additionalData;
+      try {
+        additionalData = JSON.parse(contact.Description || '{}');
+      } catch (e) {
+        return { success: false, error: 'Invalid account data. Please contact support.' };
+      }
+
+      // Verify password (stored in Description JSON)
+      const storedHash = additionalData.passwordHash;
       if (!storedHash) {
         return { success: false, error: 'Account needs to be reset. Please contact support.' };
       }
@@ -287,7 +346,7 @@ export class AuthService {
       }
 
       // Check if email is verified
-      if (!contact.Email_Verified) {
+      if (!additionalData.emailVerified) {
         return { success: false, error: 'Please verify your email before logging in' };
       }
 
@@ -298,8 +357,8 @@ export class AuthService {
           email: contact.Email,
           firstName: contact.First_Name,
           lastName: contact.Last_Name,
-          subscriptionTier: contact.Subscription_Tier || 'Bronze',
-          emailVerified: contact.Email_Verified,
+          subscriptionTier: additionalData.subscriptionTier || 'Bronze',
+          emailVerified: additionalData.emailVerified,
           zohoContactId: contact.id
         },
         zohoContactId: contact.id

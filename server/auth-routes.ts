@@ -35,6 +35,55 @@ export function requireAuth(req: any, res: any, next: any) {
  */
 export function registerAuthRoutes(app: Express) {
   
+  // POST /api/auth/direct-test - Direct Zoho API test
+  app.post('/api/auth/direct-test', async (req, res) => {
+    try {
+      const { email, firstName, lastName } = req.body;
+      
+      const response = await fetch('https://www.zohoapis.com/crm/v6/Contacts', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Zoho-oauthtoken ${process.env.ZOHO_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data: [{
+            First_Name: firstName,
+            Last_Name: lastName,
+            Email: email,
+            Account_Status: 'Active - Test Account',
+            Account_Type: 'Test'
+          }]
+        })
+      });
+      
+      const result = await response.json();
+      console.log('✅ Direct Zoho API Response:', result);
+      
+      if (response.ok && result.data && result.data[0].status === 'success') {
+        res.json({ 
+          success: true, 
+          message: 'Contact created successfully via direct API',
+          contactId: result.data[0].details.id,
+          result: result
+        });
+      } else {
+        res.status(400).json({ 
+          success: false, 
+          message: 'Failed to create contact',
+          error: result
+        });
+      }
+    } catch (error) {
+      console.error('❌ Direct API test error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Direct API test failed',
+        error: error.message
+      });
+    }
+  });
+  
   // POST /api/auth/test-register - Create test user bypassing email verification (for testing only)
   app.post('/api/auth/test-register', async (req, res) => {
     try {

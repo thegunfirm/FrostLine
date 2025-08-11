@@ -98,7 +98,7 @@ export class ZohoService {
       throw new Error('No access token available. Please complete OAuth first.');
     }
 
-    const response = await fetch(`${this.config.apiHost}/crm/v2/${endpoint}`, {
+    const response = await fetch(`${this.config.apiHost}/crm/v6/${endpoint}`, {
       method,
       headers: {
         'Authorization': `Zoho-oauthtoken ${this.accessToken}`,
