@@ -77,6 +77,183 @@ export class ZohoService {
     }
   }
 
+  // ===== DEAL MANAGEMENT METHODS =====
+
+  /**
+   * Create a Deal in Zoho CRM for a TheGunFirm order
+   */
+  async createOrderDeal(orderData: {
+    contactId: string;
+    orderNumber: string;
+    totalAmount: number;
+    orderItems: Array<{
+      productName: string;
+      sku: string;
+      quantity: number;
+      unitPrice: number;
+      totalPrice: number;
+    }>;
+    membershipTier: string;
+    fflRequired: boolean;
+    fflDealerName?: string;
+    orderStatus: string;
+  }): Promise<{ success: boolean; dealId?: string; error?: string }> {
+    try {
+      if (!this.config.accessToken) {
+        return { success: false, error: 'No Zoho access token available' };
+      }
+
+      const dealName = `Order #${orderData.orderNumber} - ${orderData.membershipTier}`;
+      const description = this.buildOrderDescription(orderData);
+
+      const dealPayload = {
+        data: [{
+          Deal_Name: dealName,
+          Contact_Name: orderData.contactId,
+          Amount: orderData.totalAmount,
+          Stage: this.mapOrderStatusToDealStage(orderData.orderStatus),
+          Description: description,
+          Closing_Date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 14 days from now
+          Order_Number: orderData.orderNumber,
+          Order_Total: orderData.totalAmount,
+          Membership_Tier: orderData.membershipTier,
+          FFL_Required: orderData.fflRequired,
+          FFL_Dealer_Name: orderData.fflDealerName || '',
+          Order_Item_Count: orderData.orderItems.length,
+          Lead_Source: 'TheGunFirm.com'
+        }]
+      };
+
+      const response = await axios.post(
+        `${this.config.apiHost}/crm/v2/Deals`,
+        dealPayload,
+        {
+          headers: {
+            'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data?.data?.[0]?.status === 'success') {
+        const dealId = response.data.data[0].details.id;
+        console.log(`✅ Created Zoho Deal ${dealId} for Order #${orderData.orderNumber}`);
+        return { success: true, dealId };
+      } else {
+        console.error('Zoho Deal creation failed:', response.data);
+        return { success: false, error: 'Deal creation failed in Zoho' };
+      }
+
+    } catch (error: any) {
+      console.error('Error creating Zoho deal:', error.response?.data || error.message);
+      return { success: false, error: `Deal creation error: ${error.message}` };
+    }
+  }
+
+  /**
+   * Update Deal stage when order status changes
+   */
+  async updateDealStage(dealId: string, newOrderStatus: string): Promise<boolean> {
+    try {
+      if (!this.config.accessToken) {
+        return false;
+      }
+
+      const newStage = this.mapOrderStatusToDealStage(newOrderStatus);
+      
+      const updatePayload = {
+        data: [{
+          id: dealId,
+          Stage: newStage
+        }]
+      };
+
+      const response = await axios.put(
+        `${this.config.apiHost}/crm/v2/Deals`,
+        updatePayload,
+        {
+          headers: {
+            'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      return response.data?.data?.[0]?.status === 'success';
+    } catch (error: any) {
+      console.error('Error updating deal stage:', error.response?.data || error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get Deal by Order Number
+   */
+  async getDealByOrderNumber(orderNumber: string): Promise<any> {
+    try {
+      if (!this.config.accessToken) {
+        return null;
+      }
+
+      const response = await axios.get(
+        `${this.config.apiHost}/crm/v2/Deals/search?criteria=(Order_Number:equals:${orderNumber})`,
+        {
+          headers: {
+            'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`
+          }
+        }
+      );
+
+      return response.data?.data?.[0] || null;
+    } catch (error: any) {
+      console.error('Error searching for deal:', error.response?.data || error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Build detailed order description for Deal
+   */
+  private buildOrderDescription(orderData: any): string {
+    let description = `Order from TheGunFirm.com\n`;
+    description += `Customer Tier: ${orderData.membershipTier}\n`;
+    description += `Total Items: ${orderData.orderItems.length}\n`;
+    
+    if (orderData.fflRequired) {
+      description += `FFL Required: Yes\n`;
+      if (orderData.fflDealerName) {
+        description += `FFL Dealer: ${orderData.fflDealerName}\n`;
+      }
+    }
+    
+    description += `\nOrder Items:\n`;
+    orderData.orderItems.forEach((item: any, index: number) => {
+      description += `${index + 1}. ${item.productName} (${item.sku})\n`;
+      description += `   Qty: ${item.quantity} × $${item.unitPrice} = $${item.totalPrice}\n`;
+    });
+    
+    return description;
+  }
+
+  /**
+   * Map TheGunFirm order status to Zoho Deal stage
+   */
+  private mapOrderStatusToDealStage(orderStatus: string): string {
+    const statusMapping: Record<string, string> = {
+      'pending': 'Qualification',
+      'processing': 'Needs Analysis', 
+      'payment_pending': 'Proposal/Quote',
+      'payment_confirmed': 'Negotiation/Review',
+      'preparing': 'Closed Won',
+      'shipped': 'Closed Won',
+      'delivered': 'Closed Won',
+      'cancelled': 'Closed Lost',
+      'refunded': 'Closed Lost'
+    };
+
+    return statusMapping[orderStatus] || 'Qualification';
+  }
+
   // Set tokens
   setTokens(accessToken: string, refreshToken?: string) {
     this.config.accessToken = accessToken;

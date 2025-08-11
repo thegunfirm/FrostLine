@@ -64,6 +64,7 @@ import BillingManagement from "@/pages/BillingManagement";
 import SamlLogin from "@/pages/SamlLogin";
 import RoleManagement from "@/pages/cms/role-management";
 import FAPTierTest from "@/pages/FAPTierTest";
+import OrderToZohoTest from "@/pages/OrderToZohoTest";
 import CreateTestUsers from "@/pages/CreateTestUsers";
 
 // Global scroll-to-top component that monitors route changes
@@ -137,6 +138,7 @@ function Router() {
         <Route path="/fap-membership" component={FAPMembership} />
         <Route path="/fap-tier-test" component={FAPTierTest} />
         <Route path="/create-test-users" component={CreateTestUsers} />
+        <Route path="/order-to-zoho-test" component={OrderToZohoTest} />
         <Route path="/billing-management" component={BillingManagement} />
         <Route path="/staff-login" component={SamlLogin} />
         <Route path="/management/atf-directory" component={AtfDirectoryManagement} />

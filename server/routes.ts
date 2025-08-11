@@ -518,6 +518,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               const savedOrder = await storage.createOrder(orderData);
               console.log('✅ Order saved to database:', savedOrder.id);
+
+              // Create Zoho Deal for the order
+              try {
+                const { orderZohoIntegration, OrderZohoIntegration } = await import('./order-zoho-integration');
+                
+                const customerInfo = {
+                  email: req.session?.user?.email || 'customer@example.com',
+                  name: req.session?.user?.firstName && req.session?.user?.lastName 
+                    ? `${req.session.user.firstName} ${req.session.user.lastName}`
+                    : 'Customer',
+                  membershipTier: req.session?.user?.membershipTier || 'Bronze',
+                  zohoContactId: req.session?.zohoContactId
+                };
+
+                const zohoOrderData = OrderZohoIntegration.formatOrderForZoho(
+                  { ...savedOrder, items: orderItems },
+                  customerInfo
+                );
+
+                const zohoResult = await orderZohoIntegration.processOrderToDeal(zohoOrderData);
+                
+                if (zohoResult.success) {
+                  // Update order with Zoho IDs
+                  await storage.updateOrder(savedOrder.id, {
+                    zohoDealId: zohoResult.dealId,
+                    zohoContactId: zohoResult.contactId
+                  });
+                  console.log(`✅ Order ${savedOrder.id} linked to Zoho Deal ${zohoResult.dealId}`);
+                } else {
+                  console.error(`⚠️  Failed to create Zoho deal for order ${savedOrder.id}: ${zohoResult.error}`);
+                }
+              } catch (zohoError) {
+                console.error('Zoho integration error:', zohoError);
+                // Don't fail the order creation if Zoho integration fails
+              }
               
             } catch (orderError) {
               console.error('❌ Failed to save order:', orderError);
@@ -1214,6 +1249,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: 'Paid'
           });
           console.log(`✅ Updated existing order ${orderId} with transaction ID`);
+
+          // Update Zoho Deal status to reflect payment
+          try {
+            const { orderZohoIntegration } = await import('./order-zoho-integration');
+            await orderZohoIntegration.updateOrderStatus(orderId.toString(), 'payment_confirmed');
+          } catch (zohoError) {
+            console.error('Zoho deal update error:', zohoError);
+          }
         }
 
         // Send order confirmation email regardless of orderId

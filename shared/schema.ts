@@ -108,6 +108,7 @@ export const orders = pgTable("orders", {
   authorizeNetTransactionId: text("authorize_net_transaction_id"),
   paymentMethod: text("payment_method").default("authorize_net"), // authorize_net, stripe, etc
   zohoDealId: text("zoho_deal_id"), // Zoho CRM Deal ID
+  zohoContactId: text("zoho_contact_id"), // Zoho CRM Contact ID
 });
 
 export const ffls = pgTable("ffls", {
