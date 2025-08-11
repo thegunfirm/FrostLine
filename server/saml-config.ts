@@ -8,6 +8,7 @@ interface ExtendedProfile extends Profile {
     firstName?: string[];
     lastName?: string[];
     groups?: string[];
+    Department?: string[];
   };
 }
 
@@ -84,7 +85,7 @@ export const verifySamlProfile = async (
     const email = profile.nameID || profile.attributes?.email?.[0];
     const firstName = profile.attributes?.firstName?.[0] || '';
     const lastName = profile.attributes?.lastName?.[0] || '';
-    const groups = profile.attributes?.groups || [];
+    const groups = profile.attributes?.groups || profile.attributes?.Department || [];
     
     if (!email) {
       console.error('❌ SAML assertion missing required email');

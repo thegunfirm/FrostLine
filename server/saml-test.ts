@@ -51,10 +51,10 @@ console.log('   Binding: HTTP-POST');
 console.log('   Signed Assertions: Required');
 
 console.log('\n5. Required Zoho Directory attributes:');
-console.log('   - email (NameID)');
-console.log('   - firstName');
-console.log('   - lastName');
-console.log('   - groups (for role mapping)');
+console.log('   - email → Primary Email Address');
+console.log('   - firstName → First Name');
+console.log('   - lastName → Last Name');
+console.log('   - groups → Department (for role mapping)');
 
 if (isConfigured) {
   console.log('\n✅ SAML system ready for integration with Zoho Directory');
