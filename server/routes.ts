@@ -848,9 +848,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orders", async (req, res) => {
     try {
       const orderData = insertOrderSchema.parse(req.body);
-      const order = await storage.createOrder(orderData);
+      console.log('📝 Creating order with data:', orderData);
       
-      res.status(201).json(order);
+      const order = await storage.createOrder(orderData);
+      console.log('✅ Order created with ID:', order.id);
+
+      // Attempt Zoho Deal integration for new orders
+      try {
+        const { orderZohoIntegration, OrderZohoIntegration } = await import('./order-zoho-integration');
+        
+        // Mock customer info for testing (replace with real session data)
+        const customerInfo = {
+          email: 'bronze.test@example.com', // Use test user email
+          name: 'Bronze Test User',
+          membershipTier: 'Bronze',
+          zohoContactId: undefined
+        };
+
+        const zohoOrderData = OrderZohoIntegration.formatOrderForZoho(
+          { ...order, items: orderData.items || [] },
+          customerInfo
+        );
+
+        console.log('🔄 Attempting Zoho integration for order:', order.id);
+        const zohoResult = await orderZohoIntegration.processOrderToDeal(zohoOrderData);
+        
+        if (zohoResult.success) {
+          // Update order with Zoho IDs
+          const updatedOrder = await storage.updateOrder(order.id, {
+            zohoDealId: zohoResult.dealId,
+            zohoContactId: zohoResult.contactId
+          });
+          console.log(`✅ Order ${order.id} linked to Zoho Deal ${zohoResult.dealId}`);
+          res.status(201).json(updatedOrder);
+        } else {
+          console.error(`⚠️  Failed to create Zoho deal for order ${order.id}: ${zohoResult.error}`);
+          res.status(201).json(order);
+        }
+      } catch (zohoError) {
+        console.error('Zoho integration error:', zohoError);
+        // Don't fail the order creation if Zoho integration fails
+        res.status(201).json(order);
+      }
     } catch (error) {
       console.error("Create order error:", error);
       res.status(500).json({ message: "Failed to create order" });
@@ -4584,6 +4623,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Search settings update error:', error);
       res.status(500).json({ error: 'Failed to update search settings' });
+    }
+  });
+
+  // ===== ZOHO CRM INTEGRATION TEST ENDPOINTS =====
+  
+  // Test order-to-deal integration
+  app.post("/api/test/order-to-zoho", async (req, res) => {
+    try {
+      console.log('🧪 Testing Order-to-Zoho integration...');
+      
+      const { orderZohoIntegration, OrderZohoIntegration } = await import('./order-zoho-integration');
+      
+      const testOrderData = {
+        orderNumber: `TEST-${Date.now()}`,
+        totalAmount: 599.98,
+        customerEmail: 'bronze.test@example.com',
+        customerName: 'Bronze Test User',
+        membershipTier: 'Bronze',
+        orderItems: [
+          {
+            productName: 'Glock 19 Gen5',
+            sku: 'GLOCK19GEN5',
+            quantity: 1,
+            unitPrice: 549.99,
+            totalPrice: 549.99,
+            fflRequired: true
+          },
+          {
+            productName: 'Federal 9mm Ammunition',
+            sku: 'FED9MM',
+            quantity: 2,
+            unitPrice: 24.99,
+            totalPrice: 49.98,
+            fflRequired: false
+          }
+        ],
+        fflDealerName: 'Test FFL Dealer',
+        orderStatus: 'pending'
+      };
+
+      console.log('📧 Creating deal for:', testOrderData.customerEmail);
+      console.log('🛒 Order total:', testOrderData.totalAmount);
+
+      const result = await orderZohoIntegration.processOrderToDeal(testOrderData);
+
+      if (result.success) {
+        console.log('✅ Integration test successful!');
+        console.log('🆔 Deal ID:', result.dealId);
+        console.log('👤 Contact ID:', result.contactId);
+        
+        res.json({
+          success: true,
+          dealId: result.dealId,
+          contactId: result.contactId,
+          message: 'Order-to-Zoho integration test successful'
+        });
+      } else {
+        console.error('❌ Integration test failed:', result.error);
+        res.status(500).json({
+          success: false,
+          error: result.error,
+          message: 'Order-to-Zoho integration test failed'
+        });
+      }
+
+    } catch (error: any) {
+      console.error('💥 Integration test error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        message: 'Integration test execution failed'
+      });
+    }
+  });
+
+  // Get deals for a contact
+  app.get("/api/test/zoho-deals/:email", async (req, res) => {
+    try {
+      const { email } = req.params;
+      const { ZohoService } = await import('./zoho-service');
+      
+      const zohoService = new ZohoService({
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
+        accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
+        apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com',
+        accessToken: process.env.ZOHO_ACCESS_TOKEN,
+        refreshToken: process.env.ZOHO_REFRESH_TOKEN
+      });
+
+      // Find contact
+      const contact = await zohoService.findContactByEmail(email);
+      if (!contact) {
+        return res.status(404).json({ message: 'Contact not found', email });
+      }
+
+      // Get deals for this contact
+      const deals = await zohoService.getDealsForContact(contact.id);
+      
+      res.json({
+        contact: {
+          id: contact.id,
+          email: contact.Email,
+          name: `${contact.First_Name || ''} ${contact.Last_Name || ''}`.trim()
+        },
+        deals: deals,
+        total: deals.length
+      });
+
+    } catch (error: any) {
+      console.error('Get Zoho deals error:', error);
+      res.status(500).json({ error: error.message });
     }
   });
 

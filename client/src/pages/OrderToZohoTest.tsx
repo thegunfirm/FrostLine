@@ -42,7 +42,7 @@ export default function OrderToZohoTest() {
       };
 
       console.log('Creating test order...');
-      const orderResponse = await apiRequest('POST', '/api/orders', testOrderData);
+      const orderResponse = await apiRequest('POST', '/api/test/order-to-zoho', {});
       
       if (orderResponse.ok) {
         const createdOrder = await orderResponse.json();
@@ -50,10 +50,10 @@ export default function OrderToZohoTest() {
 
         setTestResults({
           success: true,
-          orderId: createdOrder.id,
-          zohoDealId: createdOrder.zohoDealId,
-          zohoContactId: createdOrder.zohoContactId,
-          message: 'Order created and should be synced with Zoho CRM'
+          orderId: createdOrder.dealId || 'N/A',
+          zohoDealId: createdOrder.dealId,
+          zohoContactId: createdOrder.contactId,
+          message: createdOrder.message || 'Order-to-Zoho integration test completed'
         });
 
         toast({
