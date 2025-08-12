@@ -74,7 +74,7 @@ async function testZohoIntegration() {
 
     console.log('\n5️⃣ Checking deals for bronze test user...');
     if (existingContact) {
-      const deals = await zohoService.getDealsForContact(existingContact.id);
+      const deals = await zohoService.getContactDeals(existingContact.id);
       console.log(`📊 Found ${deals.length} deals for contact`);
       deals.forEach((deal, index) => {
         console.log(`   ${index + 1}. ${deal.Deal_Name} - $${deal.Amount} (${deal.Stage})`);

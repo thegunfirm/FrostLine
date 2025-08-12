@@ -275,7 +275,11 @@ export class ZohoService {
       throw new Error('No access token available. Please complete OAuth first.');
     }
 
-    const response = await fetch(`${this.config.apiHost}/crm/v6/${endpoint}`, {
+    // Handle case where apiHost already includes /crm/v2
+    const baseUrl = this.config.apiHost.endsWith('/crm/v2') ? this.config.apiHost : `${this.config.apiHost}/crm/v2`;
+    const fullUrl = `${baseUrl}/${endpoint}`;
+    
+    const response = await fetch(fullUrl, {
       method,
       headers: {
         'Authorization': `Zoho-oauthtoken ${this.accessToken}`,
@@ -288,6 +292,11 @@ export class ZohoService {
     
     if (!response.ok) {
       console.error('Zoho API Error:', result);
+      console.error('Full URL was:', fullUrl);
+      console.error('Request headers:', {
+        'Authorization': `Zoho-oauthtoken ${this.accessToken}`,
+        'Content-Type': 'application/json',
+      });
       throw new Error(`Zoho API Error: ${result.message || response.statusText}`);
     }
 
@@ -299,12 +308,13 @@ export class ZohoService {
    */
   async findContactByEmail(email: string): Promise<any | null> {
     try {
-      // Search for contact by email using search API
-      const searchCriteria = `(Email:equals:${email})`;
-      const response = await this.makeAPIRequest(`Contacts/search?criteria=${encodeURIComponent(searchCriteria)}`);
+      // Use simple query parameter approach instead of criteria search
+      const response = await this.makeAPIRequest(`Contacts?fields=Email,First_Name,Last_Name,id,Description&per_page=200`);
       
       if (response.data && response.data.length > 0) {
-        return response.data[0]; // Return first match
+        // Filter by email in the response since direct search had URL issues
+        const contact = response.data.find((c: any) => c.Email === email);
+        return contact || null;
       }
       
       return null;
@@ -425,6 +435,129 @@ export class ZohoService {
     } catch (error) {
       console.error('Error validating membership tier:', error);
       return false;
+    }
+  }
+
+  // ==================== DEAL MANAGEMENT METHODS ====================
+
+  /**
+   * Find deal by order number
+   */
+  async getDealByOrderNumber(orderNumber: string): Promise<any | null> {
+    try {
+      // Get all deals and filter by order number in description or custom field
+      const response = await this.makeAPIRequest(`Deals?fields=Deal_Name,Amount,Stage,id,Description&per_page=200`);
+      
+      if (response.data && response.data.length > 0) {
+        // Look for deal with matching order number in deal name or description
+        const deal = response.data.find((d: any) => 
+          d.Deal_Name?.includes(orderNumber) ||
+          d.Description?.includes(orderNumber)
+        );
+        return deal || null;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error searching for deal:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Create a new deal from order data
+   */
+  async createOrderDeal(dealData: {
+    contactId: string;
+    orderNumber: string;
+    totalAmount: number;
+    orderItems: any[];
+    membershipTier: string;
+    fflRequired: boolean;
+    fflDealerName?: string;
+    orderStatus: string;
+  }): Promise<{ success: boolean; dealId?: string; error?: string }> {
+    try {
+      const dealPayload = {
+        Deal_Name: `Order ${dealData.orderNumber}`,
+        Amount: dealData.totalAmount,
+        Stage: this.mapOrderStatusToDealStage(dealData.orderStatus),
+        Contact_Name: dealData.contactId,
+        Description: JSON.stringify({
+          orderNumber: dealData.orderNumber,
+          membershipTier: dealData.membershipTier,
+          fflRequired: dealData.fflRequired,
+          fflDealerName: dealData.fflDealerName,
+          orderItems: dealData.orderItems.map(item => ({
+            name: item.productName,
+            sku: item.sku,
+            quantity: item.quantity,
+            price: item.unitPrice
+          }))
+        })
+      };
+
+      const response = await this.makeAPIRequest('Deals', 'POST', {
+        data: [dealPayload]
+      });
+
+      if (response.data && response.data.length > 0 && response.data[0].status === 'success') {
+        return {
+          success: true,
+          dealId: response.data[0].details.id
+        };
+      } else {
+        return {
+          success: false,
+          error: 'Failed to create deal in Zoho'
+        };
+      }
+    } catch (error: any) {
+      console.error('Error creating Zoho deal:', error);
+      return {
+        success: false,
+        error: `Deal creation error: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Update deal stage based on order status
+   */
+  async updateDealStage(dealId: string, orderStatus: string): Promise<boolean> {
+    try {
+      const newStage = this.mapOrderStatusToDealStage(orderStatus);
+      
+      const response = await this.makeAPIRequest(`Deals/${dealId}`, 'PUT', {
+        data: [{
+          Stage: newStage
+        }]
+      });
+
+      return response.data && response.data.length > 0 && response.data[0].status === 'success';
+    } catch (error) {
+      console.error('Error updating deal stage:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get all deals for a contact
+   */
+  async getContactDeals(contactId: string): Promise<any[]> {
+    try {
+      // Get all deals and filter by contact ID
+      const response = await this.makeAPIRequest(`Deals?fields=Deal_Name,Amount,Stage,id,Description,Contact_Name&per_page=200`);
+      
+      if (response.data && response.data.length > 0) {
+        // Filter deals by contact ID
+        return response.data.filter((deal: any) => deal.Contact_Name?.id === contactId);
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error getting contact deals:', error);
+      return [];
     }
   }
 }
