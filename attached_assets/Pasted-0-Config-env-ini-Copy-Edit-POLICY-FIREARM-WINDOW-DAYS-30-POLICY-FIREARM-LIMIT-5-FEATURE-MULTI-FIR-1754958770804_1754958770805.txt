@@ -1,0 +1,284 @@
+0) Config (env)
+ini
+Copy
+Edit
+POLICY_FIREARM_WINDOW_DAYS=30
+POLICY_FIREARM_LIMIT=5
+FEATURE_MULTI_FIREARM_HOLD=1
+FEATURE_FFL_HOLD=1
+1) DB (add/confirm fields)
+products
+
+is_firearm BOOLEAN NOT NULL DEFAULT false
+
+order_lines
+
+order_id FK → orders
+
+product_id FK → products
+
+quantity INT
+
+(denorm) is_firearm BOOLEAN (snapshot)
+
+orders
+
+status TEXT -- ('Pending FFL','Hold – Multi-Firearm','Ready to Fulfill','Paid','Shipped','Canceled')
+
+hold_reason TEXT -- ('FFL','Multi-Firearm', NULL)
+
+auth_transaction_id TEXT
+
+auth_expires_at TIMESTAMPTZ
+
+captured_at TIMESTAMPTZ
+
+ffl_required BOOLEAN
+
+ffl_status TEXT -- ('Missing','Pending Verification','Verified')
+
+ffl_dealer_id TEXT
+
+ffl_verified_at TIMESTAMPTZ
+
+firearms_window_count INT
+
+window_days INT
+
+limit_qty INT
+
+2) Checkout guard (server, before capture)
+Compute has_firearm = any(cart_lines.is_firearm)
+
+FFL hold (if enabled): if has_firearm and no verified FFL on file:
+
+Create order
+
+Authorize only via Authorize.Net (save auth_transaction_id, auth_expires_at)
+
+Set:
+
+status='Pending FFL'
+
+hold_reason='FFL'
+
+ffl_required=true, ffl_status='Missing'
+
+Sync to Zoho (see §5)
+
+Return 200 with "hold":"FFL"
+
+Do not capture yet
+
+Multi-firearm rolling hold (if enabled):
+
+Compute past_qty over rolling window; include current cart current_qty
+
+If past_qty + current_qty >= POLICY_FIREARM_LIMIT:
+
+Create order (authorize only OR skip auth per business rule)
+
+Set:
+
+status='Hold – Multi-Firearm'
+
+hold_reason='Multi-Firearm'
+
+firearms_window_count=total, window_days, limit_qty
+
+Sync to Zoho (see §5)
+
+Return 200 with "hold":"Multi-Firearm"
+
+Else (no holds): capture immediately, status='Paid', sync to Zoho.
+
+Rolling window SQL (Postgres):
+
+sql
+Copy
+Edit
+SELECT COALESCE(SUM(l.quantity),0) AS past_qty
+FROM orders o
+JOIN order_lines l ON l.order_id = o.id
+WHERE o.customer_id = $1
+  AND l.is_firearm = true
+  AND o.status IN ('Paid','Pending FFL','Ready to Fulfill','Shipped')
+  AND o.created_at >= NOW() - (make_interval(days => $2)); -- $2 = POLICY_FIREARM_WINDOW_DAYS
+3) Staff actions (FFL workbench)
+Endpoints
+
+POST /orders/:id/ffl/attach → attach dealer/ref; set ffl_status='Pending Verification'
+
+POST /orders/:id/ffl/verify → verify FFL + lock ship-to; set:
+
+ffl_status='Verified', ffl_verified_at=now()
+
+If an auth exists → capture prior auth, set captured_at=now(), status='Ready to Fulfill'
+
+Update Zoho
+
+POST /orders/:id/override (admin only) → remove hold with reason; audit log + Zoho Note
+
+4) Authorize.Net usage
+On holds: authOnlyTransaction (save ids)
+
+On FFL verify / release: capturePriorAuthTransaction
+
+On timeout/cancel: voidTransaction
+
+5) Zoho sync (mirror only)
+Stages (Deals)
+
+CMS Pending FFL → Zoho Stage = Pending FFL
+
+CMS Hold – Multi-Firearm → Zoho Stage = Compliance Hold
+
+CMS Ready to Fulfill → Zoho Stage = Ready to Fulfill
+
+CMS Paid → Zoho Stage = Paid
+
+CMS Shipped → Zoho Stage = Closed Won
+
+CMS Canceled → Zoho Stage = Closed Lost (Reason set)
+
+Deal custom fields (create in Zoho)
+
+FFL_Required (Yes/No)
+
+FFL_Status (Missing | Pending Verification | Verified)
+
+FFL_Dealer (text)
+
+FFL_Verified_At (datetime)
+
+Compliance_Hold (Yes/No)
+
+Hold_Reason (FFL | Multi-Firearm | Other)
+
+Firearms_Window_Count (number)
+
+Window_Days (number)
+
+Limit_Qty (number)
+
+Auth_Transaction_ID (text)
+
+Payment_Captured_At (datetime)
+
+Order_ID (external id)
+
+Upsert Contact by email → Upsert/Create Deal (examples)
+
+Create/Update Deal payload (JSON):
+
+json
+Copy
+Edit
+{
+  "data": [{
+    "Deal_Name": "Order #12345",
+    "Stage": "Pending FFL",
+    "Amount": 1299.99,
+    "Closing_Date": "2025-08-11",
+    "Contact_Name": {"id":"<CONTACT_ID>"},
+    "FFL_Required": true,
+    "FFL_Status": "Missing",
+    "Compliance_Hold": false,
+    "Hold_Reason": "FFL",
+    "Firearms_Window_Count": 0,
+    "Window_Days": 30,
+    "Limit_Qty": 5,
+    "Auth_Transaction_ID": "<anetAuthId>",
+    "Order_ID": "12345"
+  }]
+}
+On Multi-Firearm hold:
+
+json
+Copy
+Edit
+{
+  "data": [{
+    "Stage": "Compliance Hold",
+    "Compliance_Hold": true,
+    "Hold_Reason": "Multi-Firearm",
+    "Firearms_Window_Count": 6,
+    "Window_Days": 30,
+    "Limit_Qty": 5,
+    "Order_ID": "12346"
+  }]
+}
+On FFL verify + release:
+
+json
+Copy
+Edit
+{
+  "data": [{
+    "Stage": "Ready to Fulfill",
+    "FFL_Status": "Verified",
+    "FFL_Dealer": "Acme Guns, 12-34567",
+    "FFL_Verified_At": "2025-08-11T17:22:05Z",
+    "Payment_Captured_At": "2025-08-11T17:22:06Z"
+  }]
+}
+Zoho Task creation (on each hold)
+
+json
+Copy
+Edit
+{
+  "data": [{
+    "Subject": "Obtain FFL for Order #12345",
+    "Due_Date": "2025-08-11",
+    "What_Id": "<DEAL_ID>",    // link to Deal
+    "Status": "Not Started",
+    "Owner": "<USER_ID_OPTIONAL>"
+  }]
+}
+For multi-firearm:
+
+json
+Copy
+Edit
+{
+  "data": [{
+    "Subject": "Compliance review: Multi-Firearm (Order #12346)",
+    "Due_Date": "2025-08-11",
+    "What_Id": "<DEAL_ID>",
+    "Status": "Not Started"
+  }]
+}
+6) Admin policy knobs (CMS UI)
+Editable integers: Window (days), Limit (qty).
+
+Feature toggles: FFL hold on/off, Multi-firearm hold on/off.
+
+Store to DB or env; read at checkout.
+
+7) Mixed carts
+Option A (simple): keep one order; if any firearm present, apply holds to the whole order.
+
+Option B (ops-friendly): split shipments—firearm shipment on hold; accessories can proceed. If B, mirror as 2 Deals or a Deal + line statuses.
+
+8) Idempotency & logging
+Use a single order UUID as idempotency key for Zoho upserts and ANet actions.
+
+Append a line to your existing MD audit log on each:
+
+hold placed/released, auth/capture/void, Zoho task created.
+
+9) Acceptance tests
+FFL hold path: cart has firearm, no FFL → order Pending FFL, ANet auth-only, Zoho Deal created + Task.
+
+FFL verify: attach + verify → capture prior auth, Ready to Fulfill, Zoho updated.
+
+Multi-firearm hold: with history making total ≥ limit → order Hold – Multi-Firearm, Zoho Deal + Task.
+
+No hold: no firearms or under limit with FFL on file → capture now, Paid.
+
+Policy change: set limit to 3, window 60 → next checkout honors new values.
+
+Idempotency: double-submit checkout → still one order, one Zoho Deal, one auth.
+
+Cancel/timeout: on expired FFL chase → void auth, Canceled, Zoho Closed Lost (FFL).

@@ -521,25 +521,7 @@ export class ZohoService {
     }
   }
 
-  /**
-   * Update deal stage based on order status
-   */
-  async updateDealStage(dealId: string, orderStatus: string): Promise<boolean> {
-    try {
-      const newStage = this.mapOrderStatusToDealStage(orderStatus);
-      
-      const response = await this.makeAPIRequest(`Deals/${dealId}`, 'PUT', {
-        data: [{
-          Stage: newStage
-        }]
-      });
 
-      return response.data && response.data.length > 0 && response.data[0].status === 'success';
-    } catch (error) {
-      console.error('Error updating deal stage:', error);
-      return false;
-    }
-  }
 
   /**
    * Get all deals for a contact

@@ -109,6 +109,21 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register specialized routes first  
+  await registerRSRFFLRoutes(app);
+  registerAuthRoutes(app);
+  
+  // Initialize firearms compliance configuration
+  try {
+    const { initializeComplianceConfig } = await import('./compliance-config-init');
+    await initializeComplianceConfig();
+  } catch (error) {
+    console.error('Failed to initialize compliance config:', error);
+  }
+  
+  // Firearms Compliance Routes
+  app.use('/api/firearms-compliance', (await import('./routes/firearms-compliance-routes')).default);
+
   // Registration routes are now handled by auth-routes.ts
 
   // Email verification endpoint (Zoho-based)

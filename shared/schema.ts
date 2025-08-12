@@ -73,6 +73,7 @@ export const products = pgTable("products", {
   dimensions: json("dimensions"), // {length, width, height}
   restrictions: json("restrictions"), // RSR restrictions object
   stateRestrictions: json("state_restrictions"), // Array of restricted states
+  isFirearm: boolean("is_firearm").notNull().default(false), // Firearms compliance tracking
   groundShipOnly: boolean("ground_ship_only").default(false),
   adultSignatureRequired: boolean("adult_signature_required").default(false),
   dropShippable: boolean("drop_shippable").default(true), // RSR field 69: Can be drop shipped directly to consumer
@@ -109,6 +110,32 @@ export const orders = pgTable("orders", {
   paymentMethod: text("payment_method").default("authorize_net"), // authorize_net, stripe, etc
   zohoDealId: text("zoho_deal_id"), // Zoho CRM Deal ID
   zohoContactId: text("zoho_contact_id"), // Zoho CRM Contact ID
+  // Firearms Compliance Fields
+  holdReason: text("hold_reason"), // 'FFL', 'Multi-Firearm', NULL
+  authTransactionId: text("auth_transaction_id"), // Authorize.Net Auth ID for holds
+  authExpiresAt: timestamp("auth_expires_at"), // When the auth expires
+  capturedAt: timestamp("captured_at"), // When payment was captured
+  fflRequired: boolean("ffl_required").default(false),
+  fflStatus: text("ffl_status").default("Missing"), // 'Missing', 'Pending Verification', 'Verified'  
+  fflDealerId: text("ffl_dealer_id"), // Reference to FFL dealer
+  fflVerifiedAt: timestamp("ffl_verified_at"), // When FFL was verified
+  firearmsWindowCount: integer("firearms_window_count").default(0), // Count in rolling window
+  windowDays: integer("window_days").default(30), // Policy window days
+  limitQty: integer("limit_qty").default(5), // Policy limit quantity
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+// Order Lines - individual items in orders
+export const orderLines = pgTable("order_lines", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").notNull(),
+  productId: integer("product_id").notNull(),
+  quantity: integer("quantity").notNull(),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
+  isFirearm: boolean("is_firearm").notNull().default(false), // Denormalized firearm flag
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const ffls = pgTable("ffls", {
@@ -241,6 +268,19 @@ export const orderRestrictions = pgTable("order_restrictions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Firearms Compliance Settings - Master configuration table
+export const firearmsComplianceSettings = pgTable("firearms_compliance_settings", {
+  id: serial("id").primaryKey(),
+  policyFirearmWindowDays: integer("policy_firearm_window_days").notNull().default(30),
+  policyFirearmLimit: integer("policy_firearm_limit").notNull().default(5),
+  featureMultiFirearmHold: boolean("feature_multi_firearm_hold").notNull().default(true),
+  featureFflHold: boolean("feature_ffl_hold").notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
+  lastModifiedBy: integer("last_modified_by"), // User ID who made the change
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Estimated delivery times for different fulfillment types
 export const deliveryTimeSettings = pgTable("delivery_time_settings", {
   id: serial("id").primaryKey(),
@@ -260,7 +300,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   }),
 }));
 
-export const ordersRelations = relations(orders, ({ one }) => ({
+export const ordersRelations = relations(orders, ({ one, many }) => ({
   user: one(users, {
     fields: [orders.userId],
     references: [users.id],
@@ -268,6 +308,18 @@ export const ordersRelations = relations(orders, ({ one }) => ({
   fflRecipient: one(ffls, {
     fields: [orders.fflRecipientId],
     references: [ffls.id],
+  }),
+  orderLines: many(orderLines),
+}));
+
+export const orderLinesRelations = relations(orderLines, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderLines.orderId],
+    references: [orders.id],
+  }),
+  product: one(products, {
+    fields: [orderLines.productId],
+    references: [products.id],
   }),
 }));
 
@@ -297,6 +349,10 @@ export type FulfillmentSetting = typeof fulfillmentSettings.$inferSelect;
 export type InsertFulfillmentSetting = typeof fulfillmentSettings.$inferInsert;
 export type StateShippingPolicy = typeof stateShippingPolicies.$inferSelect;
 export type TierPricingRule = typeof tierPricingRules.$inferSelect;
+export type OrderLine = typeof orderLines.$inferSelect;
+export type InsertOrderLine = typeof orderLines.$inferInsert;
+export type FirearmsComplianceSetting = typeof firearmsComplianceSettings.$inferSelect;
+export type InsertFirearmsComplianceSetting = typeof firearmsComplianceSettings.$inferInsert;
 export type HeroCarouselSlide = typeof heroCarouselSlides.$inferSelect;
 export type AdminSetting = typeof adminSettings.$inferSelect;
 export type InsertAdminSetting = typeof adminSettings.$inferInsert;
@@ -444,6 +500,9 @@ export const membershipTierSettings = pgTable("membership_tier_settings", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// Firearms Compliance Policy Settings
+// Removed duplicate - definition exists at line 275
 
 // Tier Label Control Settings (Admin Only)
 export const tierLabelSettings = pgTable("tier_label_settings", {
