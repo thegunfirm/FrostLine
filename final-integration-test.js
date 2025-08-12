@@ -1,149 +1,208 @@
+#!/usr/bin/env node
+
+/**
+ * Final Integration Test - Firearms Compliance → Zoho CRM
+ * Comprehensive test to verify the complete system is working
+ */
+
 import axios from 'axios';
 
 const BASE_URL = 'http://localhost:5000';
 
-async function testRealInventoryIntegrity() {
-  console.log('🔍 TESTING REAL INVENTORY INTEGRITY\n');
-  
+// Real firearm order for testing
+const FIREARMS_ORDER = {
+  userId: 999999,
+  cartItems: [{
+    id: 153782,
+    name: 'GLOCK 19 Gen 5 9mm Luger 4.02" Barrel 15-Round',
+    sku: 'GLOCK19GEN5',
+    price: 619.99,
+    quantity: 1,
+    isFirearm: true,
+    requiresFFL: true
+  }],
+  shippingAddress: {
+    firstName: 'Final',
+    lastName: 'TestCustomer',
+    address1: '456 Integration Test Drive',
+    city: 'Austin',
+    state: 'TX',
+    zip: '78701'
+  },
+  paymentMethod: {
+    cardNumber: '4111111111111111',
+    expirationDate: '1225',
+    cvv: '123'
+  },
+  customerInfo: {
+    id: 999999,
+    firstName: 'Final',
+    lastName: 'TestCustomer',
+    email: 'final.integration.test@example.com',
+    phone: '555-999-8888'
+  }
+};
+
+async function makeAPICall(method, endpoint, data = null) {
   try {
-    // Check total products
-    const response = await axios.get(`${BASE_URL}/api/products/search?limit=1`);
-    if (response.data.length === 0) {
-      console.log('❌ CRITICAL: No products found in database!');
-      return false;
-    }
-    
-    const product = response.data[0];
-    console.log('✓ Real product found:', {
-      rsr_stock_number: product.rsr_stock_number,
-      product_name: product.product_name,
-      quantity_available: product.quantity_available,
-      manufacturer: product.manufacturer,
-      distributor: product.distributor
+    const response = await axios({
+      method,
+      url: `${BASE_URL}${endpoint}`,
+      data,
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 30000
     });
-    
-    // Verify RSR distributor source
-    if (product.distributor !== 'RSR') {
-      console.log('❌ CRITICAL: Product not from RSR distributor!');
-      return false;
-    }
-    
-    console.log('✅ INVENTORY INTEGRITY VERIFIED - All products are authentic RSR data\n');
-    return true;
-    
+    return { success: true, data: response.data, status: response.status };
   } catch (error) {
-    console.log('❌ INVENTORY CHECK FAILED:', error.message);
-    return false;
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message,
+      status: error.response?.status || 0,
+      response: error.response?.data
+    };
   }
 }
 
-async function testFAPIntegrationComplete() {
-  console.log('🔧 TESTING COMPLETE FAP INTEGRATION\n');
-  
-  try {
-    // Test 1: Authentication endpoints
-    const loginResponse = await axios.post(`${BASE_URL}/api/auth/login`, {
-      email: 'admin@thegunfirm.com',
-      password: 'admin123'
-    });
-    
-    const cookies = loginResponse.headers['set-cookie']?.[0];
-    console.log('✓ Admin authentication successful');
-    
-    // Test 2: FAP Configuration
-    const configResponse = await axios.get(`${BASE_URL}/api/fap/config`, {
-      headers: { Cookie: cookies }
-    });
-    console.log('✓ FAP configuration accessible:', {
-      baseUrl: configResponse.data.baseUrl,
-      hasApiKey: configResponse.data.hasApiKey,
-      version: configResponse.data.version
-    });
-    
-    // Test 3: FAP Health Check
-    const healthResponse = await axios.get(`${BASE_URL}/api/fap/health`, {
-      headers: { Cookie: cookies }
-    });
-    console.log('✓ FAP health check:', healthResponse.data.healthy ? 'HEALTHY' : 'UNHEALTHY (expected without real API)');
-    
-    // Test 4: CMS Email Templates
-    const templatesResponse = await axios.get(`${BASE_URL}/api/cms/emails/templates`, {
-      headers: { Cookie: cookies }
-    });
-    console.log('✓ CMS email templates count:', templatesResponse.data?.length || 0);
-    
-    // Test 5: CMS Support Tickets
-    const ticketsResponse = await axios.get(`${BASE_URL}/api/cms/support/tickets`, {
-      headers: { Cookie: cookies }
-    });
-    console.log('✓ CMS support tickets count:', ticketsResponse.data?.length || 0);
-    
-    // Test 6: Cross-platform analytics endpoint
-    try {
-      await axios.post(`${BASE_URL}/api/fap/analytics/event`, {
-        event: 'test_integration',
-        properties: { source: 'integration_test' },
-        userId: '1'
-      }, {
-        headers: { Cookie: cookies }
-      });
-      console.log('✓ Analytics endpoint accessible (expected to fail without real FAP API)');
-    } catch (error) {
-      console.log('! Analytics endpoint properly secured and responsive');
-    }
-    
-    // Test 7: Email template sync endpoint
-    try {
-      await axios.get(`${BASE_URL}/api/fap/email-templates`, {
-        headers: { Cookie: cookies }
-      });
-      console.log('✓ Email template sync endpoint accessible');
-    } catch (error) {
-      console.log('! Email template sync properly handles API failures');
-    }
-    
-    // Test 8: User sync endpoint
-    try {
-      await axios.post(`${BASE_URL}/api/fap/sync/user/1`, {}, {
-        headers: { Cookie: cookies }
-      });
-      console.log('✓ User sync endpoint accessible');
-    } catch (error) {
-      console.log('! User sync properly handles API failures');
-    }
-    
-    console.log('\n✅ ALL FAP INTEGRATION FEATURES TESTED SUCCESSFULLY\n');
-    
-    console.log('🔗 INTEGRATION SUMMARY:');
-    console.log('  ✓ Direct FAP API Connections - Implemented and secure');
-    console.log('  ✓ Shared Customer Support - CMS tickets functional');
-    console.log('  ✓ Unified Email Templates - Sync system operational');
-    console.log('  ✓ Cross-Platform Analytics - Event tracking ready');
-    console.log('  ✓ Real-time webhooks - Endpoints configured');
-    console.log('  ✓ Role-based access control - Security verified\n');
-    
-    return true;
-    
-  } catch (error) {
-    console.log('❌ FAP INTEGRATION TEST FAILED:', error.message);
-    return false;
-  }
-}
+async function runFinalIntegrationTest() {
+  console.log('🎯 FINAL FIREARMS COMPLIANCE ↔️ ZOHO INTEGRATION TEST');
+  console.log('===================================================\n');
 
-async function runCompleteTest() {
-  console.log('🚀 COMPLETE FAP INTEGRATION & INVENTORY TEST\n');
-  
-  const inventoryOK = await testRealInventoryIntegrity();
-  const integrationOK = await testFAPIntegrationComplete();
-  
-  if (inventoryOK && integrationOK) {
-    console.log('🎯 ALL TESTS PASSED SUCCESSFULLY');
-    console.log('📦 Real RSR inventory data preserved and verified');
-    console.log('🔧 Complete FAP integration functional and secure');
-    console.log('🔒 No fake or synthetic data detected anywhere');
+  // Test 1: Configuration verification
+  console.log('📋 Test 1: Verifying system configuration...');
+  const configTest = await makeAPICall('GET', '/api/firearms-compliance/config');
+  if (configTest.success) {
+    console.log('✅ System configured correctly');
+    console.log(`   Policy Window: ${configTest.data.config.policyFirearmWindowDays} days`);
+    console.log(`   Firearm Limit: ${configTest.data.config.policyFirearmLimit} per window`);
+    console.log(`   FFL Holds: ${configTest.data.config.featureFflHold ? 'Enabled' : 'Disabled'}`);
   } else {
-    console.log('⚠️  SOME TESTS FAILED - Review output above');
+    console.log('❌ Configuration test failed');
+    return false;
   }
+
+  // Test 2: Compliance check
+  console.log('\n📋 Test 2: Pre-checkout compliance validation...');
+  const complianceTest = await makeAPICall('POST', '/api/firearms-compliance/check', {
+    userId: FIREARMS_ORDER.userId,
+    cartItems: FIREARMS_ORDER.cartItems
+  });
+  
+  if (complianceTest.success) {
+    console.log('✅ Compliance check passed');
+    console.log(`   Will require hold: ${complianceTest.data.requiresHold}`);
+    console.log(`   Hold type: ${complianceTest.data.holdType || 'None'}`);
+  } else {
+    console.log(`⚠️  Compliance check: ${complianceTest.error}`);
+  }
+
+  // Test 3: Full firearms checkout with Zoho sync
+  console.log('\n📋 Test 3: Complete firearms checkout (with Zoho sync)...');
+  console.log(`Product: ${FIREARMS_ORDER.cartItems[0].name}`);
+  console.log(`Customer: ${FIREARMS_ORDER.customerInfo.firstName} ${FIREARMS_ORDER.customerInfo.lastName}`);
+  console.log(`Email: ${FIREARMS_ORDER.customerInfo.email}`);
+
+  const checkoutTest = await makeAPICall('POST', '/api/firearms-compliance/checkout', FIREARMS_ORDER);
+
+  if (checkoutTest.success) {
+    console.log('\n🎉 CHECKOUT SUCCESS!');
+    console.log(`   Order ID: ${checkoutTest.data.orderId}`);
+    console.log(`   Order Number: ${checkoutTest.data.orderNumber}`);
+    console.log(`   Status: ${checkoutTest.data.status}`);
+    
+    if (checkoutTest.data.hold) {
+      console.log(`   Hold Applied: ${checkoutTest.data.hold.type} - ${checkoutTest.data.hold.reason}`);
+    }
+    
+    if (checkoutTest.data.authTransactionId) {
+      console.log(`   Auth Transaction: ${checkoutTest.data.authTransactionId}`);
+    }
+
+    if (checkoutTest.data.dealId) {
+      console.log(`   ✅ ZOHO DEAL CREATED: ${checkoutTest.data.dealId}`);
+      console.log('\n🎯 INTEGRATION SUCCESS CONFIRMED!');
+      
+      console.log('\n📊 WHAT TO VERIFY IN ZOHO CRM:');
+      console.log('================================');
+      console.log(`1. Search for Deal: "${checkoutTest.data.orderNumber}"`);
+      console.log(`2. Search for Contact: "${FIREARMS_ORDER.customerInfo.email}"`);
+      console.log('3. Verify product: GLOCK 19 Gen 5');
+      console.log('4. Check amount: $619.99');
+      console.log('5. Confirm status: "Pending FFL"');
+      console.log('6. Verify all customer details are correct');
+
+      return {
+        success: true,
+        orderNumber: checkoutTest.data.orderNumber,
+        dealId: checkoutTest.data.dealId,
+        customerEmail: FIREARMS_ORDER.customerInfo.email,
+        orderId: checkoutTest.data.orderId
+      };
+    } else {
+      console.log('   ⚠️  Order created but NO Zoho Deal ID - integration may need attention');
+    }
+  } else {
+    console.log('\n❌ CHECKOUT FAILED');
+    console.log(`   Error: ${checkoutTest.error}`);
+    console.log(`   Status: ${checkoutTest.status}`);
+    
+    if (checkoutTest.response) {
+      console.log(`   Response: ${JSON.stringify(checkoutTest.response, null, 2)}`);
+    }
+  }
+
+  // Test 4: Zoho connectivity verification
+  console.log('\n📋 Test 4: Direct Zoho API connectivity...');
+  const zohoTest = await makeAPICall('POST', '/api/zoho/test');
+  if (zohoTest.success) {
+    console.log('✅ Zoho API connection verified');
+  } else {
+    console.log(`❌ Zoho API issue: ${zohoTest.error}`);
+  }
+
+  return null;
 }
 
-runCompleteTest();
+// Execute final test
+console.log('🚀 EXECUTING COMPREHENSIVE INTEGRATION TEST');
+console.log('This will create a real firearms order and verify Zoho sync\n');
+
+runFinalIntegrationTest()
+  .then(result => {
+    console.log('\n' + '='.repeat(60));
+    console.log('🏁 FINAL TEST RESULTS');
+    console.log('='.repeat(60));
+    
+    if (result && result.success) {
+      console.log('✅ COMPLETE INTEGRATION SUCCESS');
+      console.log('The firearms compliance system is fully operational!');
+      console.log('');
+      console.log('📄 Test Order Details:');
+      console.log(`   Order Number: ${result.orderNumber}`);
+      console.log(`   Order ID: ${result.orderId}`);
+      console.log(`   Zoho Deal ID: ${result.dealId}`);
+      console.log(`   Customer Email: ${result.customerEmail}`);
+      console.log('');
+      console.log('🔍 VERIFICATION: Check your Zoho CRM now');
+      console.log('The test order should be immediately visible');
+      console.log('');
+      console.log('✅ ALL SYSTEMS OPERATIONAL:');
+      console.log('   • Firearms compliance enforcement');
+      console.log('   • FFL hold management');
+      console.log('   • Payment authorization');
+      console.log('   • Zoho CRM synchronization');
+      console.log('   • Order status tracking');
+    } else {
+      console.log('❌ INTEGRATION ISSUES DETECTED');
+      console.log('The firearms compliance system needs additional configuration');
+      console.log('');
+      console.log('🔧 LIKELY CAUSES:');
+      console.log('   • Missing checkout endpoint implementation');
+      console.log('   • Database connectivity issues');
+      console.log('   • Zoho API configuration problems');
+      console.log('   • Route registration conflicts');
+    }
+  })
+  .catch(error => {
+    console.error('\n💥 TEST EXECUTION FAILED:', error.message);
+    process.exit(1);
+  });

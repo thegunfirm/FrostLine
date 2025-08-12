@@ -3,7 +3,7 @@ import { orders, orderLines, products } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { firearmsComplianceService, type ComplianceCheckResult, type CartItem } from './firearms-compliance-service';
 import { authorizeNetService } from './authorize-net-service';
-// import { zohoService } from './zoho-service'; // Temporarily disabled
+import { orderZohoIntegration, OrderZohoIntegration } from './order-zoho-integration';
 import type { InsertOrder, InsertOrderLine } from '@shared/schema';
 
 export interface CheckoutPayload {
@@ -153,42 +153,47 @@ export class FirearmsCheckoutService {
       // Step 6: Sync to Zoho CRM
       let dealId: string | undefined;
       try {
-        // Find or create contact
-        const contact = await zohoService.findOrCreateContact(
-          payload.customerInfo.email,
-          payload.customerInfo.firstName,
-          payload.customerInfo.lastName
-        );
+        const customerInfo = {
+          email: payload.customerInfo.email,
+          name: `${payload.customerInfo.firstName} ${payload.customerInfo.lastName}`,
+          membershipTier: 'Bronze', // TODO: Get from user session
+          zohoContactId: undefined
+        };
 
-        if (contact.success && contact.contactId) {
-          // Create deal
-          const dealResult = await zohoService.createOrderDeal({
-            contactId: contact.contactId,
+        const zohoOrderData = OrderZohoIntegration.formatOrderForZoho(
+          {
+            ...newOrder,
             orderNumber,
-            totalAmount,
-            orderItems: payload.cartItems.map(item => ({
+            items: payload.cartItems.map(item => ({
               productName: item.name,
-              sku: item.sku,
+              sku: item.sku || '',
               quantity: item.quantity,
               unitPrice: item.price,
               totalPrice: item.price * item.quantity,
+              fflRequired: item.requiresFFL || item.isFirearm
             })),
-            membershipTier: 'Bronze', // TODO: Get from user data
-            fflRequired: complianceResult.hasFirearms,
-            orderStatus,
-          });
+            fflDealerName: undefined // Will be updated when FFL is attached
+          },
+          customerInfo
+        );
 
-          if (dealResult.success && dealResult.dealId) {
-            dealId = dealResult.dealId;
+        console.log(`🔄 Syncing firearms compliance order ${orderNumber} to Zoho CRM...`);
+        const zohoResult = await orderZohoIntegration.processOrderToDeal(zohoOrderData);
+        
+        if (zohoResult.success) {
+          dealId = zohoResult.dealId;
+          
+          // Update order with Zoho IDs
+          await db.update(orders)
+            .set({
+              zohoDealId: zohoResult.dealId,
+              zohoContactId: zohoResult.contactId,
+            })
+            .where(eq(orders.id, newOrder.id));
             
-            // Update order with Zoho IDs
-            await db.update(orders)
-              .set({
-                zohoDealId: dealId,
-                zohoContactId: contact.contactId,
-              })
-              .where(eq(orders.id, newOrder.id));
-          }
+          console.log(`✅ Firearms order ${orderNumber} linked to Zoho Deal ${zohoResult.dealId}`);
+        } else {
+          console.error(`⚠️  Failed to create Zoho deal for firearms order ${orderNumber}: ${zohoResult.error}`);
         }
       } catch (zohoError) {
         console.error('Zoho sync failed (non-blocking):', zohoError);
@@ -200,7 +205,7 @@ export class FirearmsCheckoutService {
         orderId: newOrder.id,
         orderNumber,
         status: orderStatus as any,
-        hold: holdInfo,
+        hold: holdInfo || undefined,
         authTransactionId: complianceResult.requiresHold ? authResult.transactionId : undefined,
         transactionId: !complianceResult.requiresHold ? authResult.transactionId : undefined,
         dealId,
@@ -225,9 +230,7 @@ export class FirearmsCheckoutService {
     verifyFFL: boolean = false
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const order = await db.query.orders.findFirst({
-        where: (orders, { eq }) => eq(orders.id, orderId),
-      });
+      const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
 
       if (!order) {
         return { success: false, error: 'Order not found' };
@@ -266,7 +269,10 @@ export class FirearmsCheckoutService {
       // Sync to Zoho if deal exists
       if (order.zohoDealId) {
         try {
-          await zohoService.updateDealStage(order.zohoDealId, updateData.status || order.status);
+          // Use the OrderZohoIntegration to update deal stage
+          const dealStage = firearmsComplianceService.mapOrderStatusToDealStage(updateData.status || order.status);
+          await orderZohoIntegration.zohoService.updateDealStage(order.zohoDealId, dealStage);
+          console.log(`✅ Updated Zoho deal ${order.zohoDealId} status to: ${dealStage}`);
         } catch (zohoError) {
           console.error('Zoho sync failed (non-blocking):', zohoError);
         }
@@ -289,9 +295,7 @@ export class FirearmsCheckoutService {
     adminUserId: number
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const order = await db.query.orders.findFirst({
-        where: (orders, { eq }) => eq(orders.id, orderId),
-      });
+      const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
 
       if (!order) {
         return { success: false, error: 'Order not found' };
