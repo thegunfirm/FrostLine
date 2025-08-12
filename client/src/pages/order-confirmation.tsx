@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Home, ShoppingBag } from "lucide-react";
+import { CheckCircle, Home, ShoppingBag, Shield } from "lucide-react";
 
 const formatPrice = (price: number | string) => {
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
@@ -54,7 +54,7 @@ export default function OrderConfirmation() {
               <CheckCircle className="w-20 h-20 text-green-600 mx-auto mb-4" />
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
               <p className="text-lg text-gray-600 mb-4">
-                Thank you for your purchase. Your order has been successfully processed.
+                Thank you for your purchase. Your payment has been processed successfully.
               </p>
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 inline-block">
                 <p className="text-sm text-green-800 font-medium">
@@ -114,6 +114,34 @@ export default function OrderConfirmation() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Firearms Processing Notice */}
+          {orderData.hasFirearms && (
+            <Card className="mb-8 border-amber-200 bg-amber-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-amber-800">
+                  <Shield className="w-5 h-5" />
+                  Firearms Processing Notice
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-amber-800">
+                  <p className="font-medium">
+                    ✅ Payment has been charged to your card immediately
+                  </p>
+                  <p>
+                    🏪 Your order contains firearms that require FFL verification before processing with our distributor (RSR)
+                  </p>
+                  <p>
+                    📋 Our team will verify your FFL dealer information and then release your order for fulfillment
+                  </p>
+                  <p>
+                    📧 You'll receive email updates as your order progresses through verification and shipping
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">

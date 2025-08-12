@@ -64,8 +64,8 @@ export class FirearmsCheckoutService {
       let holdInfo = null;
 
       if (complianceResult.requiresHold) {
-        // Hold scenario - authorize only
-        authResult = await authorizeNetService.authOnlyTransaction(
+        // NEW POLICY: Charge card immediately for firearms but hold RSR processing
+        authResult = await authorizeNetService.authCaptureTransaction(
           totalAmount,
           payload.paymentMethod.cardNumber,
           payload.paymentMethod.expirationDate,
@@ -80,14 +80,14 @@ export class FirearmsCheckoutService {
           return {
             success: false,
             status: 'Paid',
-            error: `Payment authorization failed: ${authResult.error}`,
+            error: `Payment processing failed: ${authResult.error}`,
           };
         }
 
         orderStatus = firearmsComplianceService.getOrderStatusForHold(complianceResult.holdType);
         holdInfo = {
           type: complianceResult.holdType!,
-          reason: complianceResult.reason || 'Compliance hold required',
+          reason: complianceResult.reason || 'Payment completed - awaiting FFL verification for processing',
         };
       } else {
         // Normal checkout - capture immediately
@@ -126,9 +126,9 @@ export class FirearmsCheckoutService {
         authorizeNetTransactionId: authResult.transactionId,
         // Firearms compliance fields
         holdReason: complianceResult.holdType,
-        authTransactionId: complianceResult.requiresHold ? authResult.transactionId : null,
-        authExpiresAt: complianceResult.requiresHold ? authResult.expiresAt : null,
-        capturedAt: !complianceResult.requiresHold ? new Date() : null,
+        authTransactionId: null, // No longer using auth-only transactions
+        authExpiresAt: null, // No expiration since payment is captured
+        capturedAt: new Date(), // Always captured immediately now
         fflRequired: complianceResult.hasFirearms,
         fflStatus: complianceResult.hasFirearms ? 'Missing' : null,
         firearmsWindowCount: complianceResult.pastFirearmsCount,
@@ -206,8 +206,8 @@ export class FirearmsCheckoutService {
         orderNumber,
         status: orderStatus as any,
         hold: holdInfo || undefined,
-        authTransactionId: complianceResult.requiresHold ? authResult.transactionId : undefined,
-        transactionId: !complianceResult.requiresHold ? authResult.transactionId : undefined,
+        authTransactionId: undefined, // No longer using auth-only
+        transactionId: authResult.transactionId, // Always return captured transaction ID
         dealId,
       };
 

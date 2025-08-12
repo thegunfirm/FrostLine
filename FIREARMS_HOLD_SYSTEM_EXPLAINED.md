@@ -28,17 +28,18 @@ The system places **two types of holds**:
 - **Status**: Order set to "Compliance Hold"
 - **Action Required**: Admin review and possible override
 
-### 3. **Payment Processing**
+### 3. **Payment Processing** - UPDATED POLICY
 ```
-Regular Order:    Authorize → Capture (immediate charge)
-Hold Order:       Authorize → HOLD → Capture (after FFL verification)
+PREVIOUS: Hold Order:  Authorize → HOLD → Capture (after FFL verification)
+NEW:      Hold Order:  Authorize + Capture → HOLD RSR PROCESSING
 ```
 
-**During Hold**:
-- Payment is authorized but NOT captured
-- Customer's payment method is reserved
-- No money actually charged until FFL is verified
-- Authorization expires after 30 days if not captured
+**NEW BILLING POLICY (UPDATED)**:
+- ✅ Payment is **CHARGED IMMEDIATELY** for all firearms
+- ✅ Customer's card is billed right away (no auth-only)
+- ✅ RSR processing is **HELD** until human approval
+- ✅ No payment authorization expiration concerns
+- ✅ Customer gets immediate confirmation that payment went through
 
 ---
 
