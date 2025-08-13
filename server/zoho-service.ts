@@ -57,6 +57,38 @@ export class ZohoService {
     }
   }
 
+  // Refresh access token using refresh token
+  async refreshAccessToken(): Promise<{ access_token: string; expires_in: number }> {
+    if (!this.config.refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    try {
+      const response = await axios.post(`${this.config.accountsHost}/oauth/v2/token`, 
+        new URLSearchParams({
+          grant_type: 'refresh_token',
+          client_id: this.config.clientId,
+          client_secret: this.config.clientSecret,
+          refresh_token: this.config.refreshToken
+        }).toString(),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        }
+      );
+
+      // Update the access token in config
+      this.config.accessToken = response.data.access_token;
+      
+      console.log('✅ Zoho access token refreshed successfully');
+      return response.data;
+    } catch (error: any) {
+      console.error('Zoho token refresh error:', error.response?.data || error.message);
+      throw new Error(`Token refresh failed: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`);
+    }
+  }
+
   // Test API connection
   async testConnection(): Promise<boolean> {
     if (!this.config.accessToken) {
@@ -268,9 +300,9 @@ export class ZohoService {
   }
 
   /**
-   * Make authenticated API requests to Zoho CRM
+   * Make authenticated API requests to Zoho CRM with automatic token refresh
    */
-  async makeAPIRequest(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', data?: any): Promise<any> {
+  async makeAPIRequest(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', data?: any, retryCount = 0): Promise<any> {
     if (!this.accessToken) {
       throw new Error('No access token available. Please complete OAuth first.');
     }
@@ -291,6 +323,19 @@ export class ZohoService {
     const result = await response.json();
     
     if (!response.ok) {
+      // If token is invalid and we haven't retried yet, try to refresh token
+      if (result.code === 'INVALID_TOKEN' && retryCount === 0 && this.config.refreshToken) {
+        console.log('🔄 Access token expired, attempting to refresh...');
+        try {
+          await this.refreshAccessToken();
+          // Retry the request with the new token
+          return this.makeAPIRequest(endpoint, method, data, retryCount + 1);
+        } catch (refreshError) {
+          console.error('❌ Failed to refresh token:', refreshError);
+          throw new Error(`Token refresh failed: ${refreshError}`);
+        }
+      }
+      
       console.error('Zoho API Error:', result);
       console.error('Full URL was:', fullUrl);
       console.error('Request headers:', {
