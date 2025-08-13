@@ -53,8 +53,18 @@ export class LocalAuthService {
   private zohoService: ZohoService;
 
   constructor() {
-    // Initialize Zoho service for Contact module updates
-    this.zohoService = new ZohoService();
+    // Initialize Zoho service for Contact module updates with environment credentials
+    const zohoConfig = {
+      clientId: process.env.ZOHO_CLIENT_ID || '',
+      clientSecret: process.env.ZOHO_CLIENT_SECRET || '',
+      redirectUri: process.env.ZOHO_REDIRECT_URI || '',
+      accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
+      apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com/crm/v2',
+      accessToken: process.env.ZOHO_ACCESS_TOKEN,
+      refreshToken: process.env.ZOHO_REFRESH_TOKEN
+    };
+    
+    this.zohoService = new ZohoService(zohoConfig);
   }
 
   /**
