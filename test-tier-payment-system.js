@@ -14,9 +14,9 @@ const BASE_URL = 'http://localhost:5000';
 const SUBSCRIPTION_TIERS = [
   {
     name: 'Bronze',
-    monthlyPrice: 15.00,
-    yearlyPrice: 150.00,
-    features: ['Basic tier access', '5% discount on products', 'Standard support']
+    monthlyPrice: 0.00,
+    yearlyPrice: 0.00,
+    features: ['Free tier access', 'Basic product access', 'Community support']
   },
   {
     name: 'Gold', 
@@ -105,11 +105,11 @@ async function testSubscriptionTiers() {
 async function testSubscriptionPayment() {
   console.log('\n💳 Step 3: Testing subscription payment processing...');
 
-  // Test Bronze monthly subscription
+  // Test Bronze monthly subscription (free tier)
   const bronzePaymentTest = {
     subscriptionTier: 'Bronze',
     billingCycle: 'monthly',
-    amount: 15.00,
+    amount: 0.00,
     paymentMethod: {
       cardNumber: '4111111111111111', // Test card
       expirationDate: '1225',

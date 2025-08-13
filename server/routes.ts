@@ -5589,9 +5589,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         monthlyPrice: tier.pricing.monthly,
         yearlyPrice: tier.pricing.yearly,
         benefits: tier.name === 'Bronze' ? [
-          "Basic tier access",
-          "5% discount on products", 
-          "Standard support"
+          "Free tier access",
+          "Basic product access", 
+          "Community support"
         ] : tier.name === 'Gold' ? [
           "Mid-tier access",
           "10% discount on products",

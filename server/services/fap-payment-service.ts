@@ -32,7 +32,7 @@ export class FAPPaymentService {
    * Tier pricing structure
    */
   private static readonly TIER_PRICING = {
-    Bronze: { monthly: 15.00, yearly: 150.00 },
+    Bronze: { monthly: 0.00, yearly: 0.00 },
     Gold: { monthly: 25.00, yearly: 250.00 },
     Platinum: { monthly: 50.00, yearly: 500.00 }
   };
@@ -66,10 +66,27 @@ export class FAPPaymentService {
 
       // Validate tier and amount
       const expectedAmount = this.getTierPricing(paymentData.subscriptionTier, paymentData.billingCycle);
-      if (!expectedAmount || Math.abs(expectedAmount - paymentData.amount) > 0.01) {
+      if (expectedAmount === null) {
         return {
           success: false,
-          error: `Invalid amount for ${paymentData.subscriptionTier} ${paymentData.billingCycle} subscription`
+          error: `Invalid subscription tier: ${paymentData.subscriptionTier}`
+        };
+      }
+      
+      if (Math.abs(expectedAmount - paymentData.amount) > 0.01) {
+        return {
+          success: false,
+          error: `Invalid amount $${paymentData.amount} for ${paymentData.subscriptionTier} ${paymentData.billingCycle} subscription. Expected: $${expectedAmount}`
+        };
+      }
+
+      // Handle free Bronze tier - no payment required
+      if (paymentData.subscriptionTier === 'Bronze' && expectedAmount === 0) {
+        console.log('✨ Free Bronze tier subscription - no payment required');
+        return {
+          success: true,
+          transactionId: `free_${Date.now()}`,
+          authCode: `bronze_free`
         };
       }
 
