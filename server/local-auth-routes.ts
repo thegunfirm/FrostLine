@@ -66,7 +66,42 @@ export function registerLocalAuthRoutes(app: Express) {
     }
   });
 
-  // POST /api/auth/verify-email - Verify email and create account
+  // GET /verify-email?token=... - Verify email and create account (email link handler)
+  app.get('/verify-email', async (req, res) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token || typeof token !== 'string') {
+        return res.redirect('/login?error=invalid_token');
+      }
+      
+      const result = await localAuthService.verifyEmailAndCreateAccount(token);
+      
+      if (result.success && result.user) {
+        // Set session
+        req.session.user = {
+          id: result.user.id,
+          email: result.user.email,
+          firstName: result.user.firstName,
+          lastName: result.user.lastName,
+          membershipTier: result.user.subscriptionTier,
+          emailVerified: true
+        };
+        
+        console.log('✅ User account created and logged in:', result.user.email);
+        return res.redirect('/login?verified=true');
+      } else {
+        console.log('❌ Email verification failed:', result.error);
+        return res.redirect('/login?error=verification_failed');
+      }
+      
+    } catch (error: any) {
+      console.error('Email verification error:', error);
+      return res.redirect('/login?error=verification_error');
+    }
+  });
+
+  // POST /api/auth/verify-email - Verify email and create account (API)
   app.post('/api/auth/verify-email', async (req, res) => {
     try {
       const { token } = req.body;
@@ -143,6 +178,38 @@ export function registerLocalAuthRoutes(app: Express) {
       res.status(500).json({ 
         success: false, 
         message: 'Test user creation failed. Please try again.' 
+      });
+    }
+  });
+
+  // GET /api/auth/zoho-debug - Debug Zoho CRM field names
+  app.get('/api/auth/zoho-debug', async (req, res) => {
+    try {
+      const zohoService = new (await import('./zoho-service')).ZohoService();
+      
+      // Test basic Zoho Contact creation without custom fields
+      const testContactData = {
+        Email: 'field.test@thegunfirm.com',
+        First_Name: 'Field',
+        Last_Name: 'Test',
+        Lead_Source: 'API Test'
+      };
+      
+      console.log('🧪 Testing basic Zoho Contact creation...');
+      const result = await zohoService.createContact(testContactData);
+      
+      res.json({
+        success: result.success,
+        message: 'Zoho field test completed',
+        details: result
+      });
+      
+    } catch (error: any) {
+      console.error('Zoho debug error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message,
+        details: error
       });
     }
   });

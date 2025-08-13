@@ -132,6 +132,7 @@ export class LocalAuthService {
       }
 
       // Create user in local database
+      const verificationTimestamp = new Date();
       const userData: InsertUser = {
         email: pendingUser.email,
         firstName: pendingUser.firstName,
@@ -140,6 +141,7 @@ export class LocalAuthService {
         phone: pendingUser.phone || null,
         membershipTier: pendingUser.subscriptionTier || 'Bronze',
         emailVerified: true,
+        emailVerifiedAt: verificationTimestamp,
         isActive: true,
         lastLogin: new Date(),
         createdAt: new Date(),
@@ -156,6 +158,47 @@ export class LocalAuthService {
         email: pendingUser.email,
         localId: newUser.id
       });
+
+      // Create/Update Zoho CRM Contact with email verification status
+      try {
+        console.log('🔄 Creating/Updating Zoho Contact with verification status...');
+        
+        // First try to create the Contact (includes Tier and basic info)
+        const contactData = {
+          Email: pendingUser.email,
+          First_Name: pendingUser.firstName,
+          Last_Name: pendingUser.lastName,
+          Phone: pendingUser.phone || '',
+          Lead_Source: 'Website Registration',
+          Account_Name: 'TheGunFirm Customer',
+          Tier: pendingUser.subscriptionTier || 'Bronze', // Your custom Tier field
+          'Email Verified': true, // Your custom Email Verified checkbox
+          'Email Verification Time Stamp': verificationTimestamp.toISOString() // Your custom timestamp field
+        };
+        
+        const zohoContactResult = await this.zohoService.createContact(contactData);
+        
+        if (zohoContactResult.success) {
+          console.log('✅ Zoho Contact created with email verification status');
+        } else {
+          console.log('⚠️ Zoho Contact creation failed, trying update instead...');
+          
+          // If creation failed (possibly duplicate), try updating existing Contact
+          const zohoUpdateResult = await this.zohoService.updateContactEmailVerification(
+            pendingUser.email,
+            verificationTimestamp
+          );
+          
+          if (zohoUpdateResult.success) {
+            console.log('✅ Zoho Contact email verification updated successfully');
+          } else {
+            console.log('⚠️ Zoho Contact update also failed:', zohoUpdateResult.error);
+          }
+        }
+      } catch (error) {
+        console.error('⚠️ Error with Zoho Contact operations:', error);
+        // Don't fail the overall process if Zoho operations fail
+      }
 
       return {
         success: true,

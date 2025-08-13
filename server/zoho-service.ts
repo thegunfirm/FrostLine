@@ -183,6 +183,81 @@ export class ZohoService {
   }
 
   /**
+   * Update Contact email verification status in Zoho CRM
+   */
+  async updateContactEmailVerification(email: string, verifiedAt: Date): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!this.config.accessToken) {
+        console.log('⚠️ No Zoho access token available for email verification update');
+        return { success: false, error: 'No access token available' };
+      }
+
+      console.log(`🔄 Updating Zoho Contact email verification for: ${email}`);
+
+      // First, find the Contact by email
+      const searchResponse = await axios.get(
+        `${this.config.apiHost}/crm/v2/Contacts/search?criteria=(Email:equals:${encodeURIComponent(email)})`,
+        {
+          headers: {
+            'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`
+          }
+        }
+      );
+
+      if (!searchResponse.data?.data || searchResponse.data.data.length === 0) {
+        console.log(`⚠️ Contact not found in Zoho for email: ${email}`);
+        return { success: false, error: 'Contact not found in Zoho CRM' };
+      }
+
+      const contactId = searchResponse.data.data[0].id;
+      console.log(`📝 Found Zoho Contact ID: ${contactId} for ${email}`);
+
+      // Update the Contact with email verification fields
+      // Using the exact field names you created in Zoho CRM
+      const updatePayload = {
+        data: [{
+          id: contactId,
+          "Email Verified": true, // Custom checkbox field (Yes/No)
+          "Email Verification Time Stamp": verifiedAt.toISOString() // Custom datetime field
+        }]
+      };
+
+      const updateResponse = await axios.put(
+        `${this.config.apiHost}/crm/v2/Contacts`,
+        updatePayload,
+        {
+          headers: {
+            'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (updateResponse.data?.data?.[0]?.status === 'success') {
+        console.log(`✅ Zoho Contact email verification updated for: ${email}`);
+        return { success: true };
+      } else {
+        console.error('Zoho Contact email verification update failed:', updateResponse.data);
+        return { success: false, error: 'Update failed in Zoho CRM' };
+      }
+
+    } catch (error: any) {
+      // Handle token refresh if needed
+      if (error.response?.status === 401 && this.config.refreshToken) {
+        console.log('🔄 Access token expired, attempting to refresh...');
+        const refreshResult = await this.refreshAccessToken();
+        if (refreshResult) {
+          // Retry the operation with new token
+          return this.updateContactEmailVerification(email, verifiedAt);
+        }
+      }
+      
+      console.error('Error updating Zoho Contact email verification:', error.response?.data || error.message);
+      return { success: false, error: `Zoho update error: ${error.message}` };
+    }
+  }
+
+  /**
    * Update Deal stage when order status changes
    */
   async updateDealStage(dealId: string, newOrderStatus: string): Promise<boolean> {

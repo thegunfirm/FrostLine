@@ -13,6 +13,7 @@ export const localUsers = pgTable("local_users", {
   phone: text("phone"),
   membershipTier: text("membership_tier").notNull().default("Bronze"),
   emailVerified: boolean("email_verified").default(false),
+  emailVerifiedAt: timestamp("email_verified_at"),
   isActive: boolean("is_active").default(true),
   isTestAccount: boolean("is_test_account").default(false),
   lastLogin: timestamp("last_login"),
