@@ -5582,41 +5582,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { fapPaymentService } = await import('./services/fap-payment-service');
 
   // Get FAP subscription tiers
-  app.get("/api/fap/subscription-tiers", async (req, res) => {
+  app.get("/api/fap/subscription-tiers", (req, res) => {
     try {
-      const tiers = fapPaymentService.getAvailableTiers().map(tier => ({
-        name: tier.name,
-        monthlyPrice: tier.pricing.monthly,
-        yearlyPrice: tier.pricing.yearly,
-        benefits: tier.name === 'Bronze' ? [
-          "Free tier access",
-          "Basic product access", 
-          "Community support"
-        ] : tier.name === 'Gold' ? [
-          "5% discount on products",
-          "Priority support",
-          "Exclusive deals"
-        ] : tier.name === 'Platinum Monthly' ? [
-          "10% discount on products",
-          "VIP support",
-          "Early access to new products",
-          "Premium customer service"
-        ] : tier.name === 'Platinum Founder' ? [
-          "15% discount on products (LIFETIME)",
-          "VIP support",
-          "Early access to new products",
-          "Premium customer service",
-          "Founder member badge",
-          "Lifetime price lock"
-        ] : [
-          "Standard platinum benefits",
-          "Annual billing discount"
-        ]
-      }));
-      
+      console.log('🔍 Getting subscription tiers...');
+      const tiers = fapPaymentService.getAvailableTiers();
+      console.log('✅ Tiers retrieved:', tiers.length);
       res.json(tiers);
     } catch (error) {
-      console.error("Error fetching subscription tiers:", error);
+      console.error("❌ Error fetching subscription tiers:", error);
+      console.error("❌ Error stack:", error.stack);
       res.status(500).json({ error: "Failed to fetch subscription tiers" });
     }
   });
@@ -5726,8 +5700,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: Math.abs(tier.name.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0)), // Generate ID from tier name
         tier: tier.name,
         displayName: tier.name,
-        monthlyPrice: tier.pricing.monthly.toString(),
-        annualPrice: tier.pricing.yearly.toString(),
+        monthlyPrice: tier.monthlyPrice?.toString() || null,
+        annualPrice: tier.yearlyPrice?.toString() || null,
         discountPercent: tier.name === 'Gold' ? '5.00' : 
                         tier.name === 'Platinum Monthly' ? '10.00' :
                         tier.name === 'Platinum Founder' ? '15.00' : '0.00',

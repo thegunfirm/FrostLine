@@ -19,6 +19,8 @@ interface PaymentResult {
   transactionId?: string;
   authCode?: string;
   error?: string;
+  subscriptionTier?: string;
+  amount?: number;
 }
 
 export class FAPPaymentService {
@@ -29,14 +31,14 @@ export class FAPPaymentService {
   private static readonly VALID_TIERS = ['Bronze', 'Gold', 'Platinum Monthly', 'Platinum Annual', 'Platinum Founder'];
   
   /**
-   * Tier pricing structure
+   * Tier pricing structure - EXACT USER SPECIFIED PRICING
    */
   private static readonly TIER_PRICING = {
-    Bronze: { monthly: 0.00, yearly: 0.00 },
-    Gold: { monthly: 5.00, yearly: 50.00 },
-    'Platinum Monthly': { monthly: 10.00, yearly: 120.00 },
-    'Platinum Annual': { monthly: 8.25, yearly: 99.00 }, // Not in use yet
-    'Platinum Founder': { monthly: 4.17, yearly: 50.00 } // Temporary, lifetime price lock
+    Bronze: { monthly: 0.00, yearly: 0.00 }, // Free
+    Gold: { monthly: 5.00, yearly: 50.00 }, // Gold Monthly $5, Gold Annually $50
+    'Platinum Monthly': { monthly: 10.00, yearly: null }, // Platinum Monthly $10 (monthly only)
+    'Platinum Annual': { monthly: null, yearly: 99.00 }, // Regular, in the future, not in use right now
+    'Platinum Founder': { monthly: null, yearly: 50.00 } // Temporary, billed annually, lifetime price lock
   };
 
   /**
@@ -51,7 +53,10 @@ export class FAPPaymentService {
    */
   public getTierPricing(tier: string, billingCycle: 'monthly' | 'yearly'): number | null {
     const pricing = FAPPaymentService.TIER_PRICING[tier as keyof typeof FAPPaymentService.TIER_PRICING];
-    return pricing ? pricing[billingCycle] : null;
+    if (!pricing) return null;
+    
+    const price = pricing[billingCycle];
+    return price !== null ? price : null;
   }
 
   /**
@@ -120,9 +125,7 @@ export class FAPPaymentService {
           email: paymentData.customerEmail,
           phone: '',
           address: {
-            firstName: paymentData.customerName.split(' ')[0] || '',
-            lastName: paymentData.customerName.split(' ')[1] || '',
-            address1: '123 Test St', // This would come from payment form
+            street: '123 Test St', // This would come from payment form
             city: 'Austin',
             state: 'TX',
             zip: '78701'
@@ -172,13 +175,41 @@ export class FAPPaymentService {
   }
 
   /**
-   * Get available subscription tiers
+   * Get available subscription tiers - EXACT USER SPECIFIED PRICING
    */
   public getAvailableTiers() {
-    return FAPPaymentService.VALID_TIERS.map(tier => ({
-      name: tier,
-      pricing: FAPPaymentService.TIER_PRICING[tier as keyof typeof FAPPaymentService.TIER_PRICING]
-    }));
+    return [
+      {
+        name: 'Bronze',
+        monthlyPrice: 0,
+        yearlyPrice: 0,
+        benefits: ['Free tier access', 'Basic product access', 'Community support']
+      },
+      {
+        name: 'Gold',
+        monthlyPrice: 5.00,
+        yearlyPrice: 50.00,
+        benefits: ['5% discount on products', 'Priority support', 'Exclusive deals']
+      },
+      {
+        name: 'Platinum Monthly',
+        monthlyPrice: 10.00,
+        yearlyPrice: null, // Monthly only
+        benefits: ['10% discount on products', 'VIP support', 'Early access to new products', 'Premium customer service']
+      },
+      {
+        name: 'Platinum Annual',
+        monthlyPrice: null, // Not in use right now
+        yearlyPrice: 99.00,
+        benefits: ['Future tier benefits', 'Annual billing discount']
+      },
+      {
+        name: 'Platinum Founder',
+        monthlyPrice: null, // Billed annually only
+        yearlyPrice: 50.00,
+        benefits: ['15% discount on products (LIFETIME)', 'VIP support', 'Early access to new products', 'Premium customer service', 'Founder member badge', 'Lifetime price lock']
+      }
+    ];
   }
 }
 
