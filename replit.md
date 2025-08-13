@@ -13,6 +13,7 @@ CRITICAL IMAGE HANDLING RULE: For product images in cart/order displays, NEVER u
 CART CORRUPTION SOLUTION: Implement comprehensive clearing mechanism including both localStorage removal and server-side force-clear endpoint for cart items.
 FFL SELECTOR IMPROVEMENTS: Add proper error handling, loading states, and retry logic to the FFL selector component.
 GLOBAL SCROLL-TO-TOP: Implement site-wide scroll-to-top functionality on page navigation.
+ZOHO ABANDONMENT: "Why do we have to do this everyday!?!?" - User's frustration with daily OAuth token failures led to complete abandonment of Zoho CRM integration in favor of reliable local authentication system.
 
 ## System Architecture
 
@@ -32,7 +33,7 @@ GLOBAL SCROLL-TO-TOP: Implement site-wide scroll-to-top functionality on page na
 - **Real-time Inventory**: Live inventory synchronization with RSR distributor data.
 - **Cross-Platform Integration**: Real-time FAP API connections, shared support ticketing, unified email templates, and cross-platform analytics.
 - **CMS/CRM Separation**: CMS (Replit) for content, system configuration, inventory, compliance, and administration. CRM (Zoho) for customer profiles, order history, marketing, support, and FFL vendor management. Inventory resides exclusively in TheGunFirm database from RSR; Zoho only receives purchase data.
-- **Zoho CRM as Primary Database**: Transitioned to Zoho CRM for primary customer data, including authentication, user registration, and login. Authentication uses Zoho CRM contacts instead of a local database. Passwords are secured with Bcrypt and stored in Zoho CRM.
+- **Local Authentication System**: Transitioned from Zoho CRM to fully local authentication using PostgreSQL. System now uses local_users table for user management, eliminating daily OAuth token failures. All user registration, login, and tier management handled locally with bcrypt password security.
 - **Subscription Tier Management**: CMS-driven interface for managing subscription tiers, pricing, and benefits, with synchronization to Zoho CRM.
 - **Billing Audit Logging**: Comprehensive audit logging system using structured markdown for Authorize.Net webhooks, dunning emails, and subscription status changes.
 - **SAML 2.0 Staff Authentication**: Implementation of SAML 2.0 Service Provider for Zoho Directory IdP, supporting role-based access for staff (support, admin, billing, manager). Currently requires Zoho Directory configuration update for development domain testing.
@@ -44,7 +45,7 @@ GLOBAL SCROLL-TO-TOP: Implement site-wide scroll-to-top functionality on page na
 
 ### Key Components
 - **Database Schema**: Includes Users (with tiers, FFLs, shipping), Products (with tier pricing, FFL needs, inventory), Orders (with FFL routing), FFLs directory, State Shipping Policies, Tier Pricing Rules, and CMS Tables.
-- **Authentication**: Cross-platform authentication via FreeAmericanPeople.com with session-based RBAC for TheGunFirm.com access. Zoho-first authentication for user and staff access.
+- **Authentication**: Local authentication system using PostgreSQL with session-based management. Cross-platform integration with FreeAmericanPeople.com for membership tiers. SAML 2.0 for staff access via Zoho Directory.
 - **Product Management**: Multi-tier pricing, FFL tracking, inventory, category/manufacturer organization, and advanced search.
 - **Membership System**: Six-tier structure with progressive benefits, real-time savings calculations, and upgrade recommendations:
   - Bronze: Free tier
@@ -65,5 +66,5 @@ GLOBAL SCROLL-TO-TOP: Implement site-wide scroll-to-top functionality on page na
 - **Distributor Integration**: RSR (for product data, inventory, and images).
 - **Search**: Algolia (for product indexing and search).
 - **Email Service**: SendGrid (for email verification and order confirmations).
-- **CRM**: Zoho CRM (for customer profiles, user authentication, FFL vendor management, and order recording).
+- **CRM**: Zoho CRM (for FFL vendor management and order recording). User authentication moved to local system.
 - **SAML IdP**: Zoho Directory (for staff authentication).

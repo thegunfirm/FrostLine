@@ -3,29 +3,60 @@ import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Create a new user table for local authentication
+export const localUsers = pgTable("local_users", {
+  id: text("id").primaryKey().$defaultFn(() => `local-${Date.now()}-${Math.random().toString(36).substring(2)}`),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  phone: text("phone"),
+  membershipTier: text("membership_tier").notNull().default("Bronze"),
+  emailVerified: boolean("email_verified").default(false),
+  isActive: boolean("is_active").default(true),
+  isTestAccount: boolean("is_test_account").default(false),
+  lastLogin: timestamp("last_login"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  // E-commerce functionality
+  lifetimeSavings: decimal("lifetime_savings", { precision: 10, scale: 2 }).default("0.00"),
+  savingsIfGold: decimal("savings_if_gold", { precision: 10, scale: 2 }).default("0.00"),
+  savingsIfPlatinum: decimal("savings_if_platinum", { precision: 10, scale: 2 }).default("0.00"),
+  preferredFflId: integer("preferred_ffl_id"),
+  shippingAddress: json("shipping_address"),
+  role: text("role").notNull().default("user"),
+  isBanned: boolean("is_banned").default(false),
+  membershipPaid: boolean("membership_paid").default(false),
+  stripeCustomerId: text("stripe_customer_id"),
+  fapCustomerId: text("fap_customer_id"),
+  emailVerificationToken: text("email_verification_token"),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires")
+});
+
+// Keep the original users table for backward compatibility
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
-  subscriptionTier: text("subscription_tier").notNull().default("Bronze"), // Bronze, Gold, Platinum Monthly, Platinum Annual, Platinum Founder
+  subscriptionTier: text("subscription_tier").notNull().default("Bronze"),
   createdAt: timestamp("created_at").defaultNow(),
   lifetimeSavings: decimal("lifetime_savings", { precision: 10, scale: 2 }).default("0.00"),
   savingsIfGold: decimal("savings_if_gold", { precision: 10, scale: 2 }).default("0.00"),
   savingsIfPlatinum: decimal("savings_if_platinum", { precision: 10, scale: 2 }).default("0.00"),
   preferredFflId: integer("preferred_ffl_id"),
   shippingAddress: json("shipping_address"),
-  role: text("role").notNull().default("user"), // user, admin, support, dealer, manager
+  role: text("role").notNull().default("user"),
   isBanned: boolean("is_banned").default(false),
-  membershipPaid: boolean("membership_paid").default(false), // Track FAP payment status
-  stripeCustomerId: text("stripe_customer_id"), // For product payments
-  fapCustomerId: text("fap_customer_id"), // For membership payments
+  membershipPaid: boolean("membership_paid").default(false),
+  stripeCustomerId: text("stripe_customer_id"),
+  fapCustomerId: text("fap_customer_id"),
   emailVerified: boolean("email_verified").default(false),
   emailVerificationToken: text("email_verification_token"),
   passwordResetToken: text("password_reset_token"),
-  passwordResetExpires: timestamp("password_reset_expires"),
-  // Zoho integration removed - starting fresh
+  passwordResetExpires: timestamp("password_reset_expires")
 });
 
 export const products = pgTable("products", {

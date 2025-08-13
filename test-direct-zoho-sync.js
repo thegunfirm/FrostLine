@@ -2,16 +2,16 @@
 
 import axios from 'axios';
 
-async function testDirectZohoSync() {
-  console.log('🚀 Testing Direct Zoho CRM Sync...');
-  console.log('==================================');
+async function testLocalAuthentication() {
+  console.log('🏠 Testing Local Authentication System...');
+  console.log('========================================');
 
   try {
-    console.log('\n1. Creating test user with direct Zoho sync...');
+    console.log('\n1. Creating test user with local authentication...');
     
     const testUser = {
-      email: `zoho.direct.${Date.now()}@thegunfirm.com`,
-      firstName: 'ZohoSync',
+      email: `local.auth.${Date.now()}@thegunfirm.com`,
+      firstName: 'LocalAuth',
       lastName: 'TestUser',
       password: 'TestPassword123!',
       subscriptionTier: 'Bronze' // Use correct enum value
@@ -23,16 +23,16 @@ async function testDirectZohoSync() {
     if (createTestResponse.data.success) {
       console.log('   ✅ Test user created successfully');
       console.log(`   📧 Email: ${testUser.email}`);
-      console.log(`   🆔 Zoho Contact ID: ${createTestResponse.data.zohoContactId}`);
+      console.log(`   🆔 Local User ID: ${createTestResponse.data.localUserId}`);
       console.log(`   🏷️ Tier: ${testUser.subscriptionTier}`);
       
-      const zohoContactId = createTestResponse.data.zohoContactId;
+      const localUserId = createTestResponse.data.localUserId;
       
       // Now test tier update via subscription processing
       console.log('\n2. Testing tier update via subscription...');
       
       const tierUpdateData = {
-        zohoContactId: zohoContactId,
+        userId: localUserId,
         membershipTier: 'Gold'
       };
       
@@ -45,7 +45,7 @@ async function testDirectZohoSync() {
         console.log('\n3. Testing Platinum tier update...');
         
         const platinumUpdate = {
-          zohoContactId: zohoContactId,
+          userId: localUserId,
           membershipTier: 'Platinum Founder'
         };
         
@@ -61,20 +61,20 @@ async function testDirectZohoSync() {
       }
       
       console.log('\n4. Summary:');
-      console.log('   ✅ Direct Zoho contact creation: Working');
+      console.log('   ✅ Local user creation: Working');
       console.log('   ✅ Tier assignment and updates: Working');
-      console.log('   📊 Contact should now be visible in Zoho CRM');
-      console.log(`   🔗 Check Zoho CRM Contacts module for: ${testUser.email}`);
+      console.log('   📊 User stored in local PostgreSQL database');
+      console.log(`   🔗 Local user created: ${testUser.email}`);
       
     } else {
       console.log('   ❌ Test user creation failed:', createTestResponse.data.error);
       
-      // Check if it's a token issue
-      if (createTestResponse.data.error && createTestResponse.data.error.includes('access token')) {
-        console.log('\n📋 Token Issue Detected:');
-        console.log('   • ZOHO_ACCESS_TOKEN may be expired');
-        console.log('   • Visit: https://[your-domain]/api/zoho/auth/initiate');
-        console.log('   • Complete OAuth flow to get new tokens');
+      // Check for database issues
+      if (createTestResponse.data.error && createTestResponse.data.error.includes('database')) {
+        console.log('\n📋 Database Issue Detected:');
+        console.log('   • Check PostgreSQL connection');
+        console.log('   • Verify schema is properly migrated');
+        console.log('   • Run npm run db:push if needed');
       }
     }
     
@@ -102,10 +102,10 @@ async function testDirectZohoSync() {
     console.log('\n❌ Overall test failed:', error.response?.data || error.message);
     
     if (error.response?.status === 404) {
-      console.log('\n📝 The create-test-user endpoint may not exist yet.');
-      console.log('   Check if the endpoint is properly registered in routes.ts');
+      console.log('\n📝 The local auth endpoint may not be registered yet.');
+      console.log('   Check if local-auth-routes.ts is properly imported');
     }
   }
 }
 
-testDirectZohoSync();
+testLocalAuthentication();

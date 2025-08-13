@@ -111,7 +111,9 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register specialized routes first  
   await registerRSRFFLRoutes(app);
-  registerAuthRoutes(app);
+  // Use local authentication instead of Zoho
+  const { registerLocalAuthRoutes } = await import('./local-auth-routes.js');
+  registerLocalAuthRoutes(app);
   
   // Initialize firearms compliance configuration
   try {
