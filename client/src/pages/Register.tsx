@@ -20,7 +20,7 @@ const registrationSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   phone: z.string().optional(),
-  subscriptionTier: z.enum(['Bronze', 'Gold', 'Platinum']).optional()
+  subscriptionTier: z.enum(['Bronze', 'Gold Monthly', 'Gold Annually', 'Platinum Monthly', 'Platinum Founder']).optional()
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -206,9 +206,11 @@ export default function Register() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Bronze">Bronze - Basic Access</SelectItem>
-                        <SelectItem value="Gold">Gold - Better Pricing</SelectItem>
-                        <SelectItem value="Platinum">Platinum - Best Pricing</SelectItem>
+                        <SelectItem value="Bronze">Bronze - Free Access</SelectItem>
+                        <SelectItem value="Gold Monthly">Gold Monthly - $5/month (5% discount)</SelectItem>
+                        <SelectItem value="Gold Annually">Gold Annual - $50/year (5% discount)</SelectItem>
+                        <SelectItem value="Platinum Monthly">Platinum Monthly - $10/month (10% discount)</SelectItem>
+                        <SelectItem value="Platinum Founder">Platinum Founder - $50/year (15% discount)</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

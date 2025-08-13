@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { db } from './db.js';
 import { localUsers } from '../shared/schema.js';
 import { eq } from 'drizzle-orm';
+import { ZohoService } from './zoho-service.js';
 
 export type User = typeof localUsers.$inferSelect;
 export type InsertUser = typeof localUsers.$inferInsert;
@@ -49,9 +50,11 @@ export interface LoginResult {
  */
 export class LocalAuthService {
   private pendingRegistrations = new Map<string, RegistrationData & { expiresAt: Date; verificationToken: string }>();
+  private zohoService: ZohoService;
 
   constructor() {
-    // Simple local auth without external dependencies
+    // Initialize Zoho service for Contact module updates
+    this.zohoService = new ZohoService();
   }
 
   /**
@@ -193,6 +196,14 @@ export class LocalAuthService {
       
       console.log('✅ Test user created locally with ID:', newUser.id);
       
+      // Create corresponding Zoho Contact with Tier field
+      try {
+        await this.createZohoContact(newUser);
+        console.log('✅ Zoho Contact created with Tier field');
+      } catch (error) {
+        console.log('⚠️ Zoho Contact creation failed, but local user created:', error);
+      }
+      
       return {
         success: true,
         user: {
@@ -310,11 +321,73 @@ export class LocalAuthService {
       }).where(eq(localUsers.email, email));
 
       console.log(`✅ Updated membership tier for ${email} to ${membershipTier}`);
+      
+      // Update Zoho Contact Tier field
+      try {
+        await this.updateZohoContactTier(email, membershipTier);
+      } catch (error) {
+        console.log('⚠️ Zoho Contact tier update failed, but local update succeeded:', error);
+      }
+      
       return true;
 
     } catch (error) {
       console.error('Update tier by email error:', error);
       return false;
+    }
+  }
+
+  /**
+   * Create Zoho Contact with Tier field
+   */
+  private async createZohoContact(user: User): Promise<void> {
+    try {
+      const contactData = {
+        data: [{
+          First_Name: user.firstName,
+          Last_Name: user.lastName,
+          Email: user.email,
+          Phone: user.phone || null,
+          Tier: user.membershipTier, // This is the key field for the test
+          Account_Name: 'TheGunFirm Customer',
+          Lead_Source: 'Website Registration'
+        }]
+      };
+
+      const result = await this.zohoService.makeAPIRequest('Contacts', 'POST', contactData);
+      console.log('Zoho Contact creation result:', result?.data?.[0]?.status);
+    } catch (error) {
+      console.error('Zoho Contact creation error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update Zoho Contact Tier field
+   */
+  private async updateZohoContactTier(email: string, newTier: string): Promise<void> {
+    try {
+      // Search for the contact by email
+      const searchResponse = await this.zohoService.makeAPIRequest(
+        `Contacts/search?criteria=(Email:equals:${email})`
+      );
+
+      if (searchResponse?.data?.[0]?.id) {
+        const contactId = searchResponse.data[0].id;
+        
+        const updateData = {
+          data: [{
+            id: contactId,
+            Tier: newTier
+          }]
+        };
+
+        await this.zohoService.makeAPIRequest('Contacts', 'PUT', updateData);
+        console.log(`✅ Updated Zoho Contact Tier to ${newTier} for ${email}`);
+      }
+    } catch (error) {
+      console.error('Zoho Contact tier update error:', error);
+      throw error;
     }
   }
 }

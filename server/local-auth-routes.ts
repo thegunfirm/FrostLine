@@ -11,7 +11,13 @@ const registrationSchema = z.object({
   lastName: z.string().min(1),
   password: z.string().min(8),
   phone: z.string().optional(),
-  subscriptionTier: z.enum(['Bronze', 'Gold', 'Platinum']).default('Bronze')
+  subscriptionTier: z.enum([
+    'Bronze', 
+    'Gold Monthly', 
+    'Gold Annually',
+    'Platinum Monthly',
+    'Platinum Founder'
+  ]).default('Bronze')
 });
 
 const loginSchema = z.object({
