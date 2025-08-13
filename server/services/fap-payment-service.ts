@@ -26,15 +26,17 @@ export class FAPPaymentService {
   /**
    * Valid subscription tiers
    */
-  private static readonly VALID_TIERS = ['Bronze', 'Gold', 'Platinum'];
+  private static readonly VALID_TIERS = ['Bronze', 'Gold', 'Platinum Monthly', 'Platinum Annual', 'Platinum Founder'];
   
   /**
    * Tier pricing structure
    */
   private static readonly TIER_PRICING = {
     Bronze: { monthly: 0.00, yearly: 0.00 },
-    Gold: { monthly: 25.00, yearly: 250.00 },
-    Platinum: { monthly: 50.00, yearly: 500.00 }
+    Gold: { monthly: 5.00, yearly: 50.00 },
+    'Platinum Monthly': { monthly: 10.00, yearly: 120.00 },
+    'Platinum Annual': { monthly: 8.25, yearly: 99.00 }, // Not in use yet
+    'Platinum Founder': { monthly: 4.17, yearly: 50.00 } // Temporary, lifetime price lock
   };
 
   /**
@@ -86,7 +88,9 @@ export class FAPPaymentService {
         return {
           success: true,
           transactionId: `free_${Date.now()}`,
-          authCode: `bronze_free`
+          authCode: `bronze_free`,
+          subscriptionTier: 'Bronze',
+          amount: 0
         };
       }
 

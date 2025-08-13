@@ -46,7 +46,12 @@ GLOBAL SCROLL-TO-TOP: Implement site-wide scroll-to-top functionality on page na
 - **Database Schema**: Includes Users (with tiers, FFLs, shipping), Products (with tier pricing, FFL needs, inventory), Orders (with FFL routing), FFLs directory, State Shipping Policies, Tier Pricing Rules, and CMS Tables.
 - **Authentication**: Cross-platform authentication via FreeAmericanPeople.com with session-based RBAC for TheGunFirm.com access. Zoho-first authentication for user and staff access.
 - **Product Management**: Multi-tier pricing, FFL tracking, inventory, category/manufacturer organization, and advanced search.
-- **Membership System**: Three-tier structure with progressive benefits, real-time savings calculations, and upgrade recommendations.
+- **Membership System**: Five-tier structure with progressive benefits, real-time savings calculations, and upgrade recommendations:
+  - Bronze: Free tier
+  - Gold: $5/month, $50/year (5% discount)
+  - Platinum Monthly: $10/month (10% discount)
+  - Platinum Founder: $50/year lifetime price lock (15% discount, temporary tier)
+  - Platinum Annual: $99/year (future tier, not currently active)
 - **CMS System**: Role-based content management with admin, support, and manager access levels.
 - **FAP Integration**: Comprehensive API integration service for real-time user sync, cross-platform support tickets, shared email templates, and unified analytics.
 

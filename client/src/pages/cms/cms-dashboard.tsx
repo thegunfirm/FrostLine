@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Settings, Mail, MessageSquare, FileText, Activity, Crown } from "lucide-react";
+import { Users, Settings, Mail, MessageSquare, FileText, Activity, Crown, CreditCard } from "lucide-react";
 import { Link } from "wouter";
 
 export default function CMSDashboard() {
@@ -318,6 +318,12 @@ export default function CMSDashboard() {
                   <Button variant="outline" className="w-full justify-start">
                     <Crown className="mr-2 h-4 w-4" />
                     Tier Label Management
+                  </Button>
+                </Link>
+                <Link href="/cms/subscription-management">
+                  <Button variant="outline" className="w-full justify-start">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Subscription Management
                   </Button>
                 </Link>
               </CardContent>

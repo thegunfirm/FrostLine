@@ -5593,16 +5593,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "Basic product access", 
           "Community support"
         ] : tier.name === 'Gold' ? [
-          "Mid-tier access",
-          "10% discount on products",
+          "5% discount on products",
           "Priority support",
           "Exclusive deals"
-        ] : [
-          "Premium tier access",
-          "20% discount on products",
+        ] : tier.name === 'Platinum Monthly' ? [
+          "10% discount on products",
           "VIP support",
-          "Early access",
-          "Concierge service"
+          "Early access to new products",
+          "Premium customer service"
+        ] : tier.name === 'Platinum Founder' ? [
+          "15% discount on products (LIFETIME)",
+          "VIP support",
+          "Early access to new products",
+          "Premium customer service",
+          "Founder member badge",
+          "Lifetime price lock"
+        ] : [
+          "Standard platinum benefits",
+          "Annual billing discount"
         ]
       }));
       
@@ -5706,6 +5714,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('FAP subscription processing error:', error);
       res.status(500).json({ error: 'Payment processing failed' });
+    }
+  });
+
+  // CMS Subscription Tier Management Routes (Admin Only)
+  app.get('/api/cms/subscription-tiers', isAuthenticated, requireRole(['admin', 'manager']), async (req, res) => {
+    try {
+      // For now, return the available tiers from the payment service
+      // Later this can be expanded to use database-stored tiers
+      const tiers = fapPaymentService.getAvailableTiers().map(tier => ({
+        id: Math.abs(tier.name.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0)), // Generate ID from tier name
+        tier: tier.name,
+        displayName: tier.name,
+        monthlyPrice: tier.pricing.monthly.toString(),
+        annualPrice: tier.pricing.yearly.toString(),
+        discountPercent: tier.name === 'Gold' ? '5.00' : 
+                        tier.name === 'Platinum Monthly' ? '10.00' :
+                        tier.name === 'Platinum Founder' ? '15.00' : '0.00',
+        features: tier.name === 'Bronze' ? [
+          "Free tier access",
+          "Basic product access", 
+          "Community support"
+        ] : tier.name === 'Gold' ? [
+          "5% discount on products",
+          "Priority support",
+          "Exclusive deals"
+        ] : tier.name === 'Platinum Monthly' ? [
+          "10% discount on products",
+          "VIP support",
+          "Early access to new products",
+          "Premium customer service"
+        ] : tier.name === 'Platinum Founder' ? [
+          "15% discount on products (LIFETIME)",
+          "VIP support",
+          "Early access to new products",
+          "Premium customer service",
+          "Founder member badge",
+          "Lifetime price lock"
+        ] : [
+          "Standard platinum benefits",
+          "Annual billing discount"
+        ],
+        isPopular: tier.name === 'Platinum Monthly',
+        isFounderPricing: tier.name === 'Platinum Founder',
+        isTemporary: tier.name === 'Platinum Founder',
+        isActive: tier.name !== 'Platinum Annual', // Platinum Annual not active yet
+        sortOrder: tier.name === 'Bronze' ? 1 : 
+                  tier.name === 'Gold' ? 2 :
+                  tier.name === 'Platinum Monthly' ? 3 :
+                  tier.name === 'Platinum Founder' ? 4 : 5
+      }));
+      res.json(tiers);
+    } catch (error: any) {
+      console.error('Error fetching subscription tiers:', error);
+      res.status(500).json({ error: 'Failed to fetch subscription tiers' });
+    }
+  });
+
+  // Test subscription tiers endpoint
+  app.post('/api/cms/test-subscription-tiers', isAuthenticated, requireRole(['admin', 'manager']), async (req, res) => {
+    try {
+      const testResults = [];
+      const tiers = fapPaymentService.getAvailableTiers().filter(tier => 
+        tier.name !== 'Platinum Annual' // Skip inactive tier
+      );
+      
+      for (const tier of tiers) {
+        if (tier.name === 'Bronze') {
+          // Test Bronze free tier
+          const result = await fapPaymentService.processSubscriptionPayment({
+            subscriptionTier: tier.name,
+            billingCycle: 'monthly',
+            amount: 0,
+            customerInfo: {
+              firstName: 'Test',
+              lastName: `${tier.name} User`,
+              email: `cms-test-${tier.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}@example.com`
+            }
+          });
+          if (result.success) {
+            testResults.push({
+              tier: tier.name,
+              email: `cms-test-${tier.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}@example.com`,
+              transactionId: result.transactionId,
+              amount: 0,
+              billingCycle: 'monthly'
+            });
+          }
+        } else {
+          // Test paid tiers - monthly
+          const monthlyEmail = `cms-test-${tier.name.toLowerCase().replace(/\s+/g, '-')}-monthly-${Date.now()}@example.com`;
+          const monthlyResult = await fapPaymentService.processSubscriptionPayment({
+            subscriptionTier: tier.name,
+            billingCycle: 'monthly', 
+            amount: tier.pricing.monthly,
+            customerInfo: {
+              firstName: 'Test',
+              lastName: `${tier.name} User`,
+              email: monthlyEmail
+            }
+          });
+          if (monthlyResult.success) {
+            testResults.push({
+              tier: tier.name,
+              email: monthlyEmail,
+              transactionId: monthlyResult.transactionId,
+              amount: tier.pricing.monthly,
+              billingCycle: 'monthly'
+            });
+          }
+
+          // Test paid tiers - yearly
+          const yearlyEmail = `cms-test-${tier.name.toLowerCase().replace(/\s+/g, '-')}-yearly-${Date.now()}@example.com`;
+          const yearlyResult = await fapPaymentService.processSubscriptionPayment({
+            subscriptionTier: tier.name,
+            billingCycle: 'yearly',
+            amount: tier.pricing.yearly,
+            customerInfo: {
+              firstName: 'Test',
+              lastName: `${tier.name} User`, 
+              email: yearlyEmail
+            }
+          });
+          if (yearlyResult.success) {
+            testResults.push({
+              tier: tier.name,
+              email: yearlyEmail,
+              transactionId: yearlyResult.transactionId,
+              amount: tier.pricing.yearly,
+              billingCycle: 'yearly'
+            });
+          }
+        }
+      }
+      
+      res.json(testResults);
+    } catch (error: any) {
+      console.error('Error testing subscription tiers:', error);
+      res.status(500).json({ error: 'Failed to test subscription tiers' });
     }
   });
 

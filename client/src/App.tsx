@@ -59,7 +59,7 @@ import BrandingManagement from "@/pages/cms/admin/branding";
 import FAPCustomerProfiles from "@/pages/cms/admin/fap-customer-profiles";
 import TierLabels from "@/pages/cms/admin/tier-labels";
 import FAPMembership from "@/pages/FAPMembership";
-import SubscriptionTierManagement from "@/pages/cms/admin/subscription-tier-management";
+import SubscriptionManagement from "@/pages/SubscriptionManagement";
 import BillingManagement from "@/pages/BillingManagement";
 import SamlLogin from "@/pages/SamlLogin";
 import RoleManagement from "@/pages/cms/role-management";
@@ -133,7 +133,7 @@ function Router() {
         {/* Zoho integration routes removed - starting fresh */}
         <Route path="/cms/admin/fap-customer-profiles" component={FAPCustomerProfiles} />
         <Route path="/cms/admin/tier-labels" component={TierLabels} />
-        <Route path="/cms/admin/subscription-tier-management" component={SubscriptionTierManagement} />
+        <Route path="/cms/subscription-management" component={SubscriptionManagement} />
         <Route path="/cms/role-management" component={RoleManagement} />
         <Route path="/fap-membership" component={FAPMembership} />
         <Route path="/fap-tier-test" component={FAPTierTest} />

@@ -9,7 +9,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
-  subscriptionTier: text("subscription_tier").notNull().default("Bronze"), // Bronze, Gold, Platinum
+  subscriptionTier: text("subscription_tier").notNull().default("Bronze"), // Bronze, Gold, Platinum Monthly, Platinum Annual, Platinum Founder
   createdAt: timestamp("created_at").defaultNow(),
   lifetimeSavings: decimal("lifetime_savings", { precision: 10, scale: 2 }).default("0.00"),
   savingsIfGold: decimal("savings_if_gold", { precision: 10, scale: 2 }).default("0.00"),
@@ -484,18 +484,23 @@ export const systemSettings = pgTable("system_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Membership Tier Settings (CMS Management)
+// Membership Tier Settings (CMS Management) - Updated for 5-tier structure
 export const membershipTierSettings = pgTable("membership_tier_settings", {
   id: serial("id").primaryKey(),
-  tier: text("tier").notNull().unique(), // Bronze, Gold, Platinum
+  tier: text("tier").notNull().unique(), // Bronze, Gold, Platinum Monthly, Platinum Annual, Platinum Founder
+  displayName: text("display_name").notNull(), // User-facing display name
   monthlyPrice: decimal("monthly_price", { precision: 10, scale: 2 }).notNull(),
   annualPrice: decimal("annual_price", { precision: 10, scale: 2 }).notNull(),
+  discountPercent: decimal("discount_percent", { precision: 5, scale: 2 }).notNull(), // Discount percentage for products
   features: json("features").notNull(), // Array of feature strings
   isPopular: boolean("is_popular").default(false),
   isFounderPricing: boolean("is_founder_pricing").default(false),
+  isTemporary: boolean("is_temporary").default(false), // For temporary tiers like Platinum Founder
+  isActive: boolean("is_active").default(true), // For enabling/disabling tiers
   founderLimit: integer("founder_limit").default(1000),
   founderCountRemaining: integer("founder_count_remaining").default(1000),
   description: text("description"),
+  sortOrder: integer("sort_order").default(0), // Display order in UI
   lastModifiedBy: integer("last_modified_by"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
