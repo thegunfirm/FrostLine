@@ -296,7 +296,7 @@ export class AuthService {
   async loginUser(email: string, password: string): Promise<VerificationResult> {
     try {
       // Find contact in Zoho using direct API call
-      const searchResponse = await fetch(`https://www.zohoapis.com/crm/v6/Contacts/search?criteria=Email:equals:${email}`, {
+      const searchResponse = await fetch(`https://www.zohoapis.com/crm/v6/Contacts/search?email=${encodeURIComponent(email)}`, {
         method: 'GET',
         headers: {
           'Authorization': `Zoho-oauthtoken ${process.env.ZOHO_ACCESS_TOKEN}`,

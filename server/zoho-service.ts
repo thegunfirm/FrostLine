@@ -260,12 +260,12 @@ export class ZohoService {
       console.log(`📝 Found Zoho Contact ID: ${contactId} for ${email}`);
 
       // Update the Contact with email verification fields
-      // Using the exact field names you created in Zoho CRM
+      // Using the API field names (underscores instead of spaces)
       const updatePayload = {
         data: [{
           id: contactId,
-          "Email Verified": true, // Custom checkbox field (Yes/No)
-          "Email Verification Time Stamp": verifiedAt.toISOString() // Custom datetime field
+          "Email_Verified": true, // Custom checkbox field (Yes/No)  
+          "Email_Verification_Time_Stamp": verifiedAt.toISOString() // Custom datetime field
         }]
       };
 

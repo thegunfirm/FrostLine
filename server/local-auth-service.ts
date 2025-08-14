@@ -172,8 +172,8 @@ export class LocalAuthService {
           Lead_Source: 'Website Registration',
           Account_Name: 'TheGunFirm Customer',
           Tier: pendingUser.subscriptionTier || 'Bronze', // Your custom Tier field
-          'Email Verified': true, // Your custom Email Verified checkbox
-          'Email Verification Time Stamp': verificationTimestamp.toISOString() // Your custom timestamp field
+          'Email_Verified': true, // Your custom Email Verified checkbox  
+          'Email_Verification_Time_Stamp': verificationTimestamp.toISOString() // Your custom timestamp field
         };
         
         const zohoContactResult = await this.zohoService.createContact(contactData);
@@ -422,7 +422,7 @@ export class LocalAuthService {
     try {
       // Search for the contact by email
       const searchResponse = await this.zohoService.makeAPIRequest(
-        `Contacts/search?criteria=(Email:equals:${email})`
+        `Contacts/search?email=${encodeURIComponent(email)}`
       );
 
       if (searchResponse?.data?.[0]?.id) {
