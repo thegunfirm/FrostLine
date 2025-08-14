@@ -98,6 +98,15 @@ app.use((req, res, next) => {
   // Initialize pricing service
   await pricingService.initializeDefaultPricing();
   
+  // Initialize automatic Zoho token refresh to prevent daily expiration
+  try {
+    const { zohoTokenManager } = await import('./zoho-token-manager.js');
+    zohoTokenManager.initialize();
+    console.log('🔄 Automatic Zoho token refresh system started');
+  } catch (error) {
+    console.error('⚠️ Failed to initialize automatic token refresh:', error);
+  }
+  
   // Auto-sync disabled during data integrity work
   // rsrAutoSync.start();
   

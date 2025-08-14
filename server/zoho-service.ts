@@ -12,9 +12,13 @@ export interface ZohoConfig {
 
 export class ZohoService {
   private config: ZohoConfig;
+  private tokenRefreshTimer?: NodeJS.Timeout;
+  private refreshInProgress = false;
 
   constructor(config: ZohoConfig) {
     this.config = config;
+    // Start automatic token refresh every 50 minutes (Zoho tokens expire in 1 hour)
+    this.startAutoTokenRefresh();
   }
 
   // Generate OAuth authorization URL
@@ -63,7 +67,17 @@ export class ZohoService {
       throw new Error('No refresh token available');
     }
 
+    // Prevent multiple simultaneous refresh attempts
+    if (this.refreshInProgress) {
+      console.log('⏳ Token refresh already in progress, waiting...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return { access_token: this.config.accessToken!, expires_in: 3600 };
+    }
+
+    this.refreshInProgress = true;
+
     try {
+      console.log('🔄 Refreshing Zoho access token automatically...');
       const response = await axios.post(`${this.config.accountsHost}/oauth/v2/token`, 
         new URLSearchParams({
           grant_type: 'refresh_token',
@@ -81,11 +95,44 @@ export class ZohoService {
       // Update the access token in config
       this.config.accessToken = response.data.access_token;
       
-      console.log('✅ Zoho access token refreshed successfully');
+      console.log('✅ Zoho access token refreshed automatically - no more daily expiration!');
       return response.data;
     } catch (error: any) {
-      console.error('Zoho token refresh error:', error.response?.data || error.message);
+      console.error('❌ Zoho token refresh error:', error.response?.data || error.message);
       throw new Error(`Token refresh failed: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`);
+    } finally {
+      this.refreshInProgress = false;
+    }
+  }
+
+  // Start automatic token refresh every 50 minutes
+  private startAutoTokenRefresh(): void {
+    // Clear any existing timer
+    if (this.tokenRefreshTimer) {
+      clearInterval(this.tokenRefreshTimer);
+    }
+
+    // Refresh token every 50 minutes (3000000 ms) - Zoho tokens expire in 60 minutes
+    this.tokenRefreshTimer = setInterval(async () => {
+      try {
+        if (this.config.refreshToken) {
+          console.log('⏰ Auto-refreshing Zoho token (preventing daily expiration)...');
+          await this.refreshAccessToken();
+        }
+      } catch (error) {
+        console.error('⚠️ Auto token refresh failed:', error);
+      }
+    }, 50 * 60 * 1000); // 50 minutes
+
+    console.log('🔄 Automatic Zoho token refresh started - will refresh every 50 minutes');
+  }
+
+  // Stop automatic token refresh (cleanup)
+  public stopAutoTokenRefresh(): void {
+    if (this.tokenRefreshTimer) {
+      clearInterval(this.tokenRefreshTimer);
+      this.tokenRefreshTimer = undefined;
+      console.log('🛑 Automatic token refresh stopped');
     }
   }
 
