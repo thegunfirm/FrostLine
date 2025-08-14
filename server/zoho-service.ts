@@ -241,9 +241,9 @@ export class ZohoService {
 
       console.log(`🔄 Updating Zoho Contact email verification for: ${email}`);
 
-      // First, find the Contact by email
+      // First, find the Contact by email using the dedicated email parameter
       const searchResponse = await axios.get(
-        `${this.config.apiHost}/crm/v2/Contacts/search?criteria=(Email:equals:${encodeURIComponent(email)})`,
+        `${this.config.apiHost}/crm/v2/Contacts/search?email=${encodeURIComponent(email)}`,
         {
           headers: {
             'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`
