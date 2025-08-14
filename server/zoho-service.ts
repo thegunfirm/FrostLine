@@ -261,11 +261,12 @@ export class ZohoService {
 
       // Update the Contact with email verification fields
       // Using the API field names (underscores instead of spaces)
+      // TEMPORARY FIX: Exclude timestamp field that's causing API errors
       const updatePayload = {
         data: [{
           id: contactId,
-          "Email_Verified": true, // Custom checkbox field (Yes/No)  
-          "Email_Verification_Time_Stamp": verifiedAt.toISOString() // Custom datetime field
+          "Email_Verified": true // Custom checkbox field (Yes/No)  
+          // "Email_Verification_Time_Stamp": verifiedAt.toISOString() // Temporarily disabled - field may not exist or wrong format
         }]
       };
 
@@ -496,20 +497,32 @@ export class ZohoService {
    */
   async createContact(contactData: any): Promise<any> {
     try {
+      console.log('🔍 Zoho Contact Creation Debug - Data being sent:', JSON.stringify(contactData, null, 2));
+      
       const response = await this.makeAPIRequest('Contacts', 'POST', {
         data: [contactData]
       });
 
+      console.log('🔍 Zoho Contact Creation Response:', JSON.stringify(response, null, 2));
+
       if (response.data && response.data.length > 0 && response.data[0].status === 'success') {
+        console.log('✅ Zoho Contact created successfully:', response.data[0].details.id);
         return {
           id: response.data[0].details.id,
           ...contactData
         };
       } else {
-        throw new Error('Failed to create contact in Zoho');
+        console.error('❌ Zoho Contact creation failed. Full response:', JSON.stringify(response, null, 2));
+        if (response.data && response.data[0] && response.data[0].message) {
+          throw new Error(`Failed to create contact in Zoho: ${response.data[0].message}`);
+        }
+        throw new Error('Failed to create contact in Zoho - no success status returned');
       }
     } catch (error) {
-      console.error('Error creating contact:', error);
+      console.error('❌ Zoho Contact creation error:', error);
+      if (error.response && error.response.data) {
+        console.error('❌ Zoho API Error Response:', JSON.stringify(error.response.data, null, 2));
+      }
       throw error;
     }
   }

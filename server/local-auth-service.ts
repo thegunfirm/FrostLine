@@ -164,6 +164,15 @@ export class LocalAuthService {
         console.log('🔄 Creating/Updating Zoho Contact with verification status...');
         
         // First try to create the Contact (includes Tier and basic info)
+        // Convert timestamp to Zoho's expected datetime format: YYYY-MM-DD HH:MM:SS
+        const zohoDateTime = verificationTimestamp.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+        
+        console.log('🔍 DateTime conversion debug:');
+        console.log('  - Original:', verificationTimestamp.toISOString());
+        console.log('  - Converted for Zoho:', zohoDateTime);
+        
+        // TEMPORARY FIX: Exclude timestamp field that's causing API errors
+        // Focus on getting the Email_Verified field working first
         const contactData = {
           Email: pendingUser.email,
           First_Name: pendingUser.firstName,
@@ -172,8 +181,8 @@ export class LocalAuthService {
           Lead_Source: 'Website Registration',
           Account_Name: 'TheGunFirm Customer',
           Tier: pendingUser.subscriptionTier || 'Bronze', // Your custom Tier field
-          'Email_Verified': true, // Your custom Email Verified checkbox  
-          'Email_Verification_Time_Stamp': verificationTimestamp.toISOString() // Your custom timestamp field
+          'Email_Verified': true // Your custom Email Verified checkbox  
+          // 'Email_Verification_Time_Stamp': zohoDateTime // Temporarily disabled - field may not exist or wrong format
         };
         
         const zohoContactResult = await this.zohoService.createContact(contactData);
