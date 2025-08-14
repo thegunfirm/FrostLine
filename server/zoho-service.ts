@@ -725,4 +725,33 @@ export class ZohoService {
       return [];
     }
   }
+
+  /**
+   * Get Contact by ID for debugging (aliased method)
+   */
+  async getContactById(contactId: string): Promise<any> {
+    return this.getContact(contactId);
+  }
+
+  /**
+   * Search Contact by email for debugging (aliased method)
+   */
+  async searchContactByEmail(email: string): Promise<any> {
+    try {
+      const contact = await this.findContactByEmail(email);
+      
+      if (contact) {
+        return {
+          data: [contact]
+        };
+      } else {
+        return {
+          data: []
+        };
+      }
+    } catch (error: any) {
+      console.error('Error in searchContactByEmail:', error);
+      throw error;
+    }
+  }
 }

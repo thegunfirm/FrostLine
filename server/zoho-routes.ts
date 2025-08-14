@@ -208,5 +208,54 @@ export function registerZohoRoutes(app: Express): void {
     }
   });
 
+  // Debug endpoint to retrieve Zoho contact by ID
+  app.get("/api/zoho/contact/:id", async (req, res) => {
+    try {
+      const contactId = req.params.id;
+      
+      const config = {
+        clientId: process.env.ZOHO_CLIENT_ID || '1000.8OVSJ4V07OOVJWYAC0KA1JEFNH2W3M',
+        clientSecret: process.env.ZOHO_CLIENT_SECRET || '4d4b2ab7f0f731102c7d15d6754f1f959251db68e0',
+        redirectUri: `https://${req.get('host')}/api/zoho/auth/callback`,
+        accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
+        apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com'
+      };
+
+      const zohoService = new ZohoService(config);
+      const contactData = await zohoService.getContactById(contactId);
+      
+      res.json(contactData);
+    } catch (error: any) {
+      console.error("Get contact error:", error);
+      res.status(500).json({ error: "Failed to get contact: " + error.message });
+    }
+  });
+
+  // Debug endpoint to search Zoho contact by email
+  app.get("/api/zoho/search-contact", async (req, res) => {
+    try {
+      const email = req.query.email as string;
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email parameter required" });
+      }
+      
+      const config = {
+        clientId: process.env.ZOHO_CLIENT_ID || '1000.8OVSJ4V07OOVJWYAC0KA1JEFNH2W3M',
+        clientSecret: process.env.ZOHO_CLIENT_SECRET || '4d4b2ab7f0f731102c7d15d6754f1f959251db68e0',
+        redirectUri: `https://${req.get('host')}/api/zoho/auth/callback`,
+        accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
+        apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com'
+      };
+
+      const zohoService = new ZohoService(config);
+      const searchResult = await zohoService.searchContactByEmail(email);
+      
+      res.json(searchResult);
+    } catch (error: any) {
+      console.error("Search contact error:", error);
+      res.status(500).json({ error: "Failed to search contact: " + error.message });
+    }
+  });
 
 }
