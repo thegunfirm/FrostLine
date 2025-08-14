@@ -6144,6 +6144,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { registerZohoRoutes } = await import('./zoho-routes');
   registerZohoRoutes(app);
 
+
+
   console.log('✓ FAP integration routes registered successfully');
 
   return httpServer;
