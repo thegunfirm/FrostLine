@@ -164,17 +164,15 @@ export class LocalAuthService {
         console.log('🔄 Creating/Updating Zoho Contact with verification status...');
         
         // First try to create the Contact (includes Tier and basic info)
-        // For now, exclude the problematic timestamp field until we determine the correct format
-        // Zoho is rejecting all datetime formats we've tried
-        // const zohoDateTime = verificationTimestamp.toISOString();
+        // Convert timestamp to Zoho's required datetime format: yyyy-MM-ddTHH:mm:ss
+        const zohoDateTime = verificationTimestamp.toISOString().replace(/\.\d{3}Z$/, '');
         
         console.log('🔍 Email verification fields for Zoho:');
         console.log('  - Email_Verified: true');
         console.log('  - Email_Opt_Out: false');
-        console.log('  - Verification Time:', verificationTimestamp.toISOString());
+        console.log('  - Verification Time (Zoho format):', zohoDateTime);
         
-        // Include required email verification fields for Zoho CRM
-        // Excluding Email_Verification_Time_Stamp for now due to format issues
+        // Include all required email verification fields for Zoho CRM
         const contactData = {
           Email: pendingUser.email,
           First_Name: pendingUser.firstName,
@@ -184,8 +182,8 @@ export class LocalAuthService {
           Account_Name: 'TheGunFirm Customer',
           Tier: pendingUser.subscriptionTier || 'Bronze', // Your custom Tier field
           'Email_Verified': true, // Custom Email Verified checkbox ✅
+          'Email_Verification_Time_Stamp': zohoDateTime, // Custom DateTime field ✅
           'Email_Opt_Out': false // Custom checkbox field (default to not opted out) ✅
-          // 'Email_Verification_Time_Stamp': timestamp // Excluded due to Zoho format requirements
         };
         
         const zohoContactResult = await this.zohoService.createContact(contactData);

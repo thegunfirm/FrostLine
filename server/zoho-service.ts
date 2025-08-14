@@ -261,8 +261,8 @@ export class ZohoService {
 
       // Update the Contact with email verification fields
       // Using the API field names (underscores instead of spaces)
-      // Use ISO string format for Zoho datetime fields
-      const zohoTimestamp = verifiedAt.toISOString();
+      // Convert to Zoho datetime format: yyyy-MM-ddTHH:mm:ss
+      const zohoTimestamp = verifiedAt.toISOString().replace(/\.\d{3}Z$/, '');
       
       const updatePayload = {
         data: [{
