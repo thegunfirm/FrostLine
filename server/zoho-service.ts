@@ -261,12 +261,15 @@ export class ZohoService {
 
       // Update the Contact with email verification fields
       // Using the API field names (underscores instead of spaces)
-      // TEMPORARY FIX: Exclude timestamp field that's causing API errors
+      // Use ISO string format for Zoho datetime fields
+      const zohoTimestamp = verifiedAt.toISOString();
+      
       const updatePayload = {
         data: [{
           id: contactId,
-          "Email_Verified": true // Custom checkbox field (Yes/No)  
-          // "Email_Verification_Time_Stamp": verifiedAt.toISOString() // Temporarily disabled - field may not exist or wrong format
+          "Email_Verified": true, // Custom checkbox field (Yes/No)
+          "Email_Verification_Time_Stamp": zohoTimestamp, // Custom DateTime field
+          "Email_Opt_Out": false // Custom checkbox field (default to not opted out)
         }]
       };
 

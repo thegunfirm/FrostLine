@@ -164,15 +164,17 @@ export class LocalAuthService {
         console.log('🔄 Creating/Updating Zoho Contact with verification status...');
         
         // First try to create the Contact (includes Tier and basic info)
-        // Convert timestamp to Zoho's expected datetime format: YYYY-MM-DD HH:MM:SS
-        const zohoDateTime = verificationTimestamp.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+        // For now, exclude the problematic timestamp field until we determine the correct format
+        // Zoho is rejecting all datetime formats we've tried
+        // const zohoDateTime = verificationTimestamp.toISOString();
         
-        console.log('🔍 DateTime conversion debug:');
-        console.log('  - Original:', verificationTimestamp.toISOString());
-        console.log('  - Converted for Zoho:', zohoDateTime);
+        console.log('🔍 Email verification fields for Zoho:');
+        console.log('  - Email_Verified: true');
+        console.log('  - Email_Opt_Out: false');
+        console.log('  - Verification Time:', verificationTimestamp.toISOString());
         
-        // TEMPORARY FIX: Exclude timestamp field that's causing API errors
-        // Focus on getting the Email_Verified field working first
+        // Include required email verification fields for Zoho CRM
+        // Excluding Email_Verification_Time_Stamp for now due to format issues
         const contactData = {
           Email: pendingUser.email,
           First_Name: pendingUser.firstName,
@@ -181,8 +183,9 @@ export class LocalAuthService {
           Lead_Source: 'Website Registration',
           Account_Name: 'TheGunFirm Customer',
           Tier: pendingUser.subscriptionTier || 'Bronze', // Your custom Tier field
-          'Email_Verified': true // Your custom Email Verified checkbox  
-          // 'Email_Verification_Time_Stamp': zohoDateTime // Temporarily disabled - field may not exist or wrong format
+          'Email_Verified': true, // Custom Email Verified checkbox ✅
+          'Email_Opt_Out': false // Custom checkbox field (default to not opted out) ✅
+          // 'Email_Verification_Time_Stamp': timestamp // Excluded due to Zoho format requirements
         };
         
         const zohoContactResult = await this.zohoService.createContact(contactData);
