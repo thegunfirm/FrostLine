@@ -211,8 +211,24 @@ export class FirearmsCheckoutService {
           customerInfo
         );
 
-        console.log(`🔄 Syncing firearms compliance order ${orderNumber} to Zoho CRM...`);
-        const zohoResult = await orderZohoIntegration.processOrderToDeal(zohoOrderData);
+        // Add RSR-specific data for comprehensive field mapping
+        zohoOrderData.fulfillmentType = this.requiresDropShip(payload.cartItems) ? 'Drop-Ship' : 'In-House';
+        zohoOrderData.orderingAccount = this.requiresDropShip(payload.cartItems) ? '99902' : '99901'; // Test accounts
+        zohoOrderData.requiresDropShip = this.requiresDropShip(payload.cartItems);
+        zohoOrderData.holdType = complianceResult.hasViolations ? 
+          (complianceResult.violations.some(v => v.type === 'ffl_not_found') ? 'FFL not on file' : 'Gun Count Rule') : 
+          undefined;
+        zohoOrderData.engineResponse = rsrResult;
+        zohoOrderData.isTestOrder = true; // Set to false for production
+        
+        // Add RSR stock numbers to order items
+        zohoOrderData.orderItems = zohoOrderData.orderItems.map((item, index) => ({
+          ...item,
+          rsrStockNumber: rsrItems[index]?.rsrStockNumber || item.sku
+        }));
+
+        console.log(`🔄 Syncing firearms compliance order ${orderNumber} to Zoho CRM with RSR field mapping...`);
+        const zohoResult = await orderZohoIntegration.processOrderWithRSRFields(zohoOrderData);
         
         if (zohoResult.success) {
           dealId = zohoResult.dealId;
@@ -225,7 +241,7 @@ export class FirearmsCheckoutService {
             })
             .where(eq(orders.id, newOrder.id));
             
-          console.log(`✅ Firearms order ${orderNumber} linked to Zoho Deal ${zohoResult.dealId}`);
+          console.log(`✅ Firearms order ${orderNumber} linked to Zoho Deal ${zohoResult.dealId} with TGF Order Number ${zohoResult.tgfOrderNumber}`);
         } else {
           console.error(`⚠️  Failed to create Zoho deal for firearms order ${orderNumber}: ${zohoResult.error}`);
         }

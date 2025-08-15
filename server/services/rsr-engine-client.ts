@@ -45,7 +45,7 @@ export class RSREngineClient {
     this.storeName = process.env.STORE_NAME || 'THE GUN FIRM';
 
     if (!this.apiKey) {
-      throw new Error('RS_GROUP_API_KEY environment variable is required for RSR Engine integration');
+      console.warn('⚠️  RS_GROUP_API_KEY not found - RSR Engine integration will be limited');
     }
   }
 
@@ -54,6 +54,14 @@ export class RSREngineClient {
    */
   async submitOrder(orderPayload: EngineOrderPayload): Promise<EngineOrderResult> {
     try {
+      if (!this.apiKey) {
+        console.log(`⚠️  Simulating RSR Engine order submission for ${orderPayload.PONum} (no API key)`);
+        return {
+          success: false,
+          error: 'RSR Engine API key not configured - order cannot be submitted to distributor'
+        };
+      }
+
       console.log(`🚀 Submitting order to RSR Engine: ${orderPayload.PONum}`);
 
       const headers = {

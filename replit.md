@@ -40,6 +40,7 @@ EMAIL VERIFICATION SYSTEM: Successfully deployed production-ready email verifica
 - **Subscription Tier Management**: CMS-driven interface for managing subscription tiers, pricing, and benefits, with optional synchronization to Zoho CRM. Local tier validation supports all 5 tier options with proper enum validation in registration endpoints.
 - **Billing Audit Logging**: Comprehensive audit logging system using structured markdown for Authorize.Net webhooks, dunning emails, and subscription status changes.
 - **SAML 2.0 Staff Authentication**: Implementation of SAML 2.0 Service Provider for Zoho Directory IdP, supporting role-based access for staff (support, admin, billing, manager). Currently requires Zoho Directory configuration update for development domain testing.
+- **Complete RSR + Zoho Integration System**: Comprehensive end-to-end integration featuring RSR Engine Client for order submission, Zoho Order Fields Service for field mapping, and Order Zoho Integration for CRM synchronization. Includes sequential order numbering with receiver suffixes (I/C/F), account-based ordering (99902 for drop-ship testing, 99901 for in-house), comprehensive status tracking, and real-time field updates. System handles both successful Engine submissions and local holds with proper field mapping.
 
 ### Technical Stack
 - **Frontend**: React 18 (TypeScript), Wouter, TanStack Query, React Context, Shadcn/ui (Radix UI), Tailwind CSS, Vite.
@@ -59,6 +60,8 @@ EMAIL VERIFICATION SYSTEM: Successfully deployed production-ready email verifica
   - Platinum Annual: $99/year (future tier, not currently active)
 - **CMS System**: Role-based content management with admin, support, and manager access levels.
 - **FAP Integration**: Comprehensive API integration service for real-time user sync, cross-platform support tickets, shared email templates, and unified analytics.
+- **RSR Engine Integration**: Complete order submission system with account-based routing (99901/60742 for in-house, 99902/63824 for drop-ship), comprehensive response handling, and real-time status tracking.
+- **Zoho CRM Order Tracking**: Advanced field mapping system with 13 specialized fields including TGF Order Number, Fulfillment Type, Order Status, Consignee, and comprehensive timestamps for complete order lifecycle management.
 
 ## External Dependencies
 - **Database**: Neon (serverless PostgreSQL), Drizzle ORM.

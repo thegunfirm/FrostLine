@@ -1,4 +1,5 @@
 import { ZohoService } from './zoho-service';
+import { zohoOrderFieldsService, type ZohoOrderFieldMapping } from './services/zoho-order-fields-service';
 
 export interface OrderToZohoData {
   orderNumber: string;
@@ -9,6 +10,7 @@ export interface OrderToZohoData {
   orderItems: Array<{
     productName: string;
     sku: string;
+    rsrStockNumber?: string;
     quantity: number;
     unitPrice: number;
     totalPrice: number;
@@ -17,6 +19,13 @@ export interface OrderToZohoData {
   fflDealerName?: string;
   orderStatus: string;
   zohoContactId?: string;
+  // New RSR-specific fields
+  fulfillmentType?: 'In-House' | 'Drop-Ship';
+  orderingAccount?: '99901' | '99902' | '63824' | '60742';
+  requiresDropShip?: boolean;
+  holdType?: 'FFL not on file' | 'Gun Count Rule';
+  engineResponse?: any;
+  isTestOrder?: boolean;
 }
 
 /**
@@ -38,7 +47,206 @@ export class OrderZohoIntegration {
   }
 
   /**
-   * Create or update a Zoho Deal for a TheGunFirm order
+   * Create or update a Zoho Deal with comprehensive RSR field mapping
+   */
+  async processOrderWithRSRFields(orderData: OrderToZohoData): Promise<{
+    success: boolean;
+    dealId?: string;
+    tgfOrderNumber?: string;
+    zohoFields?: ZohoOrderFieldMapping;
+    error?: string;
+  }> {
+    try {
+      console.log(`🔄 Processing RSR order ${orderData.orderNumber} with comprehensive field mapping...`);
+
+      // 1. Get next sequential order number
+      const baseOrderNumber = await zohoOrderFieldsService.getNextOrderNumber(orderData.isTestOrder);
+      
+      // 2. Determine order characteristics
+      const fulfillmentType = orderData.fulfillmentType || 
+        zohoOrderFieldsService.determineFulfillmentType(
+          orderData.orderingAccount || '99901', 
+          orderData.requiresDropShip || false
+        );
+      
+      const requiresFFL = orderData.orderItems.some(item => item.fflRequired);
+      const consignee = zohoOrderFieldsService.determineConsignee(fulfillmentType, requiresFFL);
+      
+      // 3. Build comprehensive Zoho field mapping
+      const zohoFields = zohoOrderFieldsService.buildOrderFieldMapping({
+        orderNumber: orderData.orderNumber,
+        baseOrderNumber,
+        fulfillmentType,
+        orderingAccount: orderData.orderingAccount || '99901',
+        consignee,
+        requiresFFL,
+        isTest: orderData.isTestOrder || false,
+        holdType: orderData.holdType,
+        appStatus: orderData.engineResponse ? 'Engine Submitted' : 'Submitted'
+      });
+
+      // 4. Update fields based on Engine response if available
+      if (orderData.engineResponse) {
+        const updatedFields = zohoOrderFieldsService.updateOrderStatusFromEngineResponse(
+          zohoFields,
+          orderData.engineResponse
+        );
+        Object.assign(zohoFields, updatedFields);
+      }
+
+      // 5. Find or create customer contact
+      let contactId = orderData.zohoContactId;
+      if (!contactId) {
+        const existingContact = await this.zohoService.findContactByEmail(orderData.customerEmail);
+        
+        if (existingContact) {
+          contactId = existingContact.id;
+        } else {
+          const nameParts = orderData.customerName.split(' ');
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+
+          const newContact = await this.zohoService.createContact({
+            Email: orderData.customerEmail,
+            First_Name: firstName,
+            Last_Name: lastName,
+            Lead_Source: 'TheGunFirm.com',
+            Description: JSON.stringify({
+              membershipTier: orderData.membershipTier,
+              accountType: 'Customer',
+              createdFrom: 'RSR Order Processing'
+            })
+          });
+          contactId = newContact.id;
+        }
+      }
+
+      // 6. Create Zoho Deal with comprehensive RSR fields
+      const dealData = {
+        Deal_Name: `TGF Order ${zohoFields.TGF_Order_Number}`,
+        Contact_Name: contactId,
+        Amount: orderData.totalAmount,
+        Stage: this.mapOrderStatusToStage(zohoFields.Order_Status),
+        
+        // RSR-specific fields
+        TGF_Order_Number: zohoFields.TGF_Order_Number,
+        Fulfillment_Type: zohoFields.Fulfillment_Type,
+        Flow: zohoFields.Flow,
+        Order_Status: zohoFields.Order_Status,
+        Consignee: zohoFields.Consignee,
+        Deal_Fulfillment_Summary: zohoFields.Deal_Fulfillment_Summary,
+        Ordering_Account: zohoFields.Ordering_Account,
+        Hold_Type: zohoFields.Hold_Type,
+        APP_Status: zohoFields.APP_Status,
+        Carrier: zohoFields.Carrier,
+        Tracking_Number: zohoFields.Tracking_Number,
+        Estimated_Ship_Date: zohoFields.Estimated_Ship_Date,
+        Submitted: zohoFields.Submitted,
+        APP_Confirmed: zohoFields.APP_Confirmed,
+        Last_Distributor_Update: zohoFields.Last_Distributor_Update,
+        
+        // Additional context
+        Description: JSON.stringify({
+          originalOrderNumber: orderData.orderNumber,
+          membershipTier: orderData.membershipTier,
+          fflDealer: orderData.fflDealerName,
+          itemCount: orderData.orderItems.length,
+          engineResponse: orderData.engineResponse ? 'Engine processed' : 'Local order'
+        })
+      };
+
+      const dealResult = await this.zohoService.createOrderDeal({
+        contactId: contactId!,
+        orderNumber: orderData.orderNumber,
+        totalAmount: orderData.totalAmount,
+        orderItems: orderData.orderItems,
+        membershipTier: orderData.membershipTier,
+        fflRequired: requiresFFL,
+        fflDealerName: orderData.fflDealerName,
+        orderStatus: zohoFields.Order_Status,
+        customFields: dealData
+      });
+
+      if (dealResult.success) {
+        console.log(`✅ Created RSR deal ${dealResult.dealId} with TGF order number ${zohoFields.TGF_Order_Number}`);
+        return {
+          success: true,
+          dealId: dealResult.dealId,
+          tgfOrderNumber: zohoFields.TGF_Order_Number,
+          zohoFields
+        };
+      } else {
+        console.error(`❌ Failed to create RSR deal: ${dealResult.error}`);
+        return {
+          success: false,
+          error: dealResult.error
+        };
+      }
+
+    } catch (error: any) {
+      console.error('RSR order-to-Zoho integration error:', error);
+      return {
+        success: false,
+        error: `RSR integration error: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Update RSR order fields in existing Zoho deal
+   */
+  async updateRSROrderFields(
+    dealId: string,
+    updates: Partial<ZohoOrderFieldMapping>
+  ): Promise<boolean> {
+    try {
+      const updateData: any = {};
+      
+      // Map updates to Zoho field names
+      if (updates.Order_Status) updateData.Order_Status = updates.Order_Status;
+      if (updates.APP_Status) updateData.APP_Status = updates.APP_Status;
+      if (updates.Carrier) updateData.Carrier = updates.Carrier;
+      if (updates.Tracking_Number) updateData.Tracking_Number = updates.Tracking_Number;
+      if (updates.Estimated_Ship_Date) updateData.Estimated_Ship_Date = updates.Estimated_Ship_Date;
+      if (updates.APP_Confirmed) updateData.APP_Confirmed = updates.APP_Confirmed;
+      if (updates.Last_Distributor_Update) updateData.Last_Distributor_Update = updates.Last_Distributor_Update;
+      
+      // Update stage based on order status
+      if (updates.Order_Status) {
+        updateData.Stage = this.mapOrderStatusToStage(updates.Order_Status);
+      }
+
+      const result = await this.zohoService.updateDealStage(dealId, updateData.Stage || 'Qualification');
+      console.log(`📝 Updated RSR fields for deal ${dealId}: ${result ? 'success' : 'failed'}`);
+      return result;
+
+    } catch (error: any) {
+      console.error('RSR field update error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Map order status to Zoho deal stage
+   */
+  private mapOrderStatusToStage(orderStatus: string): string {
+    const stageMap: Record<string, string> = {
+      'Submitted': 'Proposal/Price Quote',
+      'Hold': 'Qualification',
+      'Confirmed': 'Needs Analysis',
+      'Processing': 'Value Proposition',
+      'Partially Shipped': 'Id. Decision Makers',
+      'Shipped': 'Perception Analysis',
+      'Delivered': 'Closed Won',
+      'Rejected': 'Closed Lost',
+      'Cancelled': 'Closed Lost'
+    };
+    
+    return stageMap[orderStatus] || 'Qualification';
+  }
+
+  /**
+   * Create or update a Zoho Deal for a TheGunFirm order with comprehensive RSR field mapping
    */
   async processOrderToDeal(orderData: OrderToZohoData): Promise<{
     success: boolean;
@@ -86,7 +294,7 @@ export class OrderZohoIntegration {
       
       if (existingDeal) {
         // Update existing deal if status changed
-        const updated = await this.zohoService.updateDealStage(existingDeal.id, orderData.orderStatus);
+        const updated = await this.zohoService.updateDealStage(existingDeal.id, this.mapOrderStatusToStage(orderData.orderStatus));
         console.log(`📝 Updated existing deal ${existingDeal.id}: ${updated ? 'success' : 'failed'}`);
         
         return {
