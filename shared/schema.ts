@@ -123,6 +123,9 @@ export const products = pgTable("products", {
   materialFinish: text("materialFinish"), // Material/finish (Aluminum, Steel, Polymer, etc.)
   mountType: text("mountType"), // Mount type (Picatinny, Weaver, Quick Detach, etc.)
   receiverType: text("receiver_type"), // Receiver type (Handgun Lower, Rifle Lower, Upper, etc.)
+  // RSR Integration Fields
+  rsrStockNumber: text("rsr_stock_number"), // RSR stock number for ordering
+  rsrPrice: text("rsr_price"), // RSR wholesale/dealer price
 });
 
 export const orders = pgTable("orders", {
@@ -154,6 +157,9 @@ export const orders = pgTable("orders", {
   firearmsWindowCount: integer("firearms_window_count").default(0), // Count in rolling window
   windowDays: integer("window_days").default(30), // Policy window days
   limitQty: integer("limit_qty").default(5), // Policy limit quantity
+  rsrOrderNumber: text("rsr_order_number"), // RSR order tracking number
+  notes: text("notes"), // Order notes and comments
+  estimatedShipDate: text("estimated_ship_date"), // RSR estimated ship date
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()
 });

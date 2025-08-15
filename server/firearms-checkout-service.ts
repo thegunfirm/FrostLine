@@ -3,6 +3,7 @@ import { orders, orderLines, products } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { firearmsComplianceService, type ComplianceCheckResult, type CartItem } from './firearms-compliance-service';
 import { authorizeNetService } from './authorize-net-service';
+import { rsrOrderService } from './services/rsr-order-service';
 import { orderZohoIntegration, OrderZohoIntegration } from './order-zoho-integration';
 import type { InsertOrder, InsertOrderLine } from '@shared/schema';
 
@@ -150,7 +151,40 @@ export class FirearmsCheckoutService {
 
       await db.insert(orderLines).values(orderLineData);
 
-      // Step 6: Sync to Zoho CRM
+      // Step 6: Submit order to RSR for fulfillment (if not on hold)
+      if (!complianceResult.requiresHold) {
+        try {
+          console.log(`📦 Submitting order ${orderNumber} to RSR for fulfillment...`);
+          
+          const rsrOrderResult = await this.submitOrderToRSR(newOrder, payload);
+          
+          if (rsrOrderResult.success) {
+            console.log(`✅ RSR order submitted successfully: ${rsrOrderResult.rsrOrderNumber}`);
+            
+            // Update order with RSR order number
+            await db.update(orders)
+              .set({
+                rsrOrderNumber: rsrOrderResult.rsrOrderNumber,
+                status: 'Processing',
+                estimatedShipDate: rsrOrderResult.estimatedShipDate?.toISOString()
+              })
+              .where(eq(orders.id, newOrder.id));
+          } else {
+            console.error(`⚠️ RSR order submission failed: ${rsrOrderResult.error}`);
+            // Continue with order but mark as needs manual processing
+            await db.update(orders)
+              .set({ 
+                status: 'Manual Processing Required',
+                notes: `RSR submission failed: ${rsrOrderResult.error}`
+              })
+              .where(eq(orders.id, newOrder.id));
+          }
+        } catch (rsrError) {
+          console.error('RSR order submission error (non-blocking):', rsrError);
+        }
+      }
+
+      // Step 7: Sync to Zoho CRM
       let dealId: string | undefined;
       try {
         const customerInfo = {
@@ -271,7 +305,7 @@ export class FirearmsCheckoutService {
         try {
           // Use the OrderZohoIntegration to update deal stage
           const dealStage = firearmsComplianceService.mapOrderStatusToDealStage(updateData.status || order.status);
-          await orderZohoIntegration.zohoService.updateDealStage(order.zohoDealId, dealStage);
+          await orderZohoIntegration.updateDealStage(order.zohoDealId, dealStage);
           console.log(`✅ Updated Zoho deal ${order.zohoDealId} status to: ${dealStage}`);
         } catch (zohoError) {
           console.error('Zoho sync failed (non-blocking):', zohoError);
@@ -332,7 +366,7 @@ export class FirearmsCheckoutService {
       // Sync to Zoho
       if (order.zohoDealId) {
         try {
-          await zohoService.updateDealStage(order.zohoDealId, 'Ready to Fulfill');
+          await orderZohoIntegration.updateDealStage(order.zohoDealId, 'Ready to Fulfill');
         } catch (zohoError) {
           console.error('Zoho sync failed (non-blocking):', zohoError);
         }
@@ -344,6 +378,125 @@ export class FirearmsCheckoutService {
       console.error('Hold override error:', error);
       return { success: false, error: `Hold override failed: ${error.message}` };
     }
+  }
+
+  /**
+   * Submit order to RSR for fulfillment
+   */
+  private async submitOrderToRSR(order: any, payload: CheckoutPayload): Promise<{
+    success: boolean;
+    rsrOrderNumber?: string;
+    estimatedShipDate?: Date;
+    error?: string;
+  }> {
+    try {
+      // Map cart items to RSR order items
+      const rsrItems = await this.mapCartItemsToRSR(payload.cartItems);
+      
+      if (rsrItems.length === 0) {
+        return {
+          success: false,
+          error: 'No RSR items found in cart'
+        };
+      }
+
+      // Get FFL information if required
+      let fflLicense: string | undefined;
+      if (payload.fflRecipientId) {
+        // TODO: Get FFL license number from database
+        const fflInfo = await this.getFFL(payload.fflRecipientId);
+        fflLicense = fflInfo?.licenseNumber;
+      }
+
+      // Create RSR order request
+      const rsrOrderRequest = {
+        orderNumber: order.orderNumber,
+        customerNumber: rsrOrderService.getCustomerNumber(),
+        orderDate: new Date(),
+        shipToAddress: {
+          name: `${payload.customerInfo.firstName} ${payload.customerInfo.lastName}`,
+          address1: payload.shippingAddress.address1,
+          address2: payload.shippingAddress.address2,
+          city: payload.shippingAddress.city,
+          state: payload.shippingAddress.state,
+          zipCode: payload.shippingAddress.zip,
+          phone: payload.customerInfo.phone || '',
+          email: payload.customerInfo.email
+        },
+        items: rsrItems,
+        shippingMethod: 'GROUND' as const,
+        fflLicense,
+        requiresDropShip: this.requiresDropShip(payload.cartItems)
+      };
+
+      // Submit to RSR
+      return await rsrOrderService.submitOrder(rsrOrderRequest);
+
+    } catch (error: any) {
+      console.error('RSR order mapping error:', error);
+      return {
+        success: false,
+        error: `RSR submission failed: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Map cart items to RSR order items
+   */
+  private async mapCartItemsToRSR(cartItems: CartItem[]): Promise<Array<{
+    rsrStockNumber: string;
+    quantity: number;
+    customerPrice: number;
+    unitPrice: number;
+  }>> {
+    const rsrItems = [];
+
+    for (const item of cartItems) {
+      // Get product details to find RSR stock number
+      const [product] = await db.select()
+        .from(products)
+        .where(eq(products.id, item.id));
+
+      if (product && product.rsrStockNumber) {
+        rsrItems.push({
+          rsrStockNumber: product.rsrStockNumber,
+          quantity: item.quantity,
+          customerPrice: item.price,
+          unitPrice: parseFloat(product.rsrPrice || product.price)
+        });
+      }
+    }
+
+    return rsrItems;
+  }
+
+  /**
+   * Get FFL information
+   */
+  private async getFFL(fflId: number): Promise<{ licenseNumber: string } | null> {
+    // TODO: Implement FFL lookup from database
+    // For now, return null until FFL table is properly integrated
+    return null;
+  }
+
+  /**
+   * Check if order requires drop shipping
+   */
+  private requiresDropShip(cartItems: CartItem[]): boolean {
+    return cartItems.some(item => 
+      item.requiresFFL && 
+      this.isDropShipEligible(item.manufacturer || '')
+    );
+  }
+
+  /**
+   * Check if manufacturer is eligible for drop shipping
+   */
+  private isDropShipEligible(manufacturer: string): boolean {
+    const dropShipBrands = ['GLOCK', 'SMITH & WESSON', 'SIG SAUER', 'S&W', 'SIG'];
+    const mfg = manufacturer.toUpperCase();
+    return dropShipBrands.some(brand => mfg.includes(brand));
   }
 
   /**

@@ -29,6 +29,7 @@ export interface CartItem {
   price: number;
   isFirearm: boolean;
   requiresFFL: boolean;
+  manufacturer?: string; // Product manufacturer for drop-ship eligibility
 }
 
 export class FirearmsComplianceService {
