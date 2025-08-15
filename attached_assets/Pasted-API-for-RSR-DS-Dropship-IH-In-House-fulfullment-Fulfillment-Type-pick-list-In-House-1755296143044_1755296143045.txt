@@ -1,0 +1,121 @@
+API for RSR 
+
+DS = Dropship
+IH = In-House fulfullment
+
+Fulfillment Type 
+(pick list)
+In-House = shipping to us (orders placed for non-dropshippable items on account #99901 for testing and 60742 for production
+Drop-Ship = ships direct to FFL or Customer from the distributor on  account # 99902  for testing and 63824 for production
+
+Flow
+(pick list)
+Outbound = Sending to Customer/FFL
+Return = Return from Customer/FFL
+
+Order Status
+(Pick List)
+Shipped to Customer
+Shipped to FFL
+Shipped to TGF = IH orders
+Cancelled
+Complete
+
+Consignee
+(pick list)
+Customer = Shipped directly to customer
+FFL = Shipped directly to FFL
+RSR = Shipped to RSR (returns)
+TGF = Shipped to TGF (returns or IH)
+
+Deal Fulfillment Summary
+(pick list)
+Shipped to Customer
+Delivered to TGF
+Shipped to TGF (Return)
+Item Received In-House (Return)
+
+Ordering Account
+(pick list)
+99901
+99902
+63824
+60742
+
+Return Status
+(pick list)
+Shipped to TGF
+Shipped to Dist
+Item Received IH
+Reshipped
+Refunded
+Closed
+
+Hold Type
+(pick list)
+FFL not on file
+Gun Count Rule
+
+TGF Order Number = Sequential 7 digit number start at 0000000 for the first production deal. For testing use "test" followed by 000
+
+APP Status
+List system response, error codes or success
+
+Carrier = The Carrier Used
+
+Tracking Number = DS From RSR - IH from Carrier / Staff
+
+Estimated Ship Date = DS From RSR - IH from Carrier / Staff
+
+Submitted = Time stamp of when first submitted
+APP Confirmed = Last Time Stamp from APP
+Last Distributor Update = Last Update from Distributor (RSR)
+
+
+This is for the Order Status Drop Down:
+Status definitions (who sets it / trigger)
+
+Submitted — App sets
+You POST the order to Engine (for DS) or mark an SO ready for IH. Store PONum, set Ordering Account.
+
+Hold - App sets - FFL or Gun Count Hold otherwise blank
+
+Confirmed — “Shipper” accepts the order
+
+DS: RSR confirms → Engine response StatusCode=="00" (and usually an RSR order #).
+
+IH: TGF confirms → payment captured, compliance/FFL ok, stock allocated or PO raised.
+
+Rule of thumb: “Confirmed” = accepted by whoever will ship (RSR for DS, TGF for IH).
+
+Processing — System sets automatically
+After Confirmed and before first tracking.
+
+DS: we’ve got an accepted order at RSR; awaiting pick/pack/backorder decisions.
+
+IH: pick ticket created / label pending / waiting on inbound from distributor for IH fulfillment.
+No manual input needed—flip to Processing right after Confirmed until a shipment exists.
+
+Partially Shipped — System sets automatically
+When at least one line/child-shipment has tracking, but not all committed qty are shipped.
+Works fine even if you split by consignee (Customer vs FFL vs TGF):
+
+Create child Shipments (receiver = Customer/FFL/TGF).
+
+Order-level status = Partially Shipped while 0 < shippedQty < committedQty across all shipments.
+
+Shipped — System sets automatically
+All committed quantities have tracking numbers across all child shipments (no lines left open/backordered).
+
+Delivered — System sets automatically
+All child shipments show delivered (carrier event for IH; RSR feed/carrier event for DS).
+Your Display Summary then shows “Delivered to Customer/FFL/TGF”.
+
+Rejected — Engine/RSR or App sets
+
+DS: Engine response not "00" or later EERR file = rejected.
+
+IH: payment fail/compliance fail/stock unable → rejected.
+
+Cancelled — Manual or system
+Cancelled before shipment (or residual lines cancelled). If some lines shipped, keep order Partially Shipped and mark the cancelled lines individually.
