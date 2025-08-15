@@ -1,0 +1,530 @@
+[
+  {
+    "orderNumber": "2025010I0",
+    "customerTier": "Bronze",
+    "fulfillmentType": "Drop-Ship",
+    "orderingAccount": "99902",
+    "product": {
+      "name": "GLOCK 19 Gen 5 9mm Luger 4.02\" Barrel 15-Round",
+      "sku": "PI1950203",
+      "rsrStockNumber": "PI1950203",
+      "price": 619.99,
+      "isFirearm": true,
+      "requiresFFL": true,
+      "category": "Handguns",
+      "manufacturer": "Glock Inc"
+    },
+    "fflDealer": {
+      "id": 1414,
+      "businessName": "BACK ACRE GUN WORKS",
+      "licenseNumber": "1-59-017-07-6F-13700"
+    },
+    "totalAmount": 619.99,
+    "rsrPayload": {
+      "Customer": "99902",
+      "PONum": "2025010I0",
+      "Email": "bronze.test.customer@thegunfirm.com",
+      "Items": [
+        {
+          "PartNum": "PI1950203",
+          "WishQTY": 1
+        }
+      ],
+      "FillOrKill": 0
+    },
+    "zohoFields": {
+      "TGF_Order_Number": "2025010I0",
+      "Fulfillment_Type": "Drop-Ship",
+      "Flow": "WD › FFL",
+      "Order_Status": "Submitted",
+      "Consignee": "FFL Dealer",
+      "Deal_Fulfillment_Summary": "Drop-Ship • 1 item • Bronze",
+      "Ordering_Account": "99902",
+      "Hold_Type": "Firearm Hold",
+      "APP_Status": "Local Order",
+      "Carrier": "",
+      "Tracking_Number": "",
+      "Estimated_Ship_Date": "",
+      "Submitted": "2025-08-15T22:53:57.544Z",
+      "APP_Confirmed": "",
+      "Last_Distributor_Update": ""
+    },
+    "status": "simulated",
+    "processingSteps": [
+      "✓ Sequential order number assigned",
+      "✓ Fulfillment type determined",
+      "✓ Account routing configured",
+      "✓ RSR Engine payload prepared",
+      "✓ Zoho field mapping completed",
+      "✓ Firearm compliance hold applied"
+    ]
+  },
+  {
+    "orderNumber": "2025011I0",
+    "customerTier": "Bronze",
+    "fulfillmentType": "In-House",
+    "orderingAccount": "99901",
+    "product": {
+      "name": "DSA SA58 IBR 18\" 308WIN 20RD BLK",
+      "sku": "DSA5818-IBR-A",
+      "rsrStockNumber": "DSA5818-IBR-A",
+      "price": 2345,
+      "isFirearm": true,
+      "requiresFFL": true,
+      "category": "Rifles",
+      "manufacturer": "DSARMS"
+    },
+    "fflDealer": {
+      "id": 1414,
+      "businessName": "BACK ACRE GUN WORKS",
+      "licenseNumber": "1-59-017-07-6F-13700"
+    },
+    "totalAmount": 2345,
+    "rsrPayload": {
+      "Customer": "99901",
+      "PONum": "2025011I0",
+      "Email": "bronze.test.customer@thegunfirm.com",
+      "Items": [
+        {
+          "PartNum": "DSA5818-IBR-A",
+          "WishQTY": 1
+        }
+      ],
+      "FillOrKill": 0
+    },
+    "zohoFields": {
+      "TGF_Order_Number": "2025011I0",
+      "Fulfillment_Type": "In-House",
+      "Flow": "TGF › FFL",
+      "Order_Status": "Submitted",
+      "Consignee": "FFL Dealer",
+      "Deal_Fulfillment_Summary": "In-House • 1 item • Bronze",
+      "Ordering_Account": "99901",
+      "Hold_Type": "Firearm Hold",
+      "APP_Status": "Local Order",
+      "Carrier": "",
+      "Tracking_Number": "",
+      "Estimated_Ship_Date": "",
+      "Submitted": "2025-08-15T22:53:57.546Z",
+      "APP_Confirmed": "",
+      "Last_Distributor_Update": ""
+    },
+    "status": "simulated",
+    "processingSteps": [
+      "✓ Sequential order number assigned",
+      "✓ Fulfillment type determined",
+      "✓ Account routing configured",
+      "✓ RSR Engine payload prepared",
+      "✓ Zoho field mapping completed",
+      "✓ Firearm compliance hold applied"
+    ]
+  },
+  {
+    "orderNumber": "2025012I0",
+    "customerTier": "Bronze",
+    "fulfillmentType": "Direct",
+    "orderingAccount": "99901",
+    "product": {
+      "name": "HOGUE GRIP AR15 KIT MIL-SPEC BLK",
+      "sku": "HO15056",
+      "rsrStockNumber": "HO15056",
+      "price": 69.95,
+      "isFirearm": false,
+      "requiresFFL": false,
+      "category": "Accessories",
+      "manufacturer": "HOGUE"
+    },
+    "fflDealer": null,
+    "totalAmount": 69.95,
+    "rsrPayload": {
+      "Customer": "99901",
+      "PONum": "2025012I0",
+      "Email": "bronze.test.customer@thegunfirm.com",
+      "Items": [
+        {
+          "PartNum": "HO15056",
+          "WishQTY": 1
+        }
+      ],
+      "FillOrKill": 0
+    },
+    "zohoFields": {
+      "TGF_Order_Number": "2025012I0",
+      "Fulfillment_Type": "Direct",
+      "Flow": "WD › Customer",
+      "Order_Status": "Submitted",
+      "Consignee": "Customer",
+      "Deal_Fulfillment_Summary": "Direct • 1 item • Bronze",
+      "Ordering_Account": "99901",
+      "Hold_Type": "",
+      "APP_Status": "Local Order",
+      "Carrier": "",
+      "Tracking_Number": "",
+      "Estimated_Ship_Date": "",
+      "Submitted": "2025-08-15T22:53:57.547Z",
+      "APP_Confirmed": "",
+      "Last_Distributor_Update": ""
+    },
+    "status": "simulated",
+    "processingSteps": [
+      "✓ Sequential order number assigned",
+      "✓ Fulfillment type determined",
+      "✓ Account routing configured",
+      "✓ RSR Engine payload prepared",
+      "✓ Zoho field mapping completed",
+      "✓ Direct processing approved"
+    ]
+  },
+  {
+    "orderNumber": "2025013I0",
+    "customerTier": "Gold Monthly",
+    "fulfillmentType": "Drop-Ship",
+    "orderingAccount": "99902",
+    "product": {
+      "name": "GLOCK 19 Gen 5 9mm Luger 4.02\" Barrel 15-Round",
+      "sku": "PI1950203",
+      "rsrStockNumber": "PI1950203",
+      "price": 529.99,
+      "isFirearm": true,
+      "requiresFFL": true,
+      "category": "Handguns",
+      "manufacturer": "Glock Inc"
+    },
+    "fflDealer": {
+      "id": 1414,
+      "businessName": "BACK ACRE GUN WORKS",
+      "licenseNumber": "1-59-017-07-6F-13700"
+    },
+    "totalAmount": 529.99,
+    "rsrPayload": {
+      "Customer": "99902",
+      "PONum": "2025013I0",
+      "Email": "gold.test.customer@thegunfirm.com",
+      "Items": [
+        {
+          "PartNum": "PI1950203",
+          "WishQTY": 1
+        }
+      ],
+      "FillOrKill": 0
+    },
+    "zohoFields": {
+      "TGF_Order_Number": "2025013I0",
+      "Fulfillment_Type": "Drop-Ship",
+      "Flow": "WD › FFL",
+      "Order_Status": "Submitted",
+      "Consignee": "FFL Dealer",
+      "Deal_Fulfillment_Summary": "Drop-Ship • 1 item • Gold Monthly",
+      "Ordering_Account": "99902",
+      "Hold_Type": "Firearm Hold",
+      "APP_Status": "Local Order",
+      "Carrier": "",
+      "Tracking_Number": "",
+      "Estimated_Ship_Date": "",
+      "Submitted": "2025-08-15T22:53:57.548Z",
+      "APP_Confirmed": "",
+      "Last_Distributor_Update": ""
+    },
+    "status": "simulated",
+    "processingSteps": [
+      "✓ Sequential order number assigned",
+      "✓ Fulfillment type determined",
+      "✓ Account routing configured",
+      "✓ RSR Engine payload prepared",
+      "✓ Zoho field mapping completed",
+      "✓ Firearm compliance hold applied"
+    ]
+  },
+  {
+    "orderNumber": "2025014I0",
+    "customerTier": "Gold Monthly",
+    "fulfillmentType": "In-House",
+    "orderingAccount": "99901",
+    "product": {
+      "name": "DSA SA58 IBR 18\" 308WIN 20RD BLK",
+      "sku": "DSA5818-IBR-A",
+      "rsrStockNumber": "DSA5818-IBR-A",
+      "price": 2227.75,
+      "isFirearm": true,
+      "requiresFFL": true,
+      "category": "Rifles",
+      "manufacturer": "DSARMS"
+    },
+    "fflDealer": {
+      "id": 1414,
+      "businessName": "BACK ACRE GUN WORKS",
+      "licenseNumber": "1-59-017-07-6F-13700"
+    },
+    "totalAmount": 2227.75,
+    "rsrPayload": {
+      "Customer": "99901",
+      "PONum": "2025014I0",
+      "Email": "gold.test.customer@thegunfirm.com",
+      "Items": [
+        {
+          "PartNum": "DSA5818-IBR-A",
+          "WishQTY": 1
+        }
+      ],
+      "FillOrKill": 0
+    },
+    "zohoFields": {
+      "TGF_Order_Number": "2025014I0",
+      "Fulfillment_Type": "In-House",
+      "Flow": "TGF › FFL",
+      "Order_Status": "Submitted",
+      "Consignee": "FFL Dealer",
+      "Deal_Fulfillment_Summary": "In-House • 1 item • Gold Monthly",
+      "Ordering_Account": "99901",
+      "Hold_Type": "Firearm Hold",
+      "APP_Status": "Local Order",
+      "Carrier": "",
+      "Tracking_Number": "",
+      "Estimated_Ship_Date": "",
+      "Submitted": "2025-08-15T22:53:57.549Z",
+      "APP_Confirmed": "",
+      "Last_Distributor_Update": ""
+    },
+    "status": "simulated",
+    "processingSteps": [
+      "✓ Sequential order number assigned",
+      "✓ Fulfillment type determined",
+      "✓ Account routing configured",
+      "✓ RSR Engine payload prepared",
+      "✓ Zoho field mapping completed",
+      "✓ Firearm compliance hold applied"
+    ]
+  },
+  {
+    "orderNumber": "2025015I0",
+    "customerTier": "Gold Monthly",
+    "fulfillmentType": "Direct",
+    "orderingAccount": "99901",
+    "product": {
+      "name": "HOGUE GRIP AR15 KIT MIL-SPEC BLK",
+      "sku": "HO15056",
+      "rsrStockNumber": "HO15056",
+      "price": 66.45,
+      "isFirearm": false,
+      "requiresFFL": false,
+      "category": "Accessories",
+      "manufacturer": "HOGUE"
+    },
+    "fflDealer": null,
+    "totalAmount": 66.45,
+    "rsrPayload": {
+      "Customer": "99901",
+      "PONum": "2025015I0",
+      "Email": "gold.test.customer@thegunfirm.com",
+      "Items": [
+        {
+          "PartNum": "HO15056",
+          "WishQTY": 1
+        }
+      ],
+      "FillOrKill": 0
+    },
+    "zohoFields": {
+      "TGF_Order_Number": "2025015I0",
+      "Fulfillment_Type": "Direct",
+      "Flow": "WD › Customer",
+      "Order_Status": "Submitted",
+      "Consignee": "Customer",
+      "Deal_Fulfillment_Summary": "Direct • 1 item • Gold Monthly",
+      "Ordering_Account": "99901",
+      "Hold_Type": "",
+      "APP_Status": "Local Order",
+      "Carrier": "",
+      "Tracking_Number": "",
+      "Estimated_Ship_Date": "",
+      "Submitted": "2025-08-15T22:53:57.550Z",
+      "APP_Confirmed": "",
+      "Last_Distributor_Update": ""
+    },
+    "status": "simulated",
+    "processingSteps": [
+      "✓ Sequential order number assigned",
+      "✓ Fulfillment type determined",
+      "✓ Account routing configured",
+      "✓ RSR Engine payload prepared",
+      "✓ Zoho field mapping completed",
+      "✓ Direct processing approved"
+    ]
+  },
+  {
+    "orderNumber": "2025016I0",
+    "customerTier": "Platinum Monthly",
+    "fulfillmentType": "Drop-Ship",
+    "orderingAccount": "99902",
+    "product": {
+      "name": "GLOCK 19 Gen 5 9mm Luger 4.02\" Barrel 15-Round",
+      "sku": "PI1950203",
+      "rsrStockNumber": "PI1950203",
+      "price": 469.99,
+      "isFirearm": true,
+      "requiresFFL": true,
+      "category": "Handguns",
+      "manufacturer": "Glock Inc"
+    },
+    "fflDealer": {
+      "id": 1414,
+      "businessName": "BACK ACRE GUN WORKS",
+      "licenseNumber": "1-59-017-07-6F-13700"
+    },
+    "totalAmount": 469.99,
+    "rsrPayload": {
+      "Customer": "99902",
+      "PONum": "2025016I0",
+      "Email": "platinum.test.customer@thegunfirm.com",
+      "Items": [
+        {
+          "PartNum": "PI1950203",
+          "WishQTY": 1
+        }
+      ],
+      "FillOrKill": 0
+    },
+    "zohoFields": {
+      "TGF_Order_Number": "2025016I0",
+      "Fulfillment_Type": "Drop-Ship",
+      "Flow": "WD › FFL",
+      "Order_Status": "Submitted",
+      "Consignee": "FFL Dealer",
+      "Deal_Fulfillment_Summary": "Drop-Ship • 1 item • Platinum Monthly",
+      "Ordering_Account": "99902",
+      "Hold_Type": "Firearm Hold",
+      "APP_Status": "Local Order",
+      "Carrier": "",
+      "Tracking_Number": "",
+      "Estimated_Ship_Date": "",
+      "Submitted": "2025-08-15T22:53:57.552Z",
+      "APP_Confirmed": "",
+      "Last_Distributor_Update": ""
+    },
+    "status": "simulated",
+    "processingSteps": [
+      "✓ Sequential order number assigned",
+      "✓ Fulfillment type determined",
+      "✓ Account routing configured",
+      "✓ RSR Engine payload prepared",
+      "✓ Zoho field mapping completed",
+      "✓ Firearm compliance hold applied"
+    ]
+  },
+  {
+    "orderNumber": "2025017I0",
+    "customerTier": "Platinum Monthly",
+    "fulfillmentType": "In-House",
+    "orderingAccount": "99901",
+    "product": {
+      "name": "DSA SA58 IBR 18\" 308WIN 20RD BLK",
+      "sku": "DSA5818-IBR-A",
+      "rsrStockNumber": "DSA5818-IBR-A",
+      "price": 2008.38,
+      "isFirearm": true,
+      "requiresFFL": true,
+      "category": "Rifles",
+      "manufacturer": "DSARMS"
+    },
+    "fflDealer": {
+      "id": 1414,
+      "businessName": "BACK ACRE GUN WORKS",
+      "licenseNumber": "1-59-017-07-6F-13700"
+    },
+    "totalAmount": 2008.38,
+    "rsrPayload": {
+      "Customer": "99901",
+      "PONum": "2025017I0",
+      "Email": "platinum.test.customer@thegunfirm.com",
+      "Items": [
+        {
+          "PartNum": "DSA5818-IBR-A",
+          "WishQTY": 1
+        }
+      ],
+      "FillOrKill": 0
+    },
+    "zohoFields": {
+      "TGF_Order_Number": "2025017I0",
+      "Fulfillment_Type": "In-House",
+      "Flow": "TGF › FFL",
+      "Order_Status": "Submitted",
+      "Consignee": "FFL Dealer",
+      "Deal_Fulfillment_Summary": "In-House • 1 item • Platinum Monthly",
+      "Ordering_Account": "99901",
+      "Hold_Type": "Firearm Hold",
+      "APP_Status": "Local Order",
+      "Carrier": "",
+      "Tracking_Number": "",
+      "Estimated_Ship_Date": "",
+      "Submitted": "2025-08-15T22:53:57.553Z",
+      "APP_Confirmed": "",
+      "Last_Distributor_Update": ""
+    },
+    "status": "simulated",
+    "processingSteps": [
+      "✓ Sequential order number assigned",
+      "✓ Fulfillment type determined",
+      "✓ Account routing configured",
+      "✓ RSR Engine payload prepared",
+      "✓ Zoho field mapping completed",
+      "✓ Firearm compliance hold applied"
+    ]
+  },
+  {
+    "orderNumber": "2025018I0",
+    "customerTier": "Platinum Monthly",
+    "fulfillmentType": "Direct",
+    "orderingAccount": "99901",
+    "product": {
+      "name": "HOGUE GRIP AR15 KIT MIL-SPEC BLK",
+      "sku": "HO15056",
+      "rsrStockNumber": "HO15056",
+      "price": 42.62,
+      "isFirearm": false,
+      "requiresFFL": false,
+      "category": "Accessories",
+      "manufacturer": "HOGUE"
+    },
+    "fflDealer": null,
+    "totalAmount": 42.62,
+    "rsrPayload": {
+      "Customer": "99901",
+      "PONum": "2025018I0",
+      "Email": "platinum.test.customer@thegunfirm.com",
+      "Items": [
+        {
+          "PartNum": "HO15056",
+          "WishQTY": 1
+        }
+      ],
+      "FillOrKill": 0
+    },
+    "zohoFields": {
+      "TGF_Order_Number": "2025018I0",
+      "Fulfillment_Type": "Direct",
+      "Flow": "WD › Customer",
+      "Order_Status": "Submitted",
+      "Consignee": "Customer",
+      "Deal_Fulfillment_Summary": "Direct • 1 item • Platinum Monthly",
+      "Ordering_Account": "99901",
+      "Hold_Type": "",
+      "APP_Status": "Local Order",
+      "Carrier": "",
+      "Tracking_Number": "",
+      "Estimated_Ship_Date": "",
+      "Submitted": "2025-08-15T22:53:57.554Z",
+      "APP_Confirmed": "",
+      "Last_Distributor_Update": ""
+    },
+    "status": "simulated",
+    "processingSteps": [
+      "✓ Sequential order number assigned",
+      "✓ Fulfillment type determined",
+      "✓ Account routing configured",
+      "✓ RSR Engine payload prepared",
+      "✓ Zoho field mapping completed",
+      "✓ Direct processing approved"
+    ]
+  }
+]
