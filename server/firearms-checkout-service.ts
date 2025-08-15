@@ -3,7 +3,7 @@ import { orders, orderLines, products } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { firearmsComplianceService, type ComplianceCheckResult, type CartItem } from './firearms-compliance-service';
 import { authorizeNetService } from './authorize-net-service';
-import { rsrOrderService } from './services/rsr-order-service';
+import { rsrEngineClient } from './services/rsr-engine-client';
 import { orderZohoIntegration, OrderZohoIntegration } from './order-zoho-integration';
 import type { InsertOrder, InsertOrderLine } from '@shared/schema';
 
@@ -408,29 +408,18 @@ export class FirearmsCheckoutService {
         fflLicense = fflInfo?.licenseNumber;
       }
 
-      // Create RSR order request
-      const rsrOrderRequest = {
+      // Build Engine order payload
+      const enginePayload = rsrEngineClient.buildOrderPayload({
         orderNumber: order.orderNumber,
-        customerNumber: rsrOrderService.getCustomerNumber(),
-        orderDate: new Date(),
-        shipToAddress: {
-          name: `${payload.customerInfo.firstName} ${payload.customerInfo.lastName}`,
-          address1: payload.shippingAddress.address1,
-          address2: payload.shippingAddress.address2,
-          city: payload.shippingAddress.city,
-          state: payload.shippingAddress.state,
-          zipCode: payload.shippingAddress.zip,
-          phone: payload.customerInfo.phone || '',
-          email: payload.customerInfo.email
-        },
+        shippingAddress: payload.shippingAddress,
+        customerInfo: payload.customerInfo,
         items: rsrItems,
-        shippingMethod: 'GROUND' as const,
         fflLicense,
-        requiresDropShip: this.requiresDropShip(payload.cartItems)
-      };
+        dropShip: this.requiresDropShip(payload.cartItems)
+      });
 
-      // Submit to RSR
-      return await rsrOrderService.submitOrder(rsrOrderRequest);
+      // Submit to RSR Engine
+      return await rsrEngineClient.submitOrder(enginePayload);
 
     } catch (error: any) {
       console.error('RSR order mapping error:', error);
