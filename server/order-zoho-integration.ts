@@ -138,8 +138,10 @@ export class OrderZohoIntegration {
         console.warn(`⚠️ Product field validation warnings: ${validation.errors.join(', ')}`);
       }
 
-      // 7. Create deal name based on TGF order number and whether multiple deals exist
-      const dealName = this.createDealName(zohoFields.TGF_Order, outcome.orderDetails.length > 1);
+      // 7. Create deal name based on TGF order number and receiver grouping
+      const totalGroups = orderData.shippingOutcomes?.length || 1;
+      const groupIndex = orderData.shippingOutcomes?.findIndex(o => o === outcome) || 0;
+      const dealName = this.createDealName(zohoFields.TGF_Order, totalGroups, groupIndex);
       
       // 8. Create Zoho Deal with comprehensive RSR fields and product information
       const dealData = {
@@ -261,21 +263,28 @@ export class OrderZohoIntegration {
   }
 
   /**
-   * Creates Deal name based on TGF order number
-   * @param tgfOrderNumber - The TGF order number (e.g., "TGF-1001-I")
-   * @param hasMultipleDeals - Whether this order creates multiple deals
+   * Creates Deal name based on TGF order number and receiver grouping
+   * @param tgfOrderNumber - The base TGF order number (7-digit)
+   * @param totalGroups - Total number of receiver groups
+   * @param groupIndex - Current group index (0-based)
    * @returns Deal name with appropriate suffix
    */
-  private createDealName(tgfOrderNumber?: string, hasMultipleDeals: boolean = false): string {
+  private createDealName(tgfOrderNumber?: string, totalGroups: number = 1, groupIndex: number = 0): string {
     if (!tgfOrderNumber) {
-      return `TGF-ORDER-${hasMultipleDeals ? 'Z' : '0'}`;
+      return totalGroups === 1 ? 'TGF-ORDER-0' : `TGF-ORDER-${String.fromCharCode(65 + groupIndex)}Z`;
     }
     
-    // Replace the receiver code (last character) with Z for multiple deals, 0 for single deal
-    const baseName = tgfOrderNumber.slice(0, -1); // Remove last character
-    const suffix = hasMultipleDeals ? 'Z' : '0';
+    // Extract the 7-digit order number from TGF-XXXXXXX format
+    const orderNumber = tgfOrderNumber.replace(/^TGF-/, '').replace(/-[ICF]$/, '');
     
-    return `${baseName}${suffix}`;
+    if (totalGroups === 1) {
+      // Single receiver: TGF-{OrderNo}-0
+      return `TGF-${orderNumber}-0`;
+    } else {
+      // Multiple receivers: TGF-{OrderNo}-{GroupLetter}Z
+      const groupLetter = String.fromCharCode(65 + groupIndex); // A, B, C, ...
+      return `TGF-${orderNumber}-${groupLetter}Z`;
+    }
   }
 
   /**
