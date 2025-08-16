@@ -1,74 +1,118 @@
-/**
- * Final Zoho Verification
- * Verify that the actual Zoho CRM deal contains individual system fields
- */
-
 const axios = require('axios');
 
-async function verifyActualZohoDeal() {
-  console.log('🔍 Final Verification: Checking actual Zoho CRM deal fields\n');
-  
-  const dealId = '6585331000000973007'; // From our successful test
-  
+console.log('🏆 Final Zoho Integration Verification');
+console.log('📊 Testing complete end-to-end field mapping and retrieval');
+
+async function finalVerification() {
   try {
-    // Make request to retrieve deal from Zoho CRM
-    const response = await axios.get(`http://localhost:5000/api/test/zoho-deal/${dealId}`);
+    // Create a new deal with all fields
+    console.log('\n📋 Step 1: Creating complete test deal...');
+    const createResponse = await axios.post('http://localhost:5000/api/test/zoho-system-fields', {
+      orderNumber: 'FINAL-VERIFY-' + Date.now(),
+      customerEmail: `final.verify.${Date.now()}@thegunfirm.com`,
+      customerName: 'Final Verification User',
+      membershipTier: 'Platinum Monthly',
+      totalAmount: 1299.99,
+      orderItems: [{
+        productName: 'Final Verification Rifle',
+        sku: 'FINAL-VERIFY',
+        quantity: 1,
+        unitPrice: 1299.99,
+        totalPrice: 1299.99,
+        fflRequired: true
+      }],
+      fulfillmentType: 'Drop-Ship',
+      requiresDropShip: true,
+      holdType: 'FFL not on file',
+      fflDealerName: 'Final Verification FFL',
+      isTestOrder: true
+    });
+
+    if (!createResponse.data.success) {
+      throw new Error(`Deal creation failed: ${createResponse.data.error}`);
+    }
+
+    const dealId = createResponse.data.dealId;
+    const tgfOrderNumber = createResponse.data.tgfOrderNumber;
     
-    if (response.data.success && response.data.deal) {
-      const deal = response.data.deal;
-      console.log('✅ Successfully retrieved deal from Zoho CRM');
-      console.log(`📄 Deal Name: ${deal.Deal_Name}`);
-      console.log(`💰 Amount: $${deal.Amount}`);
-      console.log(`📧 Stage: ${deal.Stage}\n`);
+    console.log(`✅ Deal created successfully:`);
+    console.log(`   Deal ID: ${dealId}`);
+    console.log(`   TGF Order: ${tgfOrderNumber}`);
+    console.log(`   Contact ID: ${createResponse.data.contactId}`);
+
+    // Step 2: Test deal retrieval to verify fields are actually set
+    console.log('\n📋 Step 2: Retrieving deal to verify field mapping...');
+    const retrieveResponse = await axios.get(`http://localhost:5000/api/test/zoho-deal/${dealId}`);
+    
+    if (!retrieveResponse.data.success) {
+      throw new Error(`Deal retrieval failed: ${retrieveResponse.data.error}`);
+    }
+
+    const dealData = retrieveResponse.data.deal;
+    console.log(`✅ Deal retrieved successfully`);
+
+    // Step 3: Verify all 10 system fields are present and correct
+    console.log('\n📊 Step 3: Validating all system fields...');
+    
+    const expectedFields = {
+      'TGF_Order_Number': tgfOrderNumber,
+      'Fulfillment_Type': 'Drop-Ship',
+      'Flow': 'TGF',
+      'Order_Status': 'Hold',
+      'Consignee': 'FFL',
+      'Deal_Fulfillment_Summary': 'Delivered to TGF',
+      'Ordering_Account': '99901',
+      'Hold_Type': 'FFL not on file',
+      'APP_Status': 'Submitted',
+      'Submitted': true // Just check presence for datetime
+    };
+
+    let fieldsValid = 0;
+    let totalFields = Object.keys(expectedFields).length;
+
+    for (const [fieldName, expectedValue] of Object.entries(expectedFields)) {
+      const actualValue = dealData[fieldName];
       
-      console.log('🔍 Verifying individual system fields in Zoho CRM:');
-      
-      const systemFields = [
-        'TGF_Order_Number',
-        'Fulfillment_Type',
-        'Flow',
-        'Order_Status',
-        'Consignee',
-        'Deal_Fulfillment_Summary',
-        'Ordering_Account',
-        'Hold_Type',
-        'APP_Status',
-        'Submitted'
-      ];
-      
-      let fieldsPresent = 0;
-      systemFields.forEach(field => {
-        const value = deal[field];
-        if (value !== undefined && value !== null && value !== '') {
-          console.log(`   ✅ ${field}: ${value}`);
-          fieldsPresent++;
+      if (fieldName === 'Submitted') {
+        // For datetime fields, just check presence and format
+        if (actualValue && typeof actualValue === 'string' && actualValue.includes('T')) {
+          console.log(`   ✅ ${fieldName}: ${actualValue} (Valid datetime format)`);
+          fieldsValid++;
         } else {
-          console.log(`   ❌ ${field}: MISSING or NULL`);
+          console.log(`   ❌ ${fieldName}: Missing or invalid format`);
         }
-      });
-      
-      console.log(`\n📊 Result: ${fieldsPresent}/${systemFields.length} system fields present in Zoho CRM`);
-      
-      if (fieldsPresent === systemFields.length) {
-        console.log('\n🎉 SUCCESS: All system fields properly mapped to individual Zoho CRM fields!');
-        console.log('✅ The fix is working correctly - no more data dumping into Description');
-        console.log('✅ Zoho CRM now has structured, searchable order data');
       } else {
-        console.log('\n⚠️  Some fields missing - integration needs review');
+        if (actualValue === expectedValue) {
+          console.log(`   ✅ ${fieldName}: ${actualValue}`);
+          fieldsValid++;
+        } else {
+          console.log(`   ❌ ${fieldName}: Expected "${expectedValue}", got "${actualValue}"`);
+        }
       }
-      
-    } else {
-      console.log('❌ Failed to retrieve deal from Zoho:', response.data.error);
     }
+
+    // Final results
+    console.log('\n🏆 FINAL VERIFICATION RESULTS:');
+    console.log(`   System Fields Valid: ${fieldsValid}/${totalFields}`);
+    console.log(`   Success Rate: ${((fieldsValid/totalFields) * 100).toFixed(1)}%`);
     
-  } catch (error) {
-    console.error('❌ Verification failed:', error.message);
-    if (error.response) {
-      console.error('Response status:', error.response.status);
-      console.error('Response data:', error.response.data);
+    if (fieldsValid === totalFields) {
+      console.log('   🎉 PERFECT SCORE - All system fields working correctly!');
+      console.log('   🚀 Zoho individual field mapping is production-ready!');
+      console.log('   ✅ RESOLVED: JSON dumping issue completely fixed');
+    } else {
+      console.log('   ⚠️  Some fields need attention');
     }
+
+  } catch (error) {
+    console.error('❌ Final verification failed:', error.response?.data || error.message);
   }
 }
 
-// Run verification
-verifyActualZohoDeal();
+finalVerification().then(() => {
+  console.log('\n🔍 Final verification completed');
+  process.exit(0);
+}).catch(error => {
+  console.error('Final verification error:', error);
+  process.exit(1);
+});

@@ -394,20 +394,8 @@ export class ZohoService {
    */
   async getDealById(dealId: string): Promise<any> {
     try {
-      if (!this.config.accessToken) {
-        return null;
-      }
-
-      const response = await axios.get(
-        `${this.config.apiHost}/crm/v2/Deals/${dealId}`,
-        {
-          headers: {
-            'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`
-          }
-        }
-      );
-
-      return response.data?.data?.[0] || null;
+      const response = await this.makeAPIRequest(`Deals/${dealId}`);
+      return response.data?.[0] || null;
     } catch (error: any) {
       console.error('Error retrieving deal by ID:', error.response?.data || error.message);
       return null;

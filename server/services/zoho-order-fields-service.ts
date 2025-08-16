@@ -143,7 +143,9 @@ export class ZohoOrderFieldsService {
       isTest
     );
 
-    const now = new Date().toISOString();
+    // Format datetime for Zoho: yyyy-MM-ddTHH:mm:ss (not ISO string)
+    const now = new Date();
+    const zohoDateTime = now.toISOString().slice(0, 19); // Remove the 'Z' and milliseconds
     
     return {
       TGF_Order_Number: tgfOrderNumber,
@@ -157,8 +159,8 @@ export class ZohoOrderFieldsService {
       APP_Status: appStatus,
       Carrier: carrier,
       Tracking_Number: trackingNumber,
-      Estimated_Ship_Date: estimatedShipDate?.toISOString(),
-      Submitted: now,
+      Estimated_Ship_Date: estimatedShipDate ? estimatedShipDate.toISOString().slice(0, 19) : undefined,
+      Submitted: zohoDateTime,
       APP_Confirmed: undefined,
       Last_Distributor_Update: undefined
     };
@@ -171,7 +173,8 @@ export class ZohoOrderFieldsService {
     fields: ZohoOrderFieldMapping,
     engineResponse: any
   ): ZohoOrderFieldMapping {
-    const now = new Date().toISOString();
+    // Format datetime for Zoho: yyyy-MM-ddTHH:mm:ss (not ISO string)
+    const zohoDateTime = new Date().toISOString().slice(0, 19);
     
     if (engineResponse.result?.StatusCode === '00') {
       // Order confirmed by RSR
@@ -179,8 +182,8 @@ export class ZohoOrderFieldsService {
         ...fields,
         Order_Status: 'Confirmed',
         APP_Status: `RSR Confirmed: ${engineResponse.result.StatusMessage || 'Success'}`,
-        APP_Confirmed: now,
-        Last_Distributor_Update: now
+        APP_Confirmed: zohoDateTime,
+        Last_Distributor_Update: zohoDateTime
       };
     } else {
       // Order rejected
@@ -188,7 +191,7 @@ export class ZohoOrderFieldsService {
         ...fields,
         Order_Status: 'Rejected',
         APP_Status: `RSR Rejected: ${engineResponse.result?.StatusMessage || 'Unknown error'}`,
-        APP_Confirmed: now
+        APP_Confirmed: zohoDateTime
       };
     }
   }
