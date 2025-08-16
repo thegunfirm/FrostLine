@@ -472,7 +472,7 @@ export class OrderZohoIntegration {
       const fflRequired = orderData.orderItems.some(item => item.fflRequired);
       
       const dealResult = await this.zohoService.createOrderDeal({
-        contactId,
+        contactId: contactId!,
         orderNumber: orderData.orderNumber,
         totalAmount: orderData.totalAmount,
         orderItems: orderData.orderItems,

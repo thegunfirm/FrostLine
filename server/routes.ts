@@ -6214,13 +6214,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint for direct Zoho integration testing
+  app.post('/api/test/zoho-system-fields', async (req, res) => {
+    try {
+      console.log('🧪 Direct Zoho System Fields Test Called');
+      console.log('🧪 Request body:', JSON.stringify(req.body, null, 2));
+      
+      const orderData = req.body;
+      
+      // Import the Zoho integration service
+      console.log('🧪 Importing OrderZohoIntegration...');
+      const { OrderZohoIntegration } = await import('./order-zoho-integration');
+      const zohoIntegration = new OrderZohoIntegration();
+      console.log('🧪 OrderZohoIntegration imported successfully');
+      
+      // Test the processOrderWithSystemFields method
+      console.log('🧪 Calling processOrderWithSystemFields...');
+      const result = await zohoIntegration.processOrderWithSystemFields({
+        orderNumber: orderData.orderNumber,
+        customerEmail: orderData.customerEmail,
+        customerName: orderData.customerName,
+        membershipTier: orderData.membershipTier,
+        totalAmount: orderData.totalAmount,
+        orderItems: orderData.orderItems,
+        orderStatus: 'Payment Successful',
+        fulfillmentType: orderData.fulfillmentType,
+        requiresDropShip: orderData.requiresDropShip,
+        holdType: orderData.holdType,
+        fflDealerName: orderData.fflDealerName,
+        zohoContactId: orderData.zohoContactId
+      });
+      
+      console.log('🧪 Zoho test result:', JSON.stringify(result, null, 2));
+      
+      // Ensure we send JSON response
+      res.setHeader('Content-Type', 'application/json');
+      res.json(result);
+    } catch (error: any) {
+      console.error('🧪 Zoho test error:', error);
+      console.error('🧪 Error stack:', error.stack);
+      
+      // Ensure we send JSON response even on error
+      res.setHeader('Content-Type', 'application/json');
+      res.status(500).json({ 
+        success: false, 
+        error: `Test failed: ${error.message}`,
+        stack: error.stack
+      });
+    }
+  });
+
   // Register authentication routes (Zoho-based)
   registerAuthRoutes(app);
 
   const { registerZohoRoutes } = await import('./zoho-routes');
   registerZohoRoutes(app);
-
-
 
   console.log('✓ FAP integration routes registered successfully');
 
