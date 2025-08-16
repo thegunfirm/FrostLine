@@ -6381,6 +6381,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test Order Splitting with Shipping Outcomes
+  app.post("/api/test/order-splitting", async (req, res) => {
+    try {
+      console.log("🧪 Testing order splitting functionality...");
+
+      const testOrderItems = [
+        {
+          productName: "Smith & Wesson M&P Shield",
+          sku: "SW-MP-SHIELD-9MM",
+          rsrStockNumber: "123456",
+          quantity: 1,
+          unitPrice: 349.99,
+          totalPrice: 349.99,
+          fflRequired: true,
+          dropShipEligible: true
+        },
+        {
+          productName: "Magpul PMAG 30",
+          sku: "MAG-PMAG30",
+          quantity: 3,
+          unitPrice: 14.99,
+          totalPrice: 44.97,
+          fflRequired: false,
+          dropShipEligible: true
+        },
+        {
+          productName: "Custom Engraving Service",
+          sku: "CUSTOM-ENGRAVE",
+          quantity: 1,
+          unitPrice: 75.00,
+          totalPrice: 75.00,
+          fflRequired: false,
+          inHouseOnly: true // Must be done at TGF
+        }
+      ];
+
+      const testOrderData = {
+        orderNumber: "TEST-SPLIT-001",
+        customerName: "John Test",
+        customerEmail: "john@test.com",
+        orderItems: testOrderItems,
+        membershipTier: "Bronze",
+        isTestOrder: true
+      };
+
+      // Import and use the order splitting service
+      const { OrderZohoIntegration } = await import('./order-zoho-integration');
+      const orderZohoIntegration = new OrderZohoIntegration();
+      
+      const result = await orderZohoIntegration.processOrderWithSplitting(testOrderData);
+
+      console.log("🎉 Order splitting test completed:", result);
+
+      res.json({
+        success: true,
+        message: `Order splitting test completed - created ${result.totalOrders} separate orders`,
+        result,
+        originalOrder: testOrderData,
+        note: "This demonstrates how orders are split based on shipping outcomes (Drop-Ship to Customer, Drop-Ship to FFL, In-House)"
+      });
+
+    } catch (error: any) {
+      console.error("Order splitting test error:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Order splitting test failed: " + error.message 
+      });
+    }
+  });
+
   // Register authentication routes (Zoho-based)
   registerAuthRoutes(app);
 

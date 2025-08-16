@@ -7,7 +7,7 @@ export interface ZohoOrderFieldMapping {
   // Core Order Information
   TGF_Order: string;           // Actual TGF Order Number from APP/RSR Engine response
   Fulfillment_Type: 'In-House' | 'Drop-Ship';
-  Flow: 'TGF' | 'Return';
+  Flow: 'Outbound' | 'Return';
   Order_Status: 'Submitted' | 'Hold' | 'Confirmed' | 'Processing' | 'Partially Shipped' | 'Shipped' | 'Delivered' | 'Rejected' | 'Cancelled';
   Consignee: 'Customer' | 'FFL' | 'RSR' | 'TGF';
   
@@ -193,7 +193,7 @@ export class ZohoOrderFieldsService {
     return {
       TGF_Order: tgfOrderNumber,
       Fulfillment_Type: fulfillmentType,
-      Flow: 'TGF',
+      Flow: 'Outbound',
       Order_Status: holdType ? 'Hold' : 'Submitted',
       Consignee: consignee,
       Ordering_Account: orderingAccount,
@@ -260,6 +260,123 @@ export class ZohoOrderFieldsService {
     
     // For production orders, use full timestamp-based numbering
     return baseTime + randomSuffix;
+  }
+
+  /**
+   * Determine shipping outcomes from order items
+   */
+  analyzeShippingOutcomes(orderItems: Array<{
+    productName: string;
+    sku: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    fflRequired?: boolean;
+    dropShipEligible?: boolean;
+    inHouseOnly?: boolean;
+    rsrStockNumber?: string;
+  }>): Array<{
+    outcome: 'DS_TO_CUSTOMER' | 'DS_TO_FFL' | 'IN_HOUSE';
+    items: typeof orderItems;
+    fulfillmentType: 'Drop-Ship' | 'In-House';
+    orderingAccount: '99901' | '99902' | '63824' | '60742';
+    consignee: 'Customer' | 'FFL' | 'TGF';
+    receiverCode: 'I' | 'C' | 'F';
+  }> {
+    const outcomes: Array<{
+      outcome: 'DS_TO_CUSTOMER' | 'DS_TO_FFL' | 'IN_HOUSE';
+      items: typeof orderItems;
+      fulfillmentType: 'Drop-Ship' | 'In-House';
+      orderingAccount: '99901' | '99902' | '63824' | '60742';
+      consignee: 'Customer' | 'FFL' | 'TGF';
+      receiverCode: 'I' | 'C' | 'F';
+    }> = [];
+
+    // Group items by shipping outcome
+    const dsToCustomerItems: typeof orderItems = [];
+    const dsToFflItems: typeof orderItems = [];
+    const inHouseItems: typeof orderItems = [];
+
+    orderItems.forEach(item => {
+      const requiresFFL = item.fflRequired || false;
+      const canDropShip = item.dropShipEligible || false;
+      const mustBeInHouse = item.inHouseOnly || false;
+
+      if (mustBeInHouse) {
+        // Items that must ship to TGF first (in-house fulfillment)
+        inHouseItems.push(item);
+      } else if (canDropShip && requiresFFL) {
+        // Firearms that can drop-ship to FFL
+        dsToFflItems.push(item);
+      } else if (canDropShip && !requiresFFL) {
+        // Non-firearms that can drop-ship to customer
+        dsToCustomerItems.push(item);
+      } else {
+        // Default to in-house for items without specific shipping requirements
+        inHouseItems.push(item);
+      }
+    });
+
+    // Determine if we're in test or production mode
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // Create outcomes for each group that has items
+    if (dsToCustomerItems.length > 0) {
+      outcomes.push({
+        outcome: 'DS_TO_CUSTOMER',
+        items: dsToCustomerItems,
+        fulfillmentType: 'Drop-Ship',
+        orderingAccount: isProduction ? '63824' : '99902',
+        consignee: 'Customer',
+        receiverCode: 'C'
+      });
+    }
+
+    if (dsToFflItems.length > 0) {
+      outcomes.push({
+        outcome: 'DS_TO_FFL',
+        items: dsToFflItems,
+        fulfillmentType: 'Drop-Ship',
+        orderingAccount: isProduction ? '63824' : '99902',
+        consignee: 'FFL',
+        receiverCode: 'F'
+      });
+    }
+
+    if (inHouseItems.length > 0) {
+      outcomes.push({
+        outcome: 'IN_HOUSE',
+        items: inHouseItems,
+        fulfillmentType: 'In-House',
+        orderingAccount: isProduction ? '60742' : '99901',
+        consignee: 'TGF',
+        receiverCode: 'I'
+      });
+    }
+
+    return outcomes;
+  }
+
+  /**
+   * Generate TGF order numbers for split orders
+   */
+  generateSplitOrderNumbers(
+    baseOrderNumber: number,
+    outcomes: Array<{ receiverCode: 'I' | 'C' | 'F' }>,
+    isTest: boolean = false
+  ): string[] {
+    if (outcomes.length === 1) {
+      // Single shipping outcome - ends in '0'
+      const base = isTest ? `test${baseOrderNumber.toString().padStart(6, '0')}` : baseOrderNumber.toString().padStart(7, '0');
+      return [`${base}${outcomes[0].receiverCode}0`];
+    } else {
+      // Multiple shipping outcomes - ends in A, B, C, etc.
+      return outcomes.map((outcome, index) => {
+        const base = isTest ? `test${baseOrderNumber.toString().padStart(6, '0')}` : baseOrderNumber.toString().padStart(7, '0');
+        const suffix = String.fromCharCode(65 + index); // A, B, C, etc.
+        return `${base}${outcome.receiverCode}${suffix}`;
+      });
+    }
   }
 }
 

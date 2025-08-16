@@ -245,6 +245,190 @@ export class OrderZohoIntegration {
   }
 
   /**
+   * Process order with automatic order splitting based on shipping outcomes
+   * Creates separate Zoho deals for each shipping outcome (DS→Customer, DS→FFL, In-House)
+   */
+  async processOrderWithSplitting(orderData: OrderToZohoData): Promise<{
+    success: boolean;
+    orders: Array<{
+      dealId: string;
+      contactId: string;
+      tgfOrderNumber: string;
+      outcome: string;
+      zohoFields: any;
+    }>;
+    totalOrders: number;
+    error?: string;
+  }> {
+    try {
+      console.log(`🔄 Processing order ${orderData.orderNumber} with automatic splitting...`);
+
+      // 1. Analyze shipping outcomes from order items
+      const shippingOutcomes = zohoOrderFieldsService.analyzeShippingOutcomes(orderData.orderItems);
+      console.log(`📦 Detected ${shippingOutcomes.length} shipping outcomes:`, shippingOutcomes.map(o => o.outcome));
+
+      if (shippingOutcomes.length === 0) {
+        return {
+          success: false,
+          orders: [],
+          totalOrders: 0,
+          error: 'No valid shipping outcomes detected from order items'
+        };
+      }
+
+      // 2. Generate base order number and split TGF order numbers
+      const baseOrderNumber = await zohoOrderFieldsService.getNextOrderNumber(orderData.isTestOrder);
+      const tgfOrderNumbers = zohoOrderFieldsService.generateSplitOrderNumbers(
+        baseOrderNumber,
+        shippingOutcomes,
+        orderData.isTestOrder
+      );
+
+      console.log(`🏷️ Generated TGF order numbers:`, tgfOrderNumbers);
+
+      // 3. Find or create customer contact
+      let contactId = orderData.zohoContactId;
+      if (!contactId) {
+        const existingContact = await this.zohoService.findContactByEmail(orderData.customerEmail);
+        
+        if (existingContact) {
+          contactId = existingContact.id;
+          console.log(`✅ Found existing contact: ${contactId}`);
+        } else {
+          const newContact = await this.zohoService.createContact({
+            email: orderData.customerEmail,
+            firstName: orderData.customerName.split(' ')[0],
+            lastName: orderData.customerName.split(' ').slice(1).join(' ') || 'Customer',
+            membershipTier: orderData.membershipTier,
+            leadSource: 'TheGunFirm.com'
+          });
+          contactId = newContact.id;
+          console.log(`✅ Created new contact: ${contactId}`);
+        }
+      }
+
+      // 4. Create separate Zoho deals for each shipping outcome
+      const createdOrders: Array<{
+        dealId: string;
+        contactId: string;
+        tgfOrderNumber: string;
+        outcome: string;
+        zohoFields: any;
+      }> = [];
+
+      for (let i = 0; i < shippingOutcomes.length; i++) {
+        const outcome = shippingOutcomes[i];
+        const tgfOrderNumber = tgfOrderNumbers[i];
+
+        console.log(`📝 Creating order ${i + 1}/${shippingOutcomes.length}: ${tgfOrderNumber} (${outcome.outcome})`);
+
+        // Build system field mapping for this specific outcome
+        const systemFieldMapping = zohoOrderFieldsService.buildOrderFieldMapping({
+          orderNumber: `${orderData.orderNumber}-${outcome.outcome}`,
+          baseOrderNumber: undefined, // We already have the TGF order number
+          fulfillmentType: outcome.fulfillmentType,
+          orderingAccount: outcome.orderingAccount,
+          consignee: outcome.consignee,
+          requiresFFL: outcome.items.some(item => item.fflRequired),
+          isMultipleOrder: shippingOutcomes.length > 1,
+          multipleIndex: i,
+          isTest: orderData.isTestOrder || false,
+          holdType: orderData.holdType as 'FFL not on file' | 'Gun Count Rule' | undefined,
+          appTgfOrderNumber: tgfOrderNumber, // Use our generated TGF order number
+          appResponse: orderData.engineResponse ? JSON.stringify(orderData.engineResponse.result) : undefined
+        });
+
+        // Override the TGF order number to ensure it's correct
+        systemFieldMapping.TGF_Order = tgfOrderNumber;
+
+        // Process APP/RSR Engine response if provided
+        let finalSystemFieldMapping = systemFieldMapping;
+        if (orderData.engineResponse) {
+          console.log(`🔄 Processing APP/RSR Engine response for ${tgfOrderNumber}...`);
+          finalSystemFieldMapping = zohoOrderFieldsService.updateOrderStatusFromEngineResponse(
+            systemFieldMapping,
+            orderData.engineResponse
+          );
+          // Preserve the correct TGF order number
+          finalSystemFieldMapping.TGF_Order = tgfOrderNumber;
+        }
+
+        // Calculate total amount for this outcome
+        const outcomeTotal = outcome.items.reduce((sum, item) => sum + item.totalPrice, 0);
+
+        // Create deal name with outcome details
+        const dealName = `${orderData.customerName} - ${outcome.outcome} - $${outcomeTotal.toFixed(2)}`;
+
+        // Extract system fields for Zoho
+        const systemFields = {
+          TGF_Order: finalSystemFieldMapping.TGF_Order,
+          Fulfillment_Type: finalSystemFieldMapping.Fulfillment_Type,
+          Flow: finalSystemFieldMapping.Flow,
+          Order_Status: finalSystemFieldMapping.Order_Status,
+          Consignee: finalSystemFieldMapping.Consignee,
+          Ordering_Account: finalSystemFieldMapping.Ordering_Account,
+          Hold_Type: finalSystemFieldMapping.Hold_Type,
+          Hold_Started_At: finalSystemFieldMapping.Hold_Started_At,
+          APP_Status: finalSystemFieldMapping.APP_Status,
+          APP_Response: finalSystemFieldMapping.APP_Response,
+          APP_Confirmed: finalSystemFieldMapping.APP_Confirmed,
+          Submitted: finalSystemFieldMapping.Submitted
+        };
+
+        // Create the Zoho deal using the correct method
+        const dealResult = await this.zohoService.createOrderDeal({
+          contactId: contactId,
+          orderNumber: tgfOrderNumber,
+          totalAmount: outcomeTotal,
+          orderItems: outcome.items,
+          membershipTier: orderData.membershipTier || 'Bronze',
+          fflRequired: outcome.items.some(item => item.fflRequired || false),
+          fflDealerName: orderData.fflDealerName,
+          orderStatus: systemFields.Order_Status,
+          systemFields: systemFields
+        });
+
+        if (dealResult.success && dealResult.dealId) {
+          createdOrders.push({
+            dealId: dealResult.dealId || '',
+            contactId: contactId,
+            tgfOrderNumber: tgfOrderNumber,
+            outcome: outcome.outcome,
+            zohoFields: systemFields
+          });
+          
+          console.log(`✅ Created ${outcome.outcome} deal ${dealResult.dealId} with TGF order ${tgfOrderNumber}`);
+        } else {
+          console.error(`❌ Failed to create ${outcome.outcome} deal: ${dealResult.error}`);
+          return {
+            success: false,
+            orders: createdOrders,
+            totalOrders: createdOrders.length,
+            error: `Failed to create deal for ${outcome.outcome}: ${dealResult.error}`
+          };
+        }
+      }
+
+      console.log(`🎉 Successfully created ${createdOrders.length} split orders from original order ${orderData.orderNumber}`);
+      
+      return {
+        success: true,
+        orders: createdOrders,
+        totalOrders: createdOrders.length
+      };
+
+    } catch (error: any) {
+      console.error('Order splitting integration error:', error);
+      return {
+        success: false,
+        orders: [],
+        totalOrders: 0,
+        error: `Order splitting error: ${error.message}`
+      };
+    }
+  }
+
+  /**
    * Create or update a Zoho Deal with automatic system field population
    * This populates all system fields but NOT the RSR-only fields (Carrier, Tracking_Number, Estimated_Ship_Date)
    */
