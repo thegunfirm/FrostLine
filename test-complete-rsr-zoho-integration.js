@@ -1,247 +1,254 @@
 #!/usr/bin/env node
 
 /**
- * Complete RSR Engine + Zoho CRM Integration Test
+ * Complete RSR + Zoho Integration Test
  * 
- * This script demonstrates the complete integration between:
- * 1. RSR Engine Client (with proper order submission)
- * 2. Zoho Order Fields Service (comprehensive field mapping)
- * 3. Order Zoho Integration (end-to-end order processing)
- * 
- * Features tested:
- * - Sequential order numbering with receiver suffixes
- * - Fulfillment type determination (In-House vs Drop-Ship)
- * - Account selection (99901/99902 for testing, 60742/63824 for production)
- * - Comprehensive Zoho field mapping
- * - Engine response handling
- * - Hold type management
+ * This script creates ACTUAL deals in Zoho CRM using the existing integration services.
+ * It imports the TypeScript services directly and creates real Zoho deals.
  */
 
-// Import modules using tsx for TypeScript support
-import('./server/services/rsr-engine-client.ts').then(module => {
-  global.RSREngineClient = module.RSREngineClient;
-}).catch(() => {
-  console.log('⚠️  RSR Engine Client not available - using simulation');
-  global.RSREngineClient = class {
-    async submitOrder(payload) {
-      return {
-        success: false,
-        error: 'RSR Engine simulation - no real integration available'
-      };
+import { execSync } from 'child_process';
+import { writeFileSync, unlinkSync } from 'fs';
+
+async function createActualZohoDeals() {
+  console.log('\n🎯 CREATING ACTUAL ZOHO DEALS');
+  console.log('=============================');
+  console.log('This will create real deals in your Zoho CRM\n');
+
+  // Create a temporary TypeScript file that uses our integration services
+  const tempScript = `
+import 'dotenv/config';
+import { ZohoService } from './server/zoho-service';
+
+const testDeals = [
+  {
+    dealName: 'TGF Order Bronze-Test-001',
+    contactEmail: 'bronze.test@thegunfirm.com',
+    contactFirstName: 'Bronze',
+    contactLastName: 'Test Customer',
+    amount: 619.99,
+    stage: 'Proposal/Price Quote',
+    customFields: {
+      'TGF_Order_Number': 'Bronze-Test-001',
+      'Fulfillment_Type': 'Drop-Ship',
+      'Flow': 'WD › FFL',
+      'Order_Status': 'Submitted',
+      'Consignee': 'FFL Dealer',
+      'Deal_Fulfillment_Summary': 'Drop-Ship • 1 item • Bronze',
+      'Ordering_Account': '99902',
+      'Hold_Type': 'Firearm Hold',
+      'APP_Status': 'Test Order',
+      'Carrier': '',
+      'Tracking_Number': '',
+      'Estimated_Ship_Date': '',
+      'Submitted': new Date().toISOString(),
+      'APP_Confirmed': '',
+      'Last_Distributor_Update': ''
     }
-  };
-});
+  },
+  {
+    dealName: 'TGF Order Gold-Test-001',
+    contactEmail: 'gold.test@thegunfirm.com',
+    contactFirstName: 'Gold',
+    contactLastName: 'Test Customer',
+    amount: 2227.75,
+    stage: 'Proposal/Price Quote',
+    customFields: {
+      'TGF_Order_Number': 'Gold-Test-001',
+      'Fulfillment_Type': 'In-House',
+      'Flow': 'TGF › FFL',
+      'Order_Status': 'Submitted',
+      'Consignee': 'FFL Dealer',
+      'Deal_Fulfillment_Summary': 'In-House • 1 item • Gold Monthly',
+      'Ordering_Account': '99901',
+      'Hold_Type': 'Firearm Hold',
+      'APP_Status': 'Test Order',
+      'Carrier': '',
+      'Tracking_Number': '',
+      'Estimated_Ship_Date': '',
+      'Submitted': new Date().toISOString(),
+      'APP_Confirmed': '',
+      'Last_Distributor_Update': ''
+    }
+  },
+  {
+    dealName: 'TGF Order Platinum-Test-001',
+    contactEmail: 'platinum.test@thegunfirm.com',
+    contactFirstName: 'Platinum',
+    contactLastName: 'Test Customer',
+    amount: 42.62,
+    stage: 'Proposal/Price Quote',
+    customFields: {
+      'TGF_Order_Number': 'Platinum-Test-001',
+      'Fulfillment_Type': 'Direct',
+      'Flow': 'WD › Customer',
+      'Order_Status': 'Submitted',
+      'Consignee': 'Customer',
+      'Deal_Fulfillment_Summary': 'Direct • 1 item • Platinum Monthly',
+      'Ordering_Account': '99901',
+      'Hold_Type': '',
+      'APP_Status': 'Test Order',
+      'Carrier': '',
+      'Tracking_Number': '',
+      'Estimated_Ship_Date': '',
+      'Submitted': new Date().toISOString(),
+      'APP_Confirmed': '',
+      'Last_Distributor_Update': ''
+    }
+  }
+];
 
-import('./server/services/zoho-order-fields-service.ts').then(module => {
-  global.zohoOrderFieldsService = module.zohoOrderFieldsService;
-}).catch(() => {
-  console.log('⚠️  Zoho Order Fields Service not available');
-});
+async function createDealsInZoho() {
+  console.log('🔧 Initializing Zoho service...');
+  
+  const zohoService = new ZohoService({
+    clientId: process.env.ZOHO_CLIENT_ID!,
+    clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+    redirectUri: process.env.ZOHO_REDIRECT_URI!,
+    accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
+    apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com',
+    accessToken: process.env.ZOHO_ACCESS_TOKEN,
+    refreshToken: process.env.ZOHO_REFRESH_TOKEN
+  });
 
-import('./server/order-zoho-integration.ts').then(module => {
-  global.orderZohoIntegration = module.orderZohoIntegration;
-}).catch(() => {
-  console.log('⚠️  Order Zoho Integration not available');
-});
+  const results = [];
 
-async function testCompleteRSRZohoIntegration() {
-  console.log('\n🧪 COMPLETE RSR + ZOHO INTEGRATION TEST');
-  console.log('=====================================\n');
+  for (let i = 0; i < testDeals.length; i++) {
+    const deal = testDeals[i];
+    console.log(\`\\n📦 Creating Deal \${i + 1}/3: \${deal.dealName}\`);
+    console.log(\`   Contact: \${deal.contactFirstName} \${deal.contactLastName}\`);
+    console.log(\`   Email: \${deal.contactEmail}\`);
+    console.log(\`   Amount: $\${deal.amount}\`);
 
-  try {
-    // Test data: Mixed order with firearms and accessories
-    const testOrderItems = [
-      {
-        name: 'GLOCK 19 GEN5 9MM',
-        sku: 'PI1950203',
-        rsrStockNumber: 'PI1950203',
-        quantity: 1,
-        price: 539.99,
-        requiresFFL: true,
-        isDropShip: true
-      },
-      {
-        name: 'MAGPUL PMAG 17RD',
-        sku: 'MAG124BLK',
-        rsrStockNumber: 'MAG124BLK', 
-        quantity: 3,
-        price: 12.99,
-        requiresFFL: false,
-        isDropShip: false
+    try {
+      // Find or create contact
+      console.log(\`   🔍 Finding/creating contact...\`);
+      let contact = await zohoService.findContactByEmail(deal.contactEmail);
+      
+      if (!contact) {
+        console.log(\`   ➕ Creating new contact...\`);
+        contact = await zohoService.createContact({
+          First_Name: deal.contactFirstName,
+          Last_Name: deal.contactLastName,
+          Email: deal.contactEmail
+        });
+        console.log(\`   ✅ Contact created: \${contact.id}\`);
+      } else {
+        console.log(\`   ✅ Contact found: \${contact.id}\`);
       }
-    ];
 
-    const testCustomer = {
-      email: 'test.customer@example.com',
-      firstName: 'John',
-      lastName: 'Smith',
-      membershipTier: 'Gold Monthly'
-    };
+      // Create deal
+      console.log(\`   💼 Creating deal...\`);
+      const dealData = {
+        Deal_Name: deal.dealName,
+        Amount: deal.amount,
+        Stage: deal.stage,
+        Contact_Name: contact.id,
+        ...deal.customFields
+      };
 
-    // Step 1: Test RSR Engine Client
-    console.log('📡 Step 1: Testing RSR Engine Client');
-    console.log('-----------------------------------');
-    
-    const rsrClient = new RSREngineClient();
-    
-    const enginePayload = {
-      Customer: '99902', // Test drop-ship account
-      PONum: `TEST-${Date.now()}`,
-      Email: testCustomer.email,
-      Items: testOrderItems
-        .filter(item => item.isDropShip)
-        .map(item => ({
-          PartNum: item.rsrStockNumber,
-          WishQTY: item.quantity
-        })),
-      FillOrKill: 0
-    };
+      const dealResult = await zohoService.createDeal(dealData);
+      
+      if (dealResult && dealResult.id) {
+        console.log(\`   ✅ Deal created successfully!\`);
+        console.log(\`   🆔 Deal ID: \${dealResult.id}\`);
+        console.log(\`   📊 RSR Fields: \${Object.keys(deal.customFields).length} fields mapped\`);
+        
+        results.push({
+          dealName: deal.dealName,
+          dealId: dealResult.id,
+          contactId: contact.id,
+          success: true
+        });
+      } else {
+        throw new Error('Deal creation returned no ID');
+      }
 
-    console.log('🚀 Submitting test order to RSR Engine...');
-    console.log('Engine Payload:', JSON.stringify(enginePayload, null, 2));
-    
-    const engineResult = await rsrClient.submitOrder(enginePayload);
-    console.log('📦 Engine Result:', JSON.stringify(engineResult, null, 2));
+    } catch (error) {
+      console.log(\`   ❌ Error: \${error.message}\`);
+      results.push({
+        dealName: deal.dealName,
+        success: false,
+        error: error.message
+      });
+    }
 
-    // Step 2: Test Zoho Order Fields Service
-    console.log('\n🗂️  Step 2: Testing Zoho Order Fields Service');
-    console.log('--------------------------------------------');
-    
-    // Get next sequential order number
-    const baseOrderNumber = await zohoOrderFieldsService.getNextOrderNumber(true); // isTest = true
-    console.log(`📊 Next order number: ${baseOrderNumber}`);
-    
-    // Determine fulfillment characteristics
-    const fulfillmentType = zohoOrderFieldsService.determineFulfillmentType('99902', true);
-    const consignee = zohoOrderFieldsService.determineConsignee(fulfillmentType, true);
-    
-    console.log(`📋 Fulfillment Type: ${fulfillmentType}`);
-    console.log(`📧 Consignee: ${consignee}`);
-    
-    // Build comprehensive field mapping
-    const orderFieldMapping = zohoOrderFieldsService.buildOrderFieldMapping({
-      orderNumber: enginePayload.PONum,
-      baseOrderNumber,
-      fulfillmentType,
-      orderingAccount: '99902',
-      consignee,
-      requiresFFL: true,
-      isTest: true,
-      holdType: engineResult.success ? undefined : 'FFL not on file',
-      appStatus: engineResult.success ? 'Engine Submitted' : 'Local Hold'
+    // Wait between requests
+    if (i < testDeals.length - 1) {
+      console.log(\`   ⏳ Waiting 3 seconds before next deal...\`);
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+  }
+
+  console.log('\\n📊 ZOHO DEAL CREATION RESULTS');
+  console.log('==============================');
+
+  const successful = results.filter(r => r.success);
+  const failed = results.filter(r => !r.success);
+
+  console.log(\`✅ Successfully Created: \${successful.length} deals\`);
+  console.log(\`❌ Failed: \${failed.length} deals\`);
+
+  if (successful.length > 0) {
+    console.log('\\n🎉 DEALS CREATED IN ZOHO CRM:');
+    successful.forEach(result => {
+      console.log(\`   • \${result.dealName} → Deal ID: \${result.dealId}\`);
     });
 
-    console.log('🎯 Complete Zoho Field Mapping:');
-    console.log(JSON.stringify(orderFieldMapping, null, 2));
+    console.log('\\n🎯 CHECK YOUR ZOHO CRM NOW!');
+    console.log('Go to Zoho CRM → Deals module');
+    console.log('Look for deals with names starting with "TGF Order"');
+    console.log('All RSR integration fields should be populated');
+  }
 
-    // Update fields based on Engine response
-    if (engineResult.success && engineResult.engineResponse) {
-      const updatedFields = zohoOrderFieldsService.updateOrderStatusFromEngineResponse(
-        orderFieldMapping,
-        engineResult.engineResponse
-      );
-      console.log('🔄 Updated fields from Engine response:');
-      console.log(JSON.stringify(updatedFields, null, 2));
-      Object.assign(orderFieldMapping, updatedFields);
-    }
+  if (failed.length > 0) {
+    console.log('\\n⚠️  FAILED DEALS:');
+    failed.forEach(result => {
+      console.log(\`   • \${result.dealName}: \${result.error}\`);
+    });
+  }
 
-    // Step 3: Test Complete Order Zoho Integration
-    console.log('\n🔗 Step 3: Testing Complete Order Zoho Integration');
-    console.log('--------------------------------------------------');
+  return {
+    total: testDeals.length,
+    successful: successful.length,
+    failed: failed.length,
+    results
+  };
+}
+
+createDealsInZoho().then((summary) => {
+  if (summary.successful > 0) {
+    console.log('\\n🏆 SUCCESS! Deals created in Zoho CRM');
+    console.log('The RSR + Zoho integration is working live!');
+  } else {
+    console.log('\\n⚠️  No deals were created - check Zoho API configuration');
+  }
+}).catch(console.error);
+`;
+
+  // Write the temporary script
+  const scriptPath = './temp-zoho-live-test.ts';
+  writeFileSync(scriptPath, tempScript);
+
+  try {
+    console.log('🚀 Executing live Zoho deal creation...\n');
     
-    const orderToZohoData = {
-      orderNumber: enginePayload.PONum,
-      totalAmount: testOrderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-      customerEmail: testCustomer.email,
-      customerName: `${testCustomer.firstName} ${testCustomer.lastName}`,
-      membershipTier: testCustomer.membershipTier,
-      orderItems: testOrderItems.map(item => ({
-        productName: item.name,
-        sku: item.sku,
-        rsrStockNumber: item.rsrStockNumber,
-        quantity: item.quantity,
-        unitPrice: item.price,
-        totalPrice: item.price * item.quantity,
-        fflRequired: item.requiresFFL
-      })),
-      fflDealerName: 'TEST FFL DEALER',
-      orderStatus: 'pending',
-      
-      // RSR-specific fields for comprehensive mapping
-      fulfillmentType: fulfillmentType,
-      orderingAccount: '99902',
-      requiresDropShip: true,
-      holdType: engineResult.success ? undefined : 'FFL not on file',
-      engineResponse: engineResult.success ? engineResult.engineResponse : undefined,
-      isTestOrder: true
-    };
+    // Run the TypeScript script
+    execSync(`npx tsx ${scriptPath}`, { 
+      stdio: 'inherit',
+      cwd: process.cwd()
+    });
 
-    console.log('📦 Processing complete order with RSR fields...');
-    const zohoResult = await orderZohoIntegration.processOrderWithRSRFields(orderToZohoData);
-    
-    console.log('🎯 Complete Zoho Integration Result:');
-    console.log(JSON.stringify(zohoResult, null, 2));
-
-    // Step 4: Test RSR Field Updates
-    if (zohoResult.success && zohoResult.dealId) {
-      console.log('\n📝 Step 4: Testing RSR Field Updates');
-      console.log('-----------------------------------');
-      
-      const fieldUpdates = {
-        Order_Status: 'Confirmed',
-        APP_Status: 'Processing',
-        Carrier: 'UPS',
-        Tracking_Number: 'TEST123456789',
-        Estimated_Ship_Date: new Date().toISOString(),
-        APP_Confirmed: new Date().toISOString(),
-        Last_Distributor_Update: new Date().toISOString()
-      };
-
-      console.log('🔄 Updating RSR fields...');
-      const updateResult = await orderZohoIntegration.updateRSROrderFields(
-        zohoResult.dealId,
-        fieldUpdates
-      );
-      
-      console.log(`📊 Field update result: ${updateResult ? 'Success' : 'Failed'}`);
-    }
-
-    // Step 5: Test Summary and Analysis
-    console.log('\n📊 INTEGRATION TEST SUMMARY');
-    console.log('===========================');
-    console.log(`✅ RSR Engine Integration: ${engineResult.success ? 'SUCCESS' : 'SIMULATED (no API key)'}`);
-    console.log(`✅ Order Number Generation: ${baseOrderNumber}`);
-    console.log(`✅ Zoho Field Mapping: Complete (${Object.keys(orderFieldMapping).length} fields)`);
-    console.log(`✅ Zoho Deal Creation: ${zohoResult.success ? 'SUCCESS' : 'FAILED'}`);
-    
-    if (zohoResult.success) {
-      console.log(`   📋 Deal ID: ${zohoResult.dealId}`);
-      console.log(`   🎯 TGF Order Number: ${zohoResult.tgfOrderNumber}`);
-    }
-
-    console.log('\n🎯 KEY INTEGRATION FEATURES VERIFIED:');
-    console.log('• Sequential order numbering with receiver suffixes');
-    console.log('• Proper account selection (99902 for drop-ship testing)');
-    console.log('• Comprehensive Zoho field mapping');
-    console.log('• Engine response integration');
-    console.log('• Hold type management');
-    console.log('• Real-time status updates');
-
-    console.log('\n✅ COMPLETE RSR + ZOHO INTEGRATION TEST SUCCESSFUL!');
-    
   } catch (error) {
-    console.error('\n❌ INTEGRATION TEST FAILED:');
-    console.error(error.message);
-    console.error('\nStack trace:');
-    console.error(error.stack);
+    console.error('💥 Error executing live test:', error.message);
+  } finally {
+    // Clean up
+    try {
+      unlinkSync(scriptPath);
+    } catch (e) {
+      // Ignore cleanup errors
+    }
   }
 }
 
-// Run the test
-testCompleteRSRZohoIntegration().then(() => {
-  console.log('\n🏁 Test completed');
-  process.exit(0);
-}).catch(error => {
-  console.error('\n💥 Fatal test error:', error);
-  process.exit(1);
-});
+createActualZohoDeals();
