@@ -5,7 +5,7 @@
 
 export interface ZohoOrderFieldMapping {
   // Core Order Information
-  TGF_Order_Number: string;           // Sequential 7-digit + receiver + multiple suffix
+  TGF_Order_Number: string;           // Actual TGF Order Number from APP/RSR Engine response
   Fulfillment_Type: 'In-House' | 'Drop-Ship';
   Flow: 'TGF' | 'Return';
   Order_Status: 'Submitted' | 'Hold' | 'Confirmed' | 'Processing' | 'Partially Shipped' | 'Shipped' | 'Delivered' | 'Rejected' | 'Cancelled';
@@ -17,6 +17,7 @@ export interface ZohoOrderFieldMapping {
   Return_Status?: 'Shipped to TGF' | 'Shipped to Dist' | 'Item Received IH' | 'Reshipped' | 'Refunded' | 'Closed';
   Hold_Type?: 'FFL not on file' | 'Gun Count Rule';
   APP_Status: string;                 // System response, error codes or success
+  APP_Response?: string;              // Full APP response message or details
   
   // Shipping Information
   Carrier?: string;
@@ -116,10 +117,12 @@ export class ZohoOrderFieldsService {
     carrier,
     trackingNumber,
     estimatedShipDate,
-    appStatus = 'Submitted'
+    appStatus = 'Submitted',
+    appTgfOrderNumber,
+    appResponse
   }: {
     orderNumber: string;
-    baseOrderNumber: number;
+    baseOrderNumber?: number;  // Optional if TGF Order Number provided by APP
     fulfillmentType: 'In-House' | 'Drop-Ship';
     orderingAccount: '99901' | '99902' | '63824' | '60742';
     consignee: 'Customer' | 'FFL' | 'RSR' | 'TGF';
@@ -132,16 +135,27 @@ export class ZohoOrderFieldsService {
     trackingNumber?: string;
     estimatedShipDate?: Date;
     appStatus?: string;
+    appTgfOrderNumber?: string;  // TGF Order Number from APP/RSR Engine
+    appResponse?: string;        // Full APP response details
   }): ZohoOrderFieldMapping {
     
-    const receiverCode = this.determineReceiverCode(consignee);
-    const tgfOrderNumber = this.generateTGFOrderNumber(
-      baseOrderNumber,
-      receiverCode,
-      isMultipleOrder,
-      multipleIndex,
-      isTest
-    );
+    // Use APP-provided TGF Order Number if available, otherwise generate one locally
+    let tgfOrderNumber: string;
+    if (appTgfOrderNumber) {
+      tgfOrderNumber = appTgfOrderNumber;
+    } else if (baseOrderNumber) {
+      const receiverCode = this.determineReceiverCode(consignee);
+      tgfOrderNumber = this.generateTGFOrderNumber(
+        baseOrderNumber,
+        receiverCode,
+        isMultipleOrder,
+        multipleIndex,
+        isTest
+      );
+    } else {
+      // Fallback to using the original order number
+      tgfOrderNumber = orderNumber;
+    }
 
     // Format datetime for Zoho: yyyy-MM-ddTHH:mm:ss (not ISO string)
     const now = new Date();
@@ -157,6 +171,7 @@ export class ZohoOrderFieldsService {
       Ordering_Account: orderingAccount,
       Hold_Type: holdType,
       APP_Status: appStatus,
+      APP_Response: appResponse,
       Carrier: carrier,
       Tracking_Number: trackingNumber,
       Estimated_Ship_Date: estimatedShipDate ? estimatedShipDate.toISOString().slice(0, 19) : undefined,
@@ -177,11 +192,15 @@ export class ZohoOrderFieldsService {
     const zohoDateTime = new Date().toISOString().slice(0, 19);
     
     if (engineResponse.result?.StatusCode === '00') {
-      // Order confirmed by RSR
+      // Order confirmed by RSR - update TGF Order Number from APP response
+      const appTgfOrderNumber = engineResponse.result?.OrderNumber || fields.TGF_Order_Number;
+      
       return {
         ...fields,
+        TGF_Order_Number: appTgfOrderNumber,  // Use APP-provided TGF Order Number
         Order_Status: 'Confirmed',
         APP_Status: `RSR Confirmed: ${engineResponse.result.StatusMessage || 'Success'}`,
+        APP_Response: JSON.stringify(engineResponse.result),  // Full APP response details
         APP_Confirmed: zohoDateTime,
         Last_Distributor_Update: zohoDateTime
       };
@@ -191,6 +210,7 @@ export class ZohoOrderFieldsService {
         ...fields,
         Order_Status: 'Rejected',
         APP_Status: `RSR Rejected: ${engineResponse.result?.StatusMessage || 'Unknown error'}`,
+        APP_Response: JSON.stringify(engineResponse.result || engineResponse),  // Full rejection details
         APP_Confirmed: zohoDateTime
       };
     }

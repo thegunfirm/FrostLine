@@ -6286,7 +6286,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requiresDropShip: orderData.requiresDropShip,
         holdType: orderData.holdType,
         fflDealerName: orderData.fflDealerName,
-        zohoContactId: orderData.zohoContactId
+        zohoContactId: orderData.zohoContactId,
+        orderingAccount: orderData.orderingAccount,
+        isTestOrder: orderData.isTestOrder,
+        engineResponse: orderData.engineResponse  // Support APP/RSR Engine responses
       });
       
       console.log('🧪 Zoho test result:', JSON.stringify(result, null, 2));

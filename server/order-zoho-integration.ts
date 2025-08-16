@@ -164,7 +164,7 @@ export class OrderZohoIntegration {
         fflRequired: requiresFFL,
         fflDealerName: orderData.fflDealerName,
         orderStatus: zohoFields.Order_Status,
-        customFields: dealData
+        systemFields: dealData
       });
 
       if (dealResult.success) {
@@ -273,8 +273,8 @@ export class OrderZohoIntegration {
       const requiresFFL = orderData.orderItems.some(item => item.fflRequired);
       const consignee = zohoOrderFieldsService.determineConsignee(fulfillmentType, requiresFFL);
       
-      // 3. Build system field mapping using the service (excludes RSR-only fields)
-      const systemFieldMapping = zohoOrderFieldsService.buildOrderFieldMapping({
+      // 3. Build initial system field mapping
+      let systemFieldMapping = zohoOrderFieldsService.buildOrderFieldMapping({
         orderNumber: orderData.orderNumber,
         baseOrderNumber: await zohoOrderFieldsService.getNextOrderNumber(orderData.isTestOrder),
         fulfillmentType,
@@ -286,8 +286,21 @@ export class OrderZohoIntegration {
         // Leave RSR-only fields as undefined (they'll be populated separately when RSR responds)
         carrier: undefined,
         trackingNumber: undefined,
-        estimatedShipDate: undefined
+        estimatedShipDate: undefined,
+        // APP fields - extract from engineResponse if available
+        appTgfOrderNumber: orderData.engineResponse?.result?.OrderNumber,
+        appResponse: orderData.engineResponse ? JSON.stringify(orderData.engineResponse.result) : undefined
       });
+
+      // 4. Process APP/RSR Engine response if provided
+      if (orderData.engineResponse) {
+        console.log('🔄 Processing APP/RSR Engine response...');
+        systemFieldMapping = zohoOrderFieldsService.updateOrderStatusFromEngineResponse(
+          systemFieldMapping,
+          orderData.engineResponse
+        );
+        console.log(`✅ APP response processed - TGF Order: ${systemFieldMapping.TGF_Order_Number}`);
+      }
 
       // Extract only system fields (excluding RSR-only fields for basic order processing)
       const systemFields = {
@@ -300,6 +313,8 @@ export class OrderZohoIntegration {
         Ordering_Account: systemFieldMapping.Ordering_Account,
         Hold_Type: systemFieldMapping.Hold_Type,
         APP_Status: systemFieldMapping.APP_Status,
+        APP_Response: systemFieldMapping.APP_Response,
+        APP_Confirmed: systemFieldMapping.APP_Confirmed,
         Submitted: systemFieldMapping.Submitted
         // Note: Last_Distributor_Update is NULL until distributor provides new info
         // Note: Carrier, Tracking_Number, Estimated_Ship_Date are RSR-only and not included
