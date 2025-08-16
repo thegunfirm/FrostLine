@@ -300,9 +300,8 @@ export class OrderZohoIntegration {
         Ordering_Account: systemFieldMapping.Ordering_Account,
         Hold_Type: systemFieldMapping.Hold_Type,
         APP_Status: systemFieldMapping.APP_Status,
-        Submitted: systemFieldMapping.Submitted,
-        APP_Confirmed: systemFieldMapping.APP_Confirmed,
-        Last_Distributor_Update: new Date().toISOString()
+        Submitted: systemFieldMapping.Submitted
+        // Note: Last_Distributor_Update is NULL until distributor provides new info
         // Note: Carrier, Tracking_Number, Estimated_Ship_Date are RSR-only and not included
       };
 

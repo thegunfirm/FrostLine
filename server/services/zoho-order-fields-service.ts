@@ -7,7 +7,7 @@ export interface ZohoOrderFieldMapping {
   // Core Order Information
   TGF_Order_Number: string;           // Sequential 7-digit + receiver + multiple suffix
   Fulfillment_Type: 'In-House' | 'Drop-Ship';
-  Flow: 'Outbound' | 'Return';
+  Flow: 'TGF' | 'Return';
   Order_Status: 'Submitted' | 'Hold' | 'Confirmed' | 'Processing' | 'Partially Shipped' | 'Shipped' | 'Delivered' | 'Rejected' | 'Cancelled';
   Consignee: 'Customer' | 'FFL' | 'RSR' | 'TGF';
   Deal_Fulfillment_Summary: 'Shipped to Customer' | 'Delivered to TGF' | 'Shipped to TGF (Return)' | 'Item Received In-House (Return)';
@@ -148,7 +148,7 @@ export class ZohoOrderFieldsService {
     return {
       TGF_Order_Number: tgfOrderNumber,
       Fulfillment_Type: fulfillmentType,
-      Flow: 'Outbound',
+      Flow: 'TGF',
       Order_Status: holdType ? 'Hold' : 'Submitted',
       Consignee: consignee,
       Deal_Fulfillment_Summary: consignee === 'Customer' ? 'Shipped to Customer' : 'Delivered to TGF',
