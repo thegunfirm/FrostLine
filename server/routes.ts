@@ -4645,6 +4645,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== ZOHO CRM INTEGRATION TEST ENDPOINTS =====
   
+  // Field Discovery endpoint for Zoho CRM modules
+  app.get("/api/test/zoho-fields-metadata/:module", async (req, res) => {
+    try {
+      const { module } = req.params;
+      console.log(`🔍 Field Discovery: Getting metadata for ${module} module...`);
+      
+      const { ZohoService } = await import('./zoho-service');
+      const zohoService = new ZohoService({
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
+        accountsHost: process.env.ZOHO_ACCOUNTS_HOST!,
+        apiHost: process.env.ZOHO_CRM_BASE!,
+        accessToken: process.env.ZOHO_ACCESS_TOKEN!,
+        refreshToken: process.env.ZOHO_REFRESH_TOKEN!
+      });
+      
+      const fields = await zohoService.getFieldsMetadata(module);
+      console.log(`✅ Retrieved ${fields.length} fields for ${module}`);
+      
+      res.json({ success: true, fields });
+    } catch (error) {
+      console.error('Field discovery error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
   // Test order-to-deal integration
   app.post("/api/test/order-to-zoho", async (req, res) => {
     try {

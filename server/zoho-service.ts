@@ -623,6 +623,31 @@ export class ZohoService {
       }
     } catch (error) {
       console.error('Error updating membership tier names:', error);
+    }
+  }
+
+  /**
+   * Get field metadata for a Zoho module (Field Discovery)
+   */
+  async getFieldsMetadata(module: string): Promise<any[]> {
+    try {
+      const response = await this.makeAPIRequest(`settings/fields?module=${module}`);
+      
+      if (response.fields) {
+        return response.fields.map((field: any) => ({
+          api_name: field.api_name,
+          field_label: field.field_label,
+          data_type: field.data_type,
+          custom_field: field.custom_field || false,
+          mandatory: field.mandatory || false,
+          read_only: field.read_only || false
+        }));
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error getting field metadata:', error);
+      return [];
       throw error;
     }
   }
