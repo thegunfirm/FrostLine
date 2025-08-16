@@ -302,6 +302,14 @@ export class OrderZohoIntegration {
         console.log(`✅ APP response processed - TGF Order: ${systemFieldMapping.TGF_Order}`);
       }
 
+      // Debug: Log what we got from the service
+      console.log(`🔍 Debug systemFieldMapping from service:`, {
+        Hold_Started_At: systemFieldMapping.Hold_Started_At,
+        APP_Response: systemFieldMapping.APP_Response ? 'present' : 'missing',
+        APP_Status: systemFieldMapping.APP_Status,
+        Hold_Type: systemFieldMapping.Hold_Type
+      });
+
       // Extract only system fields (excluding RSR-only fields for basic order processing)
       const systemFields = {
         TGF_Order: systemFieldMapping.TGF_Order,
@@ -312,6 +320,7 @@ export class OrderZohoIntegration {
         Deal_Fulfillment_Summary: systemFieldMapping.Deal_Fulfillment_Summary,
         Ordering_Account: systemFieldMapping.Ordering_Account,
         Hold_Type: systemFieldMapping.Hold_Type,
+        Hold_Started_At: systemFieldMapping.Hold_Started_At, // Add Hold_Started_At field
         APP_Status: systemFieldMapping.APP_Status,
         APP_Response: systemFieldMapping.APP_Response,
         APP_Confirmed: systemFieldMapping.APP_Confirmed,
@@ -319,6 +328,13 @@ export class OrderZohoIntegration {
         // Note: Last_Distributor_Update is NULL until distributor provides new info
         // Note: Carrier, Tracking_Number, Estimated_Ship_Date are RSR-only and not included
       };
+
+      // Debug: Log what we're sending to Zoho
+      console.log(`🔍 Debug systemFields being sent:`, {
+        Hold_Started_At: systemFields.Hold_Started_At,
+        APP_Response: systemFields.APP_Response ? 'present' : 'missing',
+        APP_Status: systemFields.APP_Status
+      });
 
       // 4. Find or create customer contact
       let contactId = orderData.zohoContactId;
