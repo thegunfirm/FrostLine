@@ -5,7 +5,7 @@
 
 export interface ZohoOrderFieldMapping {
   // Core Order Information
-  TGF_Order_Number: string;           // Actual TGF Order Number from APP/RSR Engine response
+  TGF_Order: string;           // Actual TGF Order Number from APP/RSR Engine response
   Fulfillment_Type: 'In-House' | 'Drop-Ship';
   Flow: 'TGF' | 'Return';
   Order_Status: 'Submitted' | 'Hold' | 'Confirmed' | 'Processing' | 'Partially Shipped' | 'Shipped' | 'Delivered' | 'Rejected' | 'Cancelled';
@@ -162,7 +162,7 @@ export class ZohoOrderFieldsService {
     const zohoDateTime = now.toISOString().slice(0, 19); // Remove the 'Z' and milliseconds
     
     return {
-      TGF_Order_Number: tgfOrderNumber,
+      TGF_Order: tgfOrderNumber,
       Fulfillment_Type: fulfillmentType,
       Flow: 'TGF',
       Order_Status: holdType ? 'Hold' : 'Submitted',
@@ -193,11 +193,11 @@ export class ZohoOrderFieldsService {
     
     if (engineResponse.result?.StatusCode === '00') {
       // Order confirmed by RSR - update TGF Order Number from APP response
-      const appTgfOrderNumber = engineResponse.result?.OrderNumber || fields.TGF_Order_Number;
+      const appTgfOrderNumber = engineResponse.result?.OrderNumber || fields.TGF_Order;
       
       return {
         ...fields,
-        TGF_Order_Number: appTgfOrderNumber,  // Use APP-provided TGF Order Number
+        TGF_Order: appTgfOrderNumber,  // Use APP-provided TGF Order Number
         Order_Status: 'Confirmed',
         APP_Status: `RSR Confirmed: ${engineResponse.result.StatusMessage || 'Success'}`,
         APP_Response: JSON.stringify(engineResponse.result),  // Full APP response details
