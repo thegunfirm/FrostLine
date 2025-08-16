@@ -184,7 +184,12 @@ export class ZohoService {
       }
 
       const dealName = `Order #${orderData.orderNumber} - ${orderData.membershipTier}`;
-      const description = this.buildOrderDescription(orderData);
+      
+      // Only use detailed description if system fields are not provided
+      // When system fields are provided, use clean minimal description
+      const description = orderData.systemFields 
+        ? `Order from TheGunFirm.com - ${orderData.membershipTier} member`
+        : this.buildOrderDescription(orderData);
 
       // Build the base deal payload
       const baseDealData = {
@@ -208,6 +213,10 @@ export class ZohoService {
         Object.assign(baseDealData, orderData.systemFields);
         console.log(`🔍 Adding system fields to Zoho deal:`, orderData.systemFields);
         console.log(`📋 Final deal payload being sent to Zoho:`, JSON.stringify(baseDealData, null, 2));
+        console.log(`🧹 CLEAN DESCRIPTION (no JSON): "${baseDealData.Description}"`);
+      } else {
+        console.log(`⚠️  NO SYSTEM FIELDS PROVIDED - using fallback description with order details`);
+        console.log(`📋 Fallback payload:`, JSON.stringify(baseDealData, null, 2));
       }
 
       const dealPayload = {
