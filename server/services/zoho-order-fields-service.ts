@@ -10,7 +10,6 @@ export interface ZohoOrderFieldMapping {
   Flow: 'TGF' | 'Return';
   Order_Status: 'Submitted' | 'Hold' | 'Confirmed' | 'Processing' | 'Partially Shipped' | 'Shipped' | 'Delivered' | 'Rejected' | 'Cancelled';
   Consignee: 'Customer' | 'FFL' | 'RSR' | 'TGF';
-  Deal_Fulfillment_Summary: 'Shipped to Customer' | 'Delivered to TGF' | 'Shipped to TGF (Return)' | 'Item Received In-House (Return)';
   
   // Account and Processing
   Ordering_Account: '99901' | '99902' | '63824' | '60742';
@@ -195,7 +194,6 @@ export class ZohoOrderFieldsService {
       Flow: 'TGF',
       Order_Status: holdType ? 'Hold' : 'Submitted',
       Consignee: consignee,
-      Deal_Fulfillment_Summary: consignee === 'Customer' ? 'Shipped to Customer' : 'Delivered to TGF',
       Ordering_Account: orderingAccount,
       Hold_Type: holdType,
       Hold_Started_At: holdType ? zohoDateTime : undefined, // Set timestamp when hold is initiated

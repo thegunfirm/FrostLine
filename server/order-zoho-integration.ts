@@ -134,7 +134,6 @@ export class OrderZohoIntegration {
         Flow: zohoFields.Flow,
         Order_Status: zohoFields.Order_Status,
         Consignee: zohoFields.Consignee,
-        Deal_Fulfillment_Summary: zohoFields.Deal_Fulfillment_Summary,
         Ordering_Account: zohoFields.Ordering_Account,
         Hold_Type: zohoFields.Hold_Type,
         APP_Status: zohoFields.APP_Status,
@@ -317,7 +316,6 @@ export class OrderZohoIntegration {
         Flow: systemFieldMapping.Flow,
         Order_Status: systemFieldMapping.Order_Status,
         Consignee: systemFieldMapping.Consignee,
-        Deal_Fulfillment_Summary: systemFieldMapping.Deal_Fulfillment_Summary,
         Ordering_Account: systemFieldMapping.Ordering_Account,
         Hold_Type: systemFieldMapping.Hold_Type,
         Hold_Started_At: systemFieldMapping.Hold_Started_At, // Add Hold_Started_At field
