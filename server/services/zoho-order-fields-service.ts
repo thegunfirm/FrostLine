@@ -33,28 +33,25 @@ export interface ZohoOrderFieldMapping {
 export interface ZohoProductFieldMapping {
   // Core Product Identification
   Deal_Name: string;                  // Product name or "Mixed Order" for multi-product
-  Product_Code?: string;              // Internal SKU identifier
-  Distributor_Part_Number?: string;   // Distributor stock number (RSR, etc.)
+  Product_Lookup?: { id: string };    // Lookup to Products module (dynamic)
+  'Product Code (SKU)'?: string;      // Internal SKU identifier (renamed)
+  'Distributor Part Number'?: string; // Distributor stock number (RSR, etc.)
   Distributor?: string;               // Name of distributor (RSR, Lipsey's, etc.)
   
   // Pricing and Quantity
   Quantity?: number;                  // Number of items ordered
-  Unit_Price?: number;                // Price per individual item
+  'Unit Price'?: number;              // Price per individual item (renamed)
   Amount: number;                     // Total deal value (standard Zoho field)
   
   // Product Classification
-  Product_Category?: string;          // Handguns, Rifles, Shotguns, Accessories, etc.
+  'Product Category'?: string;        // Handguns, Rifles, Shotguns, Accessories, etc.
   Manufacturer?: string;              // Brand/manufacturer name
   Description?: string;               // Product description (standard Zoho field)
   
   // Compliance and Fulfillment Attributes
-  FFL_Required?: boolean;             // Whether item requires FFL transfer
-  Drop_Ship_Eligible?: boolean;       // Can be drop-shipped from distributor
-  In_House_Only?: boolean;            // Requires TGF in-house processing
-  
-  // Extended Product Information
-  Product_Specifications?: string;    // Technical specs, dimensions, etc.
-  Product_Images?: string;            // JSON array of image URLs
+  'FFL Required'?: boolean;           // Whether item requires FFL transfer (renamed)
+  'Drop Ship Eligible'?: boolean;     // Can be drop-shipped from distributor (renamed)
+  'In House Only'?: boolean;          // Requires TGF in-house processing (renamed)
 }
 
 export class ZohoOrderFieldsService {
@@ -415,12 +412,12 @@ export class ZohoOrderFieldsService {
       Amount: totalOrderValue || productData.totalPrice || productData.unitPrice || 0
     };
 
-    // Core product identification
+    // Core product identification (updated field names)
     if (productData.sku) {
-      productFields.Product_Code = productData.sku;
+      productFields['Product Code (SKU)'] = productData.sku;
     }
     if (productData.rsrStockNumber || productData.distributorPartNumber) {
-      productFields.Distributor_Part_Number = productData.rsrStockNumber || productData.distributorPartNumber;
+      productFields['Distributor Part Number'] = productData.rsrStockNumber || productData.distributorPartNumber;
     }
     if (productData.distributor) {
       productFields.Distributor = productData.distributor;
@@ -434,12 +431,12 @@ export class ZohoOrderFieldsService {
       productFields.Quantity = productData.quantity;
     }
     if (productData.unitPrice !== undefined) {
-      productFields.Unit_Price = productData.unitPrice;
+      productFields['Unit Price'] = productData.unitPrice;
     }
 
-    // Product classification
+    // Product classification (updated field names)
     if (productData.category) {
-      productFields.Product_Category = productData.category;
+      productFields['Product Category'] = productData.category;
     }
     if (productData.manufacturer) {
       productFields.Manufacturer = productData.manufacturer;
@@ -448,24 +445,18 @@ export class ZohoOrderFieldsService {
       productFields.Description = productData.description;
     }
 
-    // Compliance and fulfillment attributes
+    // Compliance and fulfillment attributes (updated field names)
     if (productData.fflRequired !== undefined) {
-      productFields.FFL_Required = productData.fflRequired;
+      productFields['FFL Required'] = productData.fflRequired;
     }
     if (productData.dropShipEligible !== undefined) {
-      productFields.Drop_Ship_Eligible = productData.dropShipEligible;
+      productFields['Drop Ship Eligible'] = productData.dropShipEligible;
     }
     if (productData.inHouseOnly !== undefined) {
-      productFields.In_House_Only = productData.inHouseOnly;
+      productFields['In House Only'] = productData.inHouseOnly;
     }
 
-    // Extended product information
-    if (productData.specifications) {
-      productFields.Product_Specifications = productData.specifications;
-    }
-    if (productData.images && Array.isArray(productData.images)) {
-      productFields.Product_Images = JSON.stringify(productData.images);
-    }
+    // Note: Product_Specifications and Product_Images removed per user's update
 
     return productFields;
   }

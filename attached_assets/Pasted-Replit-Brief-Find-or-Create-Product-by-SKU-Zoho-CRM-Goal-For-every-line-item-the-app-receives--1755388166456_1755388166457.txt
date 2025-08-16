@@ -1,0 +1,78 @@
+Replit Brief: “Find or Create Product by SKU” (Zoho CRM)
+Goal
+
+For every line item the app receives (with a SKU), link the Deal subform row to a Zoho Product:
+
+If a Product with that SKU already exists → use it.
+
+If not → create it, then use it.
+
+Assumptions
+
+Zoho Products module has Product_Code (SKU) set as unique.
+
+The Deal subform contains a lookup field to Products (e.g., Product_Lookup) plus the other product detail fields you already defined (Unit_Price, Quantity, etc.).
+
+Step-by-step (no code)
+
+Normalize the SKU
+
+Trim whitespace, uppercase/lowercase consistently.
+
+Reject empty SKUs; log an error to the Deal (APP_Status) if missing.
+
+Search Products by SKU
+
+Use Zoho CRM Products search with criteria: Product_Code equals {SKU}.
+
+Expected results:
+
+Exactly one record → take its id.
+
+Zero records → proceed to Step 3 (create).
+
+More than one → treat as data issue; pick the most recently created as a temporary fallback and log a warning.
+
+Create the Product (when not found)
+
+Create with the minimal valid fields:
+
+Product_Name = best available name; if unknown, set to the SKU.
+
+Product_Code = the SKU (must be unique).
+
+Optional (include only when available): Manufacturer, Product_Category, FFL_Required, Drop_Ship_Eligible, In_House_Only, Product_Specifications, Product_Images (stringified JSON array).
+
+Duplicate safety: if create fails with a “duplicate” error (race condition), immediately re-run the search (Step 2) and use the found record.
+
+Attach the Product to the Deal subform row
+
+When you have the productId, append a subform row to the Deal:
+
+Set the lookup field to { id: productId }.
+
+Also populate the subform’s descriptive fields you already created (Product_Code, Distributor_Part_Number, Distributor, Manufacturer, Product_Category, Unit_Price, Quantity, FFL_Required, Drop_Ship_Eligible, In_House_Only, Product_Specifications, Product_Images).
+
+If Zoho rejects because of payload size, split into multiple updates (still append-only).
+
+Batch de-dupe within the same submission
+
+Keep an in-memory map for the current order: SKU → productId.
+
+If the same SKU appears again in this submission, reuse the productId—do not re-search or re-create.
+
+Retry & errors (lightweight)
+
+For transient failures (network/5xx), retry with short backoff.
+
+For hard 4xx errors (invalid fields), log to the Deal APP_Status and skip that line item; continue with others.
+
+Acceptance checks
+
+New SKU → Product created once; subform row linked to that new Product.
+
+Existing SKU → No new Product created; subform row linked to existing Product.
+
+Same SKU repeated across multiple subform rows or receivers → exactly one Product in Zoho; all rows point to the same productId.
+
+Duplicate error on create is handled by re-searching and linking, not by creating another Product.
