@@ -123,13 +123,13 @@ export class OrderZohoIntegration {
 
       // 6. Create Zoho Deal with comprehensive RSR fields
       const dealData = {
-        Deal_Name: `TGF Order ${zohoFields.TGF_Order_Number}`,
+        Deal_Name: `TGF Order ${zohoFields.TGF_Order}`,
         Contact_Name: contactId,
         Amount: orderData.totalAmount,
         Stage: this.mapOrderStatusToStage(zohoFields.Order_Status),
         
         // RSR-specific fields
-        TGF_Order_Number: zohoFields.TGF_Order_Number,
+        TGF_Order: zohoFields.TGF_Order,
         Fulfillment_Type: zohoFields.Fulfillment_Type,
         Flow: zohoFields.Flow,
         Order_Status: zohoFields.Order_Status,
@@ -168,11 +168,11 @@ export class OrderZohoIntegration {
       });
 
       if (dealResult.success) {
-        console.log(`✅ Created RSR deal ${dealResult.dealId} with TGF order number ${zohoFields.TGF_Order_Number}`);
+        console.log(`✅ Created RSR deal ${dealResult.dealId} with TGF order number ${zohoFields.TGF_Order}`);
         return {
           success: true,
           dealId: dealResult.dealId,
-          tgfOrderNumber: zohoFields.TGF_Order_Number,
+          tgfOrderNumber: zohoFields.TGF_Order,
           zohoFields
         };
       } else {
@@ -299,12 +299,12 @@ export class OrderZohoIntegration {
           systemFieldMapping,
           orderData.engineResponse
         );
-        console.log(`✅ APP response processed - TGF Order: ${systemFieldMapping.TGF_Order_Number}`);
+        console.log(`✅ APP response processed - TGF Order: ${systemFieldMapping.TGF_Order}`);
       }
 
       // Extract only system fields (excluding RSR-only fields for basic order processing)
       const systemFields = {
-        TGF_Order_Number: systemFieldMapping.TGF_Order_Number,
+        TGF_Order: systemFieldMapping.TGF_Order,
         Fulfillment_Type: systemFieldMapping.Fulfillment_Type,
         Flow: systemFieldMapping.Flow,
         Order_Status: systemFieldMapping.Order_Status,
@@ -368,7 +368,7 @@ export class OrderZohoIntegration {
           success: true,
           dealId: existingDeal.id,
           contactId,
-          tgfOrderNumber: systemFields.TGF_Order_Number,
+          tgfOrderNumber: systemFields.TGF_Order,
           zohoFields: systemFields
         };
       }
@@ -389,12 +389,12 @@ export class OrderZohoIntegration {
       });
 
       if (dealResult.success) {
-        console.log(`✅ Created system deal ${dealResult.dealId} with TGF order ${systemFields.TGF_Order_Number}`);
+        console.log(`✅ Created system deal ${dealResult.dealId} with TGF order ${systemFields.TGF_Order}`);
         return {
           success: true,
           dealId: dealResult.dealId,
           contactId,
-          tgfOrderNumber: systemFields.TGF_Order_Number,
+          tgfOrderNumber: systemFields.TGF_Order,
           zohoFields: systemFields
         };
       } else {
