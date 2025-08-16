@@ -176,6 +176,7 @@ export class ZohoService {
     fflRequired: boolean;
     fflDealerName?: string;
     orderStatus: string;
+    systemFields?: any; // Add system fields parameter
   }): Promise<{ success: boolean; dealId?: string; error?: string }> {
     try {
       if (!this.config.accessToken) {
@@ -185,22 +186,31 @@ export class ZohoService {
       const dealName = `Order #${orderData.orderNumber} - ${orderData.membershipTier}`;
       const description = this.buildOrderDescription(orderData);
 
+      // Build the base deal payload
+      const baseDealData = {
+        Deal_Name: dealName,
+        Contact_Name: orderData.contactId,
+        Amount: orderData.totalAmount,
+        Stage: this.mapOrderStatusToDealStage(orderData.orderStatus),
+        Description: description,
+        Closing_Date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 14 days from now
+        Order_Number: orderData.orderNumber,
+        Order_Total: orderData.totalAmount,
+        Membership_Tier: orderData.membershipTier,
+        FFL_Required: orderData.fflRequired,
+        FFL_Dealer_Name: orderData.fflDealerName || '',
+        Order_Item_Count: orderData.orderItems.length,
+        Lead_Source: 'TheGunFirm.com'
+      };
+
+      // Add system fields if provided (instead of putting everything in Description)
+      if (orderData.systemFields) {
+        Object.assign(baseDealData, orderData.systemFields);
+        console.log(`🔍 Adding system fields to Zoho deal:`, orderData.systemFields);
+      }
+
       const dealPayload = {
-        data: [{
-          Deal_Name: dealName,
-          Contact_Name: orderData.contactId,
-          Amount: orderData.totalAmount,
-          Stage: this.mapOrderStatusToDealStage(orderData.orderStatus),
-          Description: description,
-          Closing_Date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 14 days from now
-          Order_Number: orderData.orderNumber,
-          Order_Total: orderData.totalAmount,
-          Membership_Tier: orderData.membershipTier,
-          FFL_Required: orderData.fflRequired,
-          FFL_Dealer_Name: orderData.fflDealerName || '',
-          Order_Item_Count: orderData.orderItems.length,
-          Lead_Source: 'TheGunFirm.com'
-        }]
+        data: [baseDealData]
       };
 
       const response = await axios.post(

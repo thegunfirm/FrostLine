@@ -358,7 +358,7 @@ export class OrderZohoIntegration {
         };
       }
 
-      // 6. Create new deal with system order processing
+      // 6. Create new deal with system order processing and proper field mapping
       const fflRequired = orderData.orderItems.some(item => item.fflRequired);
       
       const dealResult = await this.zohoService.createOrderDeal({
@@ -369,7 +369,8 @@ export class OrderZohoIntegration {
         membershipTier: orderData.membershipTier,
         fflRequired,
         fflDealerName: orderData.fflDealerName,
-        orderStatus: systemFields.Order_Status
+        orderStatus: systemFields.Order_Status,
+        systemFields: systemFields // Pass the mapped system fields
       });
 
       if (dealResult.success) {
