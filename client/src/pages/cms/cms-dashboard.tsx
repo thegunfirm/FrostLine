@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Settings, Mail, MessageSquare, FileText, Activity, Crown, CreditCard } from "lucide-react";
+import { Users, Settings, Mail, MessageSquare, FileText, Activity, Crown, CreditCard, Database } from "lucide-react";
 import { Link } from "wouter";
 
 export default function CMSDashboard() {
@@ -306,6 +306,12 @@ export default function CMSDashboard() {
                   <Button variant="outline" className="w-full justify-start">
                     <Settings className="mr-2 h-4 w-4" />
                     Zoho CRM Integration
+                  </Button>
+                </Link>
+                <Link href="/cms/admin/api-field-discovery">
+                  <Button variant="outline" className="w-full justify-start">
+                    <Database className="mr-2 h-4 w-4" />
+                    API Field Discovery
                   </Button>
                 </Link>
                 <Link href="/cms/admin/fap-customer-profiles">

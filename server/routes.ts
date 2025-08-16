@@ -4671,6 +4671,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, error: error.message });
     }
   });
+
+  // Generic API field discovery endpoint
+  app.post("/api/test/generic-field-discovery", async (req, res) => {
+    try {
+      const { endpoint, apiName } = req.body;
+      console.log(`🔍 Field Discovery: Analyzing ${apiName} at ${endpoint}...`);
+      
+      // Make request to the specified endpoint
+      const response = await fetch(`http://localhost:5000${endpoint}`);
+      const data = await response.json();
+      
+      // Analyze the response structure
+      const sampleRecord = Array.isArray(data) ? data[0] : data;
+      const fieldStructure = [];
+      
+      if (sampleRecord && typeof sampleRecord === 'object') {
+        Object.keys(sampleRecord).forEach(key => {
+          const value = sampleRecord[key];
+          const type = Array.isArray(value) ? 'array' : typeof value;
+          fieldStructure.push({
+            api_name: key,
+            field_label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            data_type: type,
+            custom_field: false,
+            sample_value: typeof value === 'string' && value.length > 100 ? 
+              value.substring(0, 100) + '...' : value
+          });
+        });
+      }
+      
+      console.log(`✅ Analyzed ${fieldStructure.length} fields for ${apiName}`);
+      
+      res.json({ 
+        success: true, 
+        fields: fieldStructure,
+        sampleData: sampleRecord,
+        apiName
+      });
+    } catch (error) {
+      console.error('Generic field discovery error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
   
   // Test order-to-deal integration
   app.post("/api/test/order-to-zoho", async (req, res) => {
