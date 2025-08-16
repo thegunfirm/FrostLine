@@ -10,25 +10,25 @@ async function verifyZohoFieldsFix() {
 
   // Test 1: Create a new deal and verify system fields are properly mapped
   const testPayload = {
-    orderNumber: 'VERIFY-FIX-001',
-    customerEmail: 'verify.fix@example.com',
-    customerName: 'Verify Fix Customer',
-    membershipTier: 'Platinum Monthly',
-    totalAmount: 899.99,
+    orderNumber: 'RETEST-002',
+    customerEmail: 'retest2@example.com',
+    customerName: 'Retest User Two',
+    membershipTier: 'Gold Annually',
+    totalAmount: 1299.99,
     orderItems: [
       {
-        productName: 'AR-15 Upper',
-        sku: 'UPPER001',
+        productName: 'Complete AR-15 Rifle',
+        sku: 'RIFLE001',
         quantity: 1,
-        unitPrice: 899.99,
-        totalPrice: 899.99,
+        unitPrice: 1299.99,
+        totalPrice: 1299.99,
         fflRequired: true
       }
     ],
     fulfillmentType: 'In-House',
     requiresDropShip: false,
-    holdType: 'FFL not on file',
-    fflDealerName: 'Verification FFL Dealer'
+    holdType: 'Gun Count Rule',
+    fflDealerName: 'Retest FFL Dealer'
   };
 
   try {
