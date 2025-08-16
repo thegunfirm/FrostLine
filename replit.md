@@ -1,7 +1,7 @@
 # Rest Express - Firearms E-commerce Platform
 
 ## Overview
-This project is a full-stack e-commerce platform specializing in firearms and accessories. It provides a robust, compliance-aware online marketplace that addresses the unique requirements of the firearms industry, including FFL (Federal Firearms License) handling, specialized shipping, and a comprehensive tier-based membership system. Key capabilities include real-time inventory, advanced search, and tiered pricing benefits. The platform aims to be a leading online destination for firearms enthusiasts and professionals.
+This project is a full-stack e-commerce platform specializing in firearms and accessories. It provides a robust, compliance-aware online marketplace that addresses the unique requirements of the firearms industry, including FFL (Federal Firearms License) handling, specialized shipping, and a comprehensive tier-based membership system. Key capabilities include real-time inventory, advanced search, and tiered pricing benefits. The platform aims to be a leading online destination for firearms enthusiasts and professionals, focusing on business vision, market potential, and project ambitions within the firearms industry.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -13,16 +13,15 @@ CRITICAL IMAGE HANDLING RULE: For product images in cart/order displays, NEVER u
 CART CORRUPTION SOLUTION: Implement comprehensive clearing mechanism including both localStorage removal and server-side force-clear endpoint for cart items.
 FFL SELECTOR IMPROVEMENTS: Add proper error handling, loading states, and retry logic to the FFL selector component.
 GLOBAL SCROLL-TO-TOP: Implement site-wide scroll-to-top functionality on page navigation.
-EMAIL VERIFICATION SYSTEM: Successfully deployed production-ready email verification with automatic token refresh every 50 minutes. RESOLVED CRITICAL USER FRUSTRATION: "Why do we have to do this everyday!?!?" - no more daily token expiration issues. System now features fully local authentication with PostgreSQL storage, corrected Zoho API field naming (Email_Verified, Email_Verification_Time_Stamp), and fixed URL patterns for reliable CRM integration.
 
 ## System Architecture
 
 ### Dual Platform Infrastructure
-- **FreeAmericanPeople.com (FAP)**: Membership management platform handling user authentication, subscription tiers, and admin controls for FFL and subscription enforcement. Integrates with Authorize.Net for membership payments and provides APIs for real-time synchronization.
-- **TheGunFirm.com**: E-commerce platform requiring FAP membership for checkout. Handles product sales via Authorize.Net, features advanced cart persistence, and intelligent merging during login. Integrates comprehensively with FAP for cross-platform features.
+- **FreeAmericanPeople.com (FAP)**: Membership management platform handling user authentication, subscription tiers, and admin controls for FFL and subscription enforcement. Provides APIs for real-time synchronization.
+- **TheGunFirm.com**: E-commerce platform requiring FAP membership for checkout. Handles product sales, features advanced cart persistence, and intelligent merging during login. Integrates comprehensively with FAP for cross-platform features.
 
 ### Core Design Principles
-- **Email Verification**: Mandatory email verification via SendGrid for account access.
+- **Email Verification**: Mandatory email verification for account access with automatic token refresh.
 - **Mandatory Authentication**: Users must authenticate via FAP and select a subscription tier to access checkout.
 - **Intelligent Cart Management**: Cart persistence across logins, smart merging of guest and user carts, and complete clearing on logout.
 - **Three-Tier Fulfillment**: Configurable delivery times for direct-to-consumer, warehouse-to-FFL, and drop-ship-to-FFL.
@@ -32,18 +31,15 @@ EMAIL VERIFICATION SYSTEM: Successfully deployed production-ready email verifica
 - **Responsive Design**: Mobile-first approach with custom breakpoints and industry-focused UI.
 - **Real-time Inventory**: Live inventory synchronization with RSR distributor data.
 - **Cross-Platform Integration**: Real-time FAP API connections, shared support ticketing, unified email templates, and cross-platform analytics.
-- **CMS/CRM Separation**: CMS (Replit) for content, system configuration, inventory, compliance, and administration. CRM (Zoho) for customer profiles, order history, marketing, support, and FFL vendor management. Inventory resides exclusively in TheGunFirm database from RSR; Zoho only receives purchase data.
-- **Local Authentication System**: Transitioned from Zoho CRM to fully local authentication using PostgreSQL. System now uses local_users table for user management, eliminating daily OAuth token failures. All user registration, login, and tier management handled locally with bcrypt password security. All 5 subscription tiers (Bronze, Gold Monthly, Gold Annually, Platinum Monthly, Platinum Founder) fully operational with end-to-end testing validated.
-- **Production-Ready Email Verification**: Complete local authentication system with PostgreSQL storage, automatic token refresh (every 50 minutes), and corrected Zoho CRM integration. RESOLVED: "Why do we have to do this everyday!?!?" user frustration through background token maintenance. TESTED: Verification retrieval for existing contacts confirmed working - users can login successfully with previously verified accounts.
-- **Zoho Email Verification Fields**: Complete implementation of all three email verification fields in Zoho CRM. Email_Verified, Email_Opt_Out, and Email_Verification_Time_Stamp all successfully populating. Confirmed working with Contact IDs 6585331000000946008 and 6585331000000955002. DateTime format resolved using yyyy-MM-ddTHH:mm:ss pattern.
-- **Zoho API Corrections**: Fixed multiple integration issues: URL format (criteria→email parameter), field naming (spaces→underscores), and token refresh automation. Eliminates INVALID_URL_PATTERN and daily token expiration problems.
-- **Subscription Tier Management**: CMS-driven interface for managing subscription tiers, pricing, and benefits, with optional synchronization to Zoho CRM. Local tier validation supports all 5 tier options with proper enum validation in registration endpoints.
+- **CMS/CRM Separation**: CMS (Replit) for content, system configuration, inventory, compliance, and administration. CRM (Zoho) for customer profiles, order history, marketing, support, and FFL vendor management.
+- **Local Authentication System**: Fully local authentication using PostgreSQL for user management, registration, login, and tier management with bcrypt password security. Supports 5 subscription tiers (Bronze, Gold Monthly, Gold Annually, Platinum Monthly, Platinum Founder).
+- **Production-Ready Email Verification**: Complete local authentication with PostgreSQL, automatic token refresh, and corrected Zoho CRM integration.
+- **Zoho API Corrections**: Fixed multiple integration issues including URL format, field naming, and token refresh automation.
+- **Subscription Tier Management**: CMS-driven interface for managing subscription tiers, pricing, and benefits, with optional synchronization to Zoho CRM.
 - **Billing Audit Logging**: Comprehensive audit logging system using structured markdown for Authorize.Net webhooks, dunning emails, and subscription status changes.
-- **SAML 2.0 Staff Authentication**: Implementation of SAML 2.0 Service Provider for Zoho Directory IdP, supporting role-based access for staff (support, admin, billing, manager). Currently requires Zoho Directory configuration update for development domain testing.
-- **Complete RSR + Zoho Integration System**: Comprehensive end-to-end integration featuring RSR Engine Client for order submission, Zoho Order Fields Service for field mapping, and Order Zoho Integration for CRM synchronization. Includes sequential order numbering with receiver suffixes (I/C/F), account-based ordering (99902 for drop-ship testing, 99901 for in-house), comprehensive status tracking, and real-time field updates. System handles both successful Engine submissions and local holds with proper field mapping. LIVE INTEGRATION STATUS: Successfully tested and verified creating actual deals in Zoho CRM with all 13+ RSR integration fields populated correctly. Tests confirmed on January 16, 2025 and August 15, 2025 - system is production-ready and actively creating real deals with comprehensive field mapping including TGF Order Number, Fulfillment Type, Flow, Order Status, Consignee, Deal Fulfillment Summary, Ordering Account, Hold Type, APP Status, and Submitted timestamps. Both basic deal creation (processOrderToDeal) and comprehensive RSR field mapping (processOrderWithRSRFields) methods fully operational.
-- **RESOLVED: Individual Zoho Field Mapping System**: COMPLETE PRODUCTION SUCCESS (August 16, 2025) - Fully resolved datetime validation issue that was preventing all Zoho deal creation. ROOT CAUSE: Fixed datetime format from ISO (.toISOString()) to Zoho-required format (yyyy-MM-ddTHH:mm:ss) in ZohoOrderFieldsService. RESULT: Perfect 10/10 individual field mapping with multiple verified successful deals (IDs: 6585331000000988006, 6585331000000976014, 6585331000000982013). All system fields (TGF_Order_Number, Fulfillment_Type, Flow, Order_Status, Consignee, Deal_Fulfillment_Summary, Ordering_Account, Hold_Type, APP_Status, Submitted) now populate correctly as structured data fields with clean descriptions. COMPLETELY RESOLVES USER DIRECTIVE: "Focus on Zoho only, proper individual field mapping." System is production-ready.
-- **RESOLVED: APP/RSR Engine TGF Order Number Integration**: COMPLETE SUCCESS (August 16, 2025) - Successfully implemented TGF Order Number sourcing from APP/RSR Engine instead of system-generated numbers. Added APP_Response and APP_Confirmed fields for complete APP tracking. VERIFIED WORKING: TGF Order Number properly sourced from engineResponse.result.OrderNumber (e.g., "DEBUG-TGF-123"), APP_Response field captures full JSON response, APP_Confirmed timestamp working, Order_Status correctly updates to "Confirmed" based on StatusCode '00'. Test deal 6585331000000977006 confirms all APP fields operational. RESOLVES REQUIREMENT: "TGF Order Number must come from APP/RSR Engine, not system-generated."
-- **API Field Discovery Tool Implementation**: COMPLETE SUCCESS (August 16, 2025) - Built comprehensive Field Discovery system integrated into CMS admin panel. Features universal API field mapping analysis, Zoho CRM field metadata discovery, generic API structure analysis, target field validation, and field naming issue detection. Successfully identified and resolved TGF vs TFG field naming typo in Zoho CRM. Tool supports Zoho CRM, RSR Engine, FAP Integration, Authorize.Net, SendGrid, and custom APIs. Accessible via CMS → Admin → API Field Discovery. Includes field export capabilities, mapping reference guides, and prevents future integration failures through proactive field structure analysis.
+- **SAML 2.0 Staff Authentication**: Implementation of SAML 2.0 Service Provider for Zoho Directory IdP, supporting role-based access for staff.
+- **Complete RSR + Zoho Integration System**: Comprehensive end-to-end integration featuring RSR Engine Client for order submission and Zoho Order Fields Service for CRM synchronization. Includes sequential order numbering with receiver suffixes (I/C/F), account-based ordering, comprehensive status tracking, and real-time field updates.
+- **API Field Discovery Tool Implementation**: Comprehensive Field Discovery system integrated into CMS admin panel for universal API field mapping analysis, Zoho CRM field metadata discovery, generic API structure analysis, target field validation, and field naming issue detection.
 
 ### Technical Stack
 - **Frontend**: React 18 (TypeScript), Wouter, TanStack Query, React Context, Shadcn/ui (Radix UI), Tailwind CSS, Vite.
@@ -54,26 +50,20 @@ EMAIL VERIFICATION SYSTEM: Successfully deployed production-ready email verifica
 - **Database Schema**: Includes Users (with tiers, FFLs, shipping), Products (with tier pricing, FFL needs, inventory), Orders (with FFL routing), FFLs directory, State Shipping Policies, Tier Pricing Rules, and CMS Tables.
 - **Authentication**: Local authentication system using PostgreSQL with session-based management. Cross-platform integration with FreeAmericanPeople.com for membership tiers. SAML 2.0 for staff access via Zoho Directory.
 - **Product Management**: Multi-tier pricing, FFL tracking, inventory, category/manufacturer organization, and advanced search.
-- **Membership System**: Six-tier structure with progressive benefits, real-time savings calculations, and upgrade recommendations:
-  - Bronze: Free tier
-  - Gold Monthly: $5/month (5% discount)
-  - Gold Annually: $50/year (5% discount)
-  - Platinum Monthly: $10/month (10% discount)
-  - Platinum Founder: $50/year (temporary, billed annually, lifetime price lock, 15% discount)
-  - Platinum Annual: $99/year (future tier, not currently active)
+- **Membership System**: Six-tier structure with progressive benefits, real-time savings calculations, and upgrade recommendations: Bronze, Gold Monthly, Gold Annually, Platinum Monthly, Platinum Founder, Platinum Annual (future tier).
 - **CMS System**: Role-based content management with admin, support, and manager access levels.
 - **FAP Integration**: Comprehensive API integration service for real-time user sync, cross-platform support tickets, shared email templates, and unified analytics.
-- **RSR Engine Integration**: Complete order submission system with account-based routing (99901/60742 for in-house, 99902/63824 for drop-ship), comprehensive response handling, and real-time status tracking.
-- **Zoho CRM Order Tracking**: Advanced field mapping system with 13 specialized fields including TGF Order Number, Fulfillment Type, Order Status, Consignee, and comprehensive timestamps for complete order lifecycle management.
+- **RSR Engine Integration**: Complete order submission system with account-based routing, comprehensive response handling, and real-time status tracking.
+- **Zoho CRM Order Tracking**: Advanced field mapping system with specialized fields including TGF Order Number, Fulfillment Type, Order Status, Consignee, and comprehensive timestamps for complete order lifecycle management.
 
 ## External Dependencies
-- **Database**: Neon (serverless PostgreSQL), Drizzle ORM.
+- **Database**: Neon (serverless PostgreSQL).
 - **Frontend Libraries**: React, React Query, React Hook Form, Radix UI, Shadcn/ui, Tailwind CSS, class-variance-authority, Lucide React.
 - **Backend Libraries**: Express, bcrypt, connect-pg-simple, ws (WebSockets).
 - **Development Tools**: Vite, TypeScript, ESLint, Prettier.
-- **Commerce Integration**: Authorize.Net (for memberships on FAP, for product sales on TheGunFirm).
-- **Distributor Integration**: RSR (for product data, inventory, and images).
-- **Search**: Algolia (for product indexing and search).
-- **Email Service**: SendGrid (for email verification and order confirmations).
-- **CRM**: Zoho CRM (for FFL vendor management and order recording). User authentication moved to local system.
-- **SAML IdP**: Zoho Directory (for staff authentication).
+- **Commerce Integration**: Authorize.Net.
+- **Distributor Integration**: RSR.
+- **Search**: Algolia.
+- **Email Service**: SendGrid.
+- **CRM**: Zoho CRM.
+- **SAML IdP**: Zoho Directory.

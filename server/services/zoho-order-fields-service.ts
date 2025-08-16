@@ -34,6 +34,7 @@ export class ZohoOrderFieldsService {
   
   /**
    * Generate TGF Order Number with proper formatting
+   * CRITICAL: All TGF Order Numbers MUST end in A, B, or C (never 0)
    */
   generateTGFOrderNumber(
     baseNumber: number,
@@ -45,8 +46,9 @@ export class ZohoOrderFieldsService {
     // Base number formatting
     const base = isTest ? `test${baseNumber.toString().padStart(3, '0')}` : baseNumber.toString().padStart(7, '0');
     
-    // Multiple order suffix
-    const multipleSuffix = isMultiple ? String.fromCharCode(65 + multipleIndex) : '0'; // A, B, C, etc. or 0
+    // FIXED: Always use A, B, C suffixes (never 0)
+    // For single orders, default to 'A'. For multiple orders, use A, B, C based on index
+    const multipleSuffix = isMultiple ? String.fromCharCode(65 + multipleIndex) : 'A'; // A, B, C, etc. (never 0)
     
     return `${base}${receiver}${multipleSuffix}`;
   }
