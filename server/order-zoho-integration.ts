@@ -138,10 +138,13 @@ export class OrderZohoIntegration {
         console.warn(`⚠️ Product field validation warnings: ${validation.errors.join(', ')}`);
       }
 
-      // 7. Create Zoho Deal with comprehensive RSR fields and product information
+      // 7. Create deal name based on TGF order number and whether multiple deals exist
+      const dealName = this.createDealName(zohoFields.TGF_Order, outcome.orderDetails.length > 1);
+      
+      // 8. Create Zoho Deal with comprehensive RSR fields and product information
       const dealData = {
         // Product Information (overrides Deal_Name and Amount from productFields)
-        Deal_Name: productFields.Deal_Name,
+        Deal_Name: dealName,
         Contact_Name: contactId,
         Amount: productFields.Amount,
         Stage: this.mapOrderStatusToStage(zohoFields.Order_Status),
@@ -154,7 +157,6 @@ export class OrderZohoIntegration {
         Unit_Price: productFields.Unit_Price,
         Product_Category: productFields.Product_Category,
         Manufacturer: productFields.Manufacturer,
-        Description: productFields.Description,
         FFL_Required: productFields.FFL_Required,
         Drop_Ship_Eligible: productFields.Drop_Ship_Eligible,
         In_House_Only: productFields.In_House_Only,
@@ -188,14 +190,14 @@ export class OrderZohoIntegration {
       };
 
       const dealResult = await this.zohoService.createOrderDeal({
-        contactId: contactId!,
+        contactId: contactId || '',
         orderNumber: orderData.orderNumber,
         totalAmount: orderData.totalAmount,
         orderItems: orderData.orderItems,
         membershipTier: orderData.membershipTier,
         fflRequired: requiresFFL,
         fflDealerName: orderData.fflDealerName,
-        orderStatus: zohoFields.Order_Status,
+        orderStatus: zohoFields.Order_Status || 'Submitted',
         systemFields: dealData
       });
 
@@ -204,7 +206,7 @@ export class OrderZohoIntegration {
         return {
           success: true,
           dealId: dealResult.dealId,
-          tgfOrderNumber: zohoFields.TGF_Order,
+          tgfOrderNumber: zohoFields.TGF_Order || '',
           zohoFields
         };
       } else {
@@ -256,6 +258,24 @@ export class OrderZohoIntegration {
       console.error('RSR field update error:', error);
       return false;
     }
+  }
+
+  /**
+   * Creates Deal name based on TGF order number
+   * @param tgfOrderNumber - The TGF order number (e.g., "TGF-1001-I")
+   * @param hasMultipleDeals - Whether this order creates multiple deals
+   * @returns Deal name with appropriate suffix
+   */
+  private createDealName(tgfOrderNumber?: string, hasMultipleDeals: boolean = false): string {
+    if (!tgfOrderNumber) {
+      return `TGF-ORDER-${hasMultipleDeals ? 'Z' : '0'}`;
+    }
+    
+    // Replace the receiver code (last character) with Z for multiple deals, 0 for single deal
+    const baseName = tgfOrderNumber.slice(0, -1); // Remove last character
+    const suffix = hasMultipleDeals ? 'Z' : '0';
+    
+    return `${baseName}${suffix}`;
   }
 
   /**
