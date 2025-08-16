@@ -1,5 +1,5 @@
 import { ZohoService } from './zoho-service';
-import { zohoOrderFieldsService, type ZohoOrderFieldMapping } from './services/zoho-order-fields-service';
+import { zohoOrderFieldsService, type ZohoOrderFieldMapping, type ZohoProductFieldMapping } from './services/zoho-order-fields-service';
 
 export interface OrderToZohoData {
   orderNumber: string;
@@ -121,14 +121,46 @@ export class OrderZohoIntegration {
         }
       }
 
-      // 6. Create Zoho Deal with comprehensive RSR fields
+      // 6. Map product information to Zoho fields
+      let productFields: ZohoProductFieldMapping;
+      if (orderData.orderItems.length === 1) {
+        // Single product order
+        const product = orderData.orderItems[0];
+        productFields = zohoOrderFieldsService.mapProductToZohoDeal(product, orderData.totalAmount);
+      } else {
+        // Multiple product order - create "Mixed Order" summary
+        productFields = zohoOrderFieldsService.mapMultipleProductsToZohoDeal(orderData.orderItems, orderData.totalAmount);
+      }
+
+      // Validate product fields
+      const validation = zohoOrderFieldsService.validateProductFields(productFields);
+      if (!validation.valid) {
+        console.warn(`⚠️ Product field validation warnings: ${validation.errors.join(', ')}`);
+      }
+
+      // 7. Create Zoho Deal with comprehensive RSR fields and product information
       const dealData = {
-        Deal_Name: `TGF Order ${zohoFields.TGF_Order}`,
+        // Product Information (overrides Deal_Name and Amount from productFields)
+        Deal_Name: productFields.Deal_Name,
         Contact_Name: contactId,
-        Amount: orderData.totalAmount,
+        Amount: productFields.Amount,
         Stage: this.mapOrderStatusToStage(zohoFields.Order_Status),
         
-        // RSR-specific fields
+        // Product-specific fields
+        Product_Code: productFields.Product_Code,
+        Vendor_Part_Number: productFields.Vendor_Part_Number,
+        Quantity: productFields.Quantity,
+        Unit_Price: productFields.Unit_Price,
+        Product_Category: productFields.Product_Category,
+        Manufacturer: productFields.Manufacturer,
+        Description: productFields.Description,
+        FFL_Required: productFields.FFL_Required,
+        Drop_Ship_Eligible: productFields.Drop_Ship_Eligible,
+        In_House_Only: productFields.In_House_Only,
+        Product_Specifications: productFields.Product_Specifications,
+        Product_Images: productFields.Product_Images,
+        
+        // RSR-specific system fields
         TGF_Order: zohoFields.TGF_Order,
         Fulfillment_Type: zohoFields.Fulfillment_Type,
         Flow: zohoFields.Flow,

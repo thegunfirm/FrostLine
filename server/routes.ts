@@ -6381,6 +6381,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Zoho Deal Fields Discovery for Product Mapping
+  app.get("/api/test/zoho-deal-fields", async (req, res) => {
+    try {
+      console.log("🔍 Discovering Zoho Deal module fields...");
+      
+      const { ZohoService } = await import('./zoho-service');
+      const zohoService = new ZohoService();
+      
+      const dealFields = await zohoService.getModuleFields('Deals');
+      
+      // Filter fields that could be useful for product data
+      const productRelevantFields = dealFields.filter(field => {
+        const productKeywords = ['product', 'item', 'description', 'detail', 'spec', 'model', 'brand', 'category', 'sku', 'part', 'vendor', 'manufacturer'];
+        const isProductRelevant = productKeywords.some(keyword => 
+          field.api_name.toLowerCase().includes(keyword) || 
+          field.display_label.toLowerCase().includes(keyword)
+        );
+        
+        // Include text fields, textarea, number fields, and boolean fields
+        const usefulTypes = ['text', 'textarea', 'integer', 'double', 'currency', 'boolean', 'picklist'];
+        return (isProductRelevant || usefulTypes.includes(field.data_type)) && !field.read_only;
+      });
+
+      const standardFields = dealFields.filter(f => !f.custom_field && !f.read_only);
+      const customFields = dealFields.filter(f => f.custom_field);
+
+      res.json({
+        success: true,
+        dealFieldsCount: dealFields.length,
+        productRelevantFields: productRelevantFields.map(f => ({
+          apiName: f.api_name,
+          displayLabel: f.display_label,
+          dataType: f.data_type,
+          maxLength: f.length,
+          customField: f.custom_field,
+          mandatory: f.system_mandatory || f.web_tab_mandatory
+        })),
+        standardFields: standardFields.map(f => ({
+          apiName: f.api_name,
+          displayLabel: f.display_label,
+          dataType: f.data_type,
+          maxLength: f.length
+        })),
+        customFields: customFields.map(f => ({
+          apiName: f.api_name,
+          displayLabel: f.display_label,
+          dataType: f.data_type,
+          maxLength: f.length
+        })),
+        recommendedMapping: {
+          productName: 'Deal_Name',
+          sku: 'Product_Code',
+          rsrStockNumber: 'Vendor_Part_Number',
+          quantity: 'Quantity',
+          unitPrice: 'Amount',
+          totalPrice: 'Amount',
+          fflRequired: 'FFL_Required',
+          dropShipEligible: 'Drop_Ship_Eligible',
+          inHouseOnly: 'In_House_Only',
+          category: 'Type',
+          manufacturer: 'Manufacturer',
+          description: 'Description',
+          specifications: 'Product_Details',
+          images: 'Product_Images'
+        }
+      });
+
+    } catch (error: any) {
+      console.error("Zoho Deal fields discovery error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to discover Zoho Deal fields: " + error.message
+      });
+    }
+  });
+
   // Order Splitting System Demonstration
   app.post("/api/test/order-splitting", async (req, res) => {
     try {

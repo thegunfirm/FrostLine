@@ -30,6 +30,32 @@ export interface ZohoOrderFieldMapping {
   Last_Distributor_Update?: string;   // Last update from distributor (RSR)
 }
 
+export interface ZohoProductFieldMapping {
+  // Core Product Identification
+  Deal_Name: string;                  // Product name or "Mixed Order" for multi-product
+  Product_Code?: string;              // Internal SKU identifier
+  Vendor_Part_Number?: string;        // RSR distributor stock number
+  
+  // Pricing and Quantity
+  Quantity?: number;                  // Number of items ordered
+  Unit_Price?: number;                // Price per individual item
+  Amount: number;                     // Total deal value (standard Zoho field)
+  
+  // Product Classification
+  Product_Category?: string;          // Handguns, Rifles, Shotguns, Accessories, etc.
+  Manufacturer?: string;              // Brand/manufacturer name
+  Description?: string;               // Product description (standard Zoho field)
+  
+  // Compliance and Fulfillment Attributes
+  FFL_Required?: boolean;             // Whether item requires FFL transfer
+  Drop_Ship_Eligible?: boolean;       // Can be drop-shipped from distributor
+  In_House_Only?: boolean;            // Requires TGF in-house processing
+  
+  // Extended Product Information
+  Product_Specifications?: string;    // Technical specs, dimensions, etc.
+  Product_Images?: string;            // JSON array of image URLs
+}
+
 export class ZohoOrderFieldsService {
   
   /**
@@ -377,6 +403,150 @@ export class ZohoOrderFieldsService {
         return `${base}${outcome.receiverCode}${suffix}`;
       });
     }
+  }
+
+  /**
+   * Map product data to Zoho Deal product fields
+   */
+  mapProductToZohoDeal(productData: any, totalOrderValue?: number): ZohoProductFieldMapping {
+    const productFields: ZohoProductFieldMapping = {
+      Deal_Name: productData.productName || productData.name || 'Product Order',
+      Amount: totalOrderValue || productData.totalPrice || productData.unitPrice || 0
+    };
+
+    // Core product identification
+    if (productData.sku) {
+      productFields.Product_Code = productData.sku;
+    }
+    if (productData.rsrStockNumber) {
+      productFields.Vendor_Part_Number = productData.rsrStockNumber;
+    }
+
+    // Pricing and quantity
+    if (productData.quantity !== undefined) {
+      productFields.Quantity = productData.quantity;
+    }
+    if (productData.unitPrice !== undefined) {
+      productFields.Unit_Price = productData.unitPrice;
+    }
+
+    // Product classification
+    if (productData.category) {
+      productFields.Product_Category = productData.category;
+    }
+    if (productData.manufacturer) {
+      productFields.Manufacturer = productData.manufacturer;
+    }
+    if (productData.description) {
+      productFields.Description = productData.description;
+    }
+
+    // Compliance and fulfillment attributes
+    if (productData.fflRequired !== undefined) {
+      productFields.FFL_Required = productData.fflRequired;
+    }
+    if (productData.dropShipEligible !== undefined) {
+      productFields.Drop_Ship_Eligible = productData.dropShipEligible;
+    }
+    if (productData.inHouseOnly !== undefined) {
+      productFields.In_House_Only = productData.inHouseOnly;
+    }
+
+    // Extended product information
+    if (productData.specifications) {
+      productFields.Product_Specifications = productData.specifications;
+    }
+    if (productData.images && Array.isArray(productData.images)) {
+      productFields.Product_Images = JSON.stringify(productData.images);
+    }
+
+    return productFields;
+  }
+
+  /**
+   * Map multiple products to a single "Mixed Order" Deal
+   */
+  mapMultipleProductsToZohoDeal(products: any[], totalOrderValue: number): ZohoProductFieldMapping {
+    const productNames = products.map(p => p.productName || p.name).filter(Boolean);
+    const dealName = productNames.length > 2 
+      ? `Mixed Order (${products.length} items)` 
+      : productNames.join(' + ');
+
+    const productFields: ZohoProductFieldMapping = {
+      Deal_Name: dealName,
+      Amount: totalOrderValue,
+      Quantity: products.reduce((sum, p) => sum + (p.quantity || 1), 0)
+    };
+
+    // Aggregate product information
+    const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+    const manufacturers = [...new Set(products.map(p => p.manufacturer).filter(Boolean))];
+    
+    if (categories.length > 0) {
+      productFields.Product_Category = categories.join(', ');
+    }
+    if (manufacturers.length > 0) {
+      productFields.Manufacturer = manufacturers.join(', ');
+    }
+
+    // Check if any products require FFL or special handling
+    const requiresFFL = products.some(p => p.fflRequired);
+    const canDropShip = products.some(p => p.dropShipEligible);
+    const inHouseOnly = products.some(p => p.inHouseOnly);
+
+    productFields.FFL_Required = requiresFFL;
+    productFields.Drop_Ship_Eligible = canDropShip;
+    productFields.In_House_Only = inHouseOnly;
+
+    // Create detailed description
+    const descriptions = products.map(p => 
+      `${p.productName || p.name} (${p.quantity || 1}x @ $${p.unitPrice || 0})`
+    ).filter(Boolean);
+    
+    if (descriptions.length > 0) {
+      productFields.Description = descriptions.join('\n');
+    }
+
+    return productFields;
+  }
+
+  /**
+   * Validate product field mapping
+   */
+  validateProductFields(productFields: ZohoProductFieldMapping): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    // Required fields validation
+    if (!productFields.Deal_Name) {
+      errors.push('Deal_Name is required');
+    }
+    if (productFields.Amount === undefined || productFields.Amount <= 0) {
+      errors.push('Amount must be greater than 0');
+    }
+
+    // Data type validation
+    if (productFields.Quantity !== undefined && (!Number.isInteger(productFields.Quantity) || productFields.Quantity <= 0)) {
+      errors.push('Quantity must be a positive integer');
+    }
+    if (productFields.Unit_Price !== undefined && productFields.Unit_Price < 0) {
+      errors.push('Unit_Price cannot be negative');
+    }
+
+    // Field length validation (based on typical Zoho limits)
+    if (productFields.Deal_Name && productFields.Deal_Name.length > 100) {
+      errors.push('Deal_Name exceeds 100 character limit');
+    }
+    if (productFields.Product_Code && productFields.Product_Code.length > 100) {
+      errors.push('Product_Code exceeds 100 character limit');
+    }
+    if (productFields.Manufacturer && productFields.Manufacturer.length > 100) {
+      errors.push('Manufacturer exceeds 100 character limit');
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
   }
 }
 
