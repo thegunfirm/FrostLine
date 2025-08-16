@@ -34,7 +34,8 @@ export interface ZohoProductFieldMapping {
   // Core Product Identification
   Deal_Name: string;                  // Product name or "Mixed Order" for multi-product
   Product_Code?: string;              // Internal SKU identifier
-  Vendor_Part_Number?: string;        // RSR distributor stock number
+  Distributor_Part_Number?: string;   // Distributor stock number (RSR, etc.)
+  Distributor?: string;               // Name of distributor (RSR, Lipsey's, etc.)
   
   // Pricing and Quantity
   Quantity?: number;                  // Number of items ordered
@@ -418,8 +419,14 @@ export class ZohoOrderFieldsService {
     if (productData.sku) {
       productFields.Product_Code = productData.sku;
     }
-    if (productData.rsrStockNumber) {
-      productFields.Vendor_Part_Number = productData.rsrStockNumber;
+    if (productData.rsrStockNumber || productData.distributorPartNumber) {
+      productFields.Distributor_Part_Number = productData.rsrStockNumber || productData.distributorPartNumber;
+    }
+    if (productData.distributor) {
+      productFields.Distributor = productData.distributor;
+    } else if (productData.rsrStockNumber) {
+      // Default to RSR if RSR stock number is provided but no distributor specified
+      productFields.Distributor = 'RSR';
     }
 
     // Pricing and quantity

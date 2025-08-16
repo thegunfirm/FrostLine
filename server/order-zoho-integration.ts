@@ -148,7 +148,8 @@ export class OrderZohoIntegration {
         
         // Product-specific fields
         Product_Code: productFields.Product_Code,
-        Vendor_Part_Number: productFields.Vendor_Part_Number,
+        Distributor_Part_Number: productFields.Distributor_Part_Number,
+        Distributor: productFields.Distributor,
         Quantity: productFields.Quantity,
         Unit_Price: productFields.Unit_Price,
         Product_Category: productFields.Product_Category,

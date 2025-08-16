@@ -8,7 +8,8 @@ Based on the product field mapping implementation, you need to create these cust
 | Field Name | API Name | Type | Length | Description |
 |------------|----------|------|--------|-------------|
 | Product Code | `Product_Code` | Single Line Text | 100 chars | Internal SKU identifier |
-| Vendor Part Number | `Vendor_Part_Number` | Single Line Text | 50 chars | RSR distributor stock number |
+| Distributor Part Number | `Distributor_Part_Number` | Single Line Text | 50 chars | Distributor stock number (RSR, Lipsey's, etc.) |
+| Distributor | `Distributor` | Single Line Text | 50 chars | Name of distributor (RSR, Lipsey's, Sports South, etc.) |
 | Manufacturer | `Manufacturer` | Single Line Text | 100 chars | Product manufacturer/brand |
 
 ### Number Fields
