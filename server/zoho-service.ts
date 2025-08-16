@@ -207,6 +207,7 @@ export class ZohoService {
       if (orderData.systemFields) {
         Object.assign(baseDealData, orderData.systemFields);
         console.log(`🔍 Adding system fields to Zoho deal:`, orderData.systemFields);
+        console.log(`📋 Final deal payload being sent to Zoho:`, JSON.stringify(baseDealData, null, 2));
       }
 
       const dealPayload = {
@@ -375,6 +376,31 @@ export class ZohoService {
       return response.data?.data?.[0] || null;
     } catch (error: any) {
       console.error('Error searching for deal:', error.response?.data || error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Get Deal by ID with all fields
+   */
+  async getDealById(dealId: string): Promise<any> {
+    try {
+      if (!this.config.accessToken) {
+        return null;
+      }
+
+      const response = await axios.get(
+        `${this.config.apiHost}/crm/v2/Deals/${dealId}`,
+        {
+          headers: {
+            'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`
+          }
+        }
+      );
+
+      return response.data?.data?.[0] || null;
+    } catch (error: any) {
+      console.error('Error retrieving deal by ID:', error.response?.data || error.message);
       return null;
     }
   }

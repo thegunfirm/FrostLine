@@ -6214,6 +6214,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test route for getting Zoho access token
+  app.get('/api/test/get-zoho-token', async (req, res) => {
+    try {
+      res.json({ accessToken: process.env.ZOHO_ACCESS_TOKEN });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get token' });
+    }
+  });
+
+  // Test route for retrieving Zoho deal by ID
+  app.get('/api/test/zoho-deal/:dealId', async (req, res) => {
+    try {
+      const { dealId } = req.params;
+      
+      // Initialize Zoho service fresh
+      const { ZohoService } = await import('./zoho-service');
+      const zohoConfig = {
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
+        accountsHost: process.env.ZOHO_ACCOUNTS_HOST!,
+        apiHost: process.env.ZOHO_CRM_BASE!,
+        accessToken: process.env.ZOHO_ACCESS_TOKEN!,
+        refreshToken: process.env.ZOHO_REFRESH_TOKEN!
+      };
+      const zohoSvc = new ZohoService(zohoConfig);
+
+      console.log(`🔍 Retrieving deal ${dealId} from Zoho CRM...`);
+      const deal = await zohoSvc.getDealById(dealId);
+      
+      if (deal) {
+        console.log(`✅ Deal found: ${deal.Deal_Name || 'N/A'}`);
+        res.json({ success: true, deal });
+      } else {
+        console.log(`❌ Deal ${dealId} not found in Zoho CRM`);
+        res.status(404).json({ success: false, error: 'Deal not found' });
+      }
+
+    } catch (error) {
+      console.error('Error retrieving Zoho deal:', error);
+      res.status(500).json({ success: false, error: 'Failed to retrieve deal', details: error.message });
+    }
+  });
+
   // Test endpoint for direct Zoho integration testing
   app.post('/api/test/zoho-system-fields', async (req, res) => {
     try {
