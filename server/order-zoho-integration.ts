@@ -296,11 +296,11 @@ export class OrderZohoIntegration {
           console.log(`✅ Found existing contact: ${contactId}`);
         } else {
           const newContact = await this.zohoService.createContact({
-            email: orderData.customerEmail,
-            firstName: orderData.customerName.split(' ')[0],
-            lastName: orderData.customerName.split(' ').slice(1).join(' ') || 'Customer',
-            membershipTier: orderData.membershipTier,
-            leadSource: 'TheGunFirm.com'
+            Email: orderData.customerEmail,
+            First_Name: orderData.customerName.split(' ')[0],
+            Last_Name: orderData.customerName.split(' ').slice(1).join(' ') || 'Customer',
+            Description: `${orderData.membershipTier} - TheGunFirm.com`,
+            Lead_Source: 'TheGunFirm.com'
           });
           contactId = newContact.id;
           console.log(`✅ Created new contact: ${contactId}`);

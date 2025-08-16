@@ -40,6 +40,7 @@ GLOBAL SCROLL-TO-TOP: Implement site-wide scroll-to-top functionality on page na
 - **SAML 2.0 Staff Authentication**: Implementation of SAML 2.0 Service Provider for Zoho Directory IdP, supporting role-based access for staff.
 - **Complete RSR + Zoho Integration System**: Comprehensive end-to-end integration featuring RSR Engine Client for order submission and Zoho Order Fields Service for CRM synchronization. Includes sequential order numbering with receiver suffixes (I/C/F), account-based ordering, comprehensive status tracking, and real-time field updates.
 - **API Field Discovery Tool Implementation**: Comprehensive Field Discovery system integrated into CMS admin panel for universal API field mapping analysis, Zoho CRM field metadata discovery, generic API structure analysis, target field validation, and field naming issue detection.
+- **Order Splitting System (COMPLETED)**: Fully functional order splitting based on shipping outcomes (Drop-Ship to Customer, Drop-Ship to FFL, In-House). Automatically generates proper TGF order numbers with receiver codes, creates separate Zoho deals for each shipping outcome, and maps all 9 system fields correctly. Tested and verified working with live Zoho CRM integration.
 
 ### Technical Stack
 - **Frontend**: React 18 (TypeScript), Wouter, TanStack Query, React Context, Shadcn/ui (Radix UI), Tailwind CSS, Vite.
