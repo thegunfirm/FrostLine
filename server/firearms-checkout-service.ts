@@ -215,20 +215,17 @@ export class FirearmsCheckoutService {
         zohoOrderData.fulfillmentType = this.requiresDropShip(payload.cartItems) ? 'Drop-Ship' : 'In-House';
         zohoOrderData.orderingAccount = this.requiresDropShip(payload.cartItems) ? '99902' : '99901'; // Test accounts
         zohoOrderData.requiresDropShip = this.requiresDropShip(payload.cartItems);
-        zohoOrderData.holdType = complianceResult.hasViolations ? 
-          (complianceResult.violations.some(v => v.type === 'ffl_not_found') ? 'FFL not on file' : 'Gun Count Rule') : 
+        zohoOrderData.holdType = complianceResult.requiresHold ? 
+          (payload.fflRecipientId ? 'Gun Count Rule' : 'FFL not on file') : 
           undefined;
-        zohoOrderData.engineResponse = rsrResult;
+        zohoOrderData.engineResponse = null; // No RSR engine call for basic system fields
         zohoOrderData.isTestOrder = true; // Set to false for production
         
-        // Add RSR stock numbers to order items
-        zohoOrderData.orderItems = zohoOrderData.orderItems.map((item, index) => ({
-          ...item,
-          rsrStockNumber: rsrItems[index]?.rsrStockNumber || item.sku
-        }));
+        // Keep original order items (no RSR stock numbers needed for system fields)
+        // RSR stock numbers will be added when RSR engine processes the order later
 
-        console.log(`🔄 Syncing firearms compliance order ${orderNumber} to Zoho CRM with RSR field mapping...`);
-        const zohoResult = await orderZohoIntegration.processOrderWithRSRFields(zohoOrderData);
+        console.log(`🔄 Syncing firearms compliance order ${orderNumber} to Zoho CRM with automatic system field population...`);
+        const zohoResult = await orderZohoIntegration.processOrderWithSystemFields(zohoOrderData);
         
         if (zohoResult.success) {
           dealId = zohoResult.dealId;
@@ -321,7 +318,7 @@ export class FirearmsCheckoutService {
         try {
           // Use the OrderZohoIntegration to update deal stage
           const dealStage = firearmsComplianceService.mapOrderStatusToDealStage(updateData.status || order.status);
-          await orderZohoIntegration.updateDealStage(order.zohoDealId, dealStage);
+          await orderZohoIntegration.updateRSRFields(order.zohoDealId, { Order_Status: updateData.status || order.status });
           console.log(`✅ Updated Zoho deal ${order.zohoDealId} status to: ${dealStage}`);
         } catch (zohoError) {
           console.error('Zoho sync failed (non-blocking):', zohoError);
@@ -382,7 +379,7 @@ export class FirearmsCheckoutService {
       // Sync to Zoho
       if (order.zohoDealId) {
         try {
-          await orderZohoIntegration.updateDealStage(order.zohoDealId, 'Ready to Fulfill');
+          await orderZohoIntegration.updateRSRFields(order.zohoDealId, { Order_Status: 'Ready to Fulfill' });
         } catch (zohoError) {
           console.error('Zoho sync failed (non-blocking):', zohoError);
         }
@@ -468,7 +465,7 @@ export class FirearmsCheckoutService {
           rsrStockNumber: product.rsrStockNumber,
           quantity: item.quantity,
           customerPrice: item.price,
-          unitPrice: parseFloat(product.rsrPrice || product.price)
+          unitPrice: parseFloat(product.rsrPrice || product.retailPrice || '0')
         });
       }
     }

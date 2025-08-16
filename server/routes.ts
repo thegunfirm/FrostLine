@@ -4756,6 +4756,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint for basic system field auto-population
+  app.post("/api/test/system-fields", async (req, res) => {
+    try {
+      const { OrderZohoIntegration } = await import('./order-zoho-integration');
+      const orderZohoIntegration = new OrderZohoIntegration();
+      
+      console.log('🔄 Using processOrderWithSystemFields for automatic field population...');
+      const result = await orderZohoIntegration.processOrderWithSystemFields(req.body);
+
+      if (result.success) {
+        res.json({
+          success: true,
+          dealId: result.dealId,
+          contactId: result.contactId,
+          tgfOrderNumber: result.tgfOrderNumber,
+          zohoFields: result.zohoFields,
+          message: 'System fields populated automatically'
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.error,
+          message: 'System field population failed'
+        });
+      }
+
+    } catch (error: any) {
+      console.error('System field test error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        message: 'System field test execution failed'
+      });
+    }
+  });
+
+  // Test endpoint for checkout system field auto-population
+  app.post("/api/test/checkout-fields", async (req, res) => {
+    try {
+      const { FirearmsCheckoutService } = await import('./firearms-checkout-service');
+      const checkoutService = new FirearmsCheckoutService();
+      
+      console.log('🛒 Testing checkout with automatic system field population...');
+      
+      // Use the checkout service to process the order with system field population  
+      const checkoutResult = await checkoutService.processCheckout(req.body);
+
+      if (checkoutResult.success) {
+        res.json({
+          success: true,
+          orderId: checkoutResult.orderId,
+          orderNumber: checkoutResult.orderNumber,
+          dealId: checkoutResult.dealId,
+          status: checkoutResult.status,
+          hold: checkoutResult.hold,
+          transactionId: checkoutResult.transactionId,
+          message: 'Checkout completed with automatic system field population'
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: checkoutResult.error,
+          message: 'Checkout with system fields failed'
+        });
+      }
+
+    } catch (error: any) {
+      console.error('Checkout system field test error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        message: 'Checkout system field test execution failed'
+      });
+    }
+  });
+
   // ===== SEARCH ANALYTICS & AI LEARNING ADMIN =====
   
   // Get search analytics

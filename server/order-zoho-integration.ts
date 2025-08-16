@@ -246,6 +246,171 @@ export class OrderZohoIntegration {
   }
 
   /**
+   * Create or update a Zoho Deal with automatic system field population
+   * This populates all system fields but NOT the RSR-only fields (Carrier, Tracking_Number, Estimated_Ship_Date)
+   */
+  async processOrderWithSystemFields(orderData: OrderToZohoData): Promise<{
+    success: boolean;
+    dealId?: string;
+    contactId?: string;
+    tgfOrderNumber?: string;
+    zohoFields?: any;
+    error?: string;
+  }> {
+    try {
+      console.log(`🔄 Processing order ${orderData.orderNumber} with automatic system field population...`);
+
+      // 1. Get next sequential TGF order number (from inventory, not RSR)
+      const baseOrderNumber = await zohoOrderFieldsService.getNextOrderNumber(orderData.isTestOrder);
+      
+      // 2. Determine system characteristics
+      const fulfillmentType = orderData.fulfillmentType || 
+        zohoOrderFieldsService.determineFulfillmentType(
+          orderData.orderingAccount || '99901', 
+          orderData.requiresDropShip || false
+        );
+      
+      const requiresFFL = orderData.orderItems.some(item => item.fflRequired);
+      const consignee = zohoOrderFieldsService.determineConsignee(fulfillmentType, requiresFFL);
+      
+      // 3. Build system field mapping using the service (excludes RSR-only fields)
+      const systemFieldMapping = zohoOrderFieldsService.buildOrderFieldMapping({
+        orderNumber: orderData.orderNumber,
+        baseOrderNumber: await zohoOrderFieldsService.getNextOrderNumber(orderData.isTestOrder),
+        fulfillmentType,
+        orderingAccount: (orderData.orderingAccount || '99901') as '99901' | '99902' | '63824' | '60742',
+        consignee,
+        requiresFFL,
+        isTest: orderData.isTestOrder || false,
+        holdType: orderData.holdType as 'FFL not on file' | 'Gun Count Rule' | undefined,
+        // Leave RSR-only fields as undefined (they'll be populated separately when RSR responds)
+        carrier: undefined,
+        trackingNumber: undefined,
+        estimatedShipDate: undefined
+      });
+
+      // Extract only system fields (excluding RSR-only fields for basic order processing)
+      const systemFields = {
+        TGF_Order_Number: systemFieldMapping.TGF_Order_Number,
+        Fulfillment_Type: systemFieldMapping.Fulfillment_Type,
+        Flow: systemFieldMapping.Flow,
+        Order_Status: systemFieldMapping.Order_Status,
+        Consignee: systemFieldMapping.Consignee,
+        Deal_Fulfillment_Summary: systemFieldMapping.Deal_Fulfillment_Summary,
+        Ordering_Account: systemFieldMapping.Ordering_Account,
+        Hold_Type: systemFieldMapping.Hold_Type,
+        APP_Status: systemFieldMapping.APP_Status,
+        Submitted: systemFieldMapping.Submitted,
+        APP_Confirmed: systemFieldMapping.APP_Confirmed,
+        Last_Distributor_Update: new Date().toISOString()
+        // Note: Carrier, Tracking_Number, Estimated_Ship_Date are RSR-only and not included
+      };
+
+      // 4. Find or create customer contact
+      let contactId = orderData.zohoContactId;
+      
+      if (!contactId) {
+        const existingContact = await this.zohoService.findContactByEmail(orderData.customerEmail);
+        
+        if (existingContact) {
+          contactId = existingContact.id;
+          console.log(`✅ Found existing contact: ${contactId}`);
+        } else {
+          const nameParts = orderData.customerName.split(' ');
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+
+          const newContact = await this.zohoService.createContact({
+            Email: orderData.customerEmail,
+            First_Name: firstName,
+            Last_Name: lastName,
+            Lead_Source: 'TheGunFirm.com',
+            Description: JSON.stringify({
+              membershipTier: orderData.membershipTier,
+              accountType: 'Customer',
+              createdFrom: 'System Order Processing'
+            })
+          });
+
+          contactId = newContact.id;
+          console.log(`✅ Created new contact: ${contactId}`);
+        }
+      }
+
+      // 5. Check for existing deal
+      const existingDeal = await this.zohoService.getDealByOrderNumber(orderData.orderNumber);
+      
+      if (existingDeal) {
+        // Update existing deal with system fields
+        const dealUpdateData = {
+          Stage: this.mapOrderStatusToStage(systemFields.Order_Status),
+          ...systemFields
+        };
+
+        const updated = await this.zohoService.updateDealStage(existingDeal.id, systemFields.Order_Status);
+        console.log(`📝 Updated existing deal ${existingDeal.id} with system fields: ${updated ? 'success' : 'failed'}`);
+        
+        return {
+          success: true,
+          dealId: existingDeal.id,
+          contactId,
+          tgfOrderNumber: systemFields.TGF_Order_Number,
+          zohoFields: systemFields
+        };
+      }
+
+      // 6. Create new deal with system order processing
+      const fflRequired = orderData.orderItems.some(item => item.fflRequired);
+      
+      const dealResult = await this.zohoService.createOrderDeal({
+        contactId: contactId!,
+        orderNumber: orderData.orderNumber,
+        totalAmount: orderData.totalAmount,
+        orderItems: orderData.orderItems,
+        membershipTier: orderData.membershipTier,
+        fflRequired,
+        fflDealerName: orderData.fflDealerName,
+        orderStatus: systemFields.Order_Status
+      });
+
+      if (dealResult.success) {
+        console.log(`✅ Created system deal ${dealResult.dealId} with TGF order ${systemFields.TGF_Order_Number}`);
+        return {
+          success: true,
+          dealId: dealResult.dealId,
+          contactId,
+          tgfOrderNumber: systemFields.TGF_Order_Number,
+          zohoFields: systemFields
+        };
+      } else {
+        console.error(`❌ Failed to create system deal: ${dealResult.error}`);
+        return {
+          success: false,
+          error: dealResult.error
+        };
+      }
+
+    } catch (error: any) {
+      console.error('System order-to-Zoho integration error:', error);
+      return {
+        success: false,
+        error: `System integration error: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Build order description for Zoho deal
+   */
+  private buildOrderDescription(orderData: OrderToZohoData): string {
+    const items = orderData.orderItems.map(item => 
+      `${item.productName} (${item.sku}) - Qty: ${item.quantity} @ $${item.unitPrice}`
+    ).join('\n');
+    
+    return `Order: ${orderData.orderNumber}\nTier: ${orderData.membershipTier}\nFFL: ${orderData.fflDealerName || 'N/A'}\n\nItems:\n${items}`;
+  }
+
+  /**
    * Create or update a Zoho Deal for a TheGunFirm order with comprehensive RSR field mapping
    */
   async processOrderToDeal(orderData: OrderToZohoData): Promise<{
