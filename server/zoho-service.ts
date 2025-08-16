@@ -704,14 +704,27 @@ export class ZohoService {
     fflRequired: boolean;
     fflDealerName?: string;
     orderStatus: string;
+    systemFields?: any;
   }): Promise<{ success: boolean; dealId?: string; error?: string }> {
     try {
-      const dealPayload = {
+      // Base deal payload
+      const dealPayload: any = {
         Deal_Name: `Order ${dealData.orderNumber}`,
         Amount: dealData.totalAmount,
         Stage: this.mapOrderStatusToDealStage(dealData.orderStatus),
-        Contact_Name: dealData.contactId,
-        Description: JSON.stringify({
+        Contact_Name: dealData.contactId
+      };
+
+      // If system fields are provided, use them instead of JSON dump
+      if (dealData.systemFields) {
+        // Add all system fields as individual Zoho fields
+        Object.assign(dealPayload, dealData.systemFields);
+        
+        // Create clean description when system fields are used
+        dealPayload.Description = `Order from TheGunFirm.com - ${dealData.membershipTier} member`;
+      } else {
+        // Fallback to old JSON method only if no system fields provided
+        dealPayload.Description = JSON.stringify({
           orderNumber: dealData.orderNumber,
           membershipTier: dealData.membershipTier,
           fflRequired: dealData.fflRequired,
@@ -722,8 +735,8 @@ export class ZohoService {
             quantity: item.quantity,
             price: item.unitPrice
           }))
-        })
-      };
+        });
+      }
 
       const response = await this.makeAPIRequest('Deals', 'POST', {
         data: [dealPayload]
