@@ -5,13 +5,13 @@ export function registerZohoRoutes(app: Express): void {
   // OAuth initiation endpoint
   app.get("/api/zoho/auth/initiate", (req, res) => {
     try {
-      // Use hardcoded credentials temporarily due to Replit environment sync issue
+      // Use tech@thegunfirm.com credentials
       const config = {
-        clientId: process.env.ZOHO_CLIENT_ID || '1000.8OVSJ4V07OOVJWYAC0KA1JEFNH2W3M',
-        clientSecret: process.env.ZOHO_CLIENT_SECRET || '4d4b2ab7f0f731102c7d15d6754f1f959251db68e0',
+        clientId: '1000.NKOFKR9SBI8FPVMZKTYXN02UIRPB3Z',
+        clientSecret: '454c34596b2671980f8cd20400b374c69f7f6d7d70',
         redirectUri: `https://${req.get('host')}/api/zoho/auth/callback`,
-        accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
-        apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com'
+        accountsHost: 'https://accounts.zoho.com',
+        apiHost: 'https://www.zohoapis.com'
       };
 
       const zohoService = new ZohoService(config);
@@ -58,11 +58,11 @@ export function registerZohoRoutes(app: Express): void {
       }
 
       const config = {
-        clientId: process.env.ZOHO_CLIENT_ID || '1000.8OVSJ4V07OOVJWYAC0KA1JEFNH2W3M',
-        clientSecret: process.env.ZOHO_CLIENT_SECRET || '4d4b2ab7f0f731102c7d15d6754f1f959251db68e0',
+        clientId: '1000.NKOFKR9SBI8FPVMZKTYXN02UIRPB3Z',
+        clientSecret: '454c34596b2671980f8cd20400b374c69f7f6d7d70',
         redirectUri: `https://${req.get('host')}/api/zoho/auth/callback`,
-        accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
-        apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com'
+        accountsHost: 'https://accounts.zoho.com',
+        apiHost: 'https://www.zohoapis.com'
       };
 
       const zohoService = new ZohoService(config);
