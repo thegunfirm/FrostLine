@@ -53,6 +53,7 @@ import DeliverySettings from "@/pages/cms/delivery-settings";
 import AtfDirectoryManagement from "@/pages/management/atf-directory";
 import Account from "@/pages/account";
 import AccountOrders from "@/pages/account-orders";
+import ZohoSetup from "@/pages/ZohoSetup";
 import EmailVerificationSimulator from "@/pages/EmailVerificationSimulator";
 import CMSOrderManagement from "@/pages/cms-order-management";
 import BrandingManagement from "@/pages/cms/admin/branding";
@@ -146,6 +147,7 @@ function Router() {
         <Route path="/staff-login" component={SamlLogin} />
         <Route path="/management/atf-directory" component={AtfDirectoryManagement} />
         <Route path="/email-verification-simulator" component={EmailVerificationSimulator} />
+        <Route path="/zoho-setup" component={ZohoSetup} />
         <Route component={NotFound} />
       </Switch>
     </>

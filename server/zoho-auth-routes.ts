@@ -7,7 +7,7 @@ const router = express.Router();
 const zohoService = new ZohoService({
   clientId: "1000.NKOFKR9SBI8FPVMZKTYXN02UIRPB3Z",
   clientSecret: "454c34596b2671980f8cd20400b374c69f7f6d7d70",
-  redirectUri: "http://localhost:5000/api/zoho/callback",
+  redirectUri: "https://thegunfirm.com/api/zoho/callback",
   accountsHost: 'https://accounts.zoho.com',
   apiHost: 'https://www.zohoapis.com'
 });
