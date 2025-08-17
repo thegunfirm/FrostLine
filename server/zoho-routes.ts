@@ -5,10 +5,10 @@ export function registerZohoRoutes(app: Express): void {
   // OAuth initiation endpoint
   app.get("/api/zoho/auth/initiate", (req, res) => {
     try {
-      // Use tech@thegunfirm.com credentials
+      // Use working credentials from environment variables
       const config = {
-        clientId: '1000.NKOFKR9SBI8FPVMZKTYXN02UIRPB3Z',
-        clientSecret: '454c34596b2671980f8cd20400b374c69f7f6d7d70',
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
         redirectUri: process.env.ZOHO_REDIRECT_URI!,
         accountsHost: 'https://accounts.zoho.com',
         apiHost: 'https://www.zohoapis.com'
@@ -58,8 +58,8 @@ export function registerZohoRoutes(app: Express): void {
       }
 
       const config = {
-        clientId: '1000.NKOFKR9SBI8FPVMZKTYXN02UIRPB3Z',
-        clientSecret: '454c34596b2671980f8cd20400b374c69f7f6d7d70',
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
         redirectUri: process.env.ZOHO_REDIRECT_URI!,
         accountsHost: 'https://accounts.zoho.com',
         apiHost: 'https://www.zohoapis.com'

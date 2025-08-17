@@ -4,12 +4,12 @@ import { registerRoutes } from "./routes";
 import samlRoutes from "./saml-routes";
 import passport from 'passport';
 
-// Set Zoho environment variables for tech@thegunfirm.com
+// Set Zoho environment variables - using working credentials
 if (!process.env.ZOHO_CLIENT_ID) {
-  process.env.ZOHO_CLIENT_ID = "1000.NKOFKR9SBI8FPVMZKTYXN02UIRPB3Z";
+  process.env.ZOHO_CLIENT_ID = "1000.8OVSJ4V07OOVJWYAC0KA1JEFNH2W3M";
 }
 if (!process.env.ZOHO_CLIENT_SECRET) {
-  process.env.ZOHO_CLIENT_SECRET = "454c34596b2671980f8cd20400b374c69f7f6d7d70";
+  process.env.ZOHO_CLIENT_SECRET = "4d4b2ab7f0f731102c7d15d6754f1f959251db68e0";
 }
 if (!process.env.ZOHO_REDIRECT_URI) {
   process.env.ZOHO_REDIRECT_URI = "http://localhost:5000/api/zoho/callback";
