@@ -12,7 +12,9 @@ if (!process.env.ZOHO_CLIENT_SECRET) {
   process.env.ZOHO_CLIENT_SECRET = "4d4b2ab7f0f731102c7d15d6754f1f959251db68e0";
 }
 if (!process.env.ZOHO_REDIRECT_URI) {
-  process.env.ZOHO_REDIRECT_URI = "https://thegunfirm.com/api/zoho/callback";
+  // Use current Replit domain for OAuth callback - this was the working pattern
+  const replitDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPL_SLUG + '.replit.dev';
+  process.env.ZOHO_REDIRECT_URI = `https://${replitDomain}/api/zoho/auth/callback`;
 }
 if (!process.env.ZOHO_ACCOUNTS_HOST) {
   process.env.ZOHO_ACCOUNTS_HOST = "https://accounts.zoho.com";
