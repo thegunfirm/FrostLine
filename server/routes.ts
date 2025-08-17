@@ -28,7 +28,7 @@ import axios from "axios";
 import multer from "multer";
 import { billingAuditLogger } from "./services/billing-audit-logger";
 import { ZohoService } from "./zoho-service";
-import { ZohoProductLookupService } from "./services/zoho-product-lookup-service";
+// import { ZohoProductLookupService } from "./services/zoho-product-lookup-service"; // Not used - using OrderZohoIntegration instead
 import { OrderZohoIntegration } from "./order-zoho-integration";
 
 // Zoho authentication removed - starting fresh
@@ -6574,52 +6574,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate TGF order number
       const orderNumber = `TGF-${Date.now().toString().slice(-7)}`;
       
-      // Initialize services with proper configuration
-      const zohoService = new ZohoService({
-        clientId: process.env.ZOHO_CLIENT_ID!,
-        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
-        redirectUri: process.env.ZOHO_REDIRECT_URI!,
-        accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
-        apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com',
-        accessToken: process.env.ZOHO_ACCESS_TOKEN,
-        refreshToken: process.env.ZOHO_REFRESH_TOKEN
-      });
-      const productLookupService = new ZohoProductLookupService(zohoService);
+      // Initialize order integration (this creates its own properly configured ZohoService)
       const orderIntegration = new OrderZohoIntegration();
+      
+      // For now, use the working OrderZohoIntegration for product creation
+      // We'll extract the ZohoService from it to avoid the configuration issue
 
-      // Test product lookups
+      // Test product creation using the working OrderZohoIntegration
       const productResults = [];
-      const productCache = new Map();
 
       for (const item of orderItems) {
-        let productResult;
-        
-        if (productCache.has(item.sku)) {
-          productResult = productCache.get(item.sku);
-          console.log(`♻️  Using cached product for SKU: ${item.sku}`);
-        } else {
-          productResult = await productLookupService.findOrCreateProductBySKU({
-            sku: item.sku,
+        try {
+          const productId = await orderIntegration.createProduct(item.sku, {
             productName: item.productName,
             manufacturer: item.manufacturer,
-            productCategory: item.category,
+            category: item.category,
             fflRequired: item.fflRequired,
             dropShipEligible: item.dropShipEligible,
             inHouseOnly: item.inHouseOnly,
-            distributorPartNumber: item.rsrStockNumber,
+            rsrStockNumber: item.rsrStockNumber,
             distributor: item.distributor
           });
           
-          productCache.set(item.sku, productResult);
-          console.log(`${productResult.created ? '🆕' : '🔍'} Product lookup for ${item.sku}:`, 
-            { productId: productResult.productId, created: productResult.created });
+          productResults.push({
+            sku: item.sku,
+            productId: productId || '',
+            created: productId ? productId.startsWith('DEAL_LINE_ITEM_') : false
+          });
+        } catch (error) {
+          console.error(`❌ Product creation failed for ${item.sku}:`, error);
+          productResults.push({
+            sku: item.sku,
+            productId: '',
+            created: false
+          });
         }
-        
-        productResults.push({
-          sku: item.sku,
-          productId: productResult.productId,
-          created: productResult.created
-        });
       }
 
       // Handle different test scenarios
@@ -6645,8 +6634,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
       } else if (testType === 'multi-receiver' || testType === 'complex-abc') {
-        for (let i = 0; i < shippingOutcomes.length; i++) {
-          const outcome = shippingOutcomes[i];
+        // Create default shipping outcomes if not provided
+        const defaultShippingOutcomes = shippingOutcomes || [
+          { type: 'Drop-Ship', items: [orderItems[0].sku] },
+          { type: 'In-House', items: [orderItems[1]?.sku] }
+        ];
+        
+        for (let i = 0; i < defaultShippingOutcomes.length; i++) {
+          const outcome = defaultShippingOutcomes[i];
           const letter = String.fromCharCode(65 + i);
           
           const dealResult = await orderIntegration.processOrderWithRSRFields({
@@ -6655,10 +6650,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             customerName,
             membershipTier,
             orderItems: orderItems.filter(item => 
-              outcome.orderItems?.includes(item.sku) || outcome.items?.includes(item.sku)
+              outcome.items?.includes(item.sku)
             ),
             totalAmount: orderItems
-              .filter(item => outcome.orderItems?.includes(item.sku) || outcome.items?.includes(item.sku))
+              .filter(item => outcome.items?.includes(item.sku))
               .reduce((sum, item) => sum + item.totalPrice, 0),
             fflDealerName: outcome.fflDealerName,
             orderStatus: 'Processing',

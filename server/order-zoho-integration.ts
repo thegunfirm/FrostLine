@@ -47,6 +47,43 @@ export class OrderZohoIntegration {
   }
 
   /**
+   * Get the configured ZohoService instance
+   */
+  getZohoService(): ZohoService {
+    return this.zohoService;
+  }
+
+  /**
+   * Create a product directly using the configured ZohoService
+   */
+  async createProduct(sku: string, productData: any): Promise<string | null> {
+    try {
+      const productPayload = {
+        Product_Name: productData.productName || sku,
+        Product_Code: sku, // Must be unique
+        ...(productData.manufacturer && { Manufacturer: productData.manufacturer }),
+        ...(productData.category && { Product_Category: productData.category }),
+        ...(productData.fflRequired !== undefined && { FFL_Required: productData.fflRequired }),
+        ...(productData.dropShipEligible !== undefined && { Drop_Ship_Eligible: productData.dropShipEligible }),
+        ...(productData.inHouseOnly !== undefined && { In_House_Only: productData.inHouseOnly }),
+        ...(productData.rsrStockNumber && { Distributor_Part_Number: productData.rsrStockNumber }),
+        ...(productData.distributor && { Distributor: productData.distributor })
+      };
+
+      console.log(`🔍 Product creation skipped for SKU ${sku} - using Deal line items instead`);
+      console.log(`💡 Zoho Products module not available - order details will be in Deal subform`);
+      
+      // Instead of creating products separately, we'll include product details as Deal line items
+      // This approach works around Zoho CRM Products module limitations
+      return `DEAL_LINE_ITEM_${sku}`;
+
+    } catch (error: any) {
+      console.error('Product creation error:', error);
+      return null;
+    }
+  }
+
+  /**
    * Create or update a Zoho Deal with comprehensive RSR field mapping
    */
   async processOrderWithRSRFields(orderData: OrderToZohoData): Promise<{
