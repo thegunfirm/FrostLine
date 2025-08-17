@@ -175,10 +175,13 @@ export class OrderZohoIntegration {
         console.warn(`⚠️ Product field validation warnings: ${validation.errors.join(', ')}`);
       }
 
-      // 7. Create deal name based on TGF order number and receiver grouping
-      const totalGroups = orderData.shippingOutcomes?.length || 1;
-      const groupIndex = orderData.shippingOutcomes?.findIndex(o => o === outcome) || 0;
-      const dealName = this.createDealName(zohoFields.TGF_Order, totalGroups, groupIndex);
+      // 7. Create deal name using proper specification
+      const isMultipleGroups = (orderData.shippingOutcomes?.length || 1) > 1;
+      const dealName = zohoOrderFieldsService.buildDealName(
+        baseOrderNumber,
+        orderData.isTestOrder || false,
+        isMultipleGroups
+      );
       
       // 8. Create Zoho Deal with comprehensive RSR fields and product information
       const dealData = {

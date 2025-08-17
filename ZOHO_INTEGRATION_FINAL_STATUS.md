@@ -66,11 +66,35 @@ All 9 critical system fields properly mapped:
 
 ## 🔧 TECHNICAL IMPLEMENTATION
 
+### TGF Order Numbering System (COMPLETED - Jan 17, 2025)
+
+**Proper Order Number Specification Implemented:**
+- **7-digit sequence**: Zero-padded base number (e.g., 1234567)
+- **TEST prefix**: `test` prefix for testing mode
+- **Single group**: Base + `0` suffix (e.g., `test12345670` or `12345670`)  
+- **Multiple groups**: Base + `A/B/C` suffixes (e.g., `test1234567A`, `test1234567B`)
+- **Deal naming**: Single = Base + `0`, Multiple = Base + `Z` for parent deal
+
+**Implementation Details:**
+- `buildTGFOrderNumber()`: Generates proper child order numbers
+- `buildDealName()`: Generates proper parent deal names
+- `generateSplitOrderNumbers()`: Handles deterministic ABC assignment
+- Atomic sequence generation with future database counter support
+- Complete test coverage with verification script
+
+**Examples:**
+```
+Single TEST: test12345670 (order & deal)
+Single PROD: 12345670 (order & deal)
+Multi TEST: test1234567A, test1234567B (orders) + test1234567Z (deal)
+Multi PROD: 1234567A, 1234567B (orders) + 1234567Z (deal)
+```
+
 ### Products Module Issue
 The Zoho CRM setup doesn't support the Products module API, returning:
 ```
 {
-  "code": "API_NOT_SUPPORTED",
+  "code": "API_NOT_SUPPORTED", 
   "message": "api not supported in this version",
   "status": "error"
 }

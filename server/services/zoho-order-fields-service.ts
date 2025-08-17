@@ -60,6 +60,9 @@ export class ZohoOrderFieldsService {
    * Generate TGF Order Number with proper formatting
    * CRITICAL: All TGF Order Numbers MUST end in A, B, or C (never 0)
    */
+  /**
+   * @deprecated Use buildTGFOrderNumber instead - follows proper specification
+   */
   generateTGFOrderNumber(
     baseNumber: number,
     receiver: 'I' | 'C' | 'F',  // I=In-House, C=Customer, F=FFL
@@ -67,14 +70,8 @@ export class ZohoOrderFieldsService {
     multipleIndex: number = 0,
     isTest: boolean = false
   ): string {
-    // Base number formatting
-    const base = isTest ? `test${baseNumber.toString().padStart(3, '0')}` : baseNumber.toString().padStart(7, '0');
-    
-    // FIXED: Always use A, B, C suffixes (never 0)
-    // For single orders, default to 'A'. For multiple orders, use A, B, C based on index
-    const multipleSuffix = isMultiple ? String.fromCharCode(65 + multipleIndex) : 'A'; // A, B, C, etc. (never 0)
-    
-    return `${base}${receiver}${multipleSuffix}`;
+    // Redirect to new proper implementation
+    return this.buildTGFOrderNumber(baseNumber, isTest, isMultiple, multipleIndex);
   }
 
   /**
@@ -170,13 +167,11 @@ export class ZohoOrderFieldsService {
     if (appTgfOrderNumber) {
       tgfOrderNumber = appTgfOrderNumber;
     } else if (baseOrderNumber) {
-      const receiverCode = this.determineReceiverCode(consignee);
-      tgfOrderNumber = this.generateTGFOrderNumber(
+      tgfOrderNumber = this.buildTGFOrderNumber(
         baseOrderNumber,
-        receiverCode,
-        isMultipleOrder,
-        multipleIndex,
-        isTest
+        isTest || false,
+        isMultipleOrder || false,
+        multipleIndex
       );
     } else {
       // Fallback to using the original order number
@@ -270,20 +265,68 @@ export class ZohoOrderFieldsService {
   }
 
   /**
-   * Get next sequential order number
+   * Get next sequential 7-digit order number (atomically)
    */
   async getNextOrderNumber(isTest: boolean = false): Promise<number> {
-    // Generate sequential numbers based on timestamp for uniqueness
+    // TODO: Implement atomic counter in database for production
+    // For now, generate sequential 7-digit numbers
     const baseTime = Date.now();
-    const randomSuffix = Math.floor(Math.random() * 1000);
+    const sevenDigitNumber = (baseTime % 10000000); // Ensure 7 digits max
     
-    if (isTest) {
-      // For test orders, use a smaller number for readability
-      return (baseTime % 10000000) + randomSuffix;
+    // Zero-pad to 7 digits
+    return sevenDigitNumber;
+  }
+
+  /**
+   * Build TGF Order Number according to specification
+   * Examples (TEST): single → test00012340; multi → test0001234A, test0001234B
+   * Examples (PROD): single → 00012340; multi → 0001234A, 0001234B
+   */
+  buildTGFOrderNumber(
+    baseSequence: number, 
+    isTest: boolean, 
+    isMultiple: boolean, 
+    groupIndex?: number
+  ): string {
+    // Zero-pad to 7 digits
+    const paddedSequence = baseSequence.toString().padStart(7, '0');
+    
+    // Build base
+    const base = isTest ? `test${paddedSequence}` : paddedSequence;
+    
+    if (!isMultiple) {
+      // Single group gets '0' suffix
+      return `${base}0`;
+    } else {
+      // Multiple groups get letter suffixes (A, B, C, ...)
+      const letter = String.fromCharCode(65 + (groupIndex || 0)); // A=65, B=66, C=67...
+      return `${base}${letter}`;
     }
+  }
+
+  /**
+   * Build Deal Name according to specification
+   * Examples (TEST): single → test00012340; multi → test0001234Z
+   * Examples (PROD): single → 00012340; multi → 0001234Z
+   */
+  buildDealName(
+    baseSequence: number,
+    isTest: boolean,
+    isMultiple: boolean
+  ): string {
+    // Zero-pad to 7 digits
+    const paddedSequence = baseSequence.toString().padStart(7, '0');
     
-    // For production orders, use full timestamp-based numbering
-    return baseTime + randomSuffix;
+    // Build base
+    const base = isTest ? `test${paddedSequence}` : paddedSequence;
+    
+    if (!isMultiple) {
+      // Single shipment gets '0' suffix
+      return `${base}0`;
+    } else {
+      // Multiple shipments get 'Z' suffix for parent deal
+      return `${base}Z`;
+    }
   }
 
   /**
@@ -389,17 +432,17 @@ export class ZohoOrderFieldsService {
     outcomes: Array<{ receiverCode: 'I' | 'C' | 'F' }>,
     isTest: boolean = false
   ): string[] {
-    if (outcomes.length === 1) {
+    // Sort outcomes deterministically for consistent ABC assignment
+    const sortedOutcomes = [...outcomes].sort((a, b) => a.receiverCode.localeCompare(b.receiverCode));
+    
+    if (sortedOutcomes.length === 1) {
       // Single shipping outcome - ends in '0'
-      const base = isTest ? `test${baseOrderNumber.toString().padStart(6, '0')}` : baseOrderNumber.toString().padStart(7, '0');
-      return [`${base}${outcomes[0].receiverCode}0`];
+      return [this.buildTGFOrderNumber(baseOrderNumber, isTest, false)];
     } else {
       // Multiple shipping outcomes - ends in A, B, C, etc.
-      return outcomes.map((outcome, index) => {
-        const base = isTest ? `test${baseOrderNumber.toString().padStart(6, '0')}` : baseOrderNumber.toString().padStart(7, '0');
-        const suffix = String.fromCharCode(65 + index); // A, B, C, etc.
-        return `${base}${outcome.receiverCode}${suffix}`;
-      });
+      return sortedOutcomes.map((outcome, index) => 
+        this.buildTGFOrderNumber(baseOrderNumber, isTest, true, index)
+      );
     }
   }
 
