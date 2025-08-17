@@ -12,7 +12,7 @@ if (!process.env.ZOHO_CLIENT_SECRET) {
   process.env.ZOHO_CLIENT_SECRET = "454c34596b2671980f8cd20400b374c69f7f6d7d70";
 }
 if (!process.env.ZOHO_REDIRECT_URI) {
-  process.env.ZOHO_REDIRECT_URI = "https://thegunfirm.com/api/zoho/callback";
+  process.env.ZOHO_REDIRECT_URI = "http://localhost:5000/api/zoho/callback";
 }
 if (!process.env.ZOHO_ACCOUNTS_HOST) {
   process.env.ZOHO_ACCOUNTS_HOST = "https://accounts.zoho.com";

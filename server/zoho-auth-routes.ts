@@ -5,11 +5,11 @@ const router = express.Router();
 
 // Initialize Zoho service with new tech@thegunfirm.com credentials
 const zohoService = new ZohoService({
-  clientId: process.env.ZOHO_CLIENT_ID!,
-  clientSecret: process.env.ZOHO_CLIENT_SECRET!,
-  redirectUri: process.env.ZOHO_REDIRECT_URI!,
-  accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
-  apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com'
+  clientId: "1000.NKOFKR9SBI8FPVMZKTYXN02UIRPB3Z",
+  clientSecret: "454c34596b2671980f8cd20400b374c69f7f6d7d70",
+  redirectUri: "http://localhost:5000/api/zoho/callback",
+  accountsHost: 'https://accounts.zoho.com',
+  apiHost: 'https://www.zohoapis.com'
 });
 
 // Route to initiate Zoho OAuth for tech@thegunfirm.com
@@ -20,7 +20,7 @@ router.get('/zoho/auth', (req, res) => {
   console.log('🔗 Generated Zoho OAuth URL for tech@thegunfirm.com:', authUrl);
   
   // Store state in session for verification
-  req.session.zohoState = state;
+  (req.session as any).zohoState = state;
   
   res.redirect(authUrl);
 });
@@ -31,7 +31,7 @@ router.get('/zoho/callback', async (req, res) => {
     const { code, state } = req.query;
     
     // Verify state parameter
-    if (state !== req.session.zohoState) {
+    if (state !== (req.session as any).zohoState) {
       console.error('❌ OAuth state mismatch');
       return res.status(400).json({ error: 'Invalid state parameter' });
     }
@@ -55,7 +55,7 @@ router.get('/zoho/callback', async (req, res) => {
     console.log('🔧 Add these to your Replit secrets to complete the setup.');
     
     // Clear the state from session
-    delete req.session.zohoState;
+    delete (req.session as any).zohoState;
     
     // Return success page
     res.send(`
