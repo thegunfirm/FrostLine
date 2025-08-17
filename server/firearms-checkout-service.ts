@@ -100,17 +100,33 @@ export class FirearmsCheckoutService {
       } else {
         // Normal checkout - capture immediately
         console.log('Step 3b: Processing normal payment...');
-        console.log('About to call Authorize.Net with amount:', totalAmount);
+        console.log('About to call Authorize.Net SANDBOX with amount:', totalAmount);
         
-        // TEMPORARY BYPASS: Skip actual payment processing to test the system
-        console.log('⚠️ BYPASSING PAYMENT PROCESSING FOR TESTING');
-        authResult = {
-          success: true,
-          transactionId: `TEST_${Date.now()}`,
-          authCode: 'TEST123',
-        };
+        try {
+          authResult = await Promise.race([
+            authorizeNetService.authCaptureTransaction(
+              totalAmount,
+              payload.paymentMethod.cardNumber,
+              payload.paymentMethod.expirationDate,
+              payload.paymentMethod.cvv,
+              {
+                ...payload.customerInfo,
+                address: payload.shippingAddress,
+              }
+            ),
+            new Promise<AuthOnlyResult>((_, reject) => 
+              setTimeout(() => reject(new Error('Payment processing timeout')), 15000)
+            )
+          ]);
+        } catch (error: any) {
+          console.error('Payment processing error:', error);
+          authResult = {
+            success: false,
+            error: error.message || 'Payment processing failed'
+          };
+        }
         
-        console.log('✅ Payment processing result (bypassed):', authResult);
+        console.log('✅ Payment processing result:', authResult);
 
         if (!authResult.success) {
           return {

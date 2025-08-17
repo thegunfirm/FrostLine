@@ -31,9 +31,15 @@ export class AuthorizeNetService {
       throw new Error('Authorize.Net credentials not configured');
     }
 
+    // Ensure we're using sandbox environment for testing
+    process.env.AUTHORIZE_NET_ENDPOINT = 'https://apitest.authorize.net/xml/v1/request.api';
+
     this.merchantAuth = new APIContracts.MerchantAuthenticationType();
     this.merchantAuth.setName(process.env.AUTHORIZE_NET_API_LOGIN_ID);
     this.merchantAuth.setTransactionKey(process.env.AUTHORIZE_NET_TRANSACTION_KEY);
+
+    console.log(`🏦 Authorize.Net configured for SANDBOX environment`);
+    console.log(`📋 Using API Login ID: ${process.env.AUTHORIZE_NET_API_LOGIN_ID}`);
   }
 
   /**
