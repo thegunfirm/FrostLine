@@ -74,6 +74,9 @@ export class FirearmsComplianceService {
    * Check if cart items have firearms
    */
   async checkCartForFirearms(cartItems: CartItem[]): Promise<boolean> {
+    if (!cartItems || !Array.isArray(cartItems)) {
+      return false;
+    }
     return cartItems.some(item => item.isFirearm || item.requiresFFL);
   }
 
@@ -117,6 +120,12 @@ export class FirearmsComplianceService {
     cartItems: CartItem[]
   ): Promise<ComplianceCheckResult> {
     const config = await this.loadConfig();
+    
+    // Validate input
+    if (!cartItems || !Array.isArray(cartItems)) {
+      throw new Error('Invalid cartItems provided to compliance check');
+    }
+    
     const hasFirearms = await this.checkCartForFirearms(cartItems);
     const currentFirearmsCount = cartItems
       .filter(item => item.isFirearm || item.requiresFFL)

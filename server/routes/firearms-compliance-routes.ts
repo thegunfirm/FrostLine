@@ -275,7 +275,7 @@ router.get('/orders', async (req, res) => {
     const ordersWithCompliance = await db.query.orders.findMany({
       where: whereClause,
       limit: parseInt(limit as string),
-      orderBy: (orders, { desc }) => [desc(orders.createdAt)],
+      orderBy: (ordersTable, { desc }) => [desc(ordersTable.createdAt)],
       with: {
         orderLines: {
           with: {
@@ -308,7 +308,7 @@ router.post('/orders/:orderId/void', async (req, res) => {
     const { orderId } = req.params;
     
     const order = await db.query.orders.findFirst({
-      where: (orders, { eq }) => eq(orders.id, parseInt(orderId))
+      where: (ordersTable, { eq }) => eq(ordersTable.id, parseInt(orderId))
     });
 
     if (!order) {
