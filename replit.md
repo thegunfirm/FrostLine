@@ -46,7 +46,26 @@ GLOBAL SCROLL-TO-TOP: Implement site-wide scroll-to-top functionality on page na
 - **ABC Deal Naming System (COMPLETED - Jan 2025)**: Production-ready deal naming convention (TGF-XXXXXXX-[0|AZ|BZ|CZ]) supporting single and multi-receiver orders. Automatically handles order splitting by shipping outcomes with proper sequential letter assignment. 100% test coverage across all scenarios.
 - **Complete Zoho Integration Framework (OPERATIONAL - Jan 2025)**: End-to-end integration system combining dynamic product lookup, ABC deal naming, order splitting, and comprehensive field mapping (23 total fields). Successfully tested with real inventory data and ready for production deployment.
 - **Tier-Based Order Processing System (COMPLETED - Jan 2025)**: Full validation of order processing across all three membership pricing tiers (Bronze, Gold, Platinum). System successfully handles both simple single-outcome orders and complex multi-receiver orders with proper ABC deal naming. All 6 test scenarios (2 per tier) completed successfully with live Zoho CRM integration.
-- **Proper TGF Order Numbering System (COMPLETED - Jan 2025)**: Implementation of exact order numbering specification with TEST prefix for testing, 7-digit zero-padded sequences, single group Base+0 format, multiple groups Base+A/B/C with deterministic sorting, and Deal Name Base+Z for multiple shipment groups. Complete test coverage and validation scripts included. Replaces previous ABC naming system with user-specified format.
+- **Proper TGF Order Numbering System (COMPLETED - Jan 2025)**: Complete implementation of TGF order numbering specification with comprehensive format rules:
+
+  **TGF ORDER NUMBER (child IDs)** — with TEST prefix support:
+  - Get next 7-digit sequence N (zero-pad)
+  - Build Base = test + N (when testing), N (in production)
+  - Split cart into shipment groups by receiver (FFL / Customer / TGF IH)
+  - If ONE group → OrderNo = Base + 0
+  - If MULTIPLE groups → sort groups deterministically and assign Base+A, Base+B, Base+C, …
+  - Persist N atomically; idempotent per submission
+  - Examples (TEST): one group → test00012340; two groups → test0001234A, test0001234B
+  - Examples (PROD): one group → 00012340; two groups → 0001234A, 0001234B
+
+  **DEAL NAME (parent label)** — with TEST prefix support:
+  - Compute Base the same way
+  - If ONE shipment group → Deal Name = Base + 0
+  - If MULTIPLE shipment groups → Deal Name = Base + Z (children keep A/B/C… suffixes)
+  - Examples (TEST): single → test00012340; multi → Deal Name test0001234Z (children test0001234A, test0001234B)
+  - Examples (PROD): single → 00012340; multi → Deal Name 0001234Z (children 0001234A, 0001234B)
+
+  System now properly generates production format without test prefixes for live orders while maintaining test capability for development.
 
 ### Technical Stack
 - **Frontend**: React 18 (TypeScript), Wouter, TanStack Query, React Context, Shadcn/ui (Radix UI), Tailwind CSS, Vite.
