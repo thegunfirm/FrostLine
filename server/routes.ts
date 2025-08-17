@@ -4648,6 +4648,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== ZOHO CRM INTEGRATION TEST ENDPOINTS =====
   
+  // Simple Products API access test
+  app.get("/api/test/products-access", async (req, res) => {
+    try {
+      console.log('🔍 Testing Zoho Products API access...');
+      
+      const { ZohoService } = await import('./zoho-service');
+      const zohoService = new ZohoService({
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
+        accountsHost: process.env.ZOHO_ACCOUNTS_HOST!,
+        apiHost: process.env.ZOHO_CRM_BASE!,
+        accessToken: process.env.ZOHO_ACCESS_TOKEN!,
+        refreshToken: process.env.ZOHO_REFRESH_TOKEN!
+      });
+
+      // Try to get Products - just check access
+      const result = await zohoService.makeAPIRequest('Products', 'GET');
+      
+      console.log('✅ Products API accessible');
+      res.json({ 
+        success: true, 
+        message: 'Products API accessible',
+        recordCount: result.data?.length || 0
+      });
+
+    } catch (error) {
+      console.log('❌ Products API access failed:', error.message);
+      res.json({ 
+        success: false, 
+        error: error.message,
+        details: error.response?.data || null
+      });
+    }
+  });
+  
   // Field Discovery endpoint for Zoho CRM modules
   app.get("/api/test/zoho-fields-metadata/:module", async (req, res) => {
     try {
