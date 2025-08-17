@@ -835,29 +835,11 @@ export class ZohoService {
         throw new Error('No Zoho access token available');
       }
 
-      const response = await axios.get(
-        `${this.config.apiHost}/crm/v2/${module}/search?criteria=${encodeURIComponent(criteria)}`,
-        {
-          headers: {
-            'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`
-          }
-        }
-      );
-
-      return response.data;
+      // Use makeAPIRequest to handle URL construction properly
+      return await this.makeAPIRequest(`${module}/search?criteria=${encodeURIComponent(criteria)}`);
 
     } catch (error: any) {
-      // Handle token refresh if needed
-      if (error.response?.status === 401 && this.config.refreshToken) {
-        console.log('🔄 Access token expired, attempting to refresh...');
-        const refreshResult = await this.refreshAccessToken();
-        if (refreshResult) {
-          // Retry the operation with new token
-          return this.searchRecords(module, criteria);
-        }
-      }
-      
-      console.error(`Error searching ${module}:`, error.response?.data || error.message);
+      console.error(`Error searching ${module}:`, error);
       throw error;
     }
   }
@@ -881,31 +863,11 @@ export class ZohoService {
         data: [data]
       };
 
-      const response = await axios.post(
-        `${this.config.apiHost}/crm/v2/${module}`,
-        payload,
-        {
-          headers: {
-            'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      return response.data;
+      // Use makeAPIRequest to handle URL construction properly
+      return await this.makeAPIRequest(module, 'POST', payload);
 
     } catch (error: any) {
-      // Handle token refresh if needed
-      if (error.response?.status === 401 && this.config.refreshToken) {
-        console.log('🔄 Access token expired, attempting to refresh...');
-        const refreshResult = await this.refreshAccessToken();
-        if (refreshResult) {
-          // Retry the operation with new token
-          return this.createRecord(module, data);
-        }
-      }
-      
-      console.error(`Error creating ${module} record:`, error.response?.data || error.message);
+      console.error(`Error creating ${module} record:`, error);
       throw error;
     }
   }

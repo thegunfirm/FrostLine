@@ -6596,6 +6596,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint for direct product creation
+  app.post('/api/test/zoho-product-create', async (req, res) => {
+    try {
+      console.log('🔍 Testing direct product creation in Products module...');
+      
+      // Use the working configuration from imports
+      const { ZohoService } = await import('./zoho-service');
+      const zohoService = new ZohoService({
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
+        accountsHost: process.env.ZOHO_ACCOUNTS_HOST!,
+        apiHost: process.env.ZOHO_CRM_BASE!,
+        accessToken: process.env.ZOHO_ACCESS_TOKEN!,
+        refreshToken: process.env.ZOHO_REFRESH_TOKEN!
+      });
+      
+      const productData = req.body;
+      
+      const productPayload = {
+        Product_Name: productData.productName || productData.sku,
+        Product_Code: productData.sku,
+        ...(productData.manufacturer && { Manufacturer: productData.manufacturer }),
+        ...(productData.category && { Product_Category: productData.category }),
+        Unit_Price: productData.unitPrice || 0
+      };
+
+      console.log('📦 Creating product with payload:', productPayload);
+      const result = await zohoService.createRecord('Products', productPayload);
+      
+      if (result && result.data && result.data.length > 0 && result.data[0].status === 'success') {
+        const productId = result.data[0].details.id;
+        console.log(`✅ Product created successfully: ${productId}`);
+        res.json({ 
+          success: true, 
+          productId, 
+          sku: productData.sku,
+          message: 'Product created in Zoho Products module' 
+        });
+      } else {
+        console.error('❌ Product creation failed:', result);
+        res.status(500).json({ error: 'Product creation failed', details: result });
+      }
+      
+    } catch (error: any) {
+      console.error('Product creation error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Test endpoint for product search
+  app.get('/api/test/zoho-product-search', async (req, res) => {
+    try {
+      const { sku } = req.query;
+      console.log(`🔍 Searching for product with SKU: ${sku}`);
+      
+      const { ZohoService } = await import('./zoho-service');
+      const zohoService = new ZohoService({
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
+        accountsHost: process.env.ZOHO_ACCOUNTS_HOST!,
+        apiHost: process.env.ZOHO_CRM_BASE!,
+        accessToken: process.env.ZOHO_ACCESS_TOKEN!,
+        refreshToken: process.env.ZOHO_REFRESH_TOKEN!
+      });
+      const searchResult = await zohoService.searchRecords('Products', `(Product_Code:equals:${sku})`);
+      
+      if (searchResult && searchResult.data && searchResult.data.length > 0) {
+        console.log(`✅ Found product: ${searchResult.data[0].id}`);
+        res.json({ 
+          success: true, 
+          productId: searchResult.data[0].id,
+          product: searchResult.data[0]
+        });
+      } else {
+        res.json({ success: false, message: 'Product not found' });
+      }
+      
+    } catch (error: any) {
+      console.error('Product search error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Test endpoint for Zoho integration testing with real inventory
   app.post('/api/test-zoho-integration', async (req, res) => {
     try {

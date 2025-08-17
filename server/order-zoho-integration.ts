@@ -70,15 +70,37 @@ export class OrderZohoIntegration {
         ...(productData.distributor && { Distributor: productData.distributor })
       };
 
-      console.log(`🔍 Product creation skipped for SKU ${sku} - using Deal line items instead`);
-      console.log(`💡 Zoho Products module not available - order details will be in Deal subform`);
+      console.log(`🔍 Creating product in Zoho Products module for SKU: ${sku}`);
       
-      // Instead of creating products separately, we'll include product details as Deal line items
-      // This approach works around Zoho CRM Products module limitations
-      return `DEAL_LINE_ITEM_${sku}`;
+      // Use the ZohoService to create the actual Product record
+      const result = await this.zohoService.createRecord('Products', productPayload);
+      
+      if (result && result.data && result.data.length > 0 && result.data[0].status === 'success') {
+        const productId = result.data[0].details.id;
+        console.log(`✅ Product created successfully in Products module: ${productId}`);
+        return productId;
+      } else {
+        console.error('❌ Product creation failed:', result);
+        return null;
+      }
 
     } catch (error: any) {
       console.error('Product creation error:', error);
+      
+      // If it's a duplicate error, try to find the existing product
+      if (error.response?.data?.data?.[0]?.code === 'DUPLICATE_DATA') {
+        console.log(`🔄 Duplicate product found for SKU ${sku}, searching for existing...`);
+        try {
+          const searchResult = await this.zohoService.searchRecords('Products', `(Product_Code:equals:${sku})`);
+          if (searchResult?.data?.length > 0) {
+            console.log(`✅ Found existing product: ${searchResult.data[0].id}`);
+            return searchResult.data[0].id;
+          }
+        } catch (searchError) {
+          console.error('Error searching for existing product:', searchError);
+        }
+      }
+      
       return null;
     }
   }
