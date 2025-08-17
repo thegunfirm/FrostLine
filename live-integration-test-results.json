@@ -1,0 +1,42 @@
+{
+  "timestamp": "2025-08-17T00:03:38.407Z",
+  "orderNumber": "TGF-9018403",
+  "customer": {
+    "email": "integration.test@thegunfirm.com",
+    "name": "Integration Test Customer",
+    "membershipTier": "Gold Monthly"
+  },
+  "productResults": [
+    {
+      "sku": "GLOCK-19-GEN5",
+      "productId": "LIVE_GLOCK_19_GEN5_1755389018404",
+      "created": true
+    },
+    {
+      "sku": "MAGPUL-PMAG-30",
+      "productId": "LIVE_MAGPUL_PMAG_30_1755389018404",
+      "created": false
+    }
+  ],
+  "dealResults": [
+    {
+      "dealName": "TGF-9018403-AZ",
+      "dealId": "LIVE_DEAL_1755389018405_A",
+      "success": true,
+      "outcome": "In-House"
+    },
+    {
+      "dealName": "TGF-9018403-BZ",
+      "dealId": "LIVE_DEAL_1755389018405_B",
+      "success": true,
+      "outcome": "Drop-Ship-Customer"
+    }
+  ],
+  "validations": {
+    "dealNaming": true,
+    "productMapping": true,
+    "shippingMapping": true
+  },
+  "overallSuccess": true,
+  "mode": "simulation"
+}

@@ -27,6 +27,9 @@ import crypto from "crypto";
 import axios from "axios";
 import multer from "multer";
 import { billingAuditLogger } from "./services/billing-audit-logger";
+import { ZohoService } from "./zoho-service";
+import { ZohoProductLookupService } from "./services/zoho-product-lookup-service";
+import { OrderZohoIntegration } from "./order-zoho-integration";
 
 // Zoho authentication removed - starting fresh
 
@@ -6553,6 +6556,184 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fieldMapping: "❌ Not tested",
           tgfNumbering: "❌ Not tested"
         }
+      });
+    }
+  });
+
+  // Test endpoint for Zoho integration testing with real inventory
+  app.post('/api/test-zoho-integration', async (req, res) => {
+    try {
+      const { 
+        userId, customerEmail, customerName, membershipTier,
+        orderItems, totalAmount, testType, shippingOutcome, 
+        shippingOutcomes, fflDealerName 
+      } = req.body;
+
+      console.log(`🧪 Processing ${testType} test with ${orderItems.length} items`);
+
+      // Generate TGF order number
+      const orderNumber = `TGF-${Date.now().toString().slice(-7)}`;
+      
+      // Initialize services
+      const zohoService = new ZohoService();
+      const productLookupService = new ZohoProductLookupService(zohoService);
+      const orderIntegration = new OrderZohoIntegration(zohoService);
+
+      // Test product lookups
+      const productResults = [];
+      const productCache = new Map();
+
+      for (const item of orderItems) {
+        let productResult;
+        
+        if (productCache.has(item.sku)) {
+          productResult = productCache.get(item.sku);
+          console.log(`♻️  Using cached product for SKU: ${item.sku}`);
+        } else {
+          productResult = await productLookupService.findOrCreateProductBySKU({
+            sku: item.sku,
+            productName: item.productName,
+            manufacturer: item.manufacturer,
+            productCategory: item.category,
+            fflRequired: item.fflRequired,
+            dropShipEligible: item.dropShipEligible,
+            inHouseOnly: item.inHouseOnly,
+            distributorPartNumber: item.rsrStockNumber,
+            distributor: item.distributor
+          });
+          
+          productCache.set(item.sku, productResult);
+          console.log(`${productResult.created ? '🆕' : '🔍'} Product lookup for ${item.sku}:`, 
+            { productId: productResult.productId, created: productResult.created });
+        }
+        
+        productResults.push({
+          sku: item.sku,
+          productId: productResult.productId,
+          created: productResult.created
+        });
+      }
+
+      // Handle different test scenarios
+      let dealResults = [];
+      
+      if (testType === 'single-receiver') {
+        const dealResult = await orderIntegration.processRSROrderToZoho({
+          orderNumber,
+          customerEmail,
+          customerName,
+          membershipTier,
+          orderItems,
+          totalAmount,
+          fflDealerName,
+          shippingOutcomes: [{
+            type: shippingOutcome,
+            orderDetails: orderItems
+          }]
+        }, {
+          type: shippingOutcome,
+          orderDetails: orderItems
+        });
+
+        dealResults.push({
+          dealName: `${orderNumber}-0`,
+          dealId: dealResult.dealId,
+          success: dealResult.success
+        });
+
+      } else if (testType === 'multi-receiver' || testType === 'complex-abc') {
+        for (let i = 0; i < shippingOutcomes.length; i++) {
+          const outcome = shippingOutcomes[i];
+          const letter = String.fromCharCode(65 + i);
+          
+          const dealResult = await orderIntegration.processRSROrderToZoho({
+            orderNumber,
+            customerEmail,
+            customerName,
+            membershipTier,
+            orderItems: orderItems.filter(item => 
+              outcome.orderItems.includes(item.sku)
+            ),
+            totalAmount: orderItems
+              .filter(item => outcome.orderItems.includes(item.sku))
+              .reduce((sum, item) => sum + item.totalPrice, 0),
+            fflDealerName: outcome.fflDealerName,
+            shippingOutcomes: [outcome]
+          }, outcome);
+
+          dealResults.push({
+            dealName: `${orderNumber}-${letter}Z`,
+            dealId: dealResult.dealId,
+            success: dealResult.success,
+            outcome: outcome.type
+          });
+        }
+
+      } else if (testType === 'duplicate-sku') {
+        const dealResult = await orderIntegration.processRSROrderToZoho({
+          orderNumber,
+          customerEmail,
+          customerName,
+          membershipTier,
+          orderItems,
+          totalAmount,
+          shippingOutcomes: [{
+            type: shippingOutcome,
+            orderDetails: orderItems
+          }]
+        }, {
+          type: shippingOutcome,
+          orderDetails: orderItems
+        });
+
+        dealResults.push({
+          dealName: `${orderNumber}-0`,
+          dealId: dealResult.dealId,
+          success: dealResult.success
+        });
+      }
+
+      const response = {
+        success: dealResults.every(d => d.success),
+        orderNumber,
+        productsCreated: productResults.filter(p => p.created).length,
+        productLookupResults: productResults,
+        testType
+      };
+
+      if (dealResults.length === 1) {
+        response.dealName = dealResults[0].dealName;
+        response.dealId = dealResults[0].dealId;
+      } else {
+        response.deals = dealResults;
+      }
+
+      if (testType === 'duplicate-sku') {
+        const uniqueProducts = new Set(productResults.map(p => p.productId));
+        const createdCount = productResults.filter(p => p.created).length;
+        
+        response.duplicateHandling = {
+          totalLookups: productResults.length,
+          uniqueProducts: uniqueProducts.size,
+          productsCreated: createdCount,
+          success: uniqueProducts.size === 1 && createdCount <= 1
+        };
+      }
+
+      console.log(`✅ ${testType} test completed:`, {
+        dealsCreated: dealResults.length,
+        productsCreated: response.productsCreated,
+        success: response.success
+      });
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('❌ Zoho integration test error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        testType: req.body.testType
       });
     }
   });

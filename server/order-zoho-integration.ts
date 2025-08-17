@@ -151,19 +151,17 @@ export class OrderZohoIntegration {
         Amount: productFields.Amount,
         Stage: this.mapOrderStatusToStage(zohoFields.Order_Status),
         
-        // Product-specific fields
-        Product_Code: productFields.Product_Code,
-        Distributor_Part_Number: productFields.Distributor_Part_Number,
+        // Product-specific fields (updated field names)
+        'Product Code (SKU)': productFields['Product Code (SKU)'],
+        'Distributor Part Number': productFields['Distributor Part Number'],
         Distributor: productFields.Distributor,
         Quantity: productFields.Quantity,
-        Unit_Price: productFields.Unit_Price,
-        Product_Category: productFields.Product_Category,
+        'Unit Price': productFields['Unit Price'],
+        'Product Category': productFields['Product Category'],
         Manufacturer: productFields.Manufacturer,
-        FFL_Required: productFields.FFL_Required,
-        Drop_Ship_Eligible: productFields.Drop_Ship_Eligible,
-        In_House_Only: productFields.In_House_Only,
-        Product_Specifications: productFields.Product_Specifications,
-        Product_Images: productFields.Product_Images,
+        'FFL Required': productFields['FFL Required'],
+        'Drop Ship Eligible': productFields['Drop Ship Eligible'],
+        'In House Only': productFields['In House Only'],
         
         // RSR-specific system fields
         TGF_Order: zohoFields.TGF_Order,
