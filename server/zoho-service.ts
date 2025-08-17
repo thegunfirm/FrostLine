@@ -825,4 +825,88 @@ export class ZohoService {
       throw error;
     }
   }
+
+  /**
+   * Generic method to search records in any module
+   */
+  async searchRecords(module: string, criteria: string): Promise<any> {
+    try {
+      if (!this.config.accessToken) {
+        throw new Error('No Zoho access token available');
+      }
+
+      const response = await axios.get(
+        `${this.config.apiHost}/crm/v2/${module}/search?criteria=${encodeURIComponent(criteria)}`,
+        {
+          headers: {
+            'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`
+          }
+        }
+      );
+
+      return response.data;
+
+    } catch (error: any) {
+      // Handle token refresh if needed
+      if (error.response?.status === 401 && this.config.refreshToken) {
+        console.log('🔄 Access token expired, attempting to refresh...');
+        const refreshResult = await this.refreshAccessToken();
+        if (refreshResult) {
+          // Retry the operation with new token
+          return this.searchRecords(module, criteria);
+        }
+      }
+      
+      console.error(`Error searching ${module}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Generic method to create a record in any module
+   */
+  async createRecord(module: string, data: any): Promise<any> {
+    try {
+      console.log('🔍 createRecord called with config:', {
+        hasConfig: !!this.config,
+        hasAccessToken: !!this.config?.accessToken,
+        configKeys: this.config ? Object.keys(this.config) : 'no config'
+      });
+      
+      if (!this.config?.accessToken) {
+        throw new Error('No Zoho access token available');
+      }
+
+      const payload = {
+        data: [data]
+      };
+
+      const response = await axios.post(
+        `${this.config.apiHost}/crm/v2/${module}`,
+        payload,
+        {
+          headers: {
+            'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      return response.data;
+
+    } catch (error: any) {
+      // Handle token refresh if needed
+      if (error.response?.status === 401 && this.config.refreshToken) {
+        console.log('🔄 Access token expired, attempting to refresh...');
+        const refreshResult = await this.refreshAccessToken();
+        if (refreshResult) {
+          // Retry the operation with new token
+          return this.createRecord(module, data);
+        }
+      }
+      
+      console.error(`Error creating ${module} record:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
 }

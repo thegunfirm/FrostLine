@@ -6574,8 +6574,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate TGF order number
       const orderNumber = `TGF-${Date.now().toString().slice(-7)}`;
       
-      // Initialize services
-      const zohoService = new ZohoService();
+      // Initialize services with proper configuration
+      const zohoService = new ZohoService({
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
+        accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
+        apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com',
+        accessToken: process.env.ZOHO_ACCESS_TOKEN,
+        refreshToken: process.env.ZOHO_REFRESH_TOKEN
+      });
       const productLookupService = new ZohoProductLookupService(zohoService);
       const orderIntegration = new OrderZohoIntegration();
 
