@@ -9,7 +9,7 @@ export function registerZohoRoutes(app: Express): void {
       const config = {
         clientId: '1000.NKOFKR9SBI8FPVMZKTYXN02UIRPB3Z',
         clientSecret: '454c34596b2671980f8cd20400b374c69f7f6d7d70',
-        redirectUri: `https://${req.get('host')}/api/zoho/auth/callback`,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
         accountsHost: 'https://accounts.zoho.com',
         apiHost: 'https://www.zohoapis.com'
       };
@@ -60,7 +60,7 @@ export function registerZohoRoutes(app: Express): void {
       const config = {
         clientId: '1000.NKOFKR9SBI8FPVMZKTYXN02UIRPB3Z',
         clientSecret: '454c34596b2671980f8cd20400b374c69f7f6d7d70',
-        redirectUri: `https://${req.get('host')}/api/zoho/auth/callback`,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
         accountsHost: 'https://accounts.zoho.com',
         apiHost: 'https://www.zohoapis.com'
       };
