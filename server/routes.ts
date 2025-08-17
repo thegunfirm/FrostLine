@@ -30,6 +30,7 @@ import { billingAuditLogger } from "./services/billing-audit-logger";
 import { ZohoService } from "./zoho-service";
 // import { ZohoProductLookupService } from "./services/zoho-product-lookup-service"; // Not used - using OrderZohoIntegration instead
 import { OrderZohoIntegration } from "./order-zoho-integration";
+import zohoAuthRoutes from "./zoho-auth-routes";
 
 // Zoho authentication removed - starting fresh
 
@@ -6861,6 +6862,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register authentication routes (Zoho-based)
   registerAuthRoutes(app);
+
+  // Register Zoho OAuth routes for tech@thegunfirm.com
+  app.use('/api', zohoAuthRoutes);
 
   const { registerZohoRoutes } = await import('./zoho-routes');
   registerZohoRoutes(app);
