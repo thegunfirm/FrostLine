@@ -482,6 +482,16 @@ export class ZohoService {
     const result = await response.json();
     
     if (!response.ok) {
+      // Handle rate limiting
+      if (response.status === 429 || (result.error_description && result.error_description.includes('too many requests'))) {
+        if (retryCount < 2) {
+          const backoffMs = Math.pow(2, retryCount + 1) * 1000; // 2s, 4s
+          console.log(`⏳ Rate limited, retrying in ${backoffMs}ms (attempt ${retryCount + 1}/2)`);
+          await new Promise(resolve => setTimeout(resolve, backoffMs));
+          return this.makeAPIRequest(endpoint, method, data, retryCount + 1);
+        }
+      }
+      
       // If token is invalid and we haven't retried yet, try to refresh token
       if (result.code === 'INVALID_TOKEN' && retryCount === 0 && this.config.refreshToken) {
         console.log('🔄 Access token expired, attempting to refresh...');

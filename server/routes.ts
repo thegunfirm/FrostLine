@@ -6735,7 +6735,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Handle different test scenarios
       let dealResults = [];
       
+      console.log(`🔍 Test type: ${testType}, checking deal creation condition...`);
+      
       if (testType === 'single-receiver' || testType === 'single-receiver-ih' || testType === 'single-receiver-ds') {
+        console.log(`✅ Deal creation condition met, processing order with RSR fields...`);
+        
         const dealResult = await orderIntegration.processOrderWithRSRFields({
           orderNumber,
           customerEmail,
@@ -6748,6 +6752,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isTestOrder: true
         });
 
+        console.log(`🔍 Deal result:`, dealResult);
+        
         dealResults.push({
           dealName: `${orderNumber}-0`,
           dealId: dealResult.dealId,
