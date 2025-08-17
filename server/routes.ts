@@ -6577,7 +6577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Initialize services
       const zohoService = new ZohoService();
       const productLookupService = new ZohoProductLookupService(zohoService);
-      const orderIntegration = new OrderZohoIntegration(zohoService);
+      const orderIntegration = new OrderZohoIntegration();
 
       // Test product lookups
       const productResults = [];
@@ -6618,7 +6618,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let dealResults = [];
       
       if (testType === 'single-receiver') {
-        const dealResult = await orderIntegration.processRSROrderToZoho({
+        const dealResult = await orderIntegration.processOrderWithRSRFields({
           orderNumber,
           customerEmail,
           customerName,
@@ -6626,13 +6626,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           orderItems,
           totalAmount,
           fflDealerName,
-          shippingOutcomes: [{
-            type: shippingOutcome,
-            orderDetails: orderItems
-          }]
-        }, {
-          type: shippingOutcome,
-          orderDetails: orderItems
+          orderStatus: 'Processing',
+          isTestOrder: true
         });
 
         dealResults.push({
@@ -6646,20 +6641,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const outcome = shippingOutcomes[i];
           const letter = String.fromCharCode(65 + i);
           
-          const dealResult = await orderIntegration.processRSROrderToZoho({
-            orderNumber,
+          const dealResult = await orderIntegration.processOrderWithRSRFields({
+            orderNumber: `${orderNumber.slice(0, -1)}${letter}Z`,
             customerEmail,
             customerName,
             membershipTier,
             orderItems: orderItems.filter(item => 
-              outcome.orderItems.includes(item.sku)
+              outcome.orderItems?.includes(item.sku) || outcome.items?.includes(item.sku)
             ),
             totalAmount: orderItems
-              .filter(item => outcome.orderItems.includes(item.sku))
+              .filter(item => outcome.orderItems?.includes(item.sku) || outcome.items?.includes(item.sku))
               .reduce((sum, item) => sum + item.totalPrice, 0),
             fflDealerName: outcome.fflDealerName,
-            shippingOutcomes: [outcome]
-          }, outcome);
+            orderStatus: 'Processing',
+            isTestOrder: true
+          });
 
           dealResults.push({
             dealName: `${orderNumber}-${letter}Z`,
@@ -6670,20 +6666,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
       } else if (testType === 'duplicate-sku') {
-        const dealResult = await orderIntegration.processRSROrderToZoho({
+        const dealResult = await orderIntegration.processOrderWithRSRFields({
           orderNumber,
           customerEmail,
           customerName,
           membershipTier,
           orderItems,
           totalAmount,
-          shippingOutcomes: [{
-            type: shippingOutcome,
-            orderDetails: orderItems
-          }]
-        }, {
-          type: shippingOutcome,
-          orderDetails: orderItems
+          orderStatus: 'Processing',
+          isTestOrder: true
         });
 
         dealResults.push({

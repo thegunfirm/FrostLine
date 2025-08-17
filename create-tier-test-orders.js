@@ -4,7 +4,7 @@
  * Uses authentic RSR inventory data only
  */
 
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 console.log('🎯 CREATING TIER-BASED TEST ORDERS');
 console.log('Testing: 6 total orders (2 per tier) with authentic RSR inventory');
@@ -125,14 +125,14 @@ const tierTestOrders = [
     expectedDealPattern: "TGF-XXXXXXX-AZ, TGF-XXXXXXX-BZ, TGF-XXXXXXX-CZ"
   },
 
-  // GOLD MONTHLY TIER ORDERS
+  // GOLD TIER ORDERS
   {
-    tierName: "Gold Monthly",
+    tierName: "Gold",
     orderType: "Simple Order", 
     customer: {
       email: "gold.simple@testorders.thegunfirm.com",
       name: "Gold Simple Customer",
-      membershipTier: "Gold Monthly"
+      membershipTier: "Gold"
     },
     items: [authenticInventory.handguns[1]], // Single handgun
     shippingOutcome: "Drop-Ship-FFL",
@@ -140,12 +140,12 @@ const tierTestOrders = [
     expectedDealPattern: "TGF-XXXXXXX-0"
   },
   {
-    tierName: "Gold Monthly",
+    tierName: "Gold",
     orderType: "Complex Order (3 Outcomes)",
     customer: {
       email: "gold.complex@testorders.thegunfirm.com", 
       name: "Gold Complex Customer",
-      membershipTier: "Gold Monthly"
+      membershipTier: "Gold"
     },
     items: [
       authenticInventory.handguns[1], // Drop-ship firearm
@@ -170,26 +170,26 @@ const tierTestOrders = [
     expectedDealPattern: "TGF-XXXXXXX-AZ, TGF-XXXXXXX-BZ, TGF-XXXXXXX-CZ"
   },
 
-  // PLATINUM MONTHLY TIER ORDERS  
+  // PLATINUM TIER ORDERS  
   {
-    tierName: "Platinum Monthly",
+    tierName: "Platinum",
     orderType: "Simple Order",
     customer: {
       email: "platinum.simple@testorders.thegunfirm.com",
       name: "Platinum Simple Customer", 
-      membershipTier: "Platinum Monthly"
+      membershipTier: "Platinum"
     },
     items: [authenticInventory.accessories[0]], // Single accessory
     shippingOutcome: "In-House",
     expectedDealPattern: "TGF-XXXXXXX-0"
   },
   {
-    tierName: "Platinum Monthly",
+    tierName: "Platinum",
     orderType: "Complex Order (3 Outcomes)",
     customer: {
       email: "platinum.complex@testorders.thegunfirm.com",
       name: "Platinum Complex Customer",
-      membershipTier: "Platinum Monthly" 
+      membershipTier: "Platinum" 
     },
     items: [
       authenticInventory.handguns[0], // Drop-ship firearm
