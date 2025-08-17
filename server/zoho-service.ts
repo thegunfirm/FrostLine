@@ -756,9 +756,20 @@ export class ZohoService {
       });
 
       if (response.data && response.data.length > 0 && response.data[0].status === 'success') {
+        const dealId = response.data[0].details.id;
+        
+        // Add products to the deal subform after deal creation
+        try {
+          await this.addProductsToDeal(dealId, dealData.orderItems);
+          console.log(`✅ Added ${dealData.orderItems.length} products to Deal ${dealId}`);
+        } catch (error) {
+          console.error(`⚠️  Failed to add products to Deal ${dealId}:`, error);
+          // Don't fail the whole deal creation, just log the error
+        }
+        
         return {
           success: true,
-          dealId: response.data[0].details.id
+          dealId: dealId
         };
       } else {
         return {
@@ -772,6 +783,51 @@ export class ZohoService {
         success: false,
         error: `Deal creation error: ${error.message}`
       };
+    }
+  }
+
+  /**
+   * Add products to Deal subform (Order Products)
+   */
+  async addProductsToDeal(dealId: string, orderItems: any[]): Promise<void> {
+    try {
+      // For each product in the order, create a product lookup and add to deal
+      for (const item of orderItems) {
+        try {
+          // Find the product in Zoho Products module by SKU
+          const productSearch = await this.makeAPIRequest(`Products/search?criteria=(Product_Code:equals:${item.sku})`);
+          
+          let productId = null;
+          if (productSearch.data && productSearch.data.length > 0) {
+            productId = productSearch.data[0].id;
+            console.log(`🔍 Found existing product ${productId} for SKU: ${item.sku}`);
+          } else {
+            console.log(`⚠️  Product not found for SKU: ${item.sku}, skipping deal product link`);
+            continue;
+          }
+
+          // Add product to Deal using the Related Lists API
+          const dealProductPayload = {
+            data: [{
+              Product_Name: productId,
+              Quantity: item.quantity,
+              Unit_Price: item.unitPrice,
+              Total: item.totalPrice,
+              Line_Tax: 0
+            }]
+          };
+
+          await this.makeAPIRequest(`Deals/${dealId}/Products`, 'POST', dealProductPayload);
+          console.log(`✅ Added product ${item.sku} to Deal ${dealId}`);
+          
+        } catch (error) {
+          console.error(`❌ Failed to add product ${item.sku} to deal:`, error);
+          // Continue with other products
+        }
+      }
+    } catch (error) {
+      console.error('Error adding products to deal:', error);
+      throw error;
     }
   }
 

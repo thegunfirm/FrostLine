@@ -6735,7 +6735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Handle different test scenarios
       let dealResults = [];
       
-      if (testType === 'single-receiver') {
+      if (testType === 'single-receiver' || testType === 'single-receiver-ih' || testType === 'single-receiver-ds') {
         const dealResult = await orderIntegration.processOrderWithRSRFields({
           orderNumber,
           customerEmail,
