@@ -54,7 +54,7 @@ async function testAllTiersWithFakeCard() {
           zipCode: "78701"
         },
         paymentMethod: {
-          cardNumber: "4111111111111111", // Authorize.Net test card
+          cardNumber: "4007000000027", // Visa test card
           expirationDate: "12/25",
           cvv: "123"
         },
