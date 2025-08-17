@@ -95,7 +95,7 @@ export class OrderZohoIntegration {
       if (error.response?.data?.data?.[0]?.code === 'DUPLICATE_DATA') {
         console.log(`🔄 Duplicate product found for SKU ${sku}, searching for existing...`);
         try {
-          const searchResult = await this.zohoService.searchRecords('Products', `(Product_Code:equals:${sku})`);
+          const searchResult = await this.zohoService.searchRecords('Products', `(Product_Name:equals:${sku})`);
           if (searchResult?.data?.length > 0) {
             console.log(`✅ Found existing product: ${searchResult.data[0].id}`);
             return searchResult.data[0].id;

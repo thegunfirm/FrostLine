@@ -86,8 +86,8 @@ export class ZohoProductLookupService {
    */
   private async searchProductBySKU(sku: string): Promise<string | null> {
     try {
-      // Search Products module with criteria: Product_Code equals SKU
-      const searchCriteria = `(Product_Code:equals:${sku})`;
+      // Search Products module with criteria: Product_Name equals SKU
+      const searchCriteria = `(Product_Name:equals:${sku})`;
       const response = await this.zohoService.searchRecords('Products', searchCriteria);
 
       if (response && response.data && response.data.length > 0) {

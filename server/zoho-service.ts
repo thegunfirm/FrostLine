@@ -804,8 +804,8 @@ export class ZohoService {
       // For each product in the order, create a product lookup and add to deal
       for (const item of orderItems) {
         try {
-          // Find the product in Zoho Products module by SKU
-          const productSearch = await this.makeAPIRequest(`Products/search?criteria=(Product_Code:equals:${item.sku})`);
+          // Find the product in Zoho Products module by SKU (using Product_Name field instead)
+          const productSearch = await this.makeAPIRequest(`Products/search?criteria=(Product_Name:equals:${item.sku})`);
           
           let productId = null;
           if (productSearch.data && productSearch.data.length > 0) {
@@ -947,8 +947,8 @@ export class ZohoService {
         throw new Error('No Zoho access token available');
       }
 
-      // First try to find existing product by Product_Code
-      const searchCriteria = `Product_Code:equals:${productData.Product_Code}`;
+      // First try to find existing product by Product_Name (SKU)
+      const searchCriteria = `Product_Name:equals:${productData.Product_Code}`;
       const existingProducts = await this.searchRecords('Products', searchCriteria);
       
       if (existingProducts?.data && existingProducts.data.length > 0) {

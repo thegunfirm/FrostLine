@@ -6664,7 +6664,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accessToken: process.env.ZOHO_ACCESS_TOKEN!,
         refreshToken: process.env.ZOHO_REFRESH_TOKEN!
       });
-      const searchResult = await zohoService.searchRecords('Products', `(Product_Code:equals:${sku})`);
+      const searchResult = await zohoService.searchRecords('Products', `(Product_Name:equals:${sku})`);
       
       if (searchResult && searchResult.data && searchResult.data.length > 0) {
         console.log(`✅ Found product: ${searchResult.data[0].id}`);
