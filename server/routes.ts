@@ -6692,8 +6692,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`🧪 Processing ${testType} test with ${orderItems.length} items`);
 
-      // Generate TGF order number
-      const orderNumber = `TGF-${Date.now().toString().slice(-7)}`;
+      // Generate order number
+      const orderNumber = Date.now().toString().slice(-7);
       
       // Initialize order integration (this creates its own properly configured ZohoService)
       const orderIntegration = new OrderZohoIntegration();

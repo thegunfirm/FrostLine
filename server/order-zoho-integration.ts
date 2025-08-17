@@ -264,7 +264,7 @@ export class OrderZohoIntegration {
       });
 
       if (dealResult.success) {
-        console.log(`✅ Created RSR deal ${dealResult.dealId} with TGF order number ${zohoFields.TGF_Order}`);
+        console.log(`✅ Created RSR deal ${dealResult.dealId} with order number ${zohoFields.TGF_Order}`);
         return {
           success: true,
           dealId: dealResult.dealId,
@@ -331,19 +331,19 @@ export class OrderZohoIntegration {
    */
   private createDealName(tgfOrderNumber?: string, totalGroups: number = 1, groupIndex: number = 0): string {
     if (!tgfOrderNumber) {
-      return totalGroups === 1 ? 'TGF-ORDER-0' : `TGF-ORDER-${String.fromCharCode(65 + groupIndex)}Z`;
+      return totalGroups === 1 ? 'ORDER-0' : `ORDER-${String.fromCharCode(65 + groupIndex)}Z`;
     }
     
-    // Extract the 7-digit order number from TGF-XXXXXXX format
+    // Extract the 7-digit order number from order format
     const orderNumber = tgfOrderNumber.replace(/^TGF-/, '').replace(/-[ICF]$/, '');
     
     if (totalGroups === 1) {
-      // Single receiver: TGF-{OrderNo}-0
-      return `TGF-${orderNumber}-0`;
+      // Single receiver: {OrderNo}-0
+      return `${orderNumber}-0`;
     } else {
-      // Multiple receivers: TGF-{OrderNo}-{GroupLetter}Z
+      // Multiple receivers: {OrderNo}-{GroupLetter}Z
       const groupLetter = String.fromCharCode(65 + groupIndex); // A, B, C, ...
-      return `TGF-${orderNumber}-${groupLetter}Z`;
+      return `${orderNumber}-${groupLetter}Z`;
     }
   }
 
