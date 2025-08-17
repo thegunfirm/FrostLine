@@ -937,4 +937,47 @@ export class ZohoService {
       throw error;
     }
   }
+
+  /**
+   * Upsert product using Product_Code as unique key
+   */
+  async upsertProduct(productData: any): Promise<any> {
+    try {
+      if (!this.config?.accessToken) {
+        throw new Error('No Zoho access token available');
+      }
+
+      // First try to find existing product by Product_Code
+      const searchCriteria = `Product_Code:equals:${productData.Product_Code}`;
+      const existingProducts = await this.searchRecords('Products', searchCriteria);
+      
+      if (existingProducts?.data && existingProducts.data.length > 0) {
+        // Product exists, return the existing one
+        console.log(`📦 Found existing product: ${productData.Product_Code} (${existingProducts.data[0].id})`);
+        return existingProducts.data[0];
+      }
+
+      // Product doesn't exist, create it with upsert logic
+      const upsertPayload = {
+        data: [productData],
+        duplicate_check_fields: ["Product_Code"],
+        options: {
+          upsert: true
+        }
+      };
+
+      console.log(`📦 Creating new product: ${productData.Product_Code}`);
+      const result = await this.makeAPIRequest('Products', 'POST', upsertPayload);
+      
+      if (result?.data && result.data.length > 0) {
+        return result.data[0];
+      }
+      
+      throw new Error('Failed to create product - no data returned');
+
+    } catch (error: any) {
+      console.error(`Error upserting product ${productData.Product_Code}:`, error);
+      throw error;
+    }
+  }
 }

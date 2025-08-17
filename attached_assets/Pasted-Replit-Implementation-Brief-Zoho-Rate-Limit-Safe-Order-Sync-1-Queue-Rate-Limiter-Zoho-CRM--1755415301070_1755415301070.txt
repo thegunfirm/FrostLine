@@ -1,0 +1,82 @@
+Replit Implementation Brief — Zoho + Rate-Limit Safe Order Sync
+1) Queue + Rate Limiter (Zoho CRM)
+
+All Zoho API calls must go through one serialized queue (concurrency = 1; optional = 2 if stable).
+
+Target throughput: ≤ 1–2 requests/sec.
+
+Backoff on throttling: If Zoho returns 429 or the error text “You have made too many requests continuously”, exponential backoff with jitter (e.g., 1s, 2s, 4s, 8s … up to 60s). If Retry-After exists, honor it.
+
+Surfacing to CRM: When backoff is engaged, update the Deal’s APP_Status to “Queued – Zoho backoff” and store next retry ETA.
+
+Collapse calls: Avoid create→get→update chains. Do single-call creates with full payloads wherever possible.
+
+2) Product Upsert (SKU lookup + create)
+
+Endpoint/version: Keep using /crm/v2/Products (works in our org).
+
+Operation: Upsert Products using Product_Code (our SKU) as the unique key.
+
+Duplicate key: Use duplicate_check_fields = ["Product_Code"].
+
+Fields to send:
+Product_Code, Distributor_Part_Number, Distributor, Manufacturer, Product_Category, FFL_Required, Drop_Ship_Eligible, In_House_Only, Product_Specifications, Product_Images.
+Do NOT send any price fields.
+
+Cache: Maintain a short-TTL cache (e.g., 5–10 min) of Product_Code → ProductId to avoid repeated lookups within a run.
+
+3) Deal create — single POST with subform lines
+
+Endpoint: /crm/v2/Deals.
+
+One call per split receiver: Create the Deal and all subform line items in one POST.
+
+Top-level fields to populate:
+TGF_Order_Number, Fulfillment_Type, Flow (always “TGF”), Order_Status, Consignee, Deal_Fulfillment_Summary, Ordering_Account, Hold_Type, APP_Status, Submitted (timestamp).
+Leave distributor-dependent fields empty until we actually get them: Carrier, Tracking_Number, Estimated_Ship_Date, Distributor_Order_Number, Last_Distributor_Update.
+
+Subform (Order Lines): For each cart line, insert a row with:
+Product_Code, Distributor_Part_Number, Distributor, Manufacturer, Product_Category, Unit_Price (if needed for math only; not persisted elsewhere), Quantity, FFL_Required, Drop_Ship_Eligible, In_House_Only, Product_Specifications, Product_Images.
+(We’re not using a lookup in the subform; just write the fields inline.)
+
+Triggers during test loads: If supported by your client, send trigger: [] to suppress workflows/blueprints; otherwise we’ll disable non-essential automations in Zoho during bulk tests.
+
+4) TGF Order Number — generation rules (no price logic)
+
+Base number: 7-digit sequential string, zero-padded (e.g., 0000001, 0000002 …). Persist the counter server-side.
+
+Test mode: Prefix the base with TEST for all test submissions (e.g., TEST0000001).
+(Field is text; prefix is acceptable.)
+
+Receiver splits: If a single submission produces multiple physical shipments/receivers, append a letter to the base:
+…A for first receiver, …B second, …C third, etc.
+If only one receiver, append 0.
+Examples: 0000123A, 0000123B, single = 00001240. In test: TEST0000123A, etc.
+
+5) Deal Name — distinct rule from the field above
+
+If submission produced multiple Deals (receiver splits): Deal Name = {TGF_Order_Number} + "Z" (e.g., 0000123A Z, TEST0000456B Z).
+
+If only one Deal: Deal Name = {TGF_Order_Number} with the 0 suffix already included (e.g., 00001240 or TEST00004560).
+
+6) Ordering Account selection
+
+Fulfillment_Type = “Drop-Ship” → set Ordering_Account = 99902 (test) / 63824 (prod).
+
+Fulfillment_Type = “In-House” → set Ordering_Account = 99901 (test) / 60742 (prod).
+
+7) Minimize call count
+
+Per receiver: (a) Upsert all unique SKUs once (batched if possible), (b) Create one Deal with all subform rows in a single POST, (c) Avoid immediate fetches of what you just posted—reuse the IDs from the response.
+
+Bulk loads: For large backfills/imports, use Zoho Bulk Write instead of many standard calls.
+
+8) Monitoring & guardrails
+
+Log every Zoho call with module, action, and elapsed time; count 429s and backoff activations.
+
+If queue depth > threshold (e.g., 50 pending), set Deal APP_Status = "Queued – high load" so staff sees it’s intentional.
+
+Use an API-only Zoho user so record ownership/audit doesn’t show as a human user.
+
+That’s the whole spec Replit needs.

@@ -1,5 +1,6 @@
 import { ZohoService } from './zoho-service';
 import { zohoOrderFieldsService, type ZohoOrderFieldMapping, type ZohoProductFieldMapping } from './services/zoho-order-fields-service';
+import { getZohoRateLimitedService } from './services/zoho-rate-limited-service';
 
 export interface OrderToZohoData {
   orderNumber: string;
@@ -54,10 +55,12 @@ export class OrderZohoIntegration {
   }
 
   /**
-   * Create a product directly using the configured ZohoService
+   * Create a product using the rate-limited service
    */
   async createProduct(sku: string, productData: any): Promise<string | null> {
     try {
+      const rateLimitedService = getZohoRateLimitedService();
+      
       const productPayload = {
         Product_Name: productData.productName || sku,
         Product_Code: sku, // Must be unique
@@ -67,20 +70,21 @@ export class OrderZohoIntegration {
         ...(productData.dropShipEligible !== undefined && { Drop_Ship_Eligible: productData.dropShipEligible }),
         ...(productData.inHouseOnly !== undefined && { In_House_Only: productData.inHouseOnly }),
         ...(productData.rsrStockNumber && { Distributor_Part_Number: productData.rsrStockNumber }),
-        ...(productData.distributor && { Distributor: productData.distributor })
+        ...(productData.distributor && { Distributor: productData.distributor }),
+        // Additional fields per spec
+        ...(productData.specifications && { Product_Specifications: productData.specifications }),
+        ...(productData.images && { Product_Images: productData.images })
       };
 
-      console.log(`🔍 Creating product in Zoho Products module for SKU: ${sku}`);
+      console.log(`🔍 Using rate-limited upsert for product SKU: ${sku}`);
       
-      // Use the ZohoService to create the actual Product record
-      const result = await this.zohoService.createRecord('Products', productPayload);
+      const result = await rateLimitedService.upsertProductSafe(productPayload);
       
-      if (result && result.data && result.data.length > 0 && result.data[0].status === 'success') {
-        const productId = result.data[0].details.id;
-        console.log(`✅ Product created successfully in Products module: ${productId}`);
-        return productId;
+      if (result?.id) {
+        console.log(`✅ Product upserted ${sku} with ID: ${result.id}`);
+        return result.id;
       } else {
-        console.error('❌ Product creation failed:', result);
+        console.log(`❌ Product upsert failed: ${JSON.stringify(result)}`);
         return null;
       }
 
@@ -165,7 +169,8 @@ export class OrderZohoIntegration {
           const firstName = nameParts[0] || '';
           const lastName = nameParts.slice(1).join(' ') || '';
 
-          const newContact = await this.zohoService.createContact({
+          const rateLimitedService = getZohoRateLimitedService();
+          const newContact = await rateLimitedService.createContactSafe({
             Email: orderData.customerEmail,
             First_Name: firstName,
             Last_Name: lastName,
@@ -176,7 +181,7 @@ export class OrderZohoIntegration {
               createdFrom: 'RSR Order Processing'
             })
           });
-          contactId = newContact.id;
+          contactId = newContact?.data?.[0]?.details?.id || newContact?.id;
         }
       }
 
@@ -198,7 +203,7 @@ export class OrderZohoIntegration {
       }
 
       // 7. Create deal name using proper specification
-      const isMultipleGroups = (orderData.shippingOutcomes?.length || 1) > 1;
+      const isMultipleGroups = false; // Single group for now - multi-group logic to be implemented
       const dealName = zohoOrderFieldsService.buildDealName(
         baseOrderNumber,
         false, // Always use production format - no "test" prefix
@@ -251,7 +256,8 @@ export class OrderZohoIntegration {
         })
       };
 
-      const dealResult = await this.zohoService.createOrderDeal({
+      const rateLimitedService = getZohoRateLimitedService();
+      const dealResult = await rateLimitedService.createDealSafe({
         contactId: contactId || '',
         orderNumber: orderData.orderNumber,
         totalAmount: orderData.totalAmount,
