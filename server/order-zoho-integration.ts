@@ -201,7 +201,7 @@ export class OrderZohoIntegration {
       const isMultipleGroups = (orderData.shippingOutcomes?.length || 1) > 1;
       const dealName = zohoOrderFieldsService.buildDealName(
         baseOrderNumber,
-        orderData.isTestOrder || false,
+        false, // Always use production format - no "test" prefix
         isMultipleGroups
       );
       

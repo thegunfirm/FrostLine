@@ -6749,7 +6749,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalAmount,
           fflDealerName,
           orderStatus: 'Processing',
-          isTestOrder: true
+          isTestOrder: false // Always use production format - no "test" prefix
         });
 
         console.log(`🔍 Deal result:`, dealResult);

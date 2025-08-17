@@ -169,7 +169,7 @@ export class ZohoOrderFieldsService {
     } else if (baseOrderNumber) {
       tgfOrderNumber = this.buildTGFOrderNumber(
         baseOrderNumber,
-        isTest || false,
+        false, // Always use production format - no "test" prefix
         isMultipleOrder || false,
         multipleIndex
       );
