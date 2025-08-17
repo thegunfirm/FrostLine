@@ -57,7 +57,7 @@ import {
   type InsertTierLabelSetting
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, ilike, and, or, desc, asc, ne, sql } from "drizzle-orm";
+import { eq, like, ilike, and, or, desc, asc, ne, sql, gt, gte, lte, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -1373,7 +1373,7 @@ export class DatabaseStorage implements IStorage {
   // Hero carousel slides
   async getHeroCarouselSlides(): Promise<HeroCarouselSlide[]> {
     return await db.select().from(heroCarouselSlides)
-      .orderBy(asc(heroCarouselSlides.displayOrder));
+      .orderBy(heroCarouselSlides.sortOrder);
   }
 
   async getHeroCarouselSlide(id: number): Promise<HeroCarouselSlide | undefined> {
@@ -1405,7 +1405,7 @@ export class DatabaseStorage implements IStorage {
   async getActiveHeroCarouselSlides(): Promise<HeroCarouselSlide[]> {
     return await db.select().from(heroCarouselSlides)
       .where(eq(heroCarouselSlides.isActive, true))
-      .orderBy(asc(heroCarouselSlides.displayOrder));
+      .orderBy(heroCarouselSlides.sortOrder);
   }
 
   async clearAllProducts(): Promise<void> {
