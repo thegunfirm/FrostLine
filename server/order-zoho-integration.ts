@@ -883,7 +883,7 @@ export class OrderZohoIntegration {
       membershipTier: customerInfo.membershipTier || order.membershipTier || 'Bronze',
       orderItems: (order.items || []).map((item: any) => ({
         productName: item.name || item.description || item.productName || 'Product',
-        sku: item.sku || item.rsrStock || item.id?.toString() || '',
+        sku: item.sku || item.manufacturerPartNumber || item.mfgPartNumber || item.rsrStock || item.id?.toString() || '',
         quantity: parseInt(item.quantity?.toString() || '1'),
         unitPrice: parseFloat(item.price?.toString() || item.unitPrice?.toString() || '0'),
         totalPrice: parseFloat(item.totalPrice?.toString() || (item.price * item.quantity)?.toString() || '0'),

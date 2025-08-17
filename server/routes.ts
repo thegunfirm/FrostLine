@@ -1700,8 +1700,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       departmentDesc: rsrProduct.departmentDesc || null,
       subDepartmentDesc: rsrProduct.subDepartmentDesc || null,
       manufacturer: rsrProduct.mfgName,
-      manufacturerPartNumber: rsrProduct.manufacturerPartNumber || null,
-      sku: rsrProduct.stockNo,
+      manufacturerPartNumber: rsrProduct.mfgPartNumber || null,
+      sku: rsrProduct.mfgPartNumber || rsrProduct.stockNo, // Use manufacturer part number as SKU, fallback to stockNo
+      rsrStockNumber: rsrProduct.stockNo, // Keep RSR stock number for distributor reference
       priceWholesale: wholesale.toFixed(2),
       priceMAP: map?.toFixed(2) || null,
       priceMSRP: msrp?.toFixed(2) || null,
