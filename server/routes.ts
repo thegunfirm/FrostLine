@@ -1578,6 +1578,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint for verifying Zoho Deal field population
+  app.get("/api/admin/zoho/deals/:dealId", async (req, res) => {
+    try {
+      const { dealId } = req.params;
+      console.log(`🔍 Retrieving Deal ${dealId} for field verification...`);
+      
+      const zohoService = new ZohoService({
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
+        accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
+        apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com',
+        accessToken: process.env.ZOHO_ACCESS_TOKEN,
+        refreshToken: process.env.ZOHO_REFRESH_TOKEN
+      });
+
+      const dealData = await zohoService.getDeal(dealId);
+      
+      if (dealData) {
+        console.log(`✅ Retrieved Deal ${dealId} for verification`);
+        res.json({
+          success: true,
+          deal: dealData
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          error: 'Deal not found'
+        });
+      }
+      
+    } catch (error: any) {
+      console.error('Deal retrieval error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   // RSR API Integration and Hybrid Search Endpoints
   app.post("/api/admin/sync-rsr-catalog", async (req, res) => {
     try {

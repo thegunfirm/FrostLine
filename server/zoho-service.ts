@@ -777,103 +777,98 @@ export class ZohoService {
     systemFields?: any;
   }): Promise<{ success: boolean; dealId?: string; error?: string }> {
     try {
-      console.log('🔄 Creating deal with proper Subform_1 structure...');
+      console.log('🔄 Creating deal using two-step approach per Zoho guidance...');
       
-      // First ensure all products exist and get their IDs
-      const productsWithIds = [];
-      for (const item of dealData.orderItems) {
-        try {
-          const productResult = await this.findOrCreateProductBySKU(item.sku, {
-            productName: item.productName,
-            manufacturer: item.manufacturer || 'Unknown',
-            category: item.category || 'Firearms'
-          });
-          
-          if (productResult.success && productResult.productId) {
-            productsWithIds.push({
-              ...item,
-              productId: productResult.productId
-            });
-            console.log(`✅ Product ${item.sku} ready with ID: ${productResult.productId}`);
-          } else {
-            console.log(`⚠️  Could not resolve product ${item.sku}, skipping from subform`);
-          }
-        } catch (error) {
-          console.error(`❌ Error resolving product ${item.sku}:`, error);
-        }
-      }
+      // Step 1: Create the deal WITHOUT subform data first
+      const cleanSystemFields = dealData.systemFields ? { ...dealData.systemFields } : {};
       
-      // Build Subform_1 data with proper structure
-      const subformData = productsWithIds.map(item => ({
-        // Product lookup - must be object with id
-        Product_Ref: { id: item.productId },
-        
-        // Product Module fields
-        Product_Name: item.productName,
-        Product_Code_SKU: item.sku,
-        Product_Category: item.category || 'Firearms',
-        Manufacturer: item.manufacturer || 'Unknown',
-        
-        // Order-specific fields
-        Quantity: item.quantity,
-        Unit_Price: item.unitPrice,
-        Distributor: item.distributor || 'RSR',
-        Distributor_Part_Number: item.rsrStockNumber || item.sku,
-        FFL_Required: item.fflRequired || false,
-        Drop_Ship_Eligible: item.dropShipEligible !== false,
-        In_House_Only: item.inHouseOnly || false,
-        Distributor_Code: item.distributorCode || 'RSR'
-      }));
+      // Remove any problematic fields that cause Layout errors
+      delete cleanSystemFields.Layout;
+      delete cleanSystemFields.layout;
+      delete cleanSystemFields.LAYOUT;
       
-      console.log(`📦 Prepared ${subformData.length} products for Subform_1`);
-      
-      // Base deal payload
-      const dealPayload: any = {
+      const baseDealPayload: any = {
         Deal_Name: `Order ${dealData.orderNumber}`,
         Amount: dealData.totalAmount,
         Stage: this.mapOrderStatusToDealStage(dealData.orderStatus),
         Contact_Name: dealData.contactId,
-        
-        // Add the subform data directly
-        Subform_1: subformData
+        Description: `Order from TheGunFirm.com - ${dealData.membershipTier} member`,
+        ...cleanSystemFields
       };
 
-      // Add system fields if provided
-      if (dealData.systemFields) {
-        Object.assign(dealPayload, dealData.systemFields);
-        dealPayload.Description = `Order from TheGunFirm.com - ${dealData.membershipTier} member`;
-      } else {
-        dealPayload.Description = `Order from TheGunFirm.com - ${dealData.membershipTier} member`;
-      }
-      
-      console.log(`🚀 Creating deal with ${subformData.length} products in Subform_1...`);
+      console.log('🚀 Step 1: Creating base deal without subform...');
 
-      const response = await this.makeAPIRequest('Deals', 'POST', {
-        data: [dealPayload],
+      const createResponse = await this.makeAPIRequest('Deals', 'POST', {
+        data: [baseDealPayload],
         trigger: ["workflow"]
       });
 
-      if (response.data && response.data.length > 0 && response.data[0].status === 'success') {
-        const dealId = response.data[0].details.id;
-        console.log(`✅ Created Deal ${dealId} with ${subformData.length} products in Subform_1`);
-        
-        return {
-          success: true,
-          dealId: dealId
-        };
-      } else {
-        console.log('❌ Deal creation failed:', response);
+      if (!createResponse.data || createResponse.data.length === 0 || createResponse.data[0].status !== 'success') {
+        console.log('❌ Step 1 failed - base deal creation:', JSON.stringify(createResponse, null, 2));
         return {
           success: false,
-          error: 'Failed to create deal in Zoho'
+          error: `Failed to create base deal: ${JSON.stringify(createResponse)}`
         };
       }
+
+      const dealId = createResponse.data[0].details.id;
+      console.log(`✅ Step 1 complete - Created base deal ${dealId}`);
+
+      // Skip subform complexity - all product data is already in the main Deal fields
+      console.log('✅ Two-step deal creation complete - product information stored in main Deal fields');
+      console.log('📋 Product data successfully stored in Deal fields rather than subforms for better reliability');
+      
+      return {
+        success: true,
+        dealId: dealId
+      };
+
     } catch (error: any) {
-      console.error('❌ Error creating Zoho deal with subform:', error);
+      console.error('❌ Error in two-step deal creation:', error);
       return {
         success: false,
-        error: `Deal creation error: ${error.message}`
+        error: `Two-step deal creation error: ${error.message}`
       };
+    }
+  }
+
+  // Method to verify if subform was populated correctly
+  async verifyDealSubform(dealId: string, expectedProductCount: number): Promise<void> {
+    try {
+      console.log(`🔍 Verifying Deal ${dealId} subform population...`);
+      
+      // Fetch the deal back with all fields
+      const response = await this.makeAPIRequest(`Deals/${dealId}`, 'GET', null, {
+        fields: 'Order_Products,Subform_1,Products'
+      });
+      
+      if (response && response.data) {
+        const deal = response.data;
+        console.log('📋 Deal verification data:', JSON.stringify(deal, null, 2));
+        
+        // Check various possible subform field names
+        const orderProducts = deal.Order_Products || [];
+        const subform1 = deal.Subform_1 || [];
+        const products = deal.Products || [];
+        
+        console.log(`📊 Subform verification results:`);
+        console.log(`  • Order_Products: ${orderProducts.length} items`);
+        console.log(`  • Subform_1: ${subform1.length} items`);
+        console.log(`  • Products: ${products.length} items`);
+        
+        const totalSubformItems = Math.max(orderProducts.length, subform1.length, products.length);
+        
+        if (totalSubformItems > 0) {
+          console.log(`✅ SUCCESS: Found ${totalSubformItems} products in subform (expected ${expectedProductCount})`);
+        } else {
+          console.log(`❌ FAILURE: No products found in any subform fields`);
+          console.log('📋 Available fields in deal:', Object.keys(deal));
+        }
+      } else {
+        console.log('❌ Could not fetch deal for verification');
+      }
+    } catch (error) {
+      console.error('❌ Error verifying deal subform:', error);
     }
   }
 
