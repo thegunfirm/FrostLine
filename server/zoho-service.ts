@@ -501,14 +501,22 @@ export class ZohoService {
   async makeAPIRequest(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', data?: any, retryCount = 0): Promise<any> {
     // Use the permanent token service
     try {
-      const { getZohoTokenService } = await import('./zoho-token-service.js');
-      const tokenService = getZohoTokenService();
-      this.config.accessToken = await tokenService.getAccessToken();
+      const { ZohoTokenService } = await import('./zoho-token-service');
+      const tokenService = ZohoTokenService.getInstance();
+      const accessToken = await tokenService.getAccessToken();
+      if (accessToken) {
+        this.config.accessToken = accessToken;
+      }
     } catch (error) {
-      console.log('⚠️ Token service failed, using fallback');
+      console.log('⚠️ Token service failed, using fallback:', error.message);
     }
     
-    if (!this.accessToken) {
+    // Also try environment variables as fallback
+    if (!this.config.accessToken) {
+      this.config.accessToken = process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN || process.env.ZOHO_ACCESS_TOKEN;
+    }
+    
+    if (!this.config.accessToken) {
       throw new Error('No access token available. Please complete OAuth first.');
     }
 
