@@ -570,6 +570,15 @@ export class ZohoService {
           ...contactData
         };
       } else {
+        // Handle duplicate data case - this is actually success!
+        if (response.data && response.data[0] && response.data[0].code === 'DUPLICATE_DATA') {
+          console.log('✅ Contact already exists, using existing ID:', response.data[0].details.id);
+          return {
+            id: response.data[0].details.id,
+            ...contactData
+          };
+        }
+        
         console.error('❌ Zoho Contact creation failed. Full response:', JSON.stringify(response, null, 2));
         if (response.data && response.data[0] && response.data[0].message) {
           throw new Error(`Failed to create contact in Zoho: ${response.data[0].message}`);
@@ -787,32 +796,31 @@ export class ZohoService {
       delete cleanSystemFields.layout;
       delete cleanSystemFields.LAYOUT;
       
-      // Build subform data using the correct field structure
-      const subformData = dealData.orderItems.map(item => ({
-        Product_Name: item.productName,
+      // CRITICAL FIX: Use the correct field structure for Zoho subforms
+      // The field name must match the API name from the layout exactly
+      const orderProducts = dealData.orderItems.map(item => ({
+        Product_Name: item.productName || item.name,
         Product_Code: item.sku,
-        Quantity: item.quantity,
-        Unit_Price: item.unitPrice,
-        Distributor_Part_Number: item.rsrStockNumber || null,
-        Manufacturer: item.manufacturer || null,
-        Product_Category: item.category || null,
-        FFL_Required: item.fflRequired || false,
-        Drop_Ship_Eligible: item.dropShipEligible || false,
-        In_House_Only: item.inHouseOnly || false,
-        Distributor_Code: item.distributorCode || null,
+        Quantity: parseInt(item.quantity) || 1,
+        Unit_Price: parseFloat(item.unitPrice) || 0,
+        Distributor_Part_Number: item.rsrStockNumber || '',
+        Manufacturer: item.manufacturer || '',
+        Product_Category: item.category || '',
+        FFL_Required: item.fflRequired === true,
+        Drop_Ship_Eligible: item.dropShipEligible === true,
+        In_House_Only: item.inHouseOnly === true,
         Distributor: 'RSR'
       }));
 
+      // CRITICAL: Use exact layout ID and force layout specification
       const dealPayload: any = {
-        Deal_Name: `Order ${dealData.orderNumber}`,
-        Amount: dealData.totalAmount,
+        Deal_Name: dealData.orderNumber,
+        Amount: parseFloat(dealData.totalAmount) || 0,
         Stage: this.mapOrderStatusToDealStage(dealData.orderStatus),
         Contact_Name: dealData.contactId,
-        Description: `Order from TheGunFirm.com - ${dealData.membershipTier} member`,
-        layout: {
-          id: '6585331000000091023'  // Layout with subform
-        },
-        Subform_1: subformData,
+        Description: `TGF Order - ${dealData.membershipTier} member`,
+        $layout_id: '6585331000000091023',  // Force specific layout
+        Subform_1: orderProducts,  // Use exact API field name
         ...cleanSystemFields
       };
 
@@ -855,12 +863,15 @@ export class ZohoService {
   }
 
   // Method to verify if subform was populated correctly
-  async verifyDealSubform(dealId: string, expectedProductCount: number): Promise<void> {
+  async verifyDealSubform(dealId: string, expectedProductCount: number): Promise<boolean> {
     try {
       console.log(`🔍 Verifying Deal ${dealId} subform population...`);
       
-      // Fetch the deal back without field restrictions to get all data
-      const response = await this.makeAPIRequest(`Deals/${dealId}`);
+      // Wait a moment for Zoho to process the record
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Fetch the deal back with specific fields
+      const response = await this.makeAPIRequest(`Deals/${dealId}?fields=Subform_1,Deal_Name,Amount`);
       
       if (response && response.data && response.data.length > 0) {
         const deal = response.data[0];
@@ -869,24 +880,32 @@ export class ZohoService {
         const subform1 = deal.Subform_1 || [];
         
         console.log(`📊 Subform verification results:`);
+        console.log(`  • Deal Name: ${deal.Deal_Name}`);
+        console.log(`  • Amount: $${deal.Amount}`);
         console.log(`  • Subform_1: ${subform1.length} items`);
         
         if (subform1.length > 0) {
           console.log(`✅ SUCCESS: Found ${subform1.length} products in subform (expected ${expectedProductCount})`);
           
-          // Log first product details for confirmation
-          const firstProduct = subform1[0];
-          console.log(`📋 First product: ${firstProduct.Product_Name} (${firstProduct.Product_Code})`);
-          console.log(`    RSR Stock: ${firstProduct.Distributor_Part_Number}, FFL: ${firstProduct.FFL_Required}`);
+          // Log each product for confirmation
+          subform1.forEach((product, index) => {
+            console.log(`  ${index + 1}. ${product.Product_Name} (${product.Product_Code})`);
+            console.log(`     Qty: ${product.Quantity}, Price: $${product.Unit_Price}`);
+            console.log(`     RSR: ${product.Distributor_Part_Number}, FFL: ${product.FFL_Required}`);
+          });
+          return true;
         } else {
           console.log(`❌ FAILURE: No products found in Subform_1`);
           console.log('📋 Available fields in deal:', Object.keys(deal));
+          return false;
         }
       } else {
         console.log('❌ Could not fetch deal for verification');
+        return false;
       }
     } catch (error) {
       console.error('❌ Error verifying deal subform:', error);
+      return false;
     }
   }
 
