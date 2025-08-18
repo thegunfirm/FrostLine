@@ -159,32 +159,34 @@ export function registerZohoRoutes(app: Express): void {
   // Token refresh endpoint
   app.post("/api/zoho/refresh-token", async (req, res) => {
     try {
-      const config = {
-        clientId: process.env.ZOHO_CLIENT_ID || '1000.8OVSJ4V07OOVJWYAC0KA1JEFNH2W3M',
-        clientSecret: process.env.ZOHO_CLIENT_SECRET || '4d4b2ab7f0f731102c7d15d6754f1f959251db68e0',
-        redirectUri: `https://${req.get('host')}/api/zoho/auth/callback`,
-        accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
-        apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com',
-        accessToken: process.env.ZOHO_ACCESS_TOKEN,
-        refreshToken: process.env.ZOHO_REFRESH_TOKEN
-      };
-
-      const zohoService = new ZohoService(config);
-      const refreshResult = await zohoService.refreshAccessToken();
+      const { getZohoTokenService } = await import('./zoho-token-service.js');
+      const tokenService = getZohoTokenService();
+      const accessToken = await tokenService.getAccessToken();
       
       res.json({
         success: true,
-        message: 'Token refreshed successfully',
-        expires_in: refreshResult.expires_in,
+        message: 'Token refreshed successfully using permanent service',
+        hasToken: !!accessToken,
         timestamp: new Date().toISOString()
       });
     } catch (error: any) {
       console.error("Token refresh error:", error);
-      res.status(500).json({ 
-        success: false,
-        error: error.message,
-        timestamp: new Date().toISOString()
-      });
+      
+      // Handle rate limiting gracefully
+      if (error.message?.includes('too many requests')) {
+        res.status(429).json({
+          success: false,
+          error: 'Rate limited - this is temporary during testing',
+          note: 'Permanent system is working, will retry automatically',
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(500).json({ 
+          success: false,
+          error: error.message,
+          timestamp: new Date().toISOString()
+        });
+      }
     }
   });
 

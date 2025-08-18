@@ -499,15 +499,13 @@ export class ZohoService {
    * Make authenticated API requests to Zoho CRM with automatic token refresh
    */
   async makeAPIRequest(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', data?: any, retryCount = 0): Promise<any> {
-    // Always get the latest token from persistent storage
+    // Use the permanent token service
     try {
-      const { tokenPersistence } = await import('./token-persistence.js');
-      const currentToken = await tokenPersistence.getCurrentAccessToken();
-      if (currentToken) {
-        this.config.accessToken = currentToken;
-      }
+      const { getZohoTokenService } = await import('./zoho-token-service.js');
+      const tokenService = getZohoTokenService();
+      this.config.accessToken = await tokenService.getAccessToken();
     } catch (error) {
-      console.log('⚠️ Failed to load token from persistence, using config');
+      console.log('⚠️ Token service failed, using fallback');
     }
     
     if (!this.accessToken) {
