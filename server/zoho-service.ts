@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ZohoProductLookupService } from './services/zoho-product-lookup-service';
 
 export interface ZohoConfig {
   clientId: string;
@@ -14,9 +15,11 @@ export class ZohoService {
   private config: ZohoConfig;
   private tokenRefreshTimer?: NodeJS.Timeout;
   private refreshInProgress = false;
+  private productLookupService: ZohoProductLookupService;
 
   constructor(config: ZohoConfig) {
     this.config = config;
+    this.productLookupService = new ZohoProductLookupService(this);
     // Start automatic token refresh every 50 minutes (Zoho tokens expire in 1 hour)
     this.startAutoTokenRefresh();
   }
@@ -721,6 +724,41 @@ export class ZohoService {
     } catch (error) {
       console.error('Error searching for deal:', error);
       return null;
+    }
+  }
+
+  /**
+   * Find or create a product by SKU using the product lookup service
+   */
+  async findOrCreateProductBySKU(sku: string, productInfo: {
+    productName?: string;
+    manufacturer?: string;
+    category?: string;
+  }): Promise<{ success: boolean; productId?: string; error?: string }> {
+    try {
+      const result = await this.productLookupService.findOrCreateProductBySKU({
+        sku,
+        productName: productInfo.productName,
+        manufacturer: productInfo.manufacturer,
+        productCategory: productInfo.category
+      });
+
+      if (result.productId) {
+        return {
+          success: true,
+          productId: result.productId
+        };
+      } else {
+        return {
+          success: false,
+          error: result.error || 'Failed to find or create product'
+        };
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
