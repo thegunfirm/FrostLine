@@ -98,10 +98,44 @@ export class ZohoService {
       // Update the access token in config
       this.config.accessToken = response.data.access_token;
       
-      console.log('✅ Zoho access token refreshed automatically - no more daily expiration!');
+      // CRITICAL FIX: Use persistent token storage
+      const { tokenPersistence } = await import('./token-persistence.js');
+      await tokenPersistence.saveTokens(
+        response.data.access_token, 
+        response.data.refresh_token || this.config.refreshToken!
+      );
+      
+      // Update refresh token if provided
+      if (response.data.refresh_token) {
+        this.config.refreshToken = response.data.refresh_token;
+      }
+      
+      console.log('✅ Zoho access token refreshed and persisted to storage - no more daily issues!');
+      
+      // Test the token immediately to ensure it works
+      try {
+        // Force reload from persistent storage
+        const currentToken = await tokenPersistence.getCurrentAccessToken();
+        if (currentToken) {
+          this.config.accessToken = currentToken;
+          await this.makeAPIRequest('Deals?per_page=1');
+          console.log('🎯 Token validated successfully - Zoho integration ready');
+        }
+      } catch (testError) {
+        console.log('⚠️ Token refresh succeeded but validation failed');
+      }
+      
       return response.data;
     } catch (error: any) {
-      console.error('❌ Zoho token refresh error:', error.response?.data || error.message);
+      const errorData = error.response?.data || error.message;
+      console.error('❌ Zoho token refresh error:', errorData);
+      
+      // Handle rate limiting gracefully
+      if (errorData?.error_description?.includes('too many requests')) {
+        console.log('⏳ Rate limited - will retry later. This is normal during testing.');
+        throw new Error('Rate limited - automatic refresh will retry later');
+      }
+      
       throw new Error(`Token refresh failed: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`);
     } finally {
       this.refreshInProgress = false;
@@ -465,6 +499,17 @@ export class ZohoService {
    * Make authenticated API requests to Zoho CRM with automatic token refresh
    */
   async makeAPIRequest(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', data?: any, retryCount = 0): Promise<any> {
+    // Always get the latest token from persistent storage
+    try {
+      const { tokenPersistence } = await import('./token-persistence.js');
+      const currentToken = await tokenPersistence.getCurrentAccessToken();
+      if (currentToken) {
+        this.config.accessToken = currentToken;
+      }
+    } catch (error) {
+      console.log('⚠️ Failed to load token from persistence, using config');
+    }
+    
     if (!this.accessToken) {
       throw new Error('No access token available. Please complete OAuth first.');
     }

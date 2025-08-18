@@ -81,8 +81,12 @@ class ZohoTokenManager {
       await this.zohoService.refreshAccessToken();
       console.log('✅ Automatic token refresh completed successfully');
       
-    } catch (error) {
-      console.error('❌ Automatic token refresh failed:', error);
+    } catch (error: any) {
+      if (error.message?.includes('Rate limited')) {
+        console.log('⏳ Token refresh rate limited - will retry in next cycle');
+      } else {
+        console.error('❌ Automatic token refresh failed:', error);
+      }
       // Don't stop the timer, keep trying
     }
   }
