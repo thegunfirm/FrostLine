@@ -1,6 +1,7 @@
 import { ZohoService } from './zoho-service';
 import { zohoOrderFieldsService, type ZohoOrderFieldMapping, type ZohoProductFieldMapping } from './services/zoho-order-fields-service';
 import { getZohoRateLimitedService } from './services/zoho-rate-limited-service';
+import { productLookupService } from './services/product-lookup-service';
 
 export interface OrderToZohoData {
   orderNumber: string;

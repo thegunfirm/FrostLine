@@ -5073,37 +5073,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test order-to-deal integration
+  // Test order-to-deal integration with REAL RSR products
   app.post("/api/test/order-to-zoho", async (req, res) => {
     try {
-      console.log('🧪 Testing Order-to-Zoho integration...');
+      console.log('🧪 Testing Order-to-Zoho integration with REAL RSR products...');
       
+      const { productLookupService } = await import('./services/product-lookup-service');
       const { orderZohoIntegration, OrderZohoIntegration } = await import('./order-zoho-integration');
+      
+      // Get real sample products from the RSR database
+      const sampleProducts = await productLookupService.getSampleProducts(2);
+      
+      if (sampleProducts.length === 0) {
+        return res.status(500).json({ 
+          success: false, 
+          error: 'No real products found in database for testing' 
+        });
+      }
+      
+      console.log(`✅ Found ${sampleProducts.length} real RSR products for testing:`, 
+        sampleProducts.map(p => `${p.sku} - ${p.name}`));
+      
+      // Build test order with real product data
+      const orderItems = sampleProducts.map((product, index) => ({
+        productName: product.name,
+        sku: product.sku || `UNKNOWN-${index}`,
+        rsrStockNumber: product.rsrStockNumber,
+        quantity: 1,
+        unitPrice: parseFloat(product.priceWholesale || '99.99'),
+        totalPrice: parseFloat(product.priceWholesale || '99.99'),
+        fflRequired: product.requiresFFL,
+        manufacturerPartNumber: product.manufacturerPartNumber,
+        manufacturer: product.manufacturer,
+        category: product.category
+      }));
+      
+      const totalAmount = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
       
       const testOrderData = {
         orderNumber: `TEST-${Date.now()}`,
-        totalAmount: 599.98,
-        customerEmail: 'bronze.test@example.com',
-        customerName: 'Bronze Test User',
+        totalAmount,
+        customerEmail: req.body.email || 'test@example.com',
+        customerName: 'Real Product Test User',
         membershipTier: 'Bronze',
-        orderItems: [
-          {
-            productName: 'Glock 19 Gen5',
-            sku: 'GLOCK19GEN5',
-            quantity: 1,
-            unitPrice: 549.99,
-            totalPrice: 549.99,
-            fflRequired: true
-          },
-          {
-            productName: 'Federal 9mm Ammunition',
-            sku: 'FED9MM',
-            quantity: 2,
-            unitPrice: 24.99,
-            totalPrice: 49.98,
-            fflRequired: false
-          }
-        ],
+        orderItems,
         fflDealerName: 'Test FFL Dealer',
         orderStatus: 'pending'
       };
