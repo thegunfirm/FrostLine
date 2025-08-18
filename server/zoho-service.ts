@@ -814,10 +814,78 @@ export class ZohoService {
       const dealId = createResponse.data[0].details.id;
       console.log(`✅ Step 1 complete - Created base deal ${dealId}`);
 
-      // Skip subform complexity - all product data is already in the main Deal fields
-      console.log('✅ Two-step deal creation complete - product information stored in main Deal fields');
-      console.log('📋 Product data successfully stored in Deal fields rather than subforms for better reliability');
+      // Step 2: Create products in Product Module and populate subform
+      console.log('🔄 Step 2: Creating products in Product Module and populating subform...');
       
+      const productsWithIds = [];
+      for (const item of dealData.orderItems) {
+        try {
+          console.log(`🔍 Creating/finding product in Product Module for SKU: ${item.sku}`);
+          const productResult = await this.findOrCreateProductBySKU(item.sku, {
+            productName: item.productName,
+            manufacturer: item.manufacturer || 'Unknown',
+            category: item.category || 'Firearms'
+          });
+          
+          if (productResult.success && productResult.productId) {
+            productsWithIds.push({
+              ...item,
+              productId: productResult.productId
+            });
+            console.log(`✅ Product ${item.sku} ready in Product Module with ID: ${productResult.productId}`);
+          } else {
+            console.error(`❌ Failed to create product ${item.sku} in Product Module: ${productResult.error}`);
+            // Continue without this product rather than failing entire order
+          }
+        } catch (error) {
+          console.error(`❌ Error creating product ${item.sku} in Product Module:`, error);
+        }
+      }
+
+      if (productsWithIds.length === 0) {
+        console.warn('⚠️ No products were created in Product Module - continuing with Deal only');
+        return {
+          success: true,
+          dealId: dealId
+        };
+      }
+
+      // Build subform data with product references
+      const subformData = productsWithIds.map(item => ({
+        Product_Name: { id: item.productId },
+        Quantity: item.quantity,
+        List_Price: item.unitPrice,
+        Unit_Price: item.unitPrice,
+        Total: (item.quantity * item.unitPrice).toFixed(2)
+      }));
+
+      console.log(`📦 Updating Deal ${dealId} with ${subformData.length} products in subform...`);
+      console.log('🔍 Subform data:', JSON.stringify(subformData, null, 2));
+
+      // Update deal with subform data using the correct subform field name
+      const subformUpdatePayload = {
+        Product_Details: subformData
+      };
+
+      console.log('📤 Subform update payload:', JSON.stringify(subformUpdatePayload, null, 2));
+
+      const updateResponse = await this.makeAPIRequest(`Deals/${dealId}`, 'PUT', {
+        data: [subformUpdatePayload]
+      });
+
+      console.log('📥 Subform update response:', JSON.stringify(updateResponse, null, 2));
+
+      if (updateResponse.data && updateResponse.data.length > 0) {
+        const status = updateResponse.data[0].status;
+        console.log(`📊 Subform update status: ${status}`);
+        
+        if (status === 'success') {
+          console.log(`✅ Successfully populated subform for Deal ${dealId}`);
+        } else {
+          console.warn(`⚠️ Subform update had issues: ${updateResponse.data[0].message}`);
+        }
+      }
+
       return {
         success: true,
         dealId: dealId

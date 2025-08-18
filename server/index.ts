@@ -4,12 +4,13 @@ import { registerRoutes } from "./routes";
 import samlRoutes from "./saml-routes";
 import passport from 'passport';
 
-// Set Zoho environment variables - using working credentials
+// Set Zoho environment variables - using webservices app credentials for tech@thegunfirm.com
 if (!process.env.ZOHO_CLIENT_ID) {
-  process.env.ZOHO_CLIENT_ID = "1000.8OVSJ4V07OOVJWYAC0KA1JEFNH2W3M";
+  // Use webservices app credentials if available, otherwise use existing
+  process.env.ZOHO_CLIENT_ID = process.env.ZOHO_WEBSERVICES_CLIENT_ID || "1000.8OVSJ4V07OOVJWYAC0KA1JEFNH2W3M";
 }
 if (!process.env.ZOHO_CLIENT_SECRET) {
-  process.env.ZOHO_CLIENT_SECRET = "4d4b2ab7f0f731102c7d15d6754f1f959251db68e0";
+  process.env.ZOHO_CLIENT_SECRET = process.env.ZOHO_WEBSERVICES_CLIENT_SECRET || "4d4b2ab7f0f731102c7d15d6754f1f959251db68e0";
 }
 if (!process.env.ZOHO_REDIRECT_URI) {
   // Use current Replit domain for OAuth callback - this was the working pattern
