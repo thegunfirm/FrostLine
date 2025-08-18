@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { ZohoProductLookupService } from './services/zoho-product-lookup-service';
+import { automaticZohoTokenManager } from './services/automatic-zoho-token-manager';
 
 export interface ZohoConfig {
   clientId: string;
@@ -180,16 +181,34 @@ export class ZohoService {
     }
   }
 
+  // Get valid access token using automatic token manager
+  async getValidAccessToken(): Promise<string | null> {
+    try {
+      const token = await automaticZohoTokenManager.getValidToken();
+      if (token) {
+        this.config.accessToken = token;
+        return token;
+      }
+      
+      // Fallback to stored token
+      return this.config.accessToken || null;
+    } catch (error) {
+      console.error('Error getting valid access token:', error);
+      return this.config.accessToken || null;
+    }
+  }
+
   // Test API connection
   async testConnection(): Promise<boolean> {
-    if (!this.config.accessToken) {
+    const token = await this.getValidAccessToken();
+    if (!token) {
       return false;
     }
 
     try {
       const response = await axios.get(`${this.config.apiHost}/crm/v2/org`, {
         headers: {
-          'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`
+          'Authorization': `Zoho-oauthtoken ${token}`
         }
       });
 
@@ -267,12 +286,17 @@ export class ZohoService {
         data: [baseDealData]
       };
 
+      const token = await this.getValidAccessToken();
+      if (!token) {
+        throw new Error('No valid access token available');
+      }
+
       const response = await axios.post(
         `${this.config.apiHost}/crm/v2/Deals`,
         dealPayload,
         {
           headers: {
-            'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`,
+            'Authorization': `Zoho-oauthtoken ${token}`,
             'Content-Type': 'application/json'
           }
         }
@@ -298,7 +322,8 @@ export class ZohoService {
    */
   async updateContactEmailVerification(email: string, verifiedAt: Date): Promise<{ success: boolean; error?: string }> {
     try {
-      if (!this.config.accessToken) {
+      const token = await this.getValidAccessToken();
+      if (!token) {
         console.log('⚠️ No Zoho access token available for email verification update');
         return { success: false, error: 'No access token available' };
       }
@@ -310,7 +335,7 @@ export class ZohoService {
         `${this.config.apiHost}/crm/v2/Contacts/search?email=${encodeURIComponent(email)}`,
         {
           headers: {
-            'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`
+            'Authorization': `Zoho-oauthtoken ${token}`
           }
         }
       );
@@ -342,7 +367,7 @@ export class ZohoService {
         updatePayload,
         {
           headers: {
-            'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`,
+            'Authorization': `Zoho-oauthtoken ${token}`,
             'Content-Type': 'application/json'
           }
         }

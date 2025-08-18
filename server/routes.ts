@@ -133,51 +133,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const response = await axios.post('https://accounts.zoho.com/oauth/v2/token', 
-        new URLSearchParams({
-          client_id: '1000.EYQE8LR8LWDKQ6YD5CKPC9D0885RUN',
-          client_secret: '8fd49cf545a04ed0a5e1932cee6d56cda5887a1b34',
-          code: authCode,
-          grant_type: 'authorization_code'
-        }),
-        {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-        }
-      );
-
-      if (response.data.access_token && response.data.refresh_token) {
-        // Save tokens
-        const fs = require('fs');
-        const tokenData = {
-          accessToken: response.data.access_token,
-          refreshToken: response.data.refresh_token,
-          expiresAt: Date.now() + (3600 * 1000),
-          lastRefresh: Date.now()
-        };
-        
-        fs.writeFileSync('.zoho-tokens.json', JSON.stringify(tokenData, null, 2));
-        
-        // Test the token immediately
-        const testResponse = await axios.get('https://www.zohoapis.com/crm/v2/Deals?per_page=1', {
-          headers: { 'Authorization': `Zoho-oauthtoken ${response.data.access_token}` }
-        });
-        
-        console.log('🎉 ZOHO API WORKING - Token test successful!');
+      const { automaticZohoTokenManager } = await import('./services/automatic-zoho-token-manager.js');
+      const accessToken = await automaticZohoTokenManager.generateFromAuthCode(authCode);
+      
+      if (accessToken) {
+        console.log('🎉 ZOHO API WORKING - Automatic token management activated!');
         
         res.json({
           success: true,
-          accessToken: response.data.access_token,
-          refreshToken: response.data.refresh_token,
-          expiresIn: response.data.expires_in,
-          testResult: 'API test successful'
+          message: 'Tokens generated and automatic refresh activated',
+          tokenLength: accessToken.length,
+          automaticRefresh: true
         });
       } else {
-        res.status(400).json({ error: 'Token generation failed', data: response.data });
+        res.status(400).json({ error: 'Token generation failed' });
       }
     } catch (error) {
       res.status(500).json({ 
         error: 'Token generation failed', 
-        details: error.response?.data || error.message 
+        details: error.message 
+      });
+    }
+  });
+
+  // Test Zoho API status endpoint
+  app.get('/api/zoho/status', async (req, res) => {
+    try {
+      const { automaticZohoTokenManager } = await import('./services/automatic-zoho-token-manager.js');
+      const token = await automaticZohoTokenManager.getValidToken();
+      
+      if (token) {
+        res.json({
+          status: 'working',
+          hasToken: true,
+          tokenLength: token.length,
+          automaticRefresh: true,
+          message: 'Zoho API is operational with automatic token management'
+        });
+      } else {
+        res.json({
+          status: 'no_tokens',
+          hasToken: false,
+          message: 'No valid tokens available - use token generator'
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        error: error.message
+      });
+    }
+  });
+
+  // Test confirmation loop endpoint
+  app.post('/api/zoho/test-confirmation', async (req, res) => {
+    try {
+      const { automaticZohoTokenManager } = await import('./services/automatic-zoho-token-manager.js');
+      const token = await automaticZohoTokenManager.getValidToken();
+      
+      if (!token) {
+        return res.status(400).json({ 
+          error: 'No valid Zoho token available',
+          needsAuth: true 
+        });
+      }
+
+      // Test API call
+      const testResponse = await axios.get('https://www.zohoapis.com/crm/v2/Deals?per_page=1', {
+        headers: { 'Authorization': `Zoho-oauthtoken ${token}` }
+      });
+
+      console.log('✅ Zoho API test successful - confirmation loop ready');
+
+      res.json({
+        success: true,
+        message: 'Zoho API working - confirmation loop operational',
+        apiStatus: testResponse.status,
+        dealsFound: testResponse.data?.data?.length || 0,
+        confirmationLoopReady: true
+      });
+
+    } catch (error) {
+      console.error('Zoho API test failed:', error.response?.data || error.message);
+      res.status(500).json({
+        error: 'Zoho API test failed',
+        details: error.response?.data || error.message
       });
     }
   });

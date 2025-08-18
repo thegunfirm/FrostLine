@@ -53,6 +53,7 @@ if (!process.env.SAML_CLOCK_SKEW_SEC) {
 import { setupVite, serveStatic, log } from "./vite";
 import { rsrAutoSync } from "./services/rsr-auto-sync";
 import { pricingService } from "./services/pricing-service";
+import { automaticZohoTokenManager } from "./services/automatic-zoho-token-manager";
 
 const app = express();
 app.use(express.json());
@@ -118,28 +119,18 @@ app.use((req, res, next) => {
   // Initialize pricing service
   await pricingService.initializeDefaultPricing();
   
-  // Initialize automatic Zoho token refresh to prevent daily expiration
+  // Initialize automatic Zoho token management
   try {
-    const { zohoTokenManager } = await import('./zoho-token-manager.js');
-    zohoTokenManager.initialize();
-    console.log('🔄 Automatic Zoho token refresh system started');
-    
-    // Also initialize the new ZohoTokenService
-    const { ZohoTokenService } = await import('./zoho-token-service');
-    const tokenConfig = {
-      clientId: process.env.ZOHO_WEBSERVICES_CLIENT_ID!,
-      clientSecret: process.env.ZOHO_WEBSERVICES_CLIENT_SECRET!,
-      refreshToken: process.env.ZOHO_REFRESH_TOKEN!,
-      accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com'
-    };
-    
-    const tokenService = ZohoTokenService.getInstance(tokenConfig);
-    const accessToken = await tokenService.getAccessToken();
-    if (accessToken) {
-      console.log('✅ ZohoTokenService initialized and working');
+    // Start the automatic token manager
+    const token = await automaticZohoTokenManager.ensureValidToken();
+    if (token) {
+      console.log('✅ Automatic Zoho token management started successfully');
+      console.log('🔄 Tokens will refresh automatically every 50 minutes');
+    } else {
+      console.log('⚠️ No valid Zoho tokens - will refresh when available');
     }
   } catch (error) {
-    console.error('⚠️ Failed to initialize automatic token refresh:', error);
+    console.error('⚠️ Failed to initialize automatic token management:', error);
   }
   
   // Auto-sync disabled during data integrity work
