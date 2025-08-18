@@ -114,7 +114,7 @@ router.get('/zoho/callback', async (req, res) => {
 // Route to check current Zoho authentication status
 router.get('/zoho/status', async (req, res) => {
   try {
-    const hasTokens = !!(process.env.ZOHO_ACCESS_TOKEN && process.env.ZOHO_REFRESH_TOKEN);
+    const hasTokens = !!(process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN && process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN);
     
     if (!hasTokens) {
       return res.json({
@@ -126,13 +126,13 @@ router.get('/zoho/status', async (req, res) => {
     
     // Test the tokens by making a simple API call
     const testService = new ZohoService({
-      clientId: process.env.ZOHO_CLIENT_ID!,
-      clientSecret: process.env.ZOHO_CLIENT_SECRET!,
-      redirectUri: process.env.ZOHO_REDIRECT_URI!,
-      accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
-      apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com',
-      accessToken: process.env.ZOHO_ACCESS_TOKEN,
-      refreshToken: process.env.ZOHO_REFRESH_TOKEN
+      clientId: process.env.ZOHO_WEBSERVICES_CLIENT_ID!,
+      clientSecret: process.env.ZOHO_WEBSERVICES_CLIENT_SECRET!,
+      redirectUri: "https://thegunfirm.com/api/zoho/callback",
+      accountsHost: 'https://accounts.zoho.com',
+      apiHost: 'https://www.zohoapis.com',
+      accessToken: process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN,
+      refreshToken: process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN
     });
     
     const userInfo = await testService.makeAPIRequest('users?type=CurrentUser', 'GET');
@@ -142,7 +142,7 @@ router.get('/zoho/status', async (req, res) => {
       authenticated: true,
       user: currentUser?.email || 'Unknown',
       message: `Successfully authenticated as ${currentUser?.email || 'tech@thegunfirm.com'}`,
-      clientId: process.env.ZOHO_CLIENT_ID,
+      clientId: process.env.ZOHO_WEBSERVICES_CLIENT_ID,
       lastRefresh: new Date().toISOString()
     });
     
