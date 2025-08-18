@@ -6810,6 +6810,188 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Real inventory subform integration endpoint
+  app.post('/api/zoho/create-deal-with-subform', async (req, res) => {
+    try {
+      const { 
+        orderNumber, customerEmail, customerName, membershipTier,
+        orderItems, totalAmount, orderStatus, fulfillmentType, notes
+      } = req.body;
+
+      console.log(`📝 Creating deal with subform for ${orderItems.length} real inventory items`);
+
+      // Initialize the Zoho integration service
+      const zohoService = new ZohoService({
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
+        accessToken: process.env.ZOHO_ACCESS_TOKEN!,
+        refreshToken: process.env.ZOHO_REFRESH_TOKEN!
+      });
+
+      // Build the deal data with proper subform structure
+      const dealData = {
+        Deal_Name: `${orderNumber}0`,
+        Amount: parseFloat(totalAmount),
+        Stage: 'Qualification',
+        Account_Name: customerName,
+        Contact_Name: customerName,
+        Type: 'Existing Business',
+        Lead_Source: 'Website',
+        Closing_Date: new Date().toISOString().split('T')[0],
+        TGF_Order_Number: orderNumber,
+        Order_Status: orderStatus,
+        Fulfillment_Type: fulfillmentType,
+        Customer_Email: customerEmail,
+        Membership_Tier: membershipTier,
+        Order_Total: parseFloat(totalAmount),
+        Notes: notes,
+        Subform_1: orderItems.map(item => ({
+          Product_Name: item.productName,
+          Product_Code: item.sku,
+          Distributor_Part_Number: item.rsrStockNumber,
+          Quantity: item.quantity,
+          Unit_Price: item.unitPrice,
+          Total_Price: item.totalPrice,
+          FFL_Required: item.fflRequired,
+          Manufacturer: item.manufacturer,
+          Product_Category: item.category,
+          Drop_Ship_Eligible: item.dropShipEligible,
+          In_House_Only: item.inHouseOnly,
+          Distributor: item.distributor || 'RSR'
+        }))
+      };
+
+      // Create the deal with subform
+      const dealResponse = await zohoService.createRecord('Deals', dealData);
+
+      if (dealResponse && dealResponse.data && dealResponse.data[0]) {
+        const dealId = dealResponse.data[0].details.id;
+        console.log(`✅ Deal created with subform: ${dealId}`);
+
+        res.json({
+          success: true,
+          dealId: dealId,
+          orderNumber: orderNumber,
+          subformItems: orderItems.length,
+          message: 'Deal created with real inventory subform'
+        });
+      } else {
+        console.error('❌ Deal creation failed:', dealResponse);
+        res.status(500).json({
+          success: false,
+          error: 'Deal creation failed'
+        });
+      }
+
+    } catch (error: any) {
+      console.error('❌ Deal with subform creation error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Direct deal creation endpoint for testing
+  app.post('/api/zoho/create-deal-direct', async (req, res) => {
+    try {
+      const { dealData } = req.body;
+
+      console.log(`📝 Creating deal directly with Zoho API...`);
+
+      const zohoService = new ZohoService({
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
+        accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
+        apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com',
+        accessToken: process.env.ZOHO_ACCESS_TOKEN!,
+        refreshToken: process.env.ZOHO_REFRESH_TOKEN!
+      });
+
+      // Create the deal
+      const dealResponse = await zohoService.createRecord('Deals', dealData);
+
+      if (dealResponse && dealResponse.data && dealResponse.data[0]) {
+        const dealId = dealResponse.data[0].details.id;
+        console.log(`✅ Deal created directly: ${dealId}`);
+
+        res.json({
+          success: true,
+          dealId: dealId,
+          dealName: dealData.Deal_Name,
+          subformItems: dealData.Subform_1?.length || 0,
+          message: 'Deal created directly with Zoho API'
+        });
+      } else {
+        console.error('❌ Direct deal creation failed:', dealResponse);
+        res.status(500).json({
+          success: false,
+          error: 'Direct deal creation failed',
+          response: dealResponse
+        });
+      }
+
+    } catch (error: any) {
+      console.error('❌ Direct deal creation error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        details: error.response?.data || error
+      });
+    }
+  });
+
+  // Endpoint to verify deal subform population
+  app.get('/api/zoho/verify-deal-subform/:dealId', async (req, res) => {
+    try {
+      const { dealId } = req.params;
+
+      const zohoService = new ZohoService({
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
+        accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
+        apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com',
+        accessToken: process.env.ZOHO_ACCESS_TOKEN!,
+        refreshToken: process.env.ZOHO_REFRESH_TOKEN!
+      });
+
+      // Fetch the deal with subform data
+      const dealResponse = await zohoService.makeAPIRequest(`Deals/${dealId}?fields=Subform_1,Deal_Name,Amount,TGF_Order_Number,Order_Status`);
+
+      if (dealResponse && dealResponse.data && dealResponse.data[0]) {
+        const deal = dealResponse.data[0];
+        const subform = deal.Subform_1 || [];
+
+        res.json({
+          success: true,
+          deal: {
+            Deal_Name: deal.Deal_Name,
+            Amount: deal.Amount,
+            TGF_Order_Number: deal.TGF_Order_Number,
+            Order_Status: deal.Order_Status
+          },
+          subform: subform,
+          subformItemCount: subform.length
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          error: 'Deal not found'
+        });
+      }
+
+    } catch (error: any) {
+      console.error('❌ Subform verification error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   // Test endpoint for Zoho integration testing with real inventory
   app.post('/api/test-zoho-integration', async (req, res) => {
     try {

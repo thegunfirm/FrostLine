@@ -658,6 +658,25 @@ export class ZohoService {
   }
 
   /**
+   * Create a record in any Zoho CRM module
+   */
+  async createRecord(module: string, recordData: any): Promise<any> {
+    try {
+      console.log(`📝 Creating ${module} record with data:`, JSON.stringify(recordData, null, 2));
+      
+      const response = await this.makeAPIRequest(module, 'POST', {
+        data: [recordData]
+      });
+
+      console.log(`✅ ${module} creation response:`, JSON.stringify(response, null, 2));
+      return response;
+    } catch (error: any) {
+      console.error(`❌ Error creating ${module} record:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Get field metadata for a Zoho module (Field Discovery)
    */
   async getFieldsMetadata(module: string): Promise<any[]> {
