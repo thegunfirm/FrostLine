@@ -176,14 +176,34 @@ export class AutomaticZohoTokenManager {
     return null;
   }
 
-  // Load tokens from file
+  // Load tokens from file or environment variables
   private loadTokens(): TokenData | null {
     try {
-      if (!existsSync(this.tokenFile)) {
-        return null;
+      // First try to load from file
+      if (existsSync(this.tokenFile)) {
+        const data = readFileSync(this.tokenFile, 'utf8');
+        return JSON.parse(data);
       }
-      const data = readFileSync(this.tokenFile, 'utf8');
-      return JSON.parse(data);
+      
+      // If no file exists, try to load from environment variables
+      const accessToken = process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN;
+      const refreshToken = process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN;
+      
+      if (accessToken && refreshToken) {
+        console.log('📋 Loading tokens from environment variables');
+        const tokens: TokenData = {
+          accessToken,
+          refreshToken,
+          expiresAt: Date.now() + (3600 * 1000), // Assume expires in 1 hour
+          lastRefresh: Date.now()
+        };
+        
+        // Save to file for future use
+        this.saveTokens(tokens);
+        return tokens;
+      }
+      
+      return null;
     } catch (error) {
       console.log('❌ Failed to load tokens:', error);
       return null;

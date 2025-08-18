@@ -11,7 +11,7 @@ const zohoService = new ZohoService({
   accountsHost: 'https://accounts.zoho.com',
   apiHost: 'https://www.zohoapis.com',
   accessToken: process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN,
-  refreshToken: process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN || '1000.ce7cd13c1abab53903393996c91b762c.15b0d80fc0ded347c1c7ff67925611ff'
+  refreshToken: process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN
 });
 
 // Route to initiate Zoho OAuth for tech@thegunfirm.com
@@ -115,7 +115,7 @@ router.get('/zoho/callback', async (req, res) => {
 router.get('/zoho/status', async (req, res) => {
   try {
     const accessToken = process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN;
-    const refreshToken = process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN || '1000.ce7cd13c1abab53903393996c91b762c.15b0d80fc0ded347c1c7ff67925611ff';
+    const refreshToken = process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN;
     const hasTokens = !!(accessToken && refreshToken);
     
     if (!hasTokens) {

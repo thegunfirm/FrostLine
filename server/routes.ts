@@ -5220,6 +5220,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update access token in memory
+  app.post("/api/zoho/update-token", async (req, res) => {
+    try {
+      const { accessToken } = req.body;
+      if (!accessToken) {
+        return res.status(400).json({ error: 'Access token required' });
+      }
+      
+      // Update the environment variable
+      process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN = accessToken;
+      
+      console.log('🔄 Updated Zoho access token in memory');
+      res.json({ 
+        success: true, 
+        message: 'Access token updated successfully',
+        tokenLength: accessToken.length 
+      });
+    } catch (error) {
+      console.error('Token update error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Test endpoint for checkout system field auto-population
   app.post("/api/test/checkout-fields", async (req, res) => {
     try {
