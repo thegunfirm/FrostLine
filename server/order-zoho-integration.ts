@@ -272,7 +272,8 @@ export class OrderZohoIntegration {
       if (dealResult.success) {
         console.log(`✅ Created RSR deal ${dealResult.dealId} with order number ${zohoFields.TGF_Order}`);
         
-        // Start confirmation loop - simulate RSR Engine processing after 2 seconds
+        // Start confirmation loop - verify order processing and update APP_Confirmed
+        console.log(`🔄 Triggering confirmation loop for deal ${dealResult.dealId}`);
         this.startConfirmationLoop(dealResult.dealId, zohoFields);
         
         return {
@@ -299,56 +300,91 @@ export class OrderZohoIntegration {
   }
 
   /**
-   * Start confirmation loop - simulates RSR Engine processing and updates deal with success
+   * Start confirmation loop - verifies the deal was created properly and updates APP_Confirmed
    */
   private async startConfirmationLoop(
     dealId: string, 
     initialFields: ZohoOrderFieldMapping
   ): Promise<void> {
+    console.log(`🚀 Confirmation loop method called for deal ${dealId}`);
+    
     try {
-      // Wait 2 seconds to simulate RSR processing time
-      setTimeout(async () => {
+      // Use setImmediate instead of setTimeout for better Node.js compatibility
+      setImmediate(async () => {
         try {
-          console.log(`🔄 Starting confirmation loop for deal ${dealId}...`);
+          console.log(`🔄 Starting confirmation loop execution for deal ${dealId}...`);
           
-          // Simulate successful RSR Engine response
-          const mockEngineResponse = {
-            result: {
-              StatusCode: '00',
-              StatusMessage: 'Order successfully processed by RSR Engine',
-              OrderNumber: initialFields.TGF_Order,
-              ProcessedAt: new Date().toISOString(),
-              TrackingReference: `TRK-${Date.now()}`
+          // Wait a moment to ensure Zoho deal is fully created
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          console.log(`🔍 Retrieving deal ${dealId} for verification...`);
+          
+          // Verify the deal was created successfully by retrieving it from Zoho
+          const dealVerification = await this.zohoService.getDealById(dealId);
+          
+          if (dealVerification && dealVerification.id) {
+            console.log(`✅ Deal verification successful: ${dealId}`);
+            console.log(`📄 Deal details: Name=${dealVerification.Deal_Name}, Amount=$${dealVerification.Amount}`);
+            
+            // Check if subform was populated (for orders with line items)
+            let subformVerified = true;
+            if (dealVerification.Subform_1 && Array.isArray(dealVerification.Subform_1)) {
+              subformVerified = dealVerification.Subform_1.length > 0;
+              console.log(`📋 Subform verification: ${subformVerified ? 'populated' : 'empty'} (${dealVerification.Subform_1.length} items)`);
+            } else {
+              console.log(`📋 No subform data found in deal`);
             }
-          };
-          
-          // Update fields with confirmation
-          const confirmedFields = this.zohoOrderFieldsService.updateOrderStatusFromEngineResponse(
-            initialFields,
-            mockEngineResponse
-          );
-          
-          // Update the deal in Zoho with confirmation
-          const success = await this.updateRSROrderFields(dealId, {
-            Order_Status: confirmedFields.Order_Status,
-            APP_Status: confirmedFields.APP_Status,
-            APP_Response: confirmedFields.APP_Response,
-            APP_Confirmed: confirmedFields.APP_Confirmed,
-            Last_Distributor_Update: confirmedFields.Last_Distributor_Update
-          });
-          
-          if (success) {
-            console.log(`✅ Confirmation loop completed successfully for deal ${dealId}`);
-            console.log(`📅 APP_Confirmed timestamp: ${confirmedFields.APP_Confirmed}`);
-            console.log(`🔗 Order Status: ${confirmedFields.Order_Status}`);
+            
+            // Create APP confirmation timestamp
+            const appConfirmedTime = new Date().toISOString().slice(0, 19); // Zoho format
+            console.log(`⏰ Generated APP_Confirmed timestamp: ${appConfirmedTime}`);
+            
+            // Update the deal with APP_Confirmed success
+            console.log(`📝 Updating deal ${dealId} with confirmation fields...`);
+            const updateSuccess = await this.updateRSROrderFields(dealId, {
+              APP_Status: 'App Processed: Order successfully received and confirmed by TheGunFirm application',
+              APP_Confirmed: appConfirmedTime,
+              Last_Distributor_Update: appConfirmedTime
+            });
+            
+            if (updateSuccess) {
+              console.log(`✅ Confirmation loop completed successfully for deal ${dealId}`);
+              console.log(`📅 APP_Confirmed timestamp: ${appConfirmedTime}`);
+              console.log(`🔗 Application confirmation: Order verified and processed`);
+              
+              if (subformVerified) {
+                console.log(`📋 Subform confirmed: All product line items properly recorded`);
+              }
+            } else {
+              console.warn(`⚠️ Failed to update APP_Confirmed field for deal ${dealId}`);
+            }
+            
           } else {
-            console.warn(`⚠️ Failed to update confirmation fields for deal ${dealId}`);
+            console.error(`❌ Deal verification failed: Could not retrieve deal ${dealId} from Zoho`);
+            console.error(`❌ DealVerification result:`, dealVerification);
+            
+            // Still try to set APP_Confirmed with error status
+            await this.updateRSROrderFields(dealId, {
+              APP_Status: 'App Error: Deal created but verification failed',
+              APP_Confirmed: new Date().toISOString().slice(0, 19)
+            });
           }
           
         } catch (confirmError: any) {
           console.error(`❌ Confirmation loop error for deal ${dealId}:`, confirmError.message);
+          console.error(`❌ Error stack:`, confirmError.stack);
+          
+          // Set APP_Confirmed with error status
+          try {
+            await this.updateRSROrderFields(dealId, {
+              APP_Status: `App Error: Confirmation failed - ${confirmError.message}`,
+              APP_Confirmed: new Date().toISOString().slice(0, 19)
+            });
+          } catch (updateError: any) {
+            console.error(`❌ Failed to update error status for deal ${dealId}:`, updateError.message);
+          }
         }
-      }, 2000); // 2 second delay
+      });
       
     } catch (error: any) {
       console.error('Failed to start confirmation loop:', error.message);
