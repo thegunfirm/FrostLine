@@ -19,6 +19,13 @@ export class ZohoService {
 
   constructor(config: ZohoConfig) {
     this.config = config;
+    console.log('🔧 ZohoService constructor initialized with:', {
+      hasAccessToken: !!config.accessToken,
+      accessTokenLength: config.accessToken?.length,
+      accessTokenPreview: config.accessToken?.substring(0, 20) + '...' || 'MISSING',
+      hasRefreshToken: !!config.refreshToken,
+      clientId: config.clientId?.substring(0, 10) + '...' || 'MISSING'
+    });
     this.productLookupService = new ZohoProductLookupService(this);
     // Start automatic token refresh every 50 minutes (Zoho tokens expire in 1 hour)
     this.startAutoTokenRefresh();
@@ -499,42 +506,26 @@ export class ZohoService {
    * Make authenticated API requests to Zoho CRM with automatic token refresh
    */
   async makeAPIRequest(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', data?: any, retryCount = 0): Promise<any> {
-    // Use environment variables directly - they're the most reliable source
-    this.config.accessToken = process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN || process.env.ZOHO_ACCESS_TOKEN;
+    // Always use fresh webservices token from environment secrets
+    this.config.accessToken = process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN;
     
-    console.log('🔍 Token check:', {
-      webservicesToken: process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN ? 'EXISTS (length: ' + process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN.length + ')' : 'MISSING',
-      accessToken: process.env.ZOHO_ACCESS_TOKEN ? 'EXISTS (length: ' + process.env.ZOHO_ACCESS_TOKEN.length + ')' : 'MISSING',
-      configToken: this.config.accessToken ? 'SET (length: ' + this.config.accessToken.length + ')' : 'NOT SET'
+    console.log('🔍 makeAPIRequest token debug:', {
+      configToken: this.config.accessToken?.substring(0, 20) + '...' || 'MISSING',
+      configTokenLength: this.config.accessToken?.length,
+      envToken: process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN?.substring(0, 20) + '...' || 'MISSING',
+      envTokenLength: process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN?.length
     });
     
-    if (this.config.accessToken && this.config.accessToken !== 'undefined' && this.config.accessToken.length > 50) {
-      console.log('✅ Using fresh access token from environment variables');
-    } else {
-      console.log('❌ No valid token found');
-      throw new Error('No valid access token available. Token may have expired.');
-    }
-    
-    if (!this.config.accessToken) {
-      console.log('❌ No access token found in token service or environment');
-      console.log('Config check:', {
-        hasAccessToken: !!this.config.accessToken,
-        hasRefreshToken: !!this.config.refreshToken,
-        envAccessToken: !!process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN,
-        envRefreshToken: !!process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN,
-        configAccessToken: this.config.accessToken ? 'PRESENT' : 'MISSING'
+    if (!this.config.accessToken || this.config.accessToken === 'undefined' || this.config.accessToken.length < 50) {
+      console.error('❌ No valid WEBSERVICES access token found in environment');
+      console.error('Token check:', {
+        webservicesToken: process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN ? `EXISTS (length: ${process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN.length})` : 'MISSING',
+        tokenValue: process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN?.substring(0, 20) + '...' || 'N/A'
       });
-      throw new Error('No access token available. Please complete OAuth first.');
+      throw new Error('No valid webservices access token available. Please check ZOHO_WEBSERVICES_ACCESS_TOKEN secret.');
     }
     
-    console.log('💾 About to make API request with token:', {
-      hasToken: !!this.config.accessToken,
-      tokenLength: this.config.accessToken?.length,
-      tokenFirstChars: this.config.accessToken?.substring(0, 20) + '...'
-    });
-    
-    console.log('✅ Access token ready for API request');
-    console.log('Authorization header will be:', `Zoho-oauthtoken ${this.config.accessToken}`);
+    console.log('✅ Using webservices token from environment secrets (length:', this.config.accessToken.length, ')');
 
     // Handle case where apiHost already includes /crm/v2
     const baseUrl = this.config.apiHost.endsWith('/crm/v2') ? this.config.apiHost : `${this.config.apiHost}/crm/v2`;
@@ -543,7 +534,7 @@ export class ZohoService {
     const response = await fetch(fullUrl, {
       method,
       headers: {
-        'Authorization': `Zoho-oauthtoken ${this.accessToken}`,
+        'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`,
         'Content-Type': 'application/json',
       },
       body: data ? JSON.stringify(data) : undefined,
@@ -584,7 +575,7 @@ export class ZohoService {
       console.error('Zoho API Error:', result);
       console.error('Full URL was:', fullUrl);
       console.error('Request headers:', {
-        'Authorization': `Zoho-oauthtoken ${this.accessToken}`,
+        'Authorization': `Zoho-oauthtoken ${this.config.accessToken}`,
         'Content-Type': 'application/json',
       });
       throw new Error(`Zoho API Error: ${result.message || response.statusText}`);

@@ -189,11 +189,11 @@ export class ZohoTokenService {
    * Update environment variables
    */
   private updateEnvironment(tokenData: TokenData): void {
-    // Update both environment variables for compatibility
+    // Only update the main ZOHO tokens - do NOT touch ZOHO_WEBSERVICES tokens
+    // The webservices tokens are managed separately and should never be overwritten
     process.env.ZOHO_ACCESS_TOKEN = tokenData.accessToken;
-    process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN = tokenData.accessToken;
     process.env.ZOHO_REFRESH_TOKEN = tokenData.refreshToken;
-    process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN = tokenData.refreshToken;
+    // Webservices tokens are handled separately - never overwrite them here
   }
 
   /**

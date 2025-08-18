@@ -6893,21 +6893,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Simple token test endpoint
+  app.post('/api/zoho/token-test', async (req, res) => {
+    try {
+      console.log('🧪 SIMPLE TOKEN TEST');
+      console.log('Environment token exists:', !!process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN);
+      console.log('Environment token length:', process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN?.length);
+      console.log('Environment token preview:', process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN?.substring(0, 30) + '...');
+      
+      if (!process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN || process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN.length < 50) {
+        return res.status(500).json({
+          success: false,
+          error: 'Token validation failed in simple test'
+        });
+      }
+      
+      // Direct API call without ZohoService
+      const directResponse = await fetch('https://www.zohoapis.com/crm/v2/Deals', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Zoho-oauthtoken ' + process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          data: [{
+            Deal_Name: 'DIRECT-API-TEST-' + Date.now(),
+            Amount: 999.99,
+            Stage: 'Qualification'
+          }]
+        })
+      });
+      
+      const responseText = await directResponse.text();
+      console.log('Direct API response:', responseText);
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        result = { raw: responseText };
+      }
+      
+      res.json({
+        success: true,
+        directApiWorking: directResponse.ok,
+        statusCode: directResponse.status,
+        response: result
+      });
+      
+    } catch (error: any) {
+      console.error('Simple token test error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   // Direct deal creation endpoint for testing
   app.post('/api/zoho/create-deal-direct', async (req, res) => {
     try {
       const { dealData } = req.body;
 
       console.log(`📝 Creating deal directly with Zoho API...`);
+      console.log('🔍 Route debug - Environment check:', {
+        hasWebservicesAccessToken: !!process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN,
+        webservicesTokenLength: process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN?.length,
+        hasWebservicesClientId: !!process.env.ZOHO_WEBSERVICES_CLIENT_ID,
+        hasWebservicesClientSecret: !!process.env.ZOHO_WEBSERVICES_CLIENT_SECRET
+      });
 
       const zohoService = new ZohoService({
-        clientId: process.env.ZOHO_CLIENT_ID!,
-        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+        clientId: process.env.ZOHO_WEBSERVICES_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_WEBSERVICES_CLIENT_SECRET!,
         redirectUri: process.env.ZOHO_REDIRECT_URI!,
         accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
         apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com',
-        accessToken: process.env.ZOHO_ACCESS_TOKEN!,
-        refreshToken: process.env.ZOHO_REFRESH_TOKEN!
+        accessToken: process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN!,
+        refreshToken: process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN || 'dummy'
       });
 
       // Create the deal
