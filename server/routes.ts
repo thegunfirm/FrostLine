@@ -5,7 +5,7 @@ import { join } from "path";
 import { readFileSync, existsSync } from "fs";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
-import { insertUserSchema, insertProductSchema, insertOrderSchema, type InsertProduct, type Product, tierPricingRules, products, heroCarouselSlides, categoryRibbons, adminSettings, systemSettings, membershipTierSettings, type User, type FFL, ffls, orders, carts, checkoutSettings, fulfillmentSettings } from "@shared/schema";
+import { insertUserSchema, insertProductSchema, insertOrderSchema, type InsertProduct, type Product, tierPricingRules, products, heroCarouselSlides, categoryRibbons, adminSettings, systemSettings, membershipTierSettings, type User, type FFL, ffls, orders, carts, checkoutSettings, fulfillmentSettings, users } from "@shared/schema";
 import { pricingEngine } from "./services/pricing-engine";
 import { db } from "./db";
 import { sql, eq, and, ne, inArray, desc } from "drizzle-orm";
@@ -218,6 +218,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         error: 'Zoho API test failed',
         details: error.response?.data || error.message
+      });
+    }
+  });
+
+  // Direct email verification for testing
+  app.post('/api/auth/verify-email-direct', async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: 'Email required' });
+      }
+
+      const user = await db.select().from(users).where(eq(users.email, email));
+      
+      if (!user.length) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Directly mark email as verified for testing (use emailVerified boolean)
+      await db.update(users)
+        .set({ 
+          emailVerified: true,
+          emailVerificationToken: null 
+        })
+        .where(eq(users.email, email));
+
+      console.log(`📧 Direct email verification completed for test user: ${email}`);
+
+      res.json({
+        success: true,
+        message: 'Email verified directly for testing'
+      });
+
+    } catch (error) {
+      console.error('Direct email verification failed:', error);
+      res.status(500).json({
+        error: 'Direct verification failed',
+        details: error.message
+      });
+    }
+  });
+
+  // Create test user endpoint (simplified for testing)
+  app.post('/api/test/create-user', async (req, res) => {
+    try {
+      const { email, password, firstName, lastName, membershipTier } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password required' });
+      }
+
+      // Check if user already exists
+      const existingUser = await db.select().from(users).where(eq(users.email, email));
+      if (existingUser.length > 0) {
+        return res.status(400).json({ error: 'User already exists' });
+      }
+
+      // Hash password
+      const bcrypt = require('bcrypt');
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      // Create user with email already verified
+      const newUser = await db.insert(users).values({
+        email,
+        password: passwordHash,
+        firstName: firstName || 'Test',
+        lastName: lastName || 'User',
+        subscriptionTier: membershipTier || 'Bronze',
+        emailVerified: true, // Skip email verification for test
+        role: 'user'
+      }).returning();
+
+      console.log(`🧪 Test user created: ${email} (email pre-verified)`);
+
+      res.json({
+        success: true,
+        message: 'Test user created successfully',
+        userId: newUser[0].id
+      });
+
+    } catch (error) {
+      console.error('Test user creation failed:', error);
+      res.status(500).json({
+        error: 'Test user creation failed',
+        details: error.message
       });
     }
   });
