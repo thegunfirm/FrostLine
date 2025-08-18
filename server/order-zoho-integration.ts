@@ -271,6 +271,10 @@ export class OrderZohoIntegration {
 
       if (dealResult.success) {
         console.log(`✅ Created RSR deal ${dealResult.dealId} with order number ${zohoFields.TGF_Order}`);
+        
+        // Start confirmation loop - simulate RSR Engine processing after 2 seconds
+        this.startConfirmationLoop(dealResult.dealId, zohoFields);
+        
         return {
           success: true,
           dealId: dealResult.dealId,
@@ -295,6 +299,63 @@ export class OrderZohoIntegration {
   }
 
   /**
+   * Start confirmation loop - simulates RSR Engine processing and updates deal with success
+   */
+  private async startConfirmationLoop(
+    dealId: string, 
+    initialFields: ZohoOrderFieldMapping
+  ): Promise<void> {
+    try {
+      // Wait 2 seconds to simulate RSR processing time
+      setTimeout(async () => {
+        try {
+          console.log(`🔄 Starting confirmation loop for deal ${dealId}...`);
+          
+          // Simulate successful RSR Engine response
+          const mockEngineResponse = {
+            result: {
+              StatusCode: '00',
+              StatusMessage: 'Order successfully processed by RSR Engine',
+              OrderNumber: initialFields.TGF_Order,
+              ProcessedAt: new Date().toISOString(),
+              TrackingReference: `TRK-${Date.now()}`
+            }
+          };
+          
+          // Update fields with confirmation
+          const confirmedFields = this.zohoOrderFieldsService.updateOrderStatusFromEngineResponse(
+            initialFields,
+            mockEngineResponse
+          );
+          
+          // Update the deal in Zoho with confirmation
+          const success = await this.updateRSROrderFields(dealId, {
+            Order_Status: confirmedFields.Order_Status,
+            APP_Status: confirmedFields.APP_Status,
+            APP_Response: confirmedFields.APP_Response,
+            APP_Confirmed: confirmedFields.APP_Confirmed,
+            Last_Distributor_Update: confirmedFields.Last_Distributor_Update
+          });
+          
+          if (success) {
+            console.log(`✅ Confirmation loop completed successfully for deal ${dealId}`);
+            console.log(`📅 APP_Confirmed timestamp: ${confirmedFields.APP_Confirmed}`);
+            console.log(`🔗 Order Status: ${confirmedFields.Order_Status}`);
+          } else {
+            console.warn(`⚠️ Failed to update confirmation fields for deal ${dealId}`);
+          }
+          
+        } catch (confirmError: any) {
+          console.error(`❌ Confirmation loop error for deal ${dealId}:`, confirmError.message);
+        }
+      }, 2000); // 2 second delay
+      
+    } catch (error: any) {
+      console.error('Failed to start confirmation loop:', error.message);
+    }
+  }
+
+  /**
    * Update RSR order fields in existing Zoho deal
    */
   async updateRSROrderFields(
@@ -307,6 +368,7 @@ export class OrderZohoIntegration {
       // Map updates to Zoho field names
       if (updates.Order_Status) updateData.Order_Status = updates.Order_Status;
       if (updates.APP_Status) updateData.APP_Status = updates.APP_Status;
+      if (updates.APP_Response) updateData.APP_Response = updates.APP_Response;
       if (updates.Carrier) updateData.Carrier = updates.Carrier;
       if (updates.Tracking_Number) updateData.Tracking_Number = updates.Tracking_Number;
       if (updates.Estimated_Ship_Date) updateData.Estimated_Ship_Date = updates.Estimated_Ship_Date;
@@ -318,8 +380,14 @@ export class OrderZohoIntegration {
         updateData.Stage = this.mapOrderStatusToStage(updates.Order_Status);
       }
 
-      const result = await this.zohoService.updateDealStage(dealId, updateData.Stage || 'Qualification');
+      // Use the Zoho service to update the deal with all fields
+      const result = await this.zohoService.updateDeal(dealId, updateData);
       console.log(`📝 Updated RSR fields for deal ${dealId}: ${result ? 'success' : 'failed'}`);
+      
+      if (result && updates.APP_Confirmed) {
+        console.log(`✅ APP_Confirmed field updated with timestamp: ${updates.APP_Confirmed}`);
+      }
+      
       return result;
 
     } catch (error: any) {
