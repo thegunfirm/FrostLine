@@ -1,68 +1,98 @@
-const axios = require('axios');
-const readline = require('readline');
+// Generate fresh Zoho OAuth tokens using the refresh mechanism
+const fetch = require('node-fetch');
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-async function generateFreshTokens() {
-  const clientId = process.env.ZOHO_WEBSERVICES_CLIENT_ID;
-  const clientSecret = process.env.ZOHO_WEBSERVICES_CLIENT_SECRET;
+async function generateFreshZohoTokens() {
+  console.log('🔄 GENERATING FRESH ZOHO OAUTH TOKENS\n');
   
-  console.log('🔍 Using Client ID:', clientId);
-  console.log('🔍 Using Client Secret:', clientSecret ? 'Present' : 'Missing');
-  
-  console.log('🔄 Generating fresh Zoho tokens for tech@thegunfirm.com');
-  console.log('');
-  console.log('STEP 1: Visit this URL to authorize the application:');
-  console.log('');
-  console.log(`https://accounts.zoho.com/oauth/v2/auth?response_type=code&client_id=${clientId}&scope=ZohoCRM.modules.ALL,ZohoCRM.settings.ALL&access_type=offline`);
-  console.log('');
-  console.log('STEP 2: After authorization, copy the authorization code from the callback URL');
-  console.log('');
-  
-  rl.question('Enter the authorization code: ', async (authCode) => {
-    try {
-      console.log('🔄 Exchanging authorization code for tokens...');
+  try {
+    // Use the webservices credentials to generate fresh tokens
+    const refreshUrl = 'https://accounts.zoho.com/oauth/v2/token';
+    
+    const refreshData = {
+      refresh_token: process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN,
+      client_id: process.env.ZOHO_WEBSERVICES_CLIENT_ID,
+      client_secret: process.env.ZOHO_WEBSERVICES_CLIENT_SECRET,
+      grant_type: 'refresh_token'
+    };
+    
+    console.log('📡 Requesting fresh tokens from Zoho...');
+    console.log('Client ID:', process.env.ZOHO_WEBSERVICES_CLIENT_ID);
+    console.log('Refresh Token Length:', process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN?.length || 'MISSING');
+    
+    const response = await fetch(refreshUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams(refreshData)
+    });
+    
+    const responseText = await response.text();
+    console.log('Response Status:', response.status);
+    console.log('Response Body:', responseText);
+    
+    if (!response.ok) {
+      console.error('❌ Token refresh failed');
+      console.error('This usually means:');
+      console.error('1. Refresh token has expired');
+      console.error('2. Client credentials are incorrect');
+      console.error('3. App needs to be re-authorized');
+      return false;
+    }
+    
+    const tokenData = JSON.parse(responseText);
+    
+    if (tokenData.access_token) {
+      console.log('✅ Fresh access token generated!');
+      console.log('Token length:', tokenData.access_token.length);
+      console.log('Expires in:', tokenData.expires_in, 'seconds');
       
-      const response = await axios.post('https://accounts.zoho.com/oauth/v2/token', {
-        grant_type: 'authorization_code',
-        client_id: clientId,
-        client_secret: clientSecret,
-        code: authCode
-      }, {
+      // Test the new token immediately
+      console.log('\n🧪 Testing fresh token with Zoho API...');
+      
+      const testResponse = await fetch('https://www.zohoapis.com/crm/v2/settings/modules', {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
-      
-      const { access_token, refresh_token } = response.data;
-      
-      console.log('✅ Successfully generated fresh tokens!');
-      console.log('');
-      console.log('📋 UPDATE THESE SECRET VALUES IN REPLIT:');
-      console.log('');
-      console.log('ZOHO_WEBSERVICES_ACCESS_TOKEN =', access_token);
-      console.log('ZOHO_WEBSERVICES_REFRESH_TOKEN =', refresh_token);
-      console.log('');
-      
-      // Test the new token
-      const testResponse = await axios.get('https://www.zohoapis.com/crm/v2/Deals?per_page=1', {
-        headers: {
-          'Authorization': `Zoho-oauthtoken ${access_token}`,
+          'Authorization': `Zoho-oauthtoken ${tokenData.access_token}`,
           'Content-Type': 'application/json'
         }
       });
       
-      console.log('✅ Token test successful! Can access Deals module');
-      
-    } catch (error) {
-      console.error('❌ Token generation failed:', error.response?.data || error.message);
-    } finally {
-      rl.close();
+      if (testResponse.ok) {
+        console.log('✅ Fresh token works! API test successful');
+        
+        // Update the environment variable programmatically for this session
+        process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN = tokenData.access_token;
+        console.log('✅ Token updated in current session');
+        
+        return {
+          success: true,
+          accessToken: tokenData.access_token,
+          expiresIn: tokenData.expires_in
+        };
+      } else {
+        const errorText = await testResponse.text();
+        console.log('❌ Fresh token failed API test:', errorText);
+        return false;
+      }
+    } else {
+      console.error('❌ No access token in response');
+      return false;
     }
-  });
+    
+  } catch (error) {
+    console.error('❌ Token generation failed:', error.message);
+    return false;
+  }
 }
 
-generateFreshTokens();
+// Run the token generation
+generateFreshZohoTokens().then((result) => {
+  if (result && result.success) {
+    console.log('\n🎉 FRESH TOKENS GENERATED SUCCESSFULLY!');
+    console.log('Ready for end-to-end integration testing');
+  } else {
+    console.log('\n❌ Token generation failed - manual intervention needed');
+  }
+}).catch(error => {
+  console.error('💥 Token generation script failed:', error);
+});

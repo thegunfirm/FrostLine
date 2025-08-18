@@ -980,7 +980,7 @@ export class OrderZohoIntegration {
   static formatOrderForZoho(order: any, customerInfo: any): OrderToZohoData {
     return {
       orderNumber: order.id?.toString() || order.orderNumber || `ORD-${Date.now()}`,
-      totalAmount: parseFloat(order.totalPrice?.toString() || '0'),
+      totalAmount: Math.round((parseFloat(order.totalPrice?.toString() || '0')) * 100) / 100,  // Fix: Round to 2 decimals
       customerEmail: customerInfo.email || order.customerEmail || '',
       customerName: customerInfo.name || 
                    `${customerInfo.firstName || ''} ${customerInfo.lastName || ''}`.trim() ||
@@ -990,8 +990,8 @@ export class OrderZohoIntegration {
         productName: item.name || item.description || item.productName || 'Product',
         sku: item.sku || item.manufacturerPartNumber || item.mfgPartNumber || item.rsrStock || item.id?.toString() || '',
         quantity: parseInt(item.quantity?.toString() || '1'),
-        unitPrice: parseFloat(item.price?.toString() || item.unitPrice?.toString() || '0'),
-        totalPrice: parseFloat(item.totalPrice?.toString() || (item.price * item.quantity)?.toString() || '0'),
+        unitPrice: Math.round((parseFloat(item.price?.toString() || item.unitPrice?.toString() || '0')) * 100) / 100,  // Fix: Round to 2 decimals
+        totalPrice: Math.round((parseFloat(item.totalPrice?.toString() || (item.price * item.quantity)?.toString() || '0')) * 100) / 100,  // Fix: Round to 2 decimals
         fflRequired: item.fflRequired || item.requiresFFL || false
       })),
       fflDealerName: order.fflDealerName || customerInfo.fflDealerName,

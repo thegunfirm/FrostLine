@@ -5108,7 +5108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category: product.category
       }));
       
-      const totalAmount = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+      const totalAmount = Math.round(orderItems.reduce((sum, item) => sum + item.totalPrice, 0) * 100) / 100;  // Fix: Round to 2 decimals
       
       const testOrderData = {
         orderNumber: `TEST-${Date.now()}`,

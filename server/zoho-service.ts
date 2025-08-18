@@ -986,7 +986,7 @@ export class ZohoService {
       // Try both standard Product_Details and custom Subform_1 field names
       const dealPayload: any = {
         Deal_Name: dealData.orderNumber,
-        Amount: parseFloat(dealData.totalAmount) || 0,
+        Amount: Math.round((dealData.totalAmount || 0) * 100) / 100,  // Fix: Proper decimal rounding to stay under 16 chars
         Stage: this.mapOrderStatusToDealStage(dealData.orderStatus),
         Contact_Name: dealData.contactId,
         Description: `TGF Order - ${dealData.membershipTier} member`,
