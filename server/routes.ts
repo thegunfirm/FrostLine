@@ -325,6 +325,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Firearms Compliance Routes
   app.use('/api/firearms-compliance', (await import('./routes/firearms-compliance-routes')).default);
 
+  // Direct checkout endpoint for legacy calls that use /api/checkout/process
+  app.post('/api/checkout/process', async (req, res) => {
+    try {
+      console.log('🔧 Processing checkout via direct endpoint...');
+      
+      // Import the firearms checkout service
+      const { firearmsCheckoutService } = await import('./firearms-checkout-service');
+      
+      const checkoutResult = await firearmsCheckoutService.processCheckout(req.body);
+      
+      if (checkoutResult.success) {
+        res.json({
+          success: true,
+          order: {
+            id: checkoutResult.orderId,
+            orderNumber: checkoutResult.orderNumber,
+            status: checkoutResult.status,
+            hold: checkoutResult.hold,
+            dealId: checkoutResult.dealId
+          }
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: checkoutResult.error
+        });
+      }
+    } catch (error: any) {
+      console.error('Error processing direct checkout:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   // Registration routes are now handled by auth-routes.ts
 
   // Email verification endpoint (Zoho-based)

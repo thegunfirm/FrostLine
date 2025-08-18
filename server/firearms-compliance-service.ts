@@ -102,14 +102,16 @@ export class FirearmsComplianceService {
    */
   async userHasVerifiedFFL(userId: number): Promise<boolean> {
     // Check if user has preferredFflId set and that FFL is active
-    const userWithFFL = await db.query.users.findFirst({
-      where: (u, { eq }) => eq(u.id, userId),
-      with: {
-        preferredFfl: true,
-      },
-    });
+    const result = await db.execute(sql`
+      SELECT f.is_atf_active
+      FROM users u
+      JOIN ffls f ON f.id = u.preferred_ffl_id
+      WHERE u.id = ${userId}
+        AND u.preferred_ffl_id IS NOT NULL
+        AND f.is_atf_active = true
+    `);
 
-    return !!(userWithFFL?.preferredFfl && userWithFFL.preferredFfl.isAtfActive);
+    return result.rows.length > 0;
   }
 
   /**

@@ -114,7 +114,7 @@ export class FirearmsCheckoutService {
                 address: payload.shippingAddress,
               }
             ),
-            new Promise<AuthOnlyResult>((_, reject) => 
+            new Promise<AuthResult>((_, reject) => 
               setTimeout(() => reject(new Error('Payment processing timeout')), 15000)
             )
           ]);
@@ -349,7 +349,7 @@ export class FirearmsCheckoutService {
         try {
           // Use the OrderZohoIntegration to update deal stage
           const dealStage = firearmsComplianceService.mapOrderStatusToDealStage(updateData.status || order.status);
-          await orderZohoIntegration.updateRSRFields(order.zohoDealId, { Order_Status: updateData.status || order.status });
+          await orderZohoIntegration.updateRSROrderFields(order.zohoDealId, { Order_Status: updateData.status || order.status });
           console.log(`✅ Updated Zoho deal ${order.zohoDealId} status to: ${dealStage}`);
         } catch (zohoError) {
           console.error('Zoho sync failed (non-blocking):', zohoError);
@@ -410,7 +410,7 @@ export class FirearmsCheckoutService {
       // Sync to Zoho
       if (order.zohoDealId) {
         try {
-          await orderZohoIntegration.updateRSRFields(order.zohoDealId, { Order_Status: 'Ready to Fulfill' });
+          await orderZohoIntegration.updateRSROrderFields(order.zohoDealId, { Order_Status: 'Ready to Fulfill' });
         } catch (zohoError) {
           console.error('Zoho sync failed (non-blocking):', zohoError);
         }
@@ -496,7 +496,7 @@ export class FirearmsCheckoutService {
           rsrStockNumber: product.rsrStockNumber,
           quantity: item.quantity,
           customerPrice: item.price,
-          unitPrice: parseFloat(product.rsrPrice || product.retailPrice || '0')
+          unitPrice: parseFloat(product.rsrPrice || product.price || '0')
         });
       }
     }

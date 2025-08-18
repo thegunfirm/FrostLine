@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { ZohoProductLookupService } from './services/zoho-product-lookup-service';
 import { automaticZohoTokenManager } from './services/automatic-zoho-token-manager';
+import { getZohoRateLimitedService } from './services/zoho-rate-limited-service';
 
 export interface ZohoConfig {
   clientId: string;
@@ -271,6 +272,61 @@ export class ZohoService {
         Lead_Source: 'TheGunFirm.com'
       };
 
+      // CRITICAL: Ensure all products exist in Zoho Products module before creating subforms
+      console.log(`🔍 Step 1: Ensuring all products exist in Zoho Products module...`);
+      const productSubformData = [];
+      
+      for (const item of orderData.orderItems) {
+        console.log(`🔍 Processing product: ${item.sku} - ${item.productName}`);
+        
+        // Find or create product by SKU using the rate-limited service
+        const rateLimitedService = getZohoRateLimitedService();
+        const productPayload = {
+          Product_Name: item.productName,
+          Product_Code: item.sku, // SKU as unique identifier
+          FFL_Required: item.fflRequired || false,
+          Distributor_Part_Number: item.rsrStockNumber || '',
+          Product_Category: 'Firearms/Accessories'
+        };
+        
+        const productResult = await rateLimitedService.upsertProductSafe(productPayload);
+        const productId = productResult?.id;
+        
+        if (productId) {
+          console.log(`✅ Product ${item.sku} ready in Zoho (ID: ${productId})`);
+          
+          // Add to subform data
+          productSubformData.push({
+            Product_Name: productId, // Reference to Zoho Products module
+            Product_Code: item.sku,
+            Quantity: item.quantity,
+            Unit_Price: item.unitPrice,
+            Total: item.totalPrice,
+            Distributor_Part_Number: item.rsrStockNumber || '',
+            FFL_Required: item.fflRequired || false
+          });
+        } else {
+          console.log(`⚠️ Could not create/find product ${item.sku}, adding basic subform data`);
+          
+          // Still add to subform but without Product_Name reference
+          productSubformData.push({
+            Product_Code: item.sku,
+            Quantity: item.quantity,
+            Unit_Price: item.unitPrice,
+            Total: item.totalPrice,
+            Distributor_Part_Number: item.rsrStockNumber || '',
+            FFL_Required: item.fflRequired || false
+          });
+        }
+      }
+
+      // Add subform data to the deal payload
+      if (productSubformData.length > 0) {
+        baseDealData.Product_Details = productSubformData;
+        baseDealData.Subform_1 = productSubformData; // For compatibility
+        console.log(`📋 Added ${productSubformData.length} products to subforms`);
+      }
+
       // Add system fields if provided (instead of putting everything in Description)
       if (orderData.systemFields) {
         Object.assign(baseDealData, orderData.systemFields);
@@ -305,6 +361,22 @@ export class ZohoService {
       if (response.data?.data?.[0]?.status === 'success') {
         const dealId = response.data.data[0].details.id;
         console.log(`✅ Created Zoho Deal ${dealId} for Order #${orderData.orderNumber}`);
+        console.log(`📋 Deal includes ${productSubformData.length} products in subforms`);
+        
+        // Verify subform population after a brief delay
+        setTimeout(async () => {
+          try {
+            const verifyDeal = await this.getDealById(dealId);
+            if (verifyDeal?.Product_Details?.length > 0 || verifyDeal?.Subform_1?.length > 0) {
+              console.log(`✅ Subforms verified: Product_Details=${verifyDeal.Product_Details?.length || 0}, Subform_1=${verifyDeal.Subform_1?.length || 0}`);
+            } else {
+              console.log(`⚠️ Subforms verification: No subform data found in created deal`);
+            }
+          } catch (verifyError) {
+            console.log(`⚠️ Could not verify subforms for deal ${dealId}`);
+          }
+        }, 3000);
+        
         return { success: true, dealId };
       } else {
         console.error('Zoho Deal creation failed:', response.data);
