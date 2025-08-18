@@ -3,13 +3,15 @@ import { ZohoService } from './zoho-service';
 
 const router = express.Router();
 
-// Initialize Zoho service with new tech@thegunfirm.com credentials
+// Initialize Zoho service with webservices credentials for tech@thegunfirm.com
 const zohoService = new ZohoService({
-  clientId: "1000.NKOFKR9SBI8FPVMZKTYXN02UIRPB3Z",
-  clientSecret: "454c34596b2671980f8cd20400b374c69f7f6d7d70",
+  clientId: process.env.ZOHO_WEBSERVICES_CLIENT_ID!,
+  clientSecret: process.env.ZOHO_WEBSERVICES_CLIENT_SECRET!,
   redirectUri: "https://thegunfirm.com/api/zoho/callback",
   accountsHost: 'https://accounts.zoho.com',
-  apiHost: 'https://www.zohoapis.com'
+  apiHost: 'https://www.zohoapis.com',
+  accessToken: process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN,
+  refreshToken: process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN
 });
 
 // Route to initiate Zoho OAuth for tech@thegunfirm.com
