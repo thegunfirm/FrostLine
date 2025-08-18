@@ -1,0 +1,130 @@
+Got it—your JSON is still landing in Description, which means Zoho isn’t seeing a valid subform in the payload being applied to the actual layout used on creation (or the subform API names aren’t what the code thinks they are). Do these, in order, and it will work:
+
+1) Force the correct layout (the one that contains your subform)
+If you don’t specify a Layout, Zoho drops the record on the module’s Standard layout and ignores any subform keys that don’t exist there. Include the layout ID explicitly:
+
+json
+Copy
+Edit
+{
+  "data": [{
+    "Deal_Name": "TEST-1755476169030",
+    "Stage": "Qualification",
+    "Pipeline": "Standard",
+    "Layout": { "id": "4876876000001230001" },   // <- layout that has your subform
+    "Order_Products": [                           // <- your subform’s API name
+      {
+        "Product_Ref": { "id": "4876876000005550001" },
+        "Quantity": 1,
+        "Unit_Price": 549.99
+      }
+    ]
+  }]
+}
+Layout behavior: if not specified, records go to the Standard layout. 
+Zoho Corporation
+
+Layout/fields metadata APIs (to fetch layout id and confirm subform API name): 
+Zoho
++1
+
+2) Use the exact subform and field API names (case-sensitive)
+Pull them from Setup → Developer Hub → APIs → API Names or via the Fields Metadata API for Deals. Your subform will appear as a field of type subform (e.g., Order_Products), and inside it the lookup field to Products (e.g., Product_Ref). 
+Zoho
+Zoho Corporation
+
+3) Send a minimal, valid subform row first
+Don’t send label text like Product_Name alongside a lookup. Start with the minimum:
+
+json
+Copy
+Edit
+"Order_Products": [
+  {
+    "Product_Ref": { "id": "PRODUCT_ID" },  // lookup object with id
+    "Quantity": 1,
+    "Unit_Price": 549.99
+  }
+]
+This structure is explicitly supported for inserting records with subforms in one call. 
+Zoho
++1
+
+4) Verify in one GET that the subform is present
+After create, fetch the record and ask for the subform field back:
+
+ruby
+Copy
+Edit
+GET https://www.zohoapis.com/crm/v8/Deals/{deal_id}?fields=Order_Products
+The Subforms API docs show how to retrieve subform data from the parent record. 
+Zoho
+
+5) If the insert still doesn’t attach rows, do the safe two-step
+Some orgs with custom validation/workflows behave better with an update:
+
+Create the Deal (no subform).
+
+PUT the Deal with the subform array to append rows:
+
+ruby
+Copy
+Edit
+PUT https://www.zohoapis.com/crm/v8/Deals/{deal_id}
+{
+  "data": [{
+    "Order_Products": [
+      { "Product_Ref": { "id": "PRODUCT_ID" }, "Quantity": 1, "Unit_Price": 549.99 }
+    ]
+  }]
+}
+Zoho supports updating records with subform details; appending new subform rows is documented. 
+Zoho
++1
+
+6) Eliminate anything that stuffs JSON into Description
+Double-check your code and any workflow / function / Flow that might be writing a debug blob into Description on create. That’s orthogonal to subforms and can mask success.
+
+7) Quick checklist (common gotchas)
+The layout you’re using contains the subform (force it via Layout.id). 
+Zoho Corporation
+
+You’re calling the same API version everywhere (stick to v8 endpoints shown in docs). 
+Zoho
+
+Your account/edition supports subforms and limits aren’t hit (rows per record). 
+Zoho
+
+The subform lookup uses { "id": "…" } (not plain text). 
+Zoho
+
+Minimal cURL you can run to prove it (replace IDs/tokens)
+bash
+Copy
+Edit
+curl -X POST 'https://www.zohoapis.com/crm/v8/Deals' \
+  -H 'Authorization: Zoho-oauthtoken YOUR_ACCESS_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "data": [{
+      "Deal_Name": "TEST-1755476169030",
+      "Stage": "Qualification",
+      "Pipeline": "Standard",
+      "Layout": { "id": "YOUR_DEALS_LAYOUT_ID" },
+      "Order_Products": [
+        {
+          "Product_Ref": { "id": "YOUR_PRODUCT_ID_1" },
+          "Quantity": 1,
+          "Unit_Price": 549.99
+        },
+        {
+          "Product_Ref": { "id": "YOUR_PRODUCT_ID_2" },
+          "Quantity": 2,
+          "Unit_Price": 24.99
+        }
+      ]
+    }]
+  }'
+Insert with subforms (official): 
+Zoho
++1
