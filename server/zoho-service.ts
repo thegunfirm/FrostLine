@@ -911,15 +911,15 @@ export class ZohoService {
         Distributor: 'RSR'
       }));
 
-      // CRITICAL: Use exact layout ID and force layout specification
+      // Try both standard Product_Details and custom Subform_1 field names
       const dealPayload: any = {
         Deal_Name: dealData.orderNumber,
         Amount: parseFloat(dealData.totalAmount) || 0,
         Stage: this.mapOrderStatusToDealStage(dealData.orderStatus),
         Contact_Name: dealData.contactId,
         Description: `TGF Order - ${dealData.membershipTier} member`,
-        $layout_id: '6585331000000091023',  // Force specific layout
-        Subform_1: orderProducts,  // Use exact API field name
+        Product_Details: orderProducts,  // Standard Zoho CRM product subform
+        Subform_1: orderProducts,        // Custom subform backup
         ...cleanSystemFields
       };
 
@@ -970,31 +970,34 @@ export class ZohoService {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // Fetch the deal back with specific fields
-      const response = await this.makeAPIRequest(`Deals/${dealId}?fields=Subform_1,Deal_Name,Amount`);
+      const response = await this.makeAPIRequest(`Deals/${dealId}?fields=Product_Details,Subform_1,Deal_Name,Amount`);
       
       if (response && response.data && response.data.length > 0) {
         const deal = response.data[0];
         
-        // Check for subform data using the correct field name
+        // Check for subform data using both possible field names
+        const productDetails = deal.Product_Details || [];
         const subform1 = deal.Subform_1 || [];
+        const subformData = productDetails.length > 0 ? productDetails : subform1;
         
         console.log(`📊 Subform verification results:`);
         console.log(`  • Deal Name: ${deal.Deal_Name}`);
         console.log(`  • Amount: $${deal.Amount}`);
+        console.log(`  • Product_Details: ${productDetails.length} items`);
         console.log(`  • Subform_1: ${subform1.length} items`);
         
-        if (subform1.length > 0) {
-          console.log(`✅ SUCCESS: Found ${subform1.length} products in subform (expected ${expectedProductCount})`);
+        if (subformData.length > 0) {
+          console.log(`✅ SUCCESS: Found ${subformData.length} products in subform (expected ${expectedProductCount})`);
           
           // Log each product for confirmation
-          subform1.forEach((product, index) => {
-            console.log(`  ${index + 1}. ${product.Product_Name} (${product.Product_Code})`);
-            console.log(`     Qty: ${product.Quantity}, Price: $${product.Unit_Price}`);
+          subformData.forEach((product, index) => {
+            console.log(`  ${index + 1}. ${product.Product_Name || product.product?.Product_Name} (${product.Product_Code || product.product?.Product_Code})`);
+            console.log(`     Qty: ${product.Quantity || product.quantity}, Price: $${product.Unit_Price || product.unit_price || product.list_price}`);
             console.log(`     RSR: ${product.Distributor_Part_Number}, FFL: ${product.FFL_Required}`);
           });
           return true;
         } else {
-          console.log(`❌ FAILURE: No products found in Subform_1`);
+          console.log(`❌ FAILURE: No products found in Product_Details or Subform_1`);
           console.log('📋 Available fields in deal:', Object.keys(deal));
           return false;
         }
