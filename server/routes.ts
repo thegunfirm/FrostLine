@@ -4756,6 +4756,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Direct test for new Subform_1 implementation
+  app.post("/api/test/direct-subform", async (req, res) => {
+    try {
+      console.log('🧪 Testing DIRECT Subform_1 implementation...');
+      
+      const { ZohoService } = await import('./zoho-service');
+      const zohoService = new ZohoService();
+      
+      // Test the new createOrderDeal method directly
+      const result = await zohoService.createOrderDeal({
+        contactId: '6585331000000915001', // Existing contact
+        orderNumber: 'SUBFORM-DIRECT-' + Date.now(),
+        totalAmount: 7.00,
+        orderItems: [{
+          sku: 'SP00735',
+          productName: 'GLOCK OEM 8 POUND CONNECTOR', 
+          quantity: 1,
+          unitPrice: 7.00,
+          manufacturer: 'GLOCK',
+          category: 'Gun Parts & Accessories'
+        }],
+        membershipTier: 'Bronze',
+        fflRequired: false,
+        orderStatus: 'Processing',
+        systemFields: {
+          TGF_Order: 'SUBFORM-DIRECT-' + Date.now(),
+          Fulfillment_Type: 'Drop-Ship',
+          Order_Status: 'Processing'
+        }
+      });
+      
+      console.log('✅ Direct Subform_1 test result:', result);
+      
+      res.json({ 
+        success: result.success, 
+        dealId: result.dealId,
+        message: 'Direct Subform_1 test completed',
+        result: result
+      });
+      
+    } catch (error) {
+      console.error('❌ Direct subform test failed:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Test order-to-deal integration
   app.post("/api/test/order-to-zoho", async (req, res) => {
     try {

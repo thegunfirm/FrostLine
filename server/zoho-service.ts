@@ -725,7 +725,7 @@ export class ZohoService {
   }
 
   /**
-   * Create a new deal from order data
+   * Create a new deal from order data with proper Subform_1 structure
    */
   async createOrderDeal(dealData: {
     contactId: string;
@@ -739,65 +739,99 @@ export class ZohoService {
     systemFields?: any;
   }): Promise<{ success: boolean; dealId?: string; error?: string }> {
     try {
+      console.log('🔄 Creating deal with proper Subform_1 structure...');
+      
+      // First ensure all products exist and get their IDs
+      const productsWithIds = [];
+      for (const item of dealData.orderItems) {
+        try {
+          const productResult = await this.findOrCreateProductBySKU(item.sku, {
+            productName: item.productName,
+            manufacturer: item.manufacturer || 'Unknown',
+            category: item.category || 'Firearms'
+          });
+          
+          if (productResult.success && productResult.productId) {
+            productsWithIds.push({
+              ...item,
+              productId: productResult.productId
+            });
+            console.log(`✅ Product ${item.sku} ready with ID: ${productResult.productId}`);
+          } else {
+            console.log(`⚠️  Could not resolve product ${item.sku}, skipping from subform`);
+          }
+        } catch (error) {
+          console.error(`❌ Error resolving product ${item.sku}:`, error);
+        }
+      }
+      
+      // Build Subform_1 data with proper structure
+      const subformData = productsWithIds.map(item => ({
+        // Product lookup - must be object with id
+        Product_Ref: { id: item.productId },
+        
+        // Product Module fields
+        Product_Name: item.productName,
+        Product_Code_SKU: item.sku,
+        Product_Category: item.category || 'Firearms',
+        Manufacturer: item.manufacturer || 'Unknown',
+        
+        // Order-specific fields
+        Quantity: item.quantity,
+        Unit_Price: item.unitPrice,
+        Distributor: item.distributor || 'RSR',
+        Distributor_Part_Number: item.rsrStockNumber || item.sku,
+        FFL_Required: item.fflRequired || false,
+        Drop_Ship_Eligible: item.dropShipEligible !== false,
+        In_House_Only: item.inHouseOnly || false,
+        Distributor_Code: item.distributorCode || 'RSR'
+      }));
+      
+      console.log(`📦 Prepared ${subformData.length} products for Subform_1`);
+      
       // Base deal payload
       const dealPayload: any = {
         Deal_Name: `Order ${dealData.orderNumber}`,
         Amount: dealData.totalAmount,
         Stage: this.mapOrderStatusToDealStage(dealData.orderStatus),
-        Contact_Name: dealData.contactId
+        Contact_Name: dealData.contactId,
+        
+        // Add the subform data directly
+        Subform_1: subformData
       };
 
-      // If system fields are provided, use them instead of JSON dump
+      // Add system fields if provided
       if (dealData.systemFields) {
-        // Add all system fields as individual Zoho fields
         Object.assign(dealPayload, dealData.systemFields);
-        
-        // Create clean description when system fields are used
         dealPayload.Description = `Order from TheGunFirm.com - ${dealData.membershipTier} member`;
       } else {
-        // Fallback to old JSON method only if no system fields provided
-        dealPayload.Description = JSON.stringify({
-          orderNumber: dealData.orderNumber,
-          membershipTier: dealData.membershipTier,
-          fflRequired: dealData.fflRequired,
-          fflDealerName: dealData.fflDealerName,
-          orderItems: dealData.orderItems.map(item => ({
-            name: item.productName,
-            sku: item.sku,
-            quantity: item.quantity,
-            price: item.unitPrice
-          }))
-        });
+        dealPayload.Description = `Order from TheGunFirm.com - ${dealData.membershipTier} member`;
       }
+      
+      console.log(`🚀 Creating deal with ${subformData.length} products in Subform_1...`);
 
       const response = await this.makeAPIRequest('Deals', 'POST', {
-        data: [dealPayload]
+        data: [dealPayload],
+        trigger: ["workflow"]
       });
 
       if (response.data && response.data.length > 0 && response.data[0].status === 'success') {
         const dealId = response.data[0].details.id;
-        
-        // Add products to the deal subform after deal creation
-        try {
-          await this.addProductsToDeal(dealId, dealData.orderItems);
-          console.log(`✅ Added ${dealData.orderItems.length} products to Deal ${dealId}`);
-        } catch (error) {
-          console.error(`⚠️  Failed to add products to Deal ${dealId}:`, error);
-          // Don't fail the whole deal creation, just log the error
-        }
+        console.log(`✅ Created Deal ${dealId} with ${subformData.length} products in Subform_1`);
         
         return {
           success: true,
           dealId: dealId
         };
       } else {
+        console.log('❌ Deal creation failed:', response);
         return {
           success: false,
           error: 'Failed to create deal in Zoho'
         };
       }
     } catch (error: any) {
-      console.error('Error creating Zoho deal:', error);
+      console.error('❌ Error creating Zoho deal with subform:', error);
       return {
         success: false,
         error: `Deal creation error: ${error.message}`

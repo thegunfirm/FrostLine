@@ -1,0 +1,109 @@
+Short answer: your mapping logic is fine, but your payload is almost certainly going to the Description field because you’re not sending a proper subform array under the subform’s API name (case-sensitive) and you’re not using the correct structure for the Product lookup inside the subform.
+
+Here’s the minimal working pattern that will create a Deal with subform rows:
+
+Get the subform + field API names (UI → Setup → Developer Hub → APIs → API Names → Deals). Note the subform’s API name (e.g., Subform_1) and each subform field API name (e.g., Product_Ref, Quantity, Unit_Price, etc.). These names are case-sensitive. 
+Zoho Corporation
+
+Create (or find) each Product; capture the Product id. (You can use Products search or create first, then use the returned id.) Then create the Deal using Records: Insert and include the subform as an array at the subform’s API name. 
+Zoho
++1
+
+Example JSON (POST /crm/v8/Deals)
+json
+Copy
+Edit
+{
+  "data": [
+    {
+      "Deal_Name": "TEST-1755473712516",
+      "Stage": "Qualification",
+      "Pipeline": "Standard",
+      "FFL_Required": true,
+
+      "Subform_1": [
+        {
+          "Product_Ref": { "id": "4876876000001234567" },   // lookup to Products
+          "Product_Name": "Glock 19 Gen5",
+          "Product_Code_SKU": "GLOCK19GEN5",
+          "Manufacturer": "Glock",
+          "Quantity": 1,
+          "Unit_Price": 549.99,
+          "Distributor": "RSR",
+          "Distributor_Part_Number": "RSR-ABC123",
+          "Drop_Ship_Eligible": true,
+          "In_House_Only": false,
+          "Distributor_Code": "RSR"
+        },
+        {
+          "Product_Ref": { "id": "4876876000009876543" },
+          "Product_Name": "Federal 9mm Ammunition",
+          "Product_Code_SKU": "FED9MM",
+          "Manufacturer": "Federal",
+          "Quantity": 2,
+          "Unit_Price": 24.99,
+          "Distributor": "RSR",
+          "Distributor_Part_Number": "RSR-DEF456",
+          "Drop_Ship_Eligible": true,
+          "In_House_Only": false,
+          "Distributor_Code": "RSR"
+        }
+      ]
+    }
+  ],
+  "trigger": ["workflow"]
+}
+Key details (this is where most implementations go wrong):
+
+Subform placement: The array must be under the subform’s API name ("Subform_1" above). If you don’t, Zoho ignores it and your code often ends up stuffing your JSON into Description (if you set it). 
+Zoho
++1
+
+Lookup fields: For any lookup inside a subform (e.g., Product_Ref to Products), the value is an object with an id, not plain text. {"Product_Ref": {"id":"<productId>"}}. 
+Zoho
+
+API names, not labels: Every field in the subform must use its API name (what you see in API Names, not the UI label). Case-sensitive. 
+Zoho Corporation
+
+Deals required fields: Deal_Name, Stage, and (if Pipelines enabled) Pipeline are mandatory in the create payload. 
+Zoho
+
+Updating subform rows later: Include the subform row’s own id in the array item when PATCHing a Deal so Zoho updates the row instead of inserting a new one. 
+Zoho
+
+Quick Node/fetch sketch (Replit)
+js
+Copy
+Edit
+const res = await fetch('https://www.zohoapis.com/crm/v8/Deals', {
+  method: 'POST',
+  headers: {
+    Authorization: `Zoho-oauthtoken ${accessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    data: [{
+      Deal_Name: order.orderNumber,
+      Stage: 'Qualification',
+      Pipeline: 'Standard',
+      FFL_Required: order.fflRequired,
+      Subform_1: order.orderItems.map(item => ({
+        Product_Ref: { id: productIdBySKU[item.sku] }, // looked up/created earlier
+        Product_Name: item.name,
+        Product_Code_SKU: item.sku,
+        Quantity: item.quantity,
+        Unit_Price: item.price,
+        Distributor: 'RSR',
+        Distributor_Part_Number: distPartNoBySKU[item.sku],
+        Drop_Ship_Eligible: true,
+        In_House_Only: false,
+        Distributor_Code: 'RSR'
+      }))
+    }],
+    trigger: ['workflow']
+  })
+});
+Why your JSON ended up in Description
+If you previously set Description: JSON.stringify(order) on the Deal (often done for debugging), Zoho will happily save that — but it won’t auto-populate a subform. Remove that assignment and send a valid subform array at the subform API name as shown above. (Zoho’s Subform insert/record APIs require the exact structure shown.) 
+Zoho
++1
