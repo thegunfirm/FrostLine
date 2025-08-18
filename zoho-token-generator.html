@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoho Token Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .button { background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
+        .code-input { width: 100%; padding: 10px; margin: 10px 0; font-family: monospace; }
+        .result { background: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; margin: 10px 0; }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .success { border-left-color: #28a745; background: #d4edda; }
+    </style>
+</head>
+<body>
+    <h1>Zoho Token Generator for TheGunFirm</h1>
+    
+    <h2>Step 1: Get Authorization Code</h2>
+    <p>Click this button to authorize the application and get an authorization code:</p>
+    <a href="https://accounts.zoho.com/oauth/v2/auth?response_type=code&client_id=1000.EYQE8LR8LWDKQ6YD5CKPC9D0885RUN&scope=ZohoCRM.modules.ALL,ZohoCRM.settings.ALL&access_type=offline&redirect_uri=https://www.google.com" 
+       class="button" target="_blank">
+        Get Authorization Code
+    </a>
+    
+    <h2>Step 2: Extract Code from URL</h2>
+    <p>After clicking "Accept", copy the authorization code from the URL (the part after <code>code=</code>)</p>
+    
+    <h2>Step 3: Generate Tokens</h2>
+    <input type="text" id="authCode" class="code-input" placeholder="Paste authorization code here">
+    <button onclick="generateTokens()" class="button">Generate Tokens</button>
+    
+    <div id="result"></div>
+
+    <script>
+        async function generateTokens() {
+            const authCode = document.getElementById('authCode').value.trim();
+            const resultDiv = document.getElementById('result');
+            
+            if (!authCode) {
+                resultDiv.innerHTML = '<div class="result error">Please enter the authorization code</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="result">Generating tokens...</div>';
+            
+            try {
+                const response = await fetch('https://accounts.zoho.com/oauth/v2/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        client_id: '1000.EYQE8LR8LWDKQ6YD5CKPC9D0885RUN',
+                        client_secret: '8fd49cf545a04ed0a5e1932cee6d56cda5887a1b34',
+                        code: authCode,
+                        grant_type: 'authorization_code'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.access_token && data.refresh_token) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <h3>✅ Tokens Generated Successfully!</h3>
+                            <p><strong>Access Token:</strong><br><code>${data.access_token}</code></p>
+                            <p><strong>Refresh Token:</strong><br><code>${data.refresh_token}</code></p>
+                            <p><strong>Expires In:</strong> ${data.expires_in} seconds</p>
+                            
+                            <h4>Copy these environment variables:</h4>
+                            <pre style="background: #f1f1f1; padding: 10px; border-radius: 5px;">
+ZOHO_WEBSERVICES_ACCESS_TOKEN=${data.access_token}
+ZOHO_WEBSERVICES_REFRESH_TOKEN=${data.refresh_token}
+                            </pre>
+                            
+                            <p>Now test the token by making an API call...</p>
+                            <button onclick="testToken('${data.access_token}')" class="button">Test Token</button>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ Error: ${JSON.stringify(data)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testToken(accessToken) {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const response = await fetch('https://www.zohoapis.com/crm/v2/Deals?per_page=1', {
+                    headers: {
+                        'Authorization': `Zoho-oauthtoken ${accessToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML += `
+                        <div class="result success">
+                            <h3>✅ Token Test Successful!</h3>
+                            <p>API Response Status: ${response.status}</p>
+                            <p>Found ${data.data ? data.data.length : 0} deals</p>
+                            <p><strong>🎉 Zoho API is now working!</strong></p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML += `<div class="result error">❌ Token test failed: ${JSON.stringify(data)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML += `<div class="result error">❌ Token test error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -113,6 +113,75 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Serve Zoho token generator
+  app.get('/zoho-tokens', (req, res) => {
+    try {
+      const htmlContent = readFileSync('zoho-token-generator.html', 'utf8');
+      res.setHeader('Content-Type', 'text/html');
+      res.send(htmlContent);
+    } catch (error) {
+      res.status(500).json({ error: 'Token generator not available' });
+    }
+  });
+  
+  // Simple Zoho token generation endpoint
+  app.post('/api/zoho/generate-tokens', async (req, res) => {
+    const { authCode } = req.body;
+    
+    if (!authCode) {
+      return res.status(400).json({ error: 'Authorization code required' });
+    }
+    
+    try {
+      const response = await axios.post('https://accounts.zoho.com/oauth/v2/token', 
+        new URLSearchParams({
+          client_id: '1000.EYQE8LR8LWDKQ6YD5CKPC9D0885RUN',
+          client_secret: '8fd49cf545a04ed0a5e1932cee6d56cda5887a1b34',
+          code: authCode,
+          grant_type: 'authorization_code'
+        }),
+        {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        }
+      );
+
+      if (response.data.access_token && response.data.refresh_token) {
+        // Save tokens
+        const fs = require('fs');
+        const tokenData = {
+          accessToken: response.data.access_token,
+          refreshToken: response.data.refresh_token,
+          expiresAt: Date.now() + (3600 * 1000),
+          lastRefresh: Date.now()
+        };
+        
+        fs.writeFileSync('.zoho-tokens.json', JSON.stringify(tokenData, null, 2));
+        
+        // Test the token immediately
+        const testResponse = await axios.get('https://www.zohoapis.com/crm/v2/Deals?per_page=1', {
+          headers: { 'Authorization': `Zoho-oauthtoken ${response.data.access_token}` }
+        });
+        
+        console.log('🎉 ZOHO API WORKING - Token test successful!');
+        
+        res.json({
+          success: true,
+          accessToken: response.data.access_token,
+          refreshToken: response.data.refresh_token,
+          expiresIn: response.data.expires_in,
+          testResult: 'API test successful'
+        });
+      } else {
+        res.status(400).json({ error: 'Token generation failed', data: response.data });
+      }
+    } catch (error) {
+      res.status(500).json({ 
+        error: 'Token generation failed', 
+        details: error.response?.data || error.message 
+      });
+    }
+  });
+
   // Register specialized routes first  
   await registerRSRFFLRoutes(app);
   // Use local authentication instead of Zoho
