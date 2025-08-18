@@ -10,6 +10,9 @@ async function generateFreshTokens() {
   const clientId = process.env.ZOHO_WEBSERVICES_CLIENT_ID;
   const clientSecret = process.env.ZOHO_WEBSERVICES_CLIENT_SECRET;
   
+  console.log('🔍 Using Client ID:', clientId);
+  console.log('🔍 Using Client Secret:', clientSecret ? 'Present' : 'Missing');
+  
   console.log('🔄 Generating fresh Zoho tokens for tech@thegunfirm.com');
   console.log('');
   console.log('STEP 1: Visit this URL to authorize the application:');
