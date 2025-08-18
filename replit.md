@@ -13,6 +13,7 @@ CRITICAL IMAGE HANDLING RULE: For product images in cart/order displays, NEVER u
 CART CORRUPTION SOLUTION: Implement comprehensive clearing mechanism including both localStorage removal and server-side force-clear endpoint for cart items.
 FFL SELECTOR IMPROVEMENTS: Add proper error handling, loading states, and retry logic to the FFL selector component.
 GLOBAL SCROLL-TO-TOP: Implement site-wide scroll-to-top functionality on page navigation.
+**VERIFICATION REQUIREMENT**: Never claim features are "working" or "successful" without verifying actual results in external systems (Zoho CRM, databases, APIs). Always check the end result, not just log messages or API responses that claim success.
 
 ## System Architecture
 
