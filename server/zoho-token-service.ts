@@ -103,6 +103,12 @@ export class ZohoTokenService {
       ]);
 
       this.memoryCache = tokenData;
+      
+      console.log('✅ Token data persisted:', {
+        hasAccessToken: !!tokenData.accessToken,
+        accessTokenLength: tokenData.accessToken?.length,
+        expiresAt: new Date(tokenData.expiresAt).toISOString()
+      });
 
       // Update config if new refresh token
       if (response.data.refresh_token) {
@@ -183,8 +189,11 @@ export class ZohoTokenService {
    * Update environment variables
    */
   private updateEnvironment(tokenData: TokenData): void {
+    // Update both environment variables for compatibility
     process.env.ZOHO_ACCESS_TOKEN = tokenData.accessToken;
+    process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN = tokenData.accessToken;
     process.env.ZOHO_REFRESH_TOKEN = tokenData.refreshToken;
+    process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN = tokenData.refreshToken;
   }
 
   /**

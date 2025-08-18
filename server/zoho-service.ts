@@ -499,26 +499,42 @@ export class ZohoService {
    * Make authenticated API requests to Zoho CRM with automatic token refresh
    */
   async makeAPIRequest(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', data?: any, retryCount = 0): Promise<any> {
-    // Use the permanent token service
-    try {
-      const { ZohoTokenService } = await import('./zoho-token-service');
-      const tokenService = ZohoTokenService.getInstance();
-      const accessToken = await tokenService.getAccessToken();
-      if (accessToken) {
-        this.config.accessToken = accessToken;
-      }
-    } catch (error) {
-      console.log('⚠️ Token service failed, using fallback:', error.message);
+    // Use environment variables directly - they're the most reliable source
+    this.config.accessToken = process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN || process.env.ZOHO_ACCESS_TOKEN;
+    
+    console.log('🔍 Token check:', {
+      webservicesToken: process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN ? 'EXISTS (length: ' + process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN.length + ')' : 'MISSING',
+      accessToken: process.env.ZOHO_ACCESS_TOKEN ? 'EXISTS (length: ' + process.env.ZOHO_ACCESS_TOKEN.length + ')' : 'MISSING',
+      configToken: this.config.accessToken ? 'SET (length: ' + this.config.accessToken.length + ')' : 'NOT SET'
+    });
+    
+    if (this.config.accessToken && this.config.accessToken !== 'undefined' && this.config.accessToken.length > 50) {
+      console.log('✅ Using fresh access token from environment variables');
+    } else {
+      console.log('❌ No valid token found');
+      throw new Error('No valid access token available. Token may have expired.');
     }
     
-    // Also try environment variables as fallback
     if (!this.config.accessToken) {
-      this.config.accessToken = process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN || process.env.ZOHO_ACCESS_TOKEN;
-    }
-    
-    if (!this.config.accessToken) {
+      console.log('❌ No access token found in token service or environment');
+      console.log('Config check:', {
+        hasAccessToken: !!this.config.accessToken,
+        hasRefreshToken: !!this.config.refreshToken,
+        envAccessToken: !!process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN,
+        envRefreshToken: !!process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN,
+        configAccessToken: this.config.accessToken ? 'PRESENT' : 'MISSING'
+      });
       throw new Error('No access token available. Please complete OAuth first.');
     }
+    
+    console.log('💾 About to make API request with token:', {
+      hasToken: !!this.config.accessToken,
+      tokenLength: this.config.accessToken?.length,
+      tokenFirstChars: this.config.accessToken?.substring(0, 20) + '...'
+    });
+    
+    console.log('✅ Access token ready for API request');
+    console.log('Authorization header will be:', `Zoho-oauthtoken ${this.config.accessToken}`);
 
     // Handle case where apiHost already includes /crm/v2
     const baseUrl = this.config.apiHost.endsWith('/crm/v2') ? this.config.apiHost : `${this.config.apiHost}/crm/v2`;
@@ -555,17 +571,14 @@ export class ZohoService {
         }
       }
       
-      // If token is invalid and we haven't retried yet, try to refresh token
-      if (result.code === 'INVALID_TOKEN' && retryCount === 0 && this.config.refreshToken) {
-        console.log('🔄 Access token expired, attempting to refresh...');
-        try {
-          await this.refreshAccessToken();
-          // Retry the request with the new token
-          return this.makeAPIRequest(endpoint, method, data, retryCount + 1);
-        } catch (refreshError) {
-          console.error('❌ Failed to refresh token:', refreshError);
-          throw new Error(`Token refresh failed: ${refreshError}`);
-        }
+      // If token is invalid, don't try to refresh - the fresh token should work
+      if (result.code === 'INVALID_TOKEN') {
+        console.log('❌ Fresh token is being rejected by Zoho API');
+        console.log('This usually means:');
+        console.log('1. Token format is incorrect');
+        console.log('2. Token permissions are insufficient');
+        console.log('3. Token is for wrong environment (sandbox vs production)');
+        throw new Error('Fresh token rejected by Zoho API: ' + result.message);
       }
       
       console.error('Zoho API Error:', result);

@@ -123,6 +123,21 @@ app.use((req, res, next) => {
     const { zohoTokenManager } = await import('./zoho-token-manager.js');
     zohoTokenManager.initialize();
     console.log('🔄 Automatic Zoho token refresh system started');
+    
+    // Also initialize the new ZohoTokenService
+    const { ZohoTokenService } = await import('./zoho-token-service');
+    const tokenConfig = {
+      clientId: process.env.ZOHO_WEBSERVICES_CLIENT_ID!,
+      clientSecret: process.env.ZOHO_WEBSERVICES_CLIENT_SECRET!,
+      refreshToken: process.env.ZOHO_REFRESH_TOKEN!,
+      accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com'
+    };
+    
+    const tokenService = ZohoTokenService.getInstance(tokenConfig);
+    const accessToken = await tokenService.getAccessToken();
+    if (accessToken) {
+      console.log('✅ ZohoTokenService initialized and working');
+    }
   } catch (error) {
     console.error('⚠️ Failed to initialize automatic token refresh:', error);
   }
