@@ -6683,6 +6683,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint to get Deals fields
+  app.post('/api/test/get-deals-fields', async (req, res) => {
+    try {
+      console.log('🔍 Getting Deals module fields...');
+      
+      const { ZohoService } = await import('./zoho-service');
+      const zohoService = new ZohoService({
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
+        accountsHost: process.env.ZOHO_ACCOUNTS_HOST!,
+        apiHost: process.env.ZOHO_CRM_BASE!,
+        accessToken: process.env.ZOHO_ACCESS_TOKEN!,
+        refreshToken: process.env.ZOHO_REFRESH_TOKEN!
+      });
+      
+      const fieldsResponse = await zohoService.makeAPIRequest('settings/fields?module=Deals');
+      
+      if (fieldsResponse && fieldsResponse.fields) {
+        console.log('📋 Found', fieldsResponse.fields.length, 'fields in Deals module');
+        
+        const fields = fieldsResponse.fields.map((field: any) => ({
+          api_name: field.api_name,
+          field_label: field.field_label,
+          data_type: field.data_type,
+          required: field.required || false,
+          read_only: field.read_only || false,
+          lookup_module: field.lookup?.module || null
+        }));
+        
+        res.json({ success: true, fields, count: fields.length });
+      } else {
+        res.json({ success: false, error: 'No fields returned' });
+      }
+      
+    } catch (error: any) {
+      console.error('Error getting Deals fields:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Test endpoint for Zoho integration testing with real inventory
   app.post('/api/test-zoho-integration', async (req, res) => {
     try {

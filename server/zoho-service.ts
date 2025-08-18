@@ -479,7 +479,16 @@ export class ZohoService {
       body: data ? JSON.stringify(data) : undefined,
     });
 
-    const result = await response.json();
+    let result;
+    const responseText = await response.text();
+    
+    // Handle empty responses (common for successful POST operations)
+    if (!responseText || responseText.trim() === '') {
+      console.log(`✅ Empty response from ${endpoint} (successful operation)`);
+      result = { success: true, data: [] };
+    } else {
+      result = JSON.parse(responseText);
+    }
     
     if (!response.ok) {
       // Handle rate limiting
@@ -801,43 +810,90 @@ export class ZohoService {
    */
   async addProductsToDeal(dealId: string, orderItems: any[]): Promise<void> {
     try {
+      console.log(`🛒 Adding ${orderItems.length} products to Deal ${dealId}...`);
+      
       // For each product in the order, create a product lookup and add to deal
       for (const item of orderItems) {
         try {
-          // Find the product in Zoho Products module by SKU (using Product_Name field instead)
-          const productSearch = await this.makeAPIRequest(`Products/search?criteria=(Product_Name:equals:${item.sku})`);
+          console.log(`🔍 Processing product: ${item.sku} (${item.productName || item.name})`);
           
+          // Find or create the product in Zoho Products module
           let productId = null;
-          if (productSearch.data && productSearch.data.length > 0) {
-            productId = productSearch.data[0].id;
-            console.log(`🔍 Found existing product ${productId} for SKU: ${item.sku}`);
-          } else {
-            console.log(`⚠️  Product not found for SKU: ${item.sku}, skipping deal product link`);
+          
+          try {
+            // Search for existing product by SKU (using Product_Name field)
+            const productSearch = await this.makeAPIRequest(`Products/search?criteria=(Product_Name:equals:${item.sku})`);
+            
+            if (productSearch && productSearch.data && productSearch.data.length > 0) {
+              productId = productSearch.data[0].id;
+              console.log(`✅ Found existing product ${productId} for SKU: ${item.sku}`);
+            } else {
+              console.log(`🏗️ Product not found for SKU: ${item.sku}, creating new product...`);
+              
+              // Create new product if it doesn't exist
+              const newProductPayload = {
+                data: [{
+                  Product_Name: item.sku,
+                  Product_Code: item.sku,
+                  Unit_Price: item.unitPrice || item.price || 0
+                }]
+              };
+              
+              const createResult = await this.makeAPIRequest('Products', 'POST', newProductPayload);
+              if (createResult && createResult.data && createResult.data.length > 0 && createResult.data[0].status === 'success') {
+                productId = createResult.data[0].details.id;
+                console.log(`✅ Created new product ${productId} for SKU: ${item.sku}`);
+              } else {
+                console.error(`❌ Failed to create product for SKU: ${item.sku}`, createResult);
+                continue;
+              }
+            }
+          } catch (searchError: any) {
+            console.error(`❌ Product search/create failed for ${item.sku}:`, searchError.message);
             continue;
           }
 
-          // Add product to Deal using the Related Lists API
+          if (!productId) {
+            console.error(`❌ No product ID available for SKU: ${item.sku}`);
+            continue;
+          }
+
+          // Add product to Deal using the Products related list API
           const dealProductPayload = {
             data: [{
-              Product_Name: productId,
-              Quantity: item.quantity,
-              Unit_Price: item.unitPrice,
-              Total: item.totalPrice,
+              Product: productId,  // Use 'Product' field instead of 'Product_Name'
+              Quantity: item.quantity || 1,
+              Unit_Price: item.unitPrice || item.price || 0,
+              Total: (item.quantity || 1) * (item.unitPrice || item.price || 0),
               Line_Tax: 0
             }]
           };
 
-          await this.makeAPIRequest(`Deals/${dealId}/Products`, 'POST', dealProductPayload);
-          console.log(`✅ Added product ${item.sku} to Deal ${dealId}`);
+          console.log(`📦 Adding product to deal with payload:`, dealProductPayload);
           
-        } catch (error) {
-          console.error(`❌ Failed to add product ${item.sku} to deal:`, error);
+          try {
+            const addResult = await this.makeAPIRequest(`Deals/${dealId}/Products`, 'POST', dealProductPayload);
+            console.log(`✅ Successfully added product ${item.sku} to Deal ${dealId}:`, addResult);
+          } catch (addError: any) {
+            // Handle empty response (success case) or actual errors
+            if (addError.message.includes('Unexpected end of JSON input')) {
+              console.log(`✅ Product ${item.sku} added to Deal ${dealId} (empty response = success)`);
+            } else {
+              console.error(`❌ Failed to add product ${item.sku} to deal:`, addError.message);
+            }
+          }
+          
+        } catch (error: any) {
+          console.error(`❌ Failed to process product ${item.sku}:`, error.message);
           // Continue with other products
         }
       }
-    } catch (error) {
-      console.error('Error adding products to deal:', error);
-      throw error;
+      
+      console.log(`🎯 Finished processing ${orderItems.length} products for Deal ${dealId}`);
+      
+    } catch (error: any) {
+      console.error('Error adding products to deal:', error.message);
+      // Don't throw - let the deal creation succeed even if product linking fails
     }
   }
 
