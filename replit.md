@@ -14,6 +14,7 @@ CART CORRUPTION SOLUTION: Implement comprehensive clearing mechanism including b
 FFL SELECTOR IMPROVEMENTS: Add proper error handling, loading states, and retry logic to the FFL selector component.
 GLOBAL SCROLL-TO-TOP: Implement site-wide scroll-to-top functionality on page navigation.
 VERIFICATION REQUIREMENT: Never claim features are "working" or "successful" without verifying actual results in external systems (Zoho CRM, databases, APIs). Always check the end result, not just log messages or API responses that claim success.
+**CRITICAL SECURITY POLICY**: NEVER place tokens, API keys, or any credentials directly in code. ALWAYS use environment variables and the account secrets system. No hardcoded credentials, no "fallback" values, no exceptions. This policy is mandatory to prevent security breaches and development delays.
 
 ## System Architecture
 
