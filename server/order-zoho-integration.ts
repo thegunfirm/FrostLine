@@ -12,6 +12,7 @@ export interface OrderToZohoData {
   orderItems: Array<{
     productName: string;
     sku: string;
+    manufacturerPartNumber?: string; // Added for Product_Code mapping
     rsrStockNumber?: string;
     quantity: number;
     unitPrice: number;

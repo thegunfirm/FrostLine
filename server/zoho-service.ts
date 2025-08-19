@@ -853,8 +853,9 @@ export class ZohoService {
         
         // Search for existing product by Manufacturer Part Number
         let productId = null;
+        const manufacturerPartNumber = item.manufacturerPartNumber || sku;
         const searchResponse = await this.makeAPIRequest(
-          `Products/search?criteria=(Mfg_Part_Number:equals:${sku})`
+          `Products/search?criteria=(Mfg_Part_Number:equals:${manufacturerPartNumber})`
         );
         
         if (searchResponse?.data?.length > 0) {
@@ -867,7 +868,7 @@ export class ZohoService {
           const productPayload = {
             data: [{
               Product_Name: item.productName || item.name || sku,
-              Mfg_Part_Number: sku, // Use Manufacturer Part Number as Product Code per requirements
+              Mfg_Part_Number: manufacturerPartNumber, // Use Manufacturer Part Number as Product Code per requirements
               RSR_Stock_Number: item.rsrStockNumber || '',
               Manufacturer: item.manufacturer || '',
               Product_Category: item.category || 'Firearms/Accessories',
@@ -914,10 +915,12 @@ export class ZohoService {
         const sku = item.sku || item.productCode || 'UNKNOWN';
         const productId = productIds.get(sku);
         
+
+        
         return {
           // Core fields
           Product_Name: item.productName || item.name || `Product ${index + 1}`,
-          Product_Code: sku,
+          Product_Code: item.manufacturerPartNumber || sku, // Use manufacturer part number as Product_Code
           Product_Lookup: productId ? { id: productId } : null, // Link to actual Product record
           Quantity: parseInt(item.quantity) || 1,
           Unit_Price: parseFloat(item.unitPrice) || 0,

@@ -1926,6 +1926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orderItems: products.map(p => ({
           productName: p.productName || `Product ${p.sku}`,
           sku: p.sku,
+          manufacturerPartNumber: p.manufacturerPartNumber, // Add manufacturer part number for Product_Code mapping
           rsrStockNumber: p.rsrStockNumber || p.sku,
           quantity: p.quantity || 1,
           unitPrice: p.unitPrice || p.price || 0,
