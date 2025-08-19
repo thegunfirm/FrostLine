@@ -5233,6 +5233,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test complete sale processing with 4 items (3 accessories + 1 firearm)
+  app.post("/api/orders/test-complete-sale", async (req, res) => {
+    try {
+      console.log('🛒 Processing complete test sale with 4 items...');
+      
+      const { FirearmsCheckoutService } = await import('./firearms-checkout-service');
+      const checkoutService = new FirearmsCheckoutService();
+      
+      // Process the complete order
+      const result = await checkoutService.processCheckout(req.body);
+      
+      if (result.success) {
+        console.log('✅ Complete sale processed successfully');
+        console.log('🆔 Order ID:', result.orderId);
+        console.log('🔗 Zoho Deal ID:', result.dealId);
+        
+        res.json({
+          success: true,
+          orderId: result.orderId,
+          orderNumber: result.orderNumber,
+          dealId: result.dealId,
+          zohoResult: {
+            dealId: result.dealId,
+            contactId: result.contactId
+          },
+          message: 'Complete test sale processed successfully'
+        });
+      } else {
+        console.log('❌ Complete sale failed:', result.error);
+        res.status(500).json({
+          success: false,
+          error: result.error,
+          message: 'Complete sale processing failed'
+        });
+      }
+      
+    } catch (error: any) {
+      console.error('Complete sale test error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        message: 'Complete sale test execution failed'
+      });
+    }
+  });
+
   // Update access token in memory
   app.post("/api/zoho/update-token", async (req, res) => {
     try {
