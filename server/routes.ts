@@ -420,6 +420,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DEBUG ENDPOINT: Bypass email verification for testing
+  app.post("/api/auth/debug/verify-email-direct", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email required" });
+      }
+      
+      // Update user to verified status in database
+      const [updatedUser] = await db
+        .update(users)
+        .set({ 
+          isVerified: true,
+          emailVerifiedAt: new Date()
+        })
+        .where(eq(users.email, email))
+        .returning();
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      console.log(`🧪 DEBUG: Email verification bypassed for ${email}`);
+      res.json({ success: true, message: "Email verification bypassed" });
+    } catch (error) {
+      console.error("Debug email verification error:", error);
+      res.status(500).json({ message: "Failed to bypass email verification" });
+    }
+  });
+
   // Zoho-based login
   app.post("/api/login", async (req, res) => {
     try {
