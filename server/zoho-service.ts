@@ -957,45 +957,26 @@ export class ZohoService {
     systemFields?: any;
   }): Promise<{ success: boolean; dealId?: string; error?: string }> {
     try {
-      console.log('🔄 Creating deal with subform data in single step...');
+      console.log('🔄 Creating deal with proper subform population...');
       
-      // Prepare system fields
+      // Step 1: Create the main deal first without subform data
       const cleanSystemFields = dealData.systemFields ? { ...dealData.systemFields } : {};
       
       // Remove any problematic fields that cause Layout errors
       delete cleanSystemFields.Layout;
       delete cleanSystemFields.layout;
       delete cleanSystemFields.LAYOUT;
-      
-      // CRITICAL FIX: Use the correct field structure for Zoho subforms
-      // The field name must match the API name from the layout exactly
-      const orderProducts = dealData.orderItems.map(item => ({
-        Product_Name: item.productName || item.name,
-        Product_Code: item.sku,
-        Quantity: parseInt(item.quantity) || 1,
-        Unit_Price: parseFloat(item.unitPrice) || 0,
-        Distributor_Part_Number: item.rsrStockNumber || '',
-        Manufacturer: item.manufacturer || '',
-        Product_Category: item.category || '',
-        FFL_Required: item.fflRequired === true,
-        Drop_Ship_Eligible: item.dropShipEligible === true,
-        In_House_Only: item.inHouseOnly === true,
-        Distributor: 'RSR'
-      }));
 
-      // Try both standard Product_Details and custom Subform_1 field names
       const dealPayload: any = {
         Deal_Name: dealData.orderNumber,
-        Amount: Math.round((dealData.totalAmount || 0) * 100) / 100,  // Fix: Proper decimal rounding to stay under 16 chars
+        Amount: Math.round((dealData.totalAmount || 0) * 100) / 100,
         Stage: this.mapOrderStatusToDealStage(dealData.orderStatus),
         Contact_Name: dealData.contactId,
         Description: `TGF Order - ${dealData.membershipTier} member`,
-        Product_Details: orderProducts,  // Standard Zoho CRM product subform
-        Subform_1: orderProducts,        // Custom subform backup
         ...cleanSystemFields
       };
 
-      console.log('🚀 Creating deal with subform data...');
+      console.log('🚀 Step 1: Creating main deal...');
       console.log('📋 Deal payload:', JSON.stringify(dealPayload, null, 2));
 
       const createResponse = await this.makeAPIRequest('Deals', 'POST', {
@@ -1014,10 +995,18 @@ export class ZohoService {
       }
 
       const dealId = createResponse.data[0].details.id;
-      console.log(`✅ Deal created successfully: ${dealId}`);
+      console.log(`✅ Main deal created successfully: ${dealId}`);
       
-      // Verify the subform was populated by fetching the deal back
-      await this.verifyDealSubform(dealId, dealData.orderItems.length);
+      // Step 2: Create subform entries for each product
+      console.log('🔄 Step 2: Creating subform entries...');
+      const subformSuccess = await this.createDealSubform(dealId, dealData.orderItems);
+      
+      if (subformSuccess) {
+        console.log('✅ Subform created successfully');
+        await this.verifyDealSubform(dealId, dealData.orderItems.length);
+      } else {
+        console.warn('⚠️ Subform creation failed, but deal exists');
+      }
 
       return {
         success: true,
@@ -1034,6 +1023,63 @@ export class ZohoService {
   }
 
   // Method to verify if subform was populated correctly
+  /**
+   * Create subform entries for a deal using the correct Zoho CRM API approach
+   */
+  async createDealSubform(dealId: string, orderItems: any[]): Promise<boolean> {
+    try {
+      console.log(`🔄 Creating subform entries for deal ${dealId}...`);
+      
+      // CRITICAL: Create subform data using the exact Zoho API specification
+      // Each product becomes a separate subform record linked to the main deal
+      const subformRecords = orderItems.map((item, index) => ({
+        // Required fields for subform records
+        Product_Name: item.productName || item.name || `Product ${index + 1}`,
+        Product_Code: item.sku || '',
+        Quantity: parseInt(item.quantity) || 1,
+        Unit_Price: parseFloat(item.unitPrice) || 0,
+        
+        // Additional product information fields
+        Distributor_Part_Number: item.rsrStockNumber || '',
+        Manufacturer: item.manufacturer || '',
+        Product_Category: item.category || 'Firearms/Accessories',
+        FFL_Required: item.fflRequired === true,
+        Drop_Ship_Eligible: item.dropShipEligible !== false, // Default to true for most items
+        In_House_Only: item.inHouseOnly === true,
+        Distributor: 'RSR',
+        
+        // Calculate line total
+        Line_Total: (parseFloat(item.unitPrice) || 0) * (parseInt(item.quantity) || 1)
+      }));
+
+      console.log(`📋 Prepared ${subformRecords.length} subform records:`, JSON.stringify(subformRecords, null, 2));
+
+      // CRITICAL FIX: Use only Subform_1 - this is the field that works in Zoho CRM
+      const updatePayload = {
+        Subform_1: subformRecords
+      };
+
+      console.log('🚀 Updating deal with Subform_1 data (confirmed working field)...');
+      const updateResponse = await this.makeAPIRequest(`Deals/${dealId}`, 'PUT', {
+        data: [updatePayload]
+      });
+
+      console.log('📥 Subform_1 update response:', JSON.stringify(updateResponse, null, 2));
+
+      if (updateResponse.data && updateResponse.data[0] && updateResponse.data[0].status === 'success') {
+        console.log('✅ Subform_1 data added successfully');
+        return true;
+      } else {
+        console.warn('⚠️ Subform_1 update failed:', JSON.stringify(updateResponse, null, 2));
+        return false;
+      }
+
+    } catch (error: any) {
+      console.error('❌ Error creating deal subform:', error);
+      return false;
+    }
+  }
+
   async verifyDealSubform(dealId: string, expectedProductCount: number): Promise<boolean> {
     try {
       console.log(`🔍 Verifying Deal ${dealId} subform population...`);

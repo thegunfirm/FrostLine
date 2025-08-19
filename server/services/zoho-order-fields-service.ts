@@ -520,8 +520,8 @@ export class ZohoOrderFieldsService {
     };
 
     // Aggregate product information
-    const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
-    const manufacturers = [...new Set(products.map(p => p.manufacturer).filter(Boolean))];
+    const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+    const manufacturers = Array.from(new Set(products.map(p => p.manufacturer).filter(Boolean)));
     
     if (categories.length > 0) {
       productFields['Product Category'] = categories.join(', ');
