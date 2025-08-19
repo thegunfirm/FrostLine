@@ -8,7 +8,7 @@ Preferred communication style: Simple, everyday language.
 Image policy: NEVER use Unsplash or any placeholder images. Only use authentic distributor images (RSR, etc.) even if they show "Image Coming Soon" placeholders.
 Code preservation: Always maintain working solutions - never overwrite functioning code without explicit user request.
 Email verification: Users must verify their email address before being able to sign in.
-Testing policy: No assumptions - use test or dummy data ONLY FOR FAKE USERS. Inventory must always remain intact with authentic RSR data. No test data should ever be added to real product inventory. FFL directory must use only authentic FFL data - no fake dealers should be added to the system.
+**CRITICAL INVENTORY POLICY**: NEVER use fabricated, test, or placeholder product data. ONLY use products that exist in our live RSR feed. When working with inventory, verify products exist in the database first. No exceptions. No fallback data. No test SKUs like GLOCK17GEN5. FFL directory must use only authentic FFL data - no fake dealers should be added to the system.
 CRITICAL IMAGE HANDLING RULE: For product images in cart/order displays, NEVER use containers with gray backgrounds or fixed heights. Use direct image elements with `w-[size] h-auto object-contain` classes only. This prevents background showing through and maintains natural image proportions.
 CART CORRUPTION SOLUTION: Implement comprehensive clearing mechanism including both localStorage removal and server-side force-clear endpoint for cart items.
 FFL SELECTOR IMPROVEMENTS: Add proper error handling, loading states, and retry logic to the FFL selector component.
