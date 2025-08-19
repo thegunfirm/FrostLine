@@ -7500,6 +7500,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Direct Products Module verification endpoint - verify our test products
+  app.get("/api/zoho/products/verify", async (req, res) => {
+    try {
+      const { sku } = req.query;
+      
+      if (!sku) {
+        return res.status(400).json({ error: "SKU parameter is required" });
+      }
+      
+      console.log(`🔍 Verifying product in Zoho Products Module: ${sku}`);
+      
+      // Search for the specific product by SKU in Products Module
+      const searchCriteria = `(Product_Code:equals:${sku})`;
+      const searchResult = await zohoOrderFieldsService.searchRecords('Products', searchCriteria);
+      
+      if (searchResult && searchResult.data && searchResult.data.length > 0) {
+        const product = searchResult.data[0];
+        res.json({
+          found: true,
+          productId: product.id,
+          productName: product.Product_Name,
+          productCode: product.Product_Code,
+          manufacturer: product.Manufacturer,
+          distributorPartNumber: product.Distributor_Part_Number,
+          createdTime: product.Created_Time,
+          modifiedTime: product.Modified_Time
+        });
+      } else {
+        res.json({
+          found: false,
+          sku: sku,
+          message: `Product with SKU ${sku} not found in Zoho Products Module`
+        });
+      }
+      
+    } catch (error) {
+      console.error("Zoho Products Module verification error:", error);
+      res.status(500).json({ 
+        error: "Failed to verify product in Zoho Products Module",
+        details: error.message 
+      });
+    }
+  });
+
+  // Direct Products Module listing endpoint
+  app.get("/api/zoho/products/list", async (req, res) => {
+    try {
+      const { limit = 10 } = req.query;
+      
+      console.log(`📋 Fetching ${limit} products from Zoho Products Module...`);
+      
+      // Get recent products from Products Module
+      const response = await zohoOrderFieldsService.makeAPIRequest(
+        `Products?fields=Product_Name,Product_Code,Manufacturer,Distributor_Part_Number,Created_Time&per_page=${limit}&sort_order=desc&sort_by=Created_Time`
+      );
+      
+      if (response && response.data) {
+        res.json({
+          success: true,
+          totalProducts: response.data.length,
+          products: response.data
+        });
+      } else {
+        res.json({
+          success: false,
+          message: "No products found in Zoho Products Module"
+        });
+      }
+      
+    } catch (error) {
+      console.error("Zoho Products Module listing error:", error);
+      res.status(500).json({ 
+        error: "Failed to list products from Zoho Products Module",
+        details: error.message 
+      });
+    }
+  });
+
   // Register authentication routes (Zoho-based)
   registerAuthRoutes(app);
 
