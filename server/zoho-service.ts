@@ -927,19 +927,24 @@ export class ZohoService {
           Product_Code: item.manufacturerPartNumber || sku, // Use manufacturer part number as Product_Code
           Product_Lookup: productId ? { id: productId } : null, // Link to actual Product record
           Quantity: parseInt(item.quantity) || 1,
-          Unit_Price: parseFloat(item.unitPrice) || 0,
+          Unit_Price: parseFloat(item.unitPrice || item.price) || 0,
+          
+          // CRITICAL MISSING FIELDS - Now Added
+          Product_Ref: productId || '', // Product reference ID
+          Distributor_Code: item.rsrStockNumber || sku, // RSR stock number as distributor code
+          UPC: item.upcCode || '', // UPC field
           
           // Additional fields
-          Distributor_Part_Number: item.rsrStockNumber || '',
+          Distributor_Part_Number: item.rsrStockNumber || sku,
           Manufacturer: item.manufacturer || '',
-          Product_Category: item.category || 'Firearms/Accessories',
-          FFL_Required: item.fflRequired === true,
+          Product_Category: item.category || item.productCategory || 'Firearms/Accessories',
+          FFL_Required: item.fflRequired === true || item.requiresFFL === true,
           Drop_Ship_Eligible: item.dropShipEligible !== false,
           In_House_Only: item.inHouseOnly === true,
           Distributor: 'RSR',
           
           // Calculate line total
-          Line_Total: (parseFloat(item.unitPrice) || 0) * (parseInt(item.quantity) || 1)
+          Line_Total: (parseFloat(item.unitPrice || item.price) || 0) * (parseInt(item.quantity) || 1)
         };
       });
 
@@ -985,22 +990,26 @@ export class ZohoService {
       const subformRecords = orderItems.map((item, index) => ({
         // Required fields for subform records
         Product_Name: item.productName || item.name || `Product ${index + 1}`,
-        Product_Code: item.sku || '',
+        Product_Code: item.manufacturerPartNumber || item.sku || '', // Use manufacturer part number as Product_Code
         Quantity: parseInt(item.quantity) || 1,
-        Unit_Price: parseFloat(item.unitPrice) || 0,
+        Unit_Price: parseFloat(item.unitPrice || item.price) || 0,
+        
+        // CRITICAL MISSING FIELDS - Now Added
+        Product_Ref: '', // Will be populated if Product IDs are available
+        Distributor_Code: item.rsrStockNumber || item.sku, // RSR stock number as distributor code
+        UPC: item.upcCode || '', // UPC field
         
         // Additional product information fields
-        Distributor_Part_Number: item.rsrStockNumber || '',
+        Distributor_Part_Number: item.rsrStockNumber || item.sku,
         Manufacturer: item.manufacturer || '',
-        Product_Category: item.category || 'Firearms/Accessories',
-        FFL_Required: item.fflRequired === true,
+        Product_Category: item.category || item.productCategory || 'Firearms/Accessories',
+        FFL_Required: item.fflRequired === true || item.requiresFFL === true,
         Drop_Ship_Eligible: item.dropShipEligible !== false, // Default to true for most items
         In_House_Only: item.inHouseOnly === true,
         Distributor: 'RSR',
-        UPC: item.upcCode || '', // Add UPC field to subform
         
         // Calculate line total
-        Line_Total: (parseFloat(item.unitPrice) || 0) * (parseInt(item.quantity) || 1)
+        Line_Total: (parseFloat(item.unitPrice || item.price) || 0) * (parseInt(item.quantity) || 1)
       }));
 
       console.log(`📋 Prepared ${subformRecords.length} subform records:`, JSON.stringify(subformRecords, null, 2));
