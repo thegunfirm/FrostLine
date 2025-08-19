@@ -64,13 +64,13 @@ export class OrderZohoIntegration {
       
       const productPayload = {
         Product_Name: productData.productName || sku,
-        Product_Code: sku, // Must be unique
+        Mfg_Part_Number: sku, // CORRECTED: Using working field for manufacturer part number
         ...(productData.manufacturer && { Manufacturer: productData.manufacturer }),
         ...(productData.category && { Product_Category: productData.category }),
         ...(productData.fflRequired !== undefined && { FFL_Required: productData.fflRequired }),
         ...(productData.dropShipEligible !== undefined && { Drop_Ship_Eligible: productData.dropShipEligible }),
         ...(productData.inHouseOnly !== undefined && { In_House_Only: productData.inHouseOnly }),
-        ...(productData.rsrStockNumber && { Distributor_Part_Number: productData.rsrStockNumber }),
+        ...(productData.rsrStockNumber && { RSR_Stock_Number: productData.rsrStockNumber }), // CORRECTED: Using working field
         ...(productData.distributor && { Distributor: productData.distributor }),
         // Additional fields per spec
         ...(productData.specifications && { Product_Specifications: productData.specifications }),

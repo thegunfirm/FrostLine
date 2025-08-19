@@ -34,8 +34,8 @@ export interface ZohoProductFieldMapping {
   // Core Product Identification
   Deal_Name: string;                  // Product name or "Mixed Order" for multi-product
   Product_Lookup?: { id: string };    // Lookup to Products module (dynamic)
-  'Product Code (SKU)'?: string;      // Internal SKU identifier (renamed)
-  'Distributor Part Number'?: string; // Distributor stock number (RSR, etc.)
+  Mfg_Part_Number?: string;           // CORRECTED: Manufacturer part number/SKU (working field)
+  RSR_Stock_Number?: string;          // CORRECTED: RSR stock number (working field)  
   Distributor?: string;               // Name of distributor (RSR, Lipsey's, etc.)
   
   // Pricing and Quantity
@@ -455,12 +455,12 @@ export class ZohoOrderFieldsService {
       Amount: totalOrderValue || productData.totalPrice || productData.unitPrice || 0
     };
 
-    // Core product identification (updated field names)
+    // Core product identification (corrected field names)
     if (productData.sku) {
-      productFields['Product Code (SKU)'] = productData.sku;
+      productFields.Mfg_Part_Number = productData.sku;
     }
     if (productData.rsrStockNumber || productData.distributorPartNumber) {
-      productFields['Distributor Part Number'] = productData.rsrStockNumber || productData.distributorPartNumber;
+      productFields.RSR_Stock_Number = productData.rsrStockNumber || productData.distributorPartNumber;
     }
     if (productData.distributor) {
       productFields.Distributor = productData.distributor;
@@ -524,7 +524,7 @@ export class ZohoOrderFieldsService {
     const manufacturers = [...new Set(products.map(p => p.manufacturer).filter(Boolean))];
     
     if (categories.length > 0) {
-      productFields.Product_Category = categories.join(', ');
+      productFields['Product Category'] = categories.join(', ');
     }
     if (manufacturers.length > 0) {
       productFields.Manufacturer = manufacturers.join(', ');
@@ -535,9 +535,9 @@ export class ZohoOrderFieldsService {
     const canDropShip = products.some(p => p.dropShipEligible);
     const inHouseOnly = products.some(p => p.inHouseOnly);
 
-    productFields.FFL_Required = requiresFFL;
-    productFields.Drop_Ship_Eligible = canDropShip;
-    productFields.In_House_Only = inHouseOnly;
+    productFields['FFL Required'] = requiresFFL;
+    productFields['Drop Ship Eligible'] = canDropShip;
+    productFields['In House Only'] = inHouseOnly;
 
     // Create detailed description
     const descriptions = products.map(p => 
@@ -569,7 +569,7 @@ export class ZohoOrderFieldsService {
     if (productFields.Quantity !== undefined && (!Number.isInteger(productFields.Quantity) || productFields.Quantity <= 0)) {
       errors.push('Quantity must be a positive integer');
     }
-    if (productFields.Unit_Price !== undefined && productFields.Unit_Price < 0) {
+    if (productFields['Unit Price'] !== undefined && productFields['Unit Price'] < 0) {
       errors.push('Unit_Price cannot be negative');
     }
 
@@ -577,8 +577,8 @@ export class ZohoOrderFieldsService {
     if (productFields.Deal_Name && productFields.Deal_Name.length > 100) {
       errors.push('Deal_Name exceeds 100 character limit');
     }
-    if (productFields.Product_Code && productFields.Product_Code.length > 100) {
-      errors.push('Product_Code exceeds 100 character limit');
+    if (productFields.Mfg_Part_Number && productFields.Mfg_Part_Number.length > 100) {
+      errors.push('Mfg_Part_Number exceeds 100 character limit');
     }
     if (productFields.Manufacturer && productFields.Manufacturer.length > 100) {
       errors.push('Manufacturer exceeds 100 character limit');

@@ -86,8 +86,8 @@ export class ZohoProductLookupService {
    */
   private async searchProductBySKU(sku: string): Promise<string | null> {
     try {
-      // Search Products module with criteria: Product_Code equals SKU (manufacturer part number)
-      const searchCriteria = `(Product_Code:equals:${sku})`;
+      // Search Products module with criteria: Mfg_Part_Number equals SKU (manufacturer part number)
+      const searchCriteria = `(Mfg_Part_Number:equals:${sku})`;
       const response = await this.zohoService.searchRecords('Products', searchCriteria);
 
       if (response && response.data && response.data.length > 0) {
@@ -119,8 +119,8 @@ export class ZohoProductLookupService {
     try {
       const productPayload = {
         Product_Name: productData.productName || sku,
-        Product_Code: sku, // FIXED: Manufacturer Part Number (not RSR stock number)
-        Distributor_Part_Number: productData.distributorPartNumber || '', // RSR stock number
+        Mfg_Part_Number: sku, // CORRECTED: Using working field for manufacturer part number
+        RSR_Stock_Number: productData.distributorPartNumber || '', // CORRECTED: Using working field for RSR stock number
         Distributor: productData.distributor || 'RSR',
         Distributor_Code: 'RSR',
         ...(productData.manufacturer && { Manufacturer: productData.manufacturer }),
