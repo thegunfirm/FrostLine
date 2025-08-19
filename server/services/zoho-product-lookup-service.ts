@@ -10,6 +10,7 @@ interface ProductData {
   inHouseOnly?: boolean;
   distributorPartNumber?: string;
   distributor?: string;
+  upcCode?: string;
 }
 
 interface ProductLookupResult {
@@ -123,6 +124,7 @@ export class ZohoProductLookupService {
         RSR_Stock_Number: productData.distributorPartNumber || '', // CORRECTED: Using working field for RSR stock number
         Distributor: productData.distributor || 'RSR',
         Distributor_Code: 'RSR',
+        ...(productData.upcCode && { UPC: productData.upcCode }),
         ...(productData.manufacturer && { Manufacturer: productData.manufacturer }),
         ...(productData.productCategory && { Product_Category: productData.productCategory }),
         ...(productData.fflRequired !== undefined && { FFL_Required: productData.fflRequired }),

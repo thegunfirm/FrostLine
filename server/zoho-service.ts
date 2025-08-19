@@ -723,6 +723,8 @@ export class ZohoService {
     productName?: string;
     manufacturer?: string;
     category?: string;
+    distributorPartNumber?: string;
+    upcCode?: string;
   }): Promise<{ success: boolean; productId?: string; error?: string }> {
     try {
       const result = await this.productLookupService.findOrCreateProductBySKU({
@@ -731,7 +733,8 @@ export class ZohoService {
         manufacturer: productInfo.manufacturer,
         productCategory: productInfo.category,
         distributorPartNumber: productInfo.distributorPartNumber, // RSR stock number
-        distributor: 'RSR'
+        distributor: 'RSR',
+        upcCode: productInfo.upcCode
       });
 
       if (result.productId) {
@@ -994,6 +997,7 @@ export class ZohoService {
         Drop_Ship_Eligible: item.dropShipEligible !== false, // Default to true for most items
         In_House_Only: item.inHouseOnly === true,
         Distributor: 'RSR',
+        UPC: item.upcCode || '', // Add UPC field to subform
         
         // Calculate line total
         Line_Total: (parseFloat(item.unitPrice) || 0) * (parseInt(item.quantity) || 1)
