@@ -167,9 +167,13 @@ export class OrderZohoIntegration {
         if (existingContact) {
           contactId = existingContact.id;
         } else {
-          const nameParts = orderData.customerName.split(' ');
-          const firstName = nameParts[0] || '';
-          const lastName = nameParts.slice(1).join(' ') || '';
+          // Use provided first and last names, or parse from customerName if available
+          const firstName = orderData.contactFirstName || 
+                          (orderData.customerName ? orderData.customerName.split(' ')[0] : '') || 
+                          'Customer';
+          const lastName = orderData.contactLastName || 
+                         (orderData.customerName ? orderData.customerName.split(' ').slice(1).join(' ') : '') || 
+                         '';
 
           const rateLimitedService = getZohoRateLimitedService();
           const newContact = await rateLimitedService.createContactSafe({
@@ -529,10 +533,18 @@ export class OrderZohoIntegration {
           contactId = existingContact.id;
           console.log(`✅ Found existing contact: ${contactId}`);
         } else {
+          // Use provided first and last names, or parse from customerName if available
+          const firstName = orderData.contactFirstName || 
+                          (orderData.customerName ? orderData.customerName.split(' ')[0] : '') || 
+                          'Customer';
+          const lastName = orderData.contactLastName || 
+                         (orderData.customerName ? orderData.customerName.split(' ').slice(1).join(' ') : '') || 
+                         '';
+          
           const newContact = await this.zohoService.createContact({
             Email: orderData.customerEmail,
-            First_Name: orderData.customerName.split(' ')[0],
-            Last_Name: orderData.customerName.split(' ').slice(1).join(' ') || 'Customer',
+            First_Name: firstName,
+            Last_Name: lastName,
             Description: `${orderData.membershipTier} - TheGunFirm.com`,
             Lead_Source: 'TheGunFirm.com'
           });
@@ -591,7 +603,9 @@ export class OrderZohoIntegration {
         const outcomeTotal = outcome.items.reduce((sum, item) => sum + item.totalPrice, 0);
 
         // Create deal name with outcome details
-        const dealName = `${orderData.customerName} - ${outcome.outcome} - $${outcomeTotal.toFixed(2)}`;
+        const customerName = orderData.customerName || 
+                           `${orderData.contactFirstName || 'Customer'} ${orderData.contactLastName || ''}`.trim();
+        const dealName = `${customerName} - ${outcome.outcome} - $${outcomeTotal.toFixed(2)}`;
 
         // Extract system fields for Zoho
         const systemFields = {
@@ -762,9 +776,13 @@ export class OrderZohoIntegration {
           contactId = existingContact.id;
           console.log(`✅ Found existing contact: ${contactId}`);
         } else {
-          const nameParts = orderData.customerName.split(' ');
-          const firstName = nameParts[0] || '';
-          const lastName = nameParts.slice(1).join(' ') || '';
+          // Use provided first and last names, or parse from customerName if available
+          const firstName = orderData.contactFirstName || 
+                          (orderData.customerName ? orderData.customerName.split(' ')[0] : '') || 
+                          'Customer';
+          const lastName = orderData.contactLastName || 
+                         (orderData.customerName ? orderData.customerName.split(' ').slice(1).join(' ') : '') || 
+                         '';
 
           const newContact = await this.zohoService.createContact({
             Email: orderData.customerEmail,
@@ -880,9 +898,13 @@ export class OrderZohoIntegration {
           console.log(`✅ Found existing contact: ${contactId}`);
         } else {
           // Create new contact if customer doesn't exist
-          const nameParts = orderData.customerName.split(' ');
-          const firstName = nameParts[0] || '';
-          const lastName = nameParts.slice(1).join(' ') || '';
+          // Use provided first and last names, or parse from customerName if available
+          const firstName = orderData.contactFirstName || 
+                          (orderData.customerName ? orderData.customerName.split(' ')[0] : '') || 
+                          'Customer';
+          const lastName = orderData.contactLastName || 
+                         (orderData.customerName ? orderData.customerName.split(' ').slice(1).join(' ') : '') || 
+                         '';
 
           const newContact = await this.zohoService.createContact({
             Email: orderData.customerEmail,

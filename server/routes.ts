@@ -1880,6 +1880,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint for creating complete Zoho deals with products
+  app.post("/api/admin/zoho/deals/create-complete", async (req, res) => {
+    try {
+      console.log('🏗️ Creating complete Zoho deal with products...');
+      const {
+        dealName,
+        contactEmail,
+        contactFirstName,
+        contactLastName,
+        stage = 'Order Received',
+        amount,
+        orderNumber,
+        products = [],
+        membershipTier,
+        fflRequired = false,
+        fflDealerName,
+        orderStatus = 'Processing'
+      } = req.body;
+
+      if (!dealName || !contactEmail || !products.length) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required fields: dealName, contactEmail, or products'
+        });
+      }
+
+      const { OrderZohoIntegration } = await import('./order-zoho-integration');
+      const orderZohoIntegration = new OrderZohoIntegration();
+
+      // Create the complete deal with products
+      const result = await orderZohoIntegration.processOrderWithSystemFields({
+        dealName,
+        contactEmail,
+        contactFirstName,
+        contactLastName,
+        stage,
+        amount,
+        orderNumber,
+        products,
+        membershipTier,
+        fflRequired,
+        fflDealerName,
+        orderStatus,
+        orderItems: products.map(p => ({
+          productName: p.productName || `Product ${p.sku}`,
+          sku: p.sku,
+          rsrStockNumber: p.rsrStockNumber || p.sku,
+          quantity: p.quantity || 1,
+          unitPrice: p.unitPrice || p.price || 0,
+          totalPrice: (p.quantity || 1) * (p.unitPrice || p.price || 0),
+          fflRequired: p.fflRequired || false,
+          dropShipEligible: p.dropShipEligible || true,
+          category: p.category || 'General',
+          manufacturer: p.manufacturer || 'Unknown'
+        }))
+      });
+
+      if (result.success) {
+        console.log(`✅ Complete deal created: ${result.dealId}`);
+        res.json({
+          success: true,
+          dealId: result.dealId,
+          dealName: dealName,
+          contactId: result.contactId,
+          tgfOrderNumber: result.tgfOrderNumber,
+          message: 'Complete deal with products created successfully'
+        });
+      } else {
+        console.error('❌ Deal creation failed:', result.error);
+        res.status(500).json({
+          success: false,
+          error: result.error || 'Failed to create complete deal'
+        });
+      }
+
+    } catch (error: any) {
+      console.error('Complete deal creation error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        message: 'Failed to create complete deal with products'
+      });
+    }
+  });
+
   // RSR API Integration and Hybrid Search Endpoints
   app.post("/api/admin/sync-rsr-catalog", async (req, res) => {
     try {
