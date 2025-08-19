@@ -104,8 +104,11 @@ export class ZohoService {
         }
       );
 
-      // Update the access token in config
+      // Update the access token in config AND environment
       this.config.accessToken = response.data.access_token;
+      
+      // CRITICAL: Update environment variable so API calls work
+      process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN = response.data.access_token;
       
       // CRITICAL FIX: Use persistent token storage
       const { tokenPersistence } = await import('./token-persistence.js');
@@ -119,7 +122,7 @@ export class ZohoService {
         this.config.refreshToken = response.data.refresh_token;
       }
       
-      console.log('✅ Zoho access token refreshed and persisted to storage - no more daily issues!');
+      console.log('✅ Zoho access token refreshed, environment updated, and persisted to storage - API calls will work!');
       
       // Test the token immediately to ensure it works
       try {
