@@ -86,8 +86,8 @@ export class ZohoProductLookupService {
    */
   private async searchProductBySKU(sku: string): Promise<string | null> {
     try {
-      // Search Products module with criteria: Product_Name equals SKU
-      const searchCriteria = `(Product_Name:equals:${sku})`;
+      // Search Products module with criteria: Product_Code equals SKU (manufacturer part number)
+      const searchCriteria = `(Product_Code:equals:${sku})`;
       const response = await this.zohoService.searchRecords('Products', searchCriteria);
 
       if (response && response.data && response.data.length > 0) {
@@ -119,7 +119,10 @@ export class ZohoProductLookupService {
     try {
       const productPayload = {
         Product_Name: productData.productName || sku,
-        Product_Code: sku, // Must be unique (Manufacturer Part Number)
+        Product_Code: sku, // Manufacturer Part Number (unique SKU)
+        Distributor_Part_Number: productData.distributorPartNumber || sku, // RSR stock number
+        Distributor: productData.distributor || 'RSR',
+        Distributor_Code: 'RSR',
         ...(productData.manufacturer && { Manufacturer: productData.manufacturer }),
         ...(productData.productCategory && { Product_Category: productData.productCategory }),
         ...(productData.fflRequired !== undefined && { FFL_Required: productData.fflRequired }),
