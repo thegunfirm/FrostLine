@@ -868,6 +868,7 @@ export class ZohoService {
           const productPayload = {
             data: [{
               Product_Name: item.productName || item.name || sku,
+              Product_Code: manufacturerPartNumber, // FIXED: Add Product_Code field using manufacturer part number
               Mfg_Part_Number: manufacturerPartNumber, // Use Manufacturer Part Number as Product Code per requirements
               RSR_Stock_Number: item.rsrStockNumber || '',
               Manufacturer: item.manufacturer || '',
