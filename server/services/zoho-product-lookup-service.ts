@@ -119,8 +119,8 @@ export class ZohoProductLookupService {
     try {
       const productPayload = {
         Product_Name: productData.productName || sku,
-        Product_Code: sku, // Manufacturer Part Number (unique SKU)
-        Distributor_Part_Number: productData.distributorPartNumber || sku, // RSR stock number
+        Product_Code: sku, // FIXED: Manufacturer Part Number (not RSR stock number)
+        Distributor_Part_Number: productData.distributorPartNumber || '', // RSR stock number
         Distributor: productData.distributor || 'RSR',
         Distributor_Code: 'RSR',
         ...(productData.manufacturer && { Manufacturer: productData.manufacturer }),
@@ -128,7 +128,6 @@ export class ZohoProductLookupService {
         ...(productData.fflRequired !== undefined && { FFL_Required: productData.fflRequired }),
         ...(productData.dropShipEligible !== undefined && { Drop_Ship_Eligible: productData.dropShipEligible }),
         ...(productData.inHouseOnly !== undefined && { In_House_Only: productData.inHouseOnly })
-        // NOTE: Distributor information (Distributor_Part_Number, Distributor) goes to Deal subform only, not Products module
       };
 
       const response = await this.zohoService.createRecord('Products', productPayload);

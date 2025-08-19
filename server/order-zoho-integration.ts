@@ -988,7 +988,7 @@ export class OrderZohoIntegration {
       membershipTier: customerInfo.membershipTier || order.membershipTier || 'Bronze',
       orderItems: (order.items || []).map((item: any) => ({
         productName: item.name || item.description || item.productName || 'Product',
-        sku: item.sku || item.manufacturerPartNumber || item.mfgPartNumber || item.rsrStock || item.id?.toString() || '',
+        sku: item.manufacturerPartNumber || item.mfgPartNumber || item.sku || '',
         quantity: parseInt(item.quantity?.toString() || '1'),
         unitPrice: Math.round((parseFloat(item.price?.toString() || item.unitPrice?.toString() || '0')) * 100) / 100,  // Fix: Round to 2 decimals
         totalPrice: Math.round((parseFloat(item.totalPrice?.toString() || (item.price * item.quantity)?.toString() || '0')) * 100) / 100,  // Fix: Round to 2 decimals

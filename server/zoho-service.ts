@@ -915,10 +915,12 @@ export class ZohoService {
   }): Promise<{ success: boolean; productId?: string; error?: string }> {
     try {
       const result = await this.productLookupService.findOrCreateProductBySKU({
-        sku,
+        sku, // This should be manufacturer part number
         productName: productInfo.productName,
         manufacturer: productInfo.manufacturer,
-        productCategory: productInfo.category
+        productCategory: productInfo.category,
+        distributorPartNumber: productInfo.distributorPartNumber, // RSR stock number
+        distributor: 'RSR'
       });
 
       if (result.productId) {
