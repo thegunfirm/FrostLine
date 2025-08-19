@@ -37,7 +37,7 @@ export interface ZohoProductFieldMapping {
   Mfg_Part_Number?: string;           // CORRECTED: Manufacturer part number/SKU (working field)
   RSR_Stock_Number?: string;          // CORRECTED: RSR stock number (working field)  
   Distributor?: string;               // Name of distributor (RSR, Lipsey's, etc.)
-  UPC_EAN?: string;                   // UPC/EAN barcode number (text with leading zeros)
+  UPC?: string;                       // UPC/EAN barcode number (text with leading zeros)
   
   // Pricing and Quantity
   Quantity?: number;                  // Number of items ordered
@@ -471,7 +471,7 @@ export class ZohoOrderFieldsService {
     }
     // UPC field mapping for Zoho Product module
     if (productData.upcCode) {
-      productFields.UPC_EAN = productData.upcCode;
+      productFields.UPC = productData.upcCode;
     }
 
     // Pricing and quantity

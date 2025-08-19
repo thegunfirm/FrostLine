@@ -72,7 +72,7 @@ export class OrderZohoIntegration {
         ...(productData.inHouseOnly !== undefined && { In_House_Only: productData.inHouseOnly }),
         ...(productData.rsrStockNumber && { RSR_Stock_Number: productData.rsrStockNumber }), // CORRECTED: Using working field
         ...(productData.distributor && { Distributor: productData.distributor }),
-        ...(productData.upcCode && { UPC_EAN: productData.upcCode }), // UPC field mapping for product module
+        ...(productData.upcCode && { UPC: productData.upcCode }), // UPC field mapping for product module
         // Additional fields per spec
         ...(productData.specifications && { Product_Specifications: productData.specifications }),
         ...(productData.images && { Product_Images: productData.images })
