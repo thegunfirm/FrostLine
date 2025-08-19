@@ -1,81 +1,96 @@
-const https = require('https');
+// Check Zoho Products Module for our test sale products
+const { exec } = require('child_process');
+const util = require('util');
+const execAsync = util.promisify(exec);
 
-async function checkProductsModuleFields() {
-  try {
-    console.log('🔍 Checking available fields in Zoho Products Module only...');
-    
-    // Read Zoho tokens from environment
-    const accessToken = process.env.ZOHO_ACCESS_TOKEN;
-    
-    if (!accessToken) {
-      console.error('❌ ZOHO_ACCESS_TOKEN not found in environment');
-      return;
-    }
-
-    const options = {
-      hostname: 'www.zohoapis.com',
-      port: 443,
-      path: '/crm/v2/settings/fields?module=Products',
-      method: 'GET',
-      headers: {
-        'Authorization': `Zoho-oauthtoken ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    };
-
-    const response = await new Promise((resolve, reject) => {
-      const req = https.request(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => data += chunk);
-        res.on('end', () => {
-          try {
-            resolve(JSON.parse(data));
-          } catch (e) {
-            reject(e);
+async function checkProductsModule() {
+  console.log('🔍 CHECKING ZOHO PRODUCTS MODULE\n');
+  
+  const testProducts = [
+    { name: 'ALG COMBAT TRIGGER', sku: 'ALGACT' },
+    { name: 'CMMG RECEIVER EXT KIT CARBINE AR15', sku: 'CMMG55CA6C7' },
+    { name: 'XS R3D 2.0 FOR SIG 320 SUP HGT GREEN', sku: 'XSSI-R203P-6G' }
+  ];
+  
+  console.log('Searching for products from our test sale...');
+  
+  for (const product of testProducts) {
+    try {
+      console.log(`\n🔍 Searching for: ${product.name} (${product.sku})`);
+      
+      // Search by SKU in Products Module
+      const searchResponse = await execAsync(`
+        curl -X GET "http://localhost:5000/api/zoho/products?search=${product.sku}" \\
+          --max-time 10 2>/dev/null
+      `);
+      
+      try {
+        const searchResult = JSON.parse(searchResponse.stdout);
+        
+        if (searchResult && searchResult.data && searchResult.data.length > 0) {
+          const foundProduct = searchResult.data[0];
+          console.log('✅ FOUND in Products Module:');
+          console.log(`   Product Name: ${foundProduct.Product_Name}`);
+          console.log(`   Product Code: ${foundProduct.Product_Code}`);
+          console.log(`   Manufacturer: ${foundProduct.Manufacturer || 'N/A'}`);
+          console.log(`   Product ID: ${foundProduct.id}`);
+          
+          if (foundProduct.Distributor_Part_Number) {
+            console.log(`   RSR Stock Number: ${foundProduct.Distributor_Part_Number}`);
           }
-        });
-      });
-      req.on('error', reject);
-      req.end();
-    });
-    
-    if (response && response.fields) {
-      console.log('\n📋 PRODUCTS MODULE AVAILABLE FIELDS:');
-      console.log('='.repeat(60));
+          
+        } else {
+          console.log('❌ NOT FOUND in Products Module');
+        }
+        
+      } catch (parseError) {
+        console.log('⚠️ Could not parse search response - checking raw response...');
+        
+        if (searchResponse.stdout.includes('Product_Name') || searchResponse.stdout.includes('Product_Code')) {
+          console.log('✅ Raw response contains product data - likely found but format issue');
+          console.log('Sample response:', searchResponse.stdout.substring(0, 200));
+        } else {
+          console.log('❌ No product data found in response');
+        }
+      }
       
-      // Filter and show relevant fields
-      const relevantFields = response.fields
-        .filter(field => field.field_label && field.api_name)
-        .sort((a, b) => a.field_label.localeCompare(b.field_label));
-      
-      relevantFields.forEach(field => {
-        const required = field.required ? ' (REQUIRED)' : '';
-        const type = field.data_type ? ` [${field.data_type}]` : '';
-        console.log(`• ${field.field_label} (${field.api_name})${type}${required}`);
-      });
-      
-      console.log('\n🎯 PRODUCTS MODULE SHOULD CONTAIN (Static Info Only):');
-      console.log('✅ Product_Code (Manufacturer Part Number - e.g., SP00735)');
-      console.log('✅ Product_Name (Product description)');
-      console.log('✅ Manufacturer (e.g., "Glock Inc")');
-      console.log('✅ Product_Category (e.g., "Handguns")');
-      console.log('✅ FFL_Required (Boolean)');
-      console.log('✅ Drop_Ship_Eligible (Boolean)');
-      console.log('✅ In_House_Only (Boolean)');
-      
-      console.log('\n🚫 PRODUCTS MODULE SHOULD NOT CONTAIN:');
-      console.log('❌ Distributor information (goes to Deal subform only)');
-      console.log('❌ Distributor_Part_Number (goes to Deal subform only)');
-      console.log('❌ Unit_Price (goes to Deal subform only)');
-      console.log('❌ Pricing information (goes to Deal subform only)');
-      console.log('❌ Quantity (goes to Deal subform only)');
-      
-    } else {
-      console.error('❌ No fields found or API error:', response);
+    } catch (error) {
+      console.log(`❌ Search failed for ${product.sku}: ${error.message}`);
     }
+  }
+  
+  // Also check overall Products Module status
+  console.log('\n📊 PRODUCTS MODULE OVERVIEW');
+  try {
+    const overviewResponse = await execAsync(`
+      curl -X GET "http://localhost:5000/api/zoho/products?per_page=5" \\
+        --max-time 10 2>/dev/null
+    `);
+    
+    try {
+      const overview = JSON.parse(overviewResponse.stdout);
+      
+      if (overview && overview.data) {
+        console.log(`✅ Products Module accessible: ${overview.data.length} products returned`);
+        console.log('Sample products in module:');
+        
+        overview.data.slice(0, 3).forEach((product, index) => {
+          console.log(`   ${index + 1}. ${product.Product_Name || 'Unknown'} (${product.Product_Code || 'No Code'})`);
+        });
+      } else {
+        console.log('⚠️ Products Module response format unexpected');
+      }
+      
+    } catch (parseError) {
+      console.log('⚠️ Could not parse overview response');
+      console.log('Raw response sample:', overviewResponse.stdout.substring(0, 150));
+    }
+    
   } catch (error) {
-    console.error('❌ Error checking fields:', error.message);
+    console.log('❌ Products Module overview failed:', error.message);
   }
 }
 
-checkProductsModuleFields();
+checkProductsModule().catch(error => {
+  console.error('💥 Products Module check failed:', error);
+});
