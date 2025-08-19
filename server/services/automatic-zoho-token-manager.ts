@@ -10,8 +10,8 @@ interface TokenData {
 
 export class AutomaticZohoTokenManager {
   private tokenFile = '.zoho-tokens.json';
-  private clientId = '1000.EYQE8LR8LWDKQ6YD5CKPC9D0885RUN';
-  private clientSecret = '8fd49cf545a04ed0a5e1932cee6d56cda5887a1b34';
+  private clientId = process.env.ZOHO_WEBSERVICES_CLIENT_ID || process.env.ZOHO_CLIENT_ID || '';
+  private clientSecret = process.env.ZOHO_WEBSERVICES_CLIENT_SECRET || process.env.ZOHO_CLIENT_SECRET || '';
   private refreshInterval: NodeJS.Timeout | null = null;
 
   constructor() {
