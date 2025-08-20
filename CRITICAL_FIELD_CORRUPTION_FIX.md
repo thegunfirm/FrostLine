@@ -6,7 +6,7 @@
 **Scope:** 99.96% of inventory (29,810 of 29,822 products)
 
 ### Root Cause
-The RSR import logic was incorrectly using RSR distributor codes as customer-facing SKUs instead of manufacturer part numbers. This created a fundamental business logic error where customers saw internal distributor codes instead of actual product SKUs.
+The RSR import logic was incorrectly using RSR distributor codes as product SKUs instead of manufacturer part numbers. This created a fundamental business logic error where customers saw internal distributor codes instead of actual manufacturer part numbers.
 
 ### Business Impact
 - Customers could not search by actual manufacturer part numbers
@@ -18,18 +18,18 @@ The RSR import logic was incorrectly using RSR distributor codes as customer-fac
 
 ### Field Mapping Correction
 **Before (Corrupted):**
-- Customer SKU = RSR Stock Number (Field 1) - WRONG
+- Product SKU = RSR Stock Number (Field 1) - WRONG
 - RSR Stock Number = Not stored - MISSING
 
 **After (Fixed):**
-- Customer SKU = Manufacturer Part Number (Field 12) - CORRECT
+- Product SKU = Manufacturer Part Number (Field 12) - CORRECT
 - RSR Stock Number = RSR Stock Number (Field 1) - CORRECT
 
 ### Implementation
 
 #### 1. Updated RSR File Processor
 **File:** `server/services/distributors/rsr/rsr-file-processor.ts`
-- Fixed to use Field 12 (manufacturerPartNumber) as customer-facing SKU
+- Fixed to use Field 12 (manufacturerPartNumber) as product SKU
 - Added proper storage of Field 1 (stockNumber) as rsrStockNumber for ordering
 - Added logging to track corrections
 
@@ -56,7 +56,7 @@ The RSR import logic was incorrectly using RSR distributor codes as customer-fac
 
 ### Examples of Successful Fixes
 ```
-RSR Code      → Customer SKU    Product
+RSR Code      → Product SKU     Product
 ALGACT        → 05-199         ALG Combat Trigger
 B5SOP-1097    → SOP-1097       B5 SOPMOD Stock MIL-SPEC ODG
 AMA2VFGBLK    → A2VFGBLK       Amend2 M-LOK Vertical Foregrip BLK

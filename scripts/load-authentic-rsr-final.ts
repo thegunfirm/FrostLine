@@ -29,7 +29,7 @@ function parseRSRLine(line: string) {
   const inventoryQuantity = parseInt(fields[8]) || 0;   // Field 9: Quantity
   const model = fields[9]?.trim();                      // Field 10: Model
   const manufacturer = fields[10]?.trim();              // Field 11: Full manufacturer name
-  const manufacturerPartNumber = fields[11]?.trim();    // Field 12: MANUFACTURER PART NUMBER (customer-facing SKU)
+  const manufacturerPartNumber = fields[11]?.trim();    // Field 12: MANUFACTURER PART NUMBER (product SKU)
   const allocated = fields[12]?.trim();                 // Field 13: Allocated/closeout/deleted
   const fullDescription = fields[13]?.trim();           // Field 14: Expanded description
   const imageName = fields[14]?.trim();                 // Field 15: Image name
@@ -43,7 +43,7 @@ function parseRSRLine(line: string) {
     departmentNumber,
     manufacturerId,
     manufacturer,                 // Full manufacturer name
-    manufacturerPartNumber,       // ACTUAL manufacturer part number (customer-facing SKU)
+    manufacturerPartNumber,       // ACTUAL manufacturer part number (product SKU)
     retailPrice,
     rsrPrice,
     weight,
@@ -108,7 +108,7 @@ function transformRSRProduct(rsrProduct: any) {
     description: rsrProduct.fullDescription || rsrProduct.description,
     category,
     manufacturer: rsrProduct.manufacturer,
-    sku: rsrProduct.manufacturerPartNumber,              // FIXED: Use manufacturer part number as customer-facing SKU
+    sku: rsrProduct.manufacturerPartNumber,              // FIXED: Use manufacturer part number as product SKU
     rsrStockNumber: rsrProduct.stockNo,                  // Store RSR code separately for ordering
     upcCode: rsrProduct.upc,
     priceWholesale: dealerPrice.toFixed(2),

@@ -165,7 +165,7 @@ export class RSRMonitoringService {
         for (const product of corruptedProducts) {
           await db.update(products)
             .set({
-              sku: manufacturerPartNumber,                    // Customer-facing SKU
+              sku: manufacturerPartNumber,                    // Product SKU
               rsrStockNumber: rsrStockNumber,                 // RSR ordering code
               manufacturerPartNumber: manufacturerPartNumber,  // Manufacturer part number
               updatedAt: new Date()

@@ -2,7 +2,7 @@
  * Fix Field Corruption and Enable Daily Monitoring
  * 
  * This script corrects the business logic error where RSR distributor codes
- * were incorrectly used as customer-facing SKUs instead of manufacturer part numbers.
+ * were incorrectly used as product SKUs instead of manufacturer part numbers.
  * 
  * After correction, enables daily monitoring to ensure data integrity.
  */
@@ -34,7 +34,7 @@ function parseRSRLine(line: string) {
     inventoryQuantity: parseInt(fields[8]) || 0,      // Field 9: Quantity
     model: fields[9]?.trim(),                         // Field 10: Model
     manufacturer: fields[10]?.trim(),                 // Field 11: Full manufacturer name
-    manufacturerPartNumber: fields[11]?.trim(),       // Field 12: MANUFACTURER PART NUMBER (customer-facing SKU)
+    manufacturerPartNumber: fields[11]?.trim(),       // Field 12: MANUFACTURER PART NUMBER (product SKU)
     allocated: fields[12]?.trim(),                    // Field 13: Allocated/closeout/deleted
     fullDescription: fields[13]?.trim(),              // Field 14: Expanded description
     imageName: fields[14]?.trim()                     // Field 15: Image name
@@ -89,10 +89,10 @@ async function fixFieldCorruption() {
 
       if (corruptedProducts.length > 0) {
         for (const product of corruptedProducts) {
-          // Update to use manufacturer part number as customer-facing SKU
+          // Update to use manufacturer part number as product SKU
           await db.update(products)
             .set({
-              sku: rsrProduct.manufacturerPartNumber,           // FIXED: Customer-facing SKU
+              sku: rsrProduct.manufacturerPartNumber,           // FIXED: Product SKU
               rsrStockNumber: rsrProduct.rsrStockNumber,        // RSR code for ordering
               manufacturerPartNumber: rsrProduct.manufacturerPartNumber,
               updatedAt: new Date()

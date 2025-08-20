@@ -185,7 +185,7 @@ class RSRFileProcessor {
       return;
     }
 
-    // FIXED: Use manufacturer part number as customer-facing SKU
+    // FIXED: Use manufacturer part number as product SKU
     const customerSku = record.manufacturerPartNumber || record.stockNumber;
     
     // Check if product exists by customer SKU
@@ -196,7 +196,7 @@ class RSRFileProcessor {
       description: record.expandedDescription || record.description,
       category: this.mapDepartmentToCategory(record.departmentNumber),
       manufacturer: record.fullManufacturerName,
-      sku: customerSku,                              // FIXED: Customer-facing SKU (manufacturer part number)
+      sku: customerSku,                              // FIXED: Product SKU (manufacturer part number)
       rsrStockNumber: record.stockNumber,            // RSR distributor code for ordering
       upcCode: record.upcCode,
       priceWholesale: record.rsrPricing || "0",

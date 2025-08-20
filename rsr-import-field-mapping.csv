@@ -1,5 +1,5 @@
 RSR Field Number,RSR Field Name,Current Database Mapping,Current Issues,Recommended Mapping,Notes
-1,stockNumber,sku (customer-facing),Customers see distributor codes,rsr_stock_number,RSR ordering code - not customer-facing
+1,stockNumber,sku (product SKU),Customers see distributor codes,rsr_stock_number,RSR ordering code - internal use only
 2,upcCode,upc_code,Correct,upc_code,Universal Product Code
 3,description,name,Correct,name,Product name/title
 4,departmentNumber,department_number,Correct,department_number,Product classification
@@ -10,7 +10,7 @@ RSR Field Number,RSR Field Name,Current Database Mapping,Current Issues,Recommen
 9,inventoryQuantity,stock_quantity,Correct,stock_quantity,Available inventory
 10,model,Not mapped,Missing model field,model,Product model designation
 11,fullManufacturerName,manufacturer,Correct,manufacturer,Brand/manufacturer name
-12,manufacturerPartNumber,manufacturer_part_number,Stored but not used as SKU,sku (customer-facing),Customer should see this as SKU
+12,manufacturerPartNumber,manufacturer_part_number,Stored but not used as SKU,sku (product SKU),Customers should see this as product SKU
 13,allocatedCloseoutDeleted,allocated,Correct,allocated,Product status
 14,expandedDescription,description,Correct,description,Detailed product description
 15,imageName,images,Correct,images,Product image filename
@@ -29,7 +29,7 @@ RSR Field Number,RSR Field Name,Current Database Mapping,Current Issues,Recommen
 
 Summary Issues:
 - Field 1 (stockNumber) should map to rsr_stock_number (ordering code)
-- Field 12 (manufacturerPartNumber) should map to sku (customer-facing)
+- Field 12 (manufacturerPartNumber) should map to sku (product SKU)
 - Currently both fields map incorrectly causing customers to see distributor codes
 - Affects 99.9% of accessories and parts (12826 of 12827 products)
 - Only firearms have correct separation due to different import logic
