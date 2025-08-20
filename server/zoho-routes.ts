@@ -2,6 +2,12 @@ import type { Express } from "express";
 import { ZohoService } from "./zoho-service";
 import { automaticZohoTokenManager } from "./services/automatic-zoho-token-manager.js";
 
+declare module 'express-session' {
+  interface SessionData {
+    oauthState?: string;
+  }
+}
+
 export function registerZohoRoutes(app: Express): void {
   // OAuth initiation endpoint
   app.get("/api/zoho/auth/initiate", (req, res) => {
@@ -214,9 +220,21 @@ export function registerZohoRoutes(app: Express): void {
           res.status(500).json({ error: 'Failed to save tokens after successful exchange' });
         }
       } else {
+        let userMessage = 'Token exchange failed';
+        let helpText = '';
+        
+        if (tokenData.error === 'invalid_code') {
+          userMessage = 'Authorization code expired';
+          helpText = 'Authorization codes expire in 5-10 minutes. Please generate a new authorization code and upload immediately.';
+        } else if (tokenData.error === 'invalid_client') {
+          userMessage = 'Invalid client credentials';
+          helpText = 'Please check that your client_id and client_secret are correct.';
+        }
+        
         res.status(400).json({ 
-          error: 'Token exchange failed', 
-          details: tokenData.error || 'Unknown error' 
+          error: userMessage, 
+          details: tokenData.error || 'Unknown error',
+          helpText
         });
       }
     } catch (error: any) {

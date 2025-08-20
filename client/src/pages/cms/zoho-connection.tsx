@@ -13,6 +13,7 @@ import {
   Upload, 
   CheckCircle, 
   AlertCircle,
+  AlertTriangle,
   ExternalLink,
   File,
   Loader2
@@ -56,9 +57,13 @@ export default function ZohoConnection() {
         queryClient.invalidateQueries({ queryKey: ['/api/zoho/status'] });
         refetch();
       } else {
+        const errorMessage = data.helpText ? 
+          `${data.error}. ${data.helpText}` : 
+          data.error || "Upload failed";
+          
         toast({
           title: "Upload Failed",
-          description: data.error,
+          description: errorMessage,
           variant: "destructive",
         });
       }
@@ -270,7 +275,14 @@ export default function ZohoConnection() {
                 {isUploading ? "Uploading..." : "Browse"}
               </Button>
             </div>
-            <div className="text-sm text-muted-foreground space-y-1">
+            <div className="text-sm text-muted-foreground space-y-2">
+              <div className="flex items-start space-x-2">
+                <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5" />
+                <div>
+                  <p className="font-medium text-amber-700">Important: Authorization codes expire in 5-10 minutes!</p>
+                  <p>You must upload the JSON file immediately after generating the authorization code.</p>
+                </div>
+              </div>
               <p>Upload a JSON file with the following format:</p>
               <pre className="bg-muted p-2 rounded text-xs font-mono">
 {`{

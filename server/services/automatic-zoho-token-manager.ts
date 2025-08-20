@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { writeFileSync, readFileSync, existsSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync, unlinkSync } from 'fs';
 
 interface TokenData {
   accessToken: string;
@@ -206,7 +206,7 @@ export class AutomaticZohoTokenManager {
     try {
       // Remove file
       if (existsSync(this.tokenFile)) {
-        require('fs').unlinkSync(this.tokenFile);
+        unlinkSync(this.tokenFile);
       }
       
       // Clear environment variables
