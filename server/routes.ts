@@ -8207,10 +8207,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Database to Algolia sync endpoint
   app.post("/api/admin/sync-algolia-from-db", async (req, res) => {
     try {
-      console.log('🔄 Starting Algolia sync from clean database...');
+      console.log('🔄 Starting complete Algolia sync from database...');
       
-      // Get all products from database
-      const allProducts = await db.select().from(products).where(isNotNull(products.departmentNumber)).limit(1000);
+      // Get all products from database (no limit)
+      const allProducts = await db.select().from(products).where(isNotNull(products.departmentNumber));
       console.log(`📦 Found ${allProducts.length} products in database`);
       
       if (allProducts.length === 0) {
@@ -8246,33 +8246,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         inStock: product.inStock || false
       }));
 
-      // Batch upload to Algolia
-      const response = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/products/batch`, {
-        method: 'POST',
-        headers: {
-          'X-Algolia-API-Key': process.env.ALGOLIA_ADMIN_API_KEY!,
-          'X-Algolia-Application-Id': process.env.ALGOLIA_APP_ID!,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          requests: algoliaObjects.map(obj => ({
-            action: 'addObject',
-            body: obj
-          }))
-        })
-      });
+      console.log(`🔄 Uploading ${algoliaObjects.length} products to Algolia in batches...`);
 
-      if (response.ok) {
-        console.log(`✅ Successfully synced ${algoliaObjects.length} products to Algolia`);
-        res.json({ 
-          message: "Database to Algolia sync completed successfully", 
-          synced: algoliaObjects.length,
-          sampleProduct: algoliaObjects[0]
+      // Upload in batches to avoid timeout and API limits
+      const batchSize = 1000;
+      let totalUploaded = 0;
+      
+      for (let i = 0; i < algoliaObjects.length; i += batchSize) {
+        const batch = algoliaObjects.slice(i, i + batchSize);
+        
+        const response = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/products/batch`, {
+          method: 'POST',
+          headers: {
+            'X-Algolia-API-Key': process.env.ALGOLIA_ADMIN_API_KEY!,
+            'X-Algolia-Application-Id': process.env.ALGOLIA_APP_ID!,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            requests: batch.map(obj => ({
+              action: 'addObject',
+              body: obj
+            }))
+          })
         });
-      } else {
-        console.error('❌ Failed to sync to Algolia:', await response.text());
-        res.status(500).json({ error: "Failed to sync to Algolia" });
+
+        if (response.ok) {
+          totalUploaded += batch.length;
+          console.log(`⚡ Uploaded batch ${Math.ceil((i + 1) / batchSize)} - ${totalUploaded}/${algoliaObjects.length} products`);
+        } else {
+          console.error(`❌ Failed to upload batch ${Math.ceil((i + 1) / batchSize)}:`, await response.text());
+          return res.status(500).json({ error: `Failed to sync batch ${Math.ceil((i + 1) / batchSize)} to Algolia` });
+        }
+        
+        // Small delay to avoid rate limiting
+        if (i + batchSize < algoliaObjects.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
       }
+
+      console.log(`✅ Successfully synced ${totalUploaded} products to Algolia`);
+      res.json({ 
+        message: "Database to Algolia sync completed successfully", 
+        synced: totalUploaded,
+        total: allProducts.length,
+        sampleProduct: algoliaObjects[0]
+      });
 
     } catch (error) {
       console.error("Database to Algolia sync error:", error);
