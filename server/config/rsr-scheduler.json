@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2025-08-20T18:15:00.063Z",
+  "lastUpdated": "2025-08-20T18:30:00.211Z",
   "stats": {
-    "totalRuns": 25,
+    "totalRuns": 26,
     "successfulRuns": 1,
-    "failedRuns": 24,
-    "lastError": "Quantity download failed: connect ECONNREFUSED 72.21.12.50:21 (control socket)"
+    "failedRuns": 25,
+    "lastError": "Quantity download failed: 530 Login incorrect."
   }
 }
