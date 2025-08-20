@@ -176,37 +176,46 @@ export class AutomaticZohoTokenManager {
     return null;
   }
 
-  // Load tokens from file or environment variables
+  // Load tokens ONLY from file - single source of truth
   private loadTokens(): TokenData | null {
     try {
-      // First try to load from file
       if (existsSync(this.tokenFile)) {
         const data = readFileSync(this.tokenFile, 'utf8');
-        return JSON.parse(data);
-      }
-      
-      // If no file exists, try to load from environment variables
-      const accessToken = process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN;
-      const refreshToken = process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN;
-      
-      if (accessToken && refreshToken) {
-        console.log('📋 Loading tokens from environment variables');
-        const tokens: TokenData = {
-          accessToken,
-          refreshToken,
-          expiresAt: Date.now() + (3600 * 1000), // Assume expires in 1 hour
-          lastRefresh: Date.now()
-        };
+        const tokens = JSON.parse(data);
         
-        // Save to file for future use
-        this.saveTokens(tokens);
-        return tokens;
+        // Validate token structure
+        if (tokens.accessToken && tokens.refreshToken) {
+          return tokens;
+        } else {
+          console.log('⚠️ Token file has incomplete data, cleaning up');
+          this.clearAllTokens();
+          return null;
+        }
       }
       
       return null;
     } catch (error) {
       console.log('❌ Failed to load tokens:', error);
+      this.clearAllTokens();
       return null;
+    }
+  }
+
+  // Clear all tokens from all locations - prevents stale token issues
+  private clearAllTokens(): void {
+    try {
+      // Remove file
+      if (existsSync(this.tokenFile)) {
+        require('fs').unlinkSync(this.tokenFile);
+      }
+      
+      // Clear environment variables
+      delete process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN;
+      delete process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN;
+      
+      console.log('🧹 Cleared all Zoho tokens from all locations');
+    } catch (error) {
+      console.error('❌ Failed to clear tokens:', error);
     }
   }
 
@@ -217,6 +226,21 @@ export class AutomaticZohoTokenManager {
     } catch (error) {
       console.error('❌ Failed to save tokens:', error);
     }
+  }
+
+  // Public method to force clear tokens (use during user switches)
+  forceReset(): void {
+    console.log('🔄 Force resetting Zoho token system');
+    this.clearAllTokens();
+    
+    // Stop current refresh cycle
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
+    
+    // Restart with clean state
+    this.startAutomaticRefresh();
+    console.log('✅ Zoho token system reset - ready for new authorization');
   }
 
   // Clean up intervals
