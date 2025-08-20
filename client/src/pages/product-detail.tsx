@@ -545,7 +545,7 @@ export default function ProductDetail() {
                 <div>MPN: <span className="font-medium">{product.manufacturerPartNumber}</span></div>
               )}
               {product.upcCode && (
-                <div className="hidden sm:block">UPC: <span className="font-medium">{product.upcCode}</span></div>
+                <div>UPC: <span className="font-medium">{product.upcCode}</span></div>
               )}
             </div>
 
