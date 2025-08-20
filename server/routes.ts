@@ -10,7 +10,7 @@ import { pricingEngine } from "./services/pricing-engine";
 import { db } from "./db";
 import { sql, eq, and, ne, inArray, desc } from "drizzle-orm";
 import { z } from "zod";
-// Authorize.Net will be imported dynamically in the payment endpoint
+import { authorizeNetService } from "./authorize-net-service";
 // import { hybridSearch } from "./services/hybrid-search";
 import { rsrAPI, type RSRProduct } from "./services/rsr-api";
 import { inventorySync } from "./services/inventory-sync";
@@ -448,6 +448,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Debug email verification error:", error);
       res.status(500).json({ message: "Failed to bypass email verification" });
+    }
+  });
+
+  // DEBUG ENDPOINT: Test Authorize.Net sandbox connection
+  app.post("/api/test/authnet-ping", async (req, res) => {
+    try {
+      console.log('🔧 Testing Authorize.Net sandbox connection...');
+      
+      const { testAmount, cardNumber, expirationDate, cvv, customerInfo } = req.body;
+      
+      const result = await authorizeNetService.authOnlyTransaction(
+        testAmount,
+        cardNumber,
+        expirationDate,
+        cvv,
+        customerInfo
+      );
+      
+      console.log('✅ Authorize.Net test result:', result);
+      res.json({
+        success: true,
+        testResult: result,
+        sandboxConfig: {
+          endpoint: process.env.AUTHORIZE_NET_ENDPOINT,
+          loginId: process.env.AUTHORIZE_NET_API_LOGIN_ID,
+          hasTransactionKey: !!process.env.AUTHORIZE_NET_TRANSACTION_KEY
+        }
+      });
+    } catch (error) {
+      console.error('❌ Authorize.Net test error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message,
+        sandboxConfig: {
+          endpoint: process.env.AUTHORIZE_NET_ENDPOINT,
+          loginId: process.env.AUTHORIZE_NET_API_LOGIN_ID,
+          hasTransactionKey: !!process.env.AUTHORIZE_NET_TRANSACTION_KEY
+        }
+      });
+    }
+  });
+
+  // Test Authorize.Net service in test mode
+  app.post('/api/test/authnet-capture', async (req, res) => {
+    try {
+      const { amount, cardNumber, expirationDate, cvv, customerInfo } = req.body;
+      
+      const result = await authorizeNetService.authCaptureTransaction(
+        amount,
+        cardNumber,
+        expirationDate,
+        cvv,
+        customerInfo
+      );
+      
+      res.json({
+        success: true,
+        testMode: true,
+        result
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
     }
   });
 

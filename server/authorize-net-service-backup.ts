@@ -25,7 +25,6 @@ export interface VoidResult {
 
 export class AuthorizeNetService {
   private merchantAuth: any;
-  private testMode: boolean;
 
   constructor() {
     if (!process.env.AUTHORIZE_NET_API_LOGIN_ID || !process.env.AUTHORIZE_NET_TRANSACTION_KEY) {
@@ -33,9 +32,7 @@ export class AuthorizeNetService {
     }
 
     // Check if we're in test mode (bypass actual API calls)
-    this.testMode = process.env.NODE_ENV === 'development' && process.env.AUTHNET_TEST_MODE === 'true';
-    
-    if (this.testMode) {
+    if (process.env.NODE_ENV === 'development' && process.env.AUTHNET_TEST_MODE === 'true') {
       console.log(`🧪 Authorize.Net TEST MODE - API calls will be simulated`);
       return;
     }
@@ -72,23 +69,6 @@ export class AuthorizeNetService {
       };
     }
   ): Promise<AuthOnlyResult> {
-    // Test mode simulation - return successful authorization
-    if (this.testMode) {
-      console.log('🧪 Simulating successful authorization in test mode');
-      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to simulate processing
-      
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 30);
-
-      return {
-        success: true,
-        transactionId: `TEST_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        authCode: `TEST${Math.random().toString().substr(2, 6)}`,
-        expiresAt,
-        rawResponse: { test: true, amount, cardLast4: cardNumber.slice(-4) },
-      };
-    }
-
     try {
       // Create payment method
       const creditCard = new APIContracts.CreditCardType();
@@ -134,7 +114,7 @@ export class AuthorizeNetService {
       createRequest.setTransactionRequest(transactionRequest);
 
       // Execute the transaction with timeout
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         const timeoutId = setTimeout(() => {
           resolve({
             success: false,
@@ -216,7 +196,140 @@ export class AuthorizeNetService {
   }
 
   /**
-   * Create an authorization and capture transaction (immediate charge)
+   * Capture a previously authorized transaction
+   */
+  async capturePriorAuthTransaction(
+    transactionId: string,
+    amount: number
+  ): Promise<CaptureResult> {
+    try {
+      // Create transaction request for prior auth capture
+      const transactionRequest = new APIContracts.TransactionRequestType();
+      transactionRequest.setTransactionType(APIContracts.TransactionTypeEnum.PRIORAUTHCAPTURETRANSACTION);
+      transactionRequest.setAmount(amount);
+      transactionRequest.setRefTransId(transactionId);
+
+      // Create the API request
+      const createRequest = new APIContracts.CreateTransactionRequest();
+      createRequest.setMerchantAuthentication(this.merchantAuth);
+      createRequest.setTransactionRequest(transactionRequest);
+
+      // Execute the transaction
+      return new Promise((resolve) => {
+        const ctrl = new APIControllers.CreateTransactionController(createRequest.getJSON());
+        
+        ctrl.execute(() => {
+          const response = ctrl.getResponse();
+          
+          if (response && response.getMessages().getResultCode() === APIContracts.MessageTypeEnum.OK) {
+            const transactionResponse = response.getTransactionResponse();
+            
+            if (transactionResponse.getMessages() !== null) {
+              // Success
+              const newTransactionId = transactionResponse.getTransId();
+              
+              resolve({
+                success: true,
+                transactionId: newTransactionId,
+                rawResponse: response,
+              });
+            } else {
+              // Transaction failed
+              const errorCode = transactionResponse.getErrors().getError()[0].getErrorCode();
+              const errorText = transactionResponse.getErrors().getError()[0].getErrorText();
+              
+              resolve({
+                success: false,
+                error: `Capture failed: ${errorCode} - ${errorText}`,
+                rawResponse: response,
+              });
+            }
+          } else {
+            // API call failed
+            const errorMessages = response.getMessages().getMessage();
+            const errorText = errorMessages[0].getText();
+            
+            resolve({
+              success: false,
+              error: `API call failed: ${errorText}`,
+              rawResponse: response,
+            });
+          }
+        });
+      });
+    } catch (error: any) {
+      return {
+        success: false,
+        error: `Capture transaction error: ${error.message}`,
+      };
+    }
+  }
+
+  /**
+   * Void a transaction (cancel an auth or refund a capture)
+   */
+  async voidTransaction(transactionId: string): Promise<VoidResult> {
+    try {
+      // Create transaction request for void
+      const transactionRequest = new APIContracts.TransactionRequestType();
+      transactionRequest.setTransactionType(APIContracts.TransactionTypeEnum.VOIDTRANSACTION);
+      transactionRequest.setRefTransId(transactionId);
+
+      // Create the API request
+      const createRequest = new APIContracts.CreateTransactionRequest();
+      createRequest.setMerchantAuthentication(this.merchantAuth);
+      createRequest.setTransactionRequest(transactionRequest);
+
+      // Execute the transaction
+      return new Promise((resolve) => {
+        const ctrl = new APIControllers.CreateTransactionController(createRequest.getJSON());
+        
+        ctrl.execute(() => {
+          const response = ctrl.getResponse();
+          
+          if (response && response.getMessages().getResultCode() === APIContracts.MessageTypeEnum.OK) {
+            const transactionResponse = response.getTransactionResponse();
+            
+            if (transactionResponse.getMessages() !== null) {
+              // Success
+              resolve({
+                success: true,
+                rawResponse: response,
+              });
+            } else {
+              // Transaction failed
+              const errorCode = transactionResponse.getErrors().getError()[0].getErrorCode();
+              const errorText = transactionResponse.getErrors().getError()[0].getErrorText();
+              
+              resolve({
+                success: false,
+                error: `Void failed: ${errorCode} - ${errorText}`,
+                rawResponse: response,
+              });
+            }
+          } else {
+            // API call failed
+            const errorMessages = response.getMessages().getMessage();
+            const errorText = errorMessages[0].getText();
+            
+            resolve({
+              success: false,
+              error: `API call failed: ${errorText}`,
+              rawResponse: response,
+            });
+          }
+        });
+      });
+    } catch (error: any) {
+      return {
+        success: false,
+        error: `Void transaction error: ${error.message}`,
+      };
+    }
+  }
+
+  /**
+   * Create a standard auth+capture transaction (immediate payment)
    */
   async authCaptureTransaction(
     amount: number,
@@ -236,227 +349,103 @@ export class AuthorizeNetService {
       };
     }
   ): Promise<AuthOnlyResult> {
-    // Test mode simulation - return successful charge
-    if (this.testMode) {
-      console.log('🧪 Simulating successful auth+capture in test mode');
-      await new Promise(resolve => setTimeout(resolve, 100));
+    try {
+      // Create payment method
+      const creditCard = new APIContracts.CreditCardType();
+      creditCard.setCardNumber(cardNumber);
+      creditCard.setExpirationDate(expirationDate);
+      creditCard.setCardCode(cvv);
+
+      const paymentType = new APIContracts.PaymentType();
+      paymentType.setCreditCard(creditCard);
+
+      // Create customer info
+      const customer = new APIContracts.CustomerDataType();
+      customer.setEmail(customerInfo.email);
+
+      const billTo = new APIContracts.CustomerAddressType();
+      billTo.setFirstName(customerInfo.firstName);
+      billTo.setLastName(customerInfo.lastName);
+      billTo.setEmail(customerInfo.email);
       
-      return {
-        success: true,
-        transactionId: `CAPTURE_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        authCode: `CAP${Math.random().toString().substr(2, 6)}`,
-        rawResponse: { test: true, amount, cardLast4: cardNumber.slice(-4), type: 'auth_capture' },
-      };
-    }
+      if (customerInfo.phone) {
+        billTo.setPhoneNumber(customerInfo.phone);
+      }
 
-    // For real API calls, this would be similar to authOnlyTransaction but with AUTH_CAPTURE transaction type
-    // For now, we'll fall back to the existing authOnlyTransaction logic
-    return this.authOnlyTransaction(amount, cardNumber, expirationDate, cvv, customerInfo);
-  }
+      if (customerInfo.address) {
+        billTo.setAddress(customerInfo.address.street);
+        billTo.setCity(customerInfo.address.city);
+        billTo.setState(customerInfo.address.state);
+        billTo.setZip(customerInfo.address.zip);
+        billTo.setCountry('US');
+      }
 
-  /**
-   * Capture a previously authorized transaction
-   */
-  async capturePriorAuthTransaction(
-    transactionId: string,
-    amount: number
-  ): Promise<CaptureResult> {
-    // Test mode simulation
-    if (this.testMode) {
-      console.log('🧪 Simulating successful capture in test mode');
-      await new Promise(resolve => setTimeout(resolve, 50));
-
-      return {
-        success: true,
-        transactionId: `CAPTURE_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        rawResponse: { test: true, originalTransactionId: transactionId, amount },
-      };
-    }
-
-    try {
-      // Create transaction request for prior auth capture
+      // Create transaction request for auth+capture
       const transactionRequest = new APIContracts.TransactionRequestType();
-      transactionRequest.setTransactionType(APIContracts.TransactionTypeEnum.PRIORAUTHCAPTURETRANSACTION);
+      transactionRequest.setTransactionType(APIContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION);
+      transactionRequest.setPayment(paymentType);
       transactionRequest.setAmount(amount);
-      transactionRequest.setRefTransId(transactionId);
+      transactionRequest.setCustomer(customer);
+      transactionRequest.setBillTo(billTo);
 
       // Create the API request
       const createRequest = new APIContracts.CreateTransactionRequest();
       createRequest.setMerchantAuthentication(this.merchantAuth);
       createRequest.setTransactionRequest(transactionRequest);
 
-      // Execute the transaction with timeout
+      // Execute the transaction
       return new Promise((resolve) => {
-        const timeoutId = setTimeout(() => {
-          resolve({
-            success: false,
-            error: 'Capture API call timed out after 10 seconds',
-          });
-        }, 10000);
-
-        try {
-          const ctrl = new APIControllers.CreateTransactionController(createRequest.getJSON());
+        const ctrl = new APIControllers.CreateTransactionController(createRequest.getJSON());
+        
+        ctrl.execute(() => {
+          const response = ctrl.getResponse();
           
-          ctrl.execute(() => {
-            clearTimeout(timeoutId);
+          if (response && response.getMessages().getResultCode() === APIContracts.MessageTypeEnum.OK) {
+            const transactionResponse = response.getTransactionResponse();
             
-            try {
-              const response = ctrl.getResponse();
+            if (transactionResponse.getMessages() !== null) {
+              // Success
+              const transactionId = transactionResponse.getTransId();
+              const authCode = transactionResponse.getAuthCode();
               
-              if (response && response.getMessages().getResultCode() === APIContracts.MessageTypeEnum.OK) {
-                const transactionResponse = response.getTransactionResponse();
-                
-                if (transactionResponse.getMessages() !== null) {
-                  // Success
-                  const newTransactionId = transactionResponse.getTransId();
-                  
-                  resolve({
-                    success: true,
-                    transactionId: newTransactionId,
-                    rawResponse: response,
-                  });
-                } else {
-                  // Transaction failed
-                  const errorCode = transactionResponse.getErrors().getError()[0].getErrorCode();
-                  const errorText = transactionResponse.getErrors().getError()[0].getErrorText();
-                  
-                  resolve({
-                    success: false,
-                    error: `Capture failed: ${errorCode} - ${errorText}`,
-                    rawResponse: response,
-                  });
-                }
-              } else {
-                // API call failed
-                const errorMessages = response.getMessages().getMessage();
-                const errorText = errorMessages[0].getText();
-                
-                resolve({
-                  success: false,
-                  error: `Capture API call failed: ${errorText}`,
-                  rawResponse: response,
-                });
-              }
-            } catch (parseError: any) {
+              resolve({
+                success: true,
+                transactionId,
+                authCode,
+                rawResponse: response,
+              });
+            } else {
+              // Transaction failed
+              const errorCode = transactionResponse.getErrors().getError()[0].getErrorCode();
+              const errorText = transactionResponse.getErrors().getError()[0].getErrorText();
+              
               resolve({
                 success: false,
-                error: `Capture response parsing error: ${parseError.message}`,
+                error: `Transaction failed: ${errorCode} - ${errorText}`,
+                rawResponse: response,
               });
             }
-          });
-        } catch (executeError: any) {
-          clearTimeout(timeoutId);
-          resolve({
-            success: false,
-            error: `Capture execute error: ${executeError.message}`,
-          });
-        }
+          } else {
+            // API call failed
+            const errorMessages = response.getMessages().getMessage();
+            const errorText = errorMessages[0].getText();
+            
+            resolve({
+              success: false,
+              error: `API call failed: ${errorText}`,
+              rawResponse: response,
+            });
+          }
+        });
       });
     } catch (error: any) {
       return {
         success: false,
-        error: `Capture transaction error: ${error.message}`,
-      };
-    }
-  }
-
-  /**
-   * Void a previously authorized transaction
-   */
-  async voidTransaction(transactionId: string): Promise<VoidResult> {
-    // Test mode simulation
-    if (this.testMode) {
-      console.log('🧪 Simulating successful void in test mode');
-      await new Promise(resolve => setTimeout(resolve, 50));
-
-      return {
-        success: true,
-        rawResponse: { test: true, voidedTransactionId: transactionId },
-      };
-    }
-
-    try {
-      // Create transaction request for void
-      const transactionRequest = new APIContracts.TransactionRequestType();
-      transactionRequest.setTransactionType(APIContracts.TransactionTypeEnum.VOIDTRANSACTION);
-      transactionRequest.setRefTransId(transactionId);
-
-      // Create the API request
-      const createRequest = new APIContracts.CreateTransactionRequest();
-      createRequest.setMerchantAuthentication(this.merchantAuth);
-      createRequest.setTransactionRequest(transactionRequest);
-
-      // Execute the transaction with timeout
-      return new Promise((resolve) => {
-        const timeoutId = setTimeout(() => {
-          resolve({
-            success: false,
-            error: 'Void API call timed out after 10 seconds',
-          });
-        }, 10000);
-
-        try {
-          const ctrl = new APIControllers.CreateTransactionController(createRequest.getJSON());
-          
-          ctrl.execute(() => {
-            clearTimeout(timeoutId);
-            
-            try {
-              const response = ctrl.getResponse();
-              
-              if (response && response.getMessages().getResultCode() === APIContracts.MessageTypeEnum.OK) {
-                const transactionResponse = response.getTransactionResponse();
-                
-                if (transactionResponse.getMessages() !== null) {
-                  // Success
-                  resolve({
-                    success: true,
-                    rawResponse: response,
-                  });
-                } else {
-                  // Transaction failed
-                  const errorCode = transactionResponse.getErrors().getError()[0].getErrorCode();
-                  const errorText = transactionResponse.getErrors().getError()[0].getErrorText();
-                  
-                  resolve({
-                    success: false,
-                    error: `Void failed: ${errorCode} - ${errorText}`,
-                    rawResponse: response,
-                  });
-                }
-              } else {
-                // API call failed
-                const errorMessages = response.getMessages().getMessage();
-                const errorText = errorMessages[0].getText();
-                
-                resolve({
-                  success: false,
-                  error: `Void API call failed: ${errorText}`,
-                  rawResponse: response,
-                });
-              }
-            } catch (parseError: any) {
-              resolve({
-                success: false,
-                error: `Void response parsing error: ${parseError.message}`,
-              });
-            }
-          });
-        } catch (executeError: any) {
-          clearTimeout(timeoutId);
-          resolve({
-            success: false,
-            error: `Void execute error: ${executeError.message}`,
-          });
-        }
-      });
-    } catch (error: any) {
-      return {
-        success: false,
-        error: `Void transaction error: ${error.message}`,
+        error: `Auth+Capture transaction error: ${error.message}`,
       };
     }
   }
 }
 
+// Export singleton instance
 export const authorizeNetService = new AuthorizeNetService();
