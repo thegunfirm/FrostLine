@@ -271,6 +271,15 @@ export default function ZohoConnection() {
                 </Alert>
               )}
 
+              {!isConnected && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>OAuth Authorization Required:</strong> Click "Authorize Zoho Access" below to grant proper permissions for CRM integration.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {status?.note && (
                 <Alert>
                   <AlertDescription>
@@ -292,9 +301,25 @@ export default function ZohoConnection() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Direct OAuth Authorization */}
+          <div className="space-y-2">
+            <Label>Direct Authorization</Label>
+            <Button
+              onClick={() => window.open('/api/zoho/auth/initiate', '_blank')}
+              className="w-full"
+              variant="default"
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Authorize Zoho Access
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Opens Zoho OAuth in new window with correct permissions. Complete authorization then return here.
+            </p>
+          </div>
+
           {/* File Upload Section */}
           <div className="space-y-2">
-            <Label>Upload Authorization File</Label>
+            <Label>Upload Authorization File (Alternative)</Label>
             <div className="flex items-center space-x-2">
               <Input
                 ref={fileInputRef}
