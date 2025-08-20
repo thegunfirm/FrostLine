@@ -2,6 +2,7 @@ import axios from 'axios';
 import { parseString } from 'xml2js';
 import { promisify } from 'util';
 import { getExpandedRSRCatalog } from '../data/rsr-catalog';
+import { importErrorReporting } from './import-error-reporting';
 
 const parseXML = promisify(parseString);
 
@@ -201,7 +202,7 @@ class RSRAPIService {
         { headers: this.getAuthHeaders() }
       );
 
-      const result = await parseXML(response.data);
+      const result: any = await parseXML(response.data);
       const inventoryData = result['soap:Envelope']['soap:Body'][0]['GetInventoryDataResponse'][0]['GetInventoryDataResult'][0];
       
       if (inventoryData && inventoryData.InventoryItem) {
@@ -232,11 +233,13 @@ class RSRAPIService {
         { headers: this.getAuthHeaders() }
       );
 
-      const result = await parseXML(response.data);
+      const result: any = await parseXML(response.data);
       const searchResults = result['soap:Envelope']['soap:Body'][0]['SearchCatalogResponse'][0]['SearchCatalogResult'][0];
       
       if (searchResults && searchResults.CatalogItem) {
-        return searchResults.CatalogItem.map((item: any) => this.mapRSRProduct(item));
+        return searchResults.CatalogItem
+          .map((item: any) => this.mapRSRProduct(item))
+          .filter((product: RSRProduct | null) => product !== null) as RSRProduct[];
       }
       return [];
     } catch (error: any) {
@@ -252,27 +255,64 @@ class RSRAPIService {
     }
   }
 
-  private mapRSRProduct(item: any): RSRProduct {
+  private mapRSRProduct(item: any): RSRProduct | null {
+    // Validate critical required fields - NO FALLBACKS
+    const stockNo = item.stockNo?.[0]?.trim();
+    const description = item.description?.[0]?.trim();
+    const manufacturer = item.manufacturer?.[0]?.trim();
+    const retailPriceStr = item.retailPrice?.[0]?.trim();
+    const rsrPriceStr = item.rsrPrice?.[0]?.trim();
+
+    const recordId = stockNo || `API-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Report errors for missing required fields
+    if (!stockNo) {
+      importErrorReporting.reportMissingRequiredField('RSR_API', recordId, 'stockNo', JSON.stringify(item));
+      return null;
+    }
+    
+    if (!description) {
+      importErrorReporting.reportMissingRequiredField('RSR_API', recordId, 'description', JSON.stringify(item));
+      return null;
+    }
+    
+    if (!manufacturer) {
+      importErrorReporting.reportMissingRequiredField('RSR_API', recordId, 'manufacturer', JSON.stringify(item));
+      return null;
+    }
+
+    // Validate pricing - must be valid positive numbers
+    if (!retailPriceStr || isNaN(parseFloat(retailPriceStr)) || parseFloat(retailPriceStr) <= 0) {
+      importErrorReporting.reportInvalidFormat('RSR_API', recordId, 'retailPrice', 'positive number', retailPriceStr || 'empty', JSON.stringify(item));
+      return null;
+    }
+
+    if (!rsrPriceStr || isNaN(parseFloat(rsrPriceStr)) || parseFloat(rsrPriceStr) <= 0) {
+      importErrorReporting.reportInvalidFormat('RSR_API', recordId, 'rsrPrice', 'positive number', rsrPriceStr || 'empty', JSON.stringify(item));
+      return null;
+    }
+
     return {
-      stockNo: item.stockNo?.[0] || '',
-      upc: item.upc?.[0] || '',
-      description: item.description?.[0] || '',
-      categoryDesc: item.categoryDesc?.[0] || '',
-      manufacturer: item.manufacturer?.[0] || '',
-      retailPrice: parseFloat(item.retailPrice?.[0] || '0'),
-      rsrPrice: parseFloat(item.rsrPrice?.[0] || '0'),
-      weight: parseFloat(item.weight?.[0] || '0'),
-      quantity: parseInt(item.quantity?.[0] || '0'),
-      imgName: item.imgName?.[0] || '',
-      departmentDesc: item.departmentDesc?.[0] || '',
-      subDepartmentDesc: item.subDepartmentDesc?.[0] || '',
-      fullDescription: item.fullDescription?.[0] || '',
-      additionalDesc: item.additionalDesc?.[0] || '',
-      accessories: item.accessories?.[0] || '',
-      promo: item.promo?.[0] || '',
-      allocated: item.allocated?.[0] || '',
-      mfgName: item.mfgName?.[0] || '',
-      mfgPartNumber: item.mfgPartNumber?.[0] || '',
+      stockNo: stockNo!,
+      upc: item.upc?.[0]?.trim() || '', // UPC can be empty
+      upcCode: item.upc?.[0]?.trim() || '', // UPC can be empty - duplicate for compatibility
+      description: description!,
+      categoryDesc: item.categoryDesc?.[0]?.trim() || '', // Can be empty
+      manufacturer: manufacturer!,
+      retailPrice: parseFloat(retailPriceStr!),
+      rsrPrice: parseFloat(rsrPriceStr!),
+      weight: parseFloat(item.weight?.[0] || '0'), // Weight can default to 0
+      quantity: parseInt(item.quantity?.[0] || '0'), // Quantity can default to 0
+      imgName: item.imgName?.[0]?.trim() || '', // Can be empty
+      departmentDesc: item.departmentDesc?.[0]?.trim() || '', // Can be empty
+      subDepartmentDesc: item.subDepartmentDesc?.[0]?.trim() || '', // Can be empty
+      fullDescription: item.fullDescription?.[0]?.trim() || '', // Can be empty
+      additionalDesc: item.additionalDesc?.[0]?.trim() || '', // Can be empty
+      accessories: item.accessories?.[0]?.trim() || '', // Can be empty
+      promo: item.promo?.[0]?.trim() || '', // Can be empty
+      allocated: item.allocated?.[0]?.trim() || '', // Can be empty
+      mfgName: item.mfgName?.[0]?.trim() || '', // Can be empty
+      mfgPartNumber: item.mfgPartNumber?.[0]?.trim() || '', // Can be empty
       newItem: item.newItem?.[0] === 'true',
       expandedData: item.expandedData?.[0] || {}
     };

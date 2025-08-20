@@ -5,6 +5,7 @@ import type { InsertProduct } from '@shared/schema';
 import { products } from '@shared/schema';
 import { db } from '../../../db';
 import { eq } from 'drizzle-orm';
+import { importErrorReporting } from '../../import-error-reporting';
 
 /**
  * RSR File Processing Service
@@ -130,9 +131,33 @@ class RSRFileProcessor {
     const fields = line.split(';');
     
     if (fields.length < 77) {
-      console.warn(`Invalid RSR inventory record: expected 77 fields, got ${fields.length}`);
+      importErrorReporting.reportParsingError(
+        'RSR_FILE',
+        `Line-${Math.random().toString(36).substr(2, 9)}`,
+        `Invalid inventory record: expected 77 fields, got ${fields.length}`,
+        line
+      );
       return null;
     }
+
+    const stockNumber = fields[0]?.trim();
+    const recordId = stockNumber || `Line-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Validate critical required fields - NO FALLBACKS
+    if (!importErrorReporting.validateRequiredField('RSR_FILE', recordId, 'stockNumber', stockNumber, line)) return null;
+    if (!importErrorReporting.validateRequiredField('RSR_FILE', recordId, 'description', fields[2]?.trim(), line)) return null;
+    if (!importErrorReporting.validateRequiredField('RSR_FILE', recordId, 'departmentNumber', fields[3]?.trim(), line)) return null;
+    if (!importErrorReporting.validateRequiredField('RSR_FILE', recordId, 'fullManufacturerName', fields[10]?.trim(), line)) return null;
+
+    // Validate pricing fields - must be valid numbers, not empty
+    const retailPrice = fields[5]?.trim();
+    const rsrPricing = fields[6]?.trim();
+    
+    if (!importErrorReporting.validateFieldFormat('RSR_FILE', recordId, 'retailPrice', retailPrice, 'positive number', 
+        (val) => val && !isNaN(parseFloat(val)) && parseFloat(val) > 0, line)) return null;
+    
+    if (!importErrorReporting.validateFieldFormat('RSR_FILE', recordId, 'rsrPricing', rsrPricing, 'positive number', 
+        (val) => val && !isNaN(parseFloat(val)) && parseFloat(val) > 0, line)) return null;
 
     // Parse state restrictions (fields 16-56)
     const stateRestrictions: Record<string, string> = {};
@@ -148,19 +173,20 @@ class RSRFileProcessor {
       stateRestrictions[state] = fields[15 + index] || '';
     });
 
+    // Return parsed record with validated required fields only - no fallbacks
     return {
-      stockNumber: fields[0]?.trim() || '',
-      upcCode: fields[1]?.trim() || '',
-      description: fields[2]?.trim() || '',
-      departmentNumber: fields[3]?.trim() || '',
-      manufacturerId: fields[4]?.trim() || '',
-      retailPrice: fields[5]?.trim() || '0',
-      rsrPricing: fields[6]?.trim() || '0',
-      productWeight: fields[7]?.trim() || '0',
-      inventoryQuantity: fields[8]?.trim() || '0',
-      model: fields[9]?.trim() || '',
-      fullManufacturerName: fields[10]?.trim() || '',
-      manufacturerPartNumber: fields[11]?.trim() || '',
+      stockNumber: stockNumber!,
+      upcCode: fields[1]?.trim() || '', // UPC can be empty
+      description: fields[2]!.trim(),
+      departmentNumber: fields[3]!.trim(),
+      manufacturerId: fields[4]?.trim() || '', // Can be empty
+      retailPrice: retailPrice!,
+      rsrPricing: rsrPricing!,
+      productWeight: fields[7]?.trim() || '', // Weight can be empty
+      inventoryQuantity: fields[8]?.trim() || '0', // Quantity defaults to 0 is acceptable
+      model: fields[9]?.trim() || '', // Model can be empty
+      fullManufacturerName: fields[10]!.trim(),
+      manufacturerPartNumber: fields[11]?.trim() || '', // Can be empty but tracked
       allocatedCloseoutDeleted: fields[12]?.trim() || '',
       expandedDescription: fields[13]?.trim() || '',
       imageName: fields[14]?.trim() || '',
@@ -169,11 +195,11 @@ class RSRFileProcessor {
       adultSignatureRequired: fields[67]?.trim() || '',
       blockedFromDropShip: fields[68]?.trim() || '',
       dateEntered: fields[69]?.trim() || '',
-      retailMAP: fields[70]?.trim() || '0',
+      retailMAP: fields[70]?.trim() || '', // MAP can be empty
       imageDisclaimer: fields[71]?.trim() || '',
-      shippingLength: fields[72]?.trim() || '0',
-      shippingWidth: fields[73]?.trim() || '0',
-      shippingHeight: fields[74]?.trim() || '0',
+      shippingLength: fields[72]?.trim() || '',
+      shippingWidth: fields[73]?.trim() || '',
+      shippingHeight: fields[74]?.trim() || '',
       prop65: fields[75]?.trim() || '',
       vendorApprovalRequired: fields[76]?.trim() || ''
     };
