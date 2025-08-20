@@ -35,6 +35,58 @@ export interface SyncResult {
 }
 
 class InventorySyncService {
+  /**
+   * Get the real manufacturer part number for a product
+   */
+  private getManufacturerPartNumber(rsrStock: string, manufacturer: string, rsrMfgPart?: string): string | null {
+    // First try RSR-provided manufacturer part number
+    if (rsrMfgPart && rsrMfgPart.trim()) {
+      return rsrMfgPart.trim();
+    }
+    
+    // Use our comprehensive mapping
+    const mappings: { [key: string]: string } = {
+      'COLT1911': 'O1911C',
+      'COLTAR15A4': 'CR6920', 
+      'YHM-9680': '9680',
+      'SIGP365': 'P365-9-BXR3',
+      'SIGP320C': '320C-9-B',
+      'SPAHELLCAT': 'HC9319B',
+      'SPA911RO': 'PI9129L',
+      'SPRINGFIELD1911': 'PI8020LP',
+      'RUGERLCP2': '3701',
+      'RUG1103': '1103',
+      'RUGERAR556': '8500',
+      'RUGER10/22': '1103',
+      'SWMP9': '11912',
+      'SW686': '164198',
+      'SWMP15SPORT3': '12939',
+      'SWSHIELDPLUS': '13242',
+      'GLOCK43X': 'PA435S201',
+      'GLOCK19GEN5': 'PA195S201',
+      'GLOCK17GEN5': 'PA175S201',
+      'ZAFUPK195': 'UPK-19-GEN5',
+      'ZAFZPS319BLK': 'ZPS.3-G19-RMR-BLK',
+      'ZAFZPCOMPG': 'ZP-COMP-G',
+      'ZAFZPCOMPSP': 'ZP-COMP-SP'
+    };
+    
+    return mappings[rsrStock] || null;
+  }
+
+  /**
+   * Get the proper SKU (manufacturer part number if available, otherwise RSR stock)
+   */
+  private getProperSKU(rsrStock: string, manufacturer: string, rsrMfgPart?: string): string {
+    const mfgPart = this.getManufacturerPartNumber(rsrStock, manufacturer, rsrMfgPart);
+    if (mfgPart) {
+      return mfgPart;
+    }
+    
+    // Log warning when falling back to RSR stock number
+    console.warn(`⚠️  No manufacturer part number found for ${rsrStock} (${manufacturer}) - using RSR stock as SKU`);
+    return rsrStock;
+  }
   private syncConfigurations: SyncConfiguration[] = [];
   private syncResults: SyncResult[] = [];
   private runningJobs = new Set<number>();
@@ -476,8 +528,8 @@ class InventorySyncService {
       description: rsrProduct.fullDescription || rsrProduct.description,
       category: rsrProduct.categoryDesc,
       manufacturer: rsrProduct.manufacturer,
-      manufacturerPartNumber: rsrProduct.mfgPartNumber || null, // CRITICAL FIX: Manufacturer's actual part number
-      sku: rsrProduct.mfgPartNumber || rsrProduct.stockNo, // CRITICAL FIX: Use manufacturer part number as SKU, fallback to RSR stock
+      manufacturerPartNumber: this.getManufacturerPartNumber(rsrProduct.stockNo, rsrProduct.manufacturer, rsrProduct.mfgPartNumber), // CRITICAL FIX: Real manufacturer part number
+      sku: this.getProperSKU(rsrProduct.stockNo, rsrProduct.manufacturer, rsrProduct.mfgPartNumber), // CRITICAL FIX: Use real manufacturer part number
       rsrStockNumber: rsrProduct.stockNo, // CRITICAL FIX: RSR distributor stock number stored separately
       priceWholesale: rsrProduct.rsrPrice.toString(),
       priceMAP: rsrPricing.mapPrice?.toString() || null,
