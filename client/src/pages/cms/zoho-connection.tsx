@@ -35,6 +35,7 @@ export default function ZohoConnection() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadTimestamp, setUploadTimestamp] = useState<Date | null>(null);
 
   // Fetch Zoho connection status
   const { data: status, isLoading, refetch } = useQuery<ZohoStatus>({
@@ -324,12 +325,81 @@ export default function ZohoConnection() {
         </CardContent>
       </Card>
 
-      {/* Instructions Card */}
+      {/* Quick Setup Guide Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <AlertTriangle className="h-5 w-5 mr-2 text-orange-500" />
+            Quick Setup Guide - Act Fast!
+          </CardTitle>
+          <CardDescription className="text-orange-600 font-medium">
+            Authorization codes expire in exactly 10 minutes. Follow these steps immediately:
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3">
+            <div className="flex items-start space-x-3">
+              <div className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">1</div>
+              <div>
+                <p className="font-medium">Generate Authorization Code</p>
+                <p className="text-sm text-muted-foreground">Visit your Zoho app settings and generate a new authorization code</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start space-x-3">
+              <div className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</div>
+              <div>
+                <p className="font-medium">Download JSON Immediately</p>
+                <p className="text-sm text-muted-foreground">Save the file with client_id, client_secret, and code fields</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start space-x-3">
+              <div className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</div>
+              <div>
+                <p className="font-medium">Upload Within 10 Minutes</p>
+                <p className="text-sm text-muted-foreground">Use the upload button above - don't wait!</p>
+              </div>
+            </div>
+          </div>
+          
+          <Alert className="border-orange-200 bg-orange-50">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              <strong>Time Critical:</strong> If upload fails with "Authorization code expired", click the button below for a fresh code.
+            </AlertDescription>
+          </Alert>
+          
+          {!isConnected && (
+            <div className="pt-4 border-t">
+              <Button 
+                asChild 
+                size="lg" 
+                className="w-full bg-orange-600 hover:bg-orange-700"
+              >
+                <a 
+                  href="https://api-console.zoho.com/client/1000.EYQE8LR8LWDKQ6YD5CKPC9D0885RUN" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Generate Fresh Authorization Code Now
+                </a>
+              </Button>
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Opens Zoho API console in new tab - generate code and return here immediately
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Detailed Instructions Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
             <File className="h-5 w-5 mr-2" />
-            File Upload Instructions
+            JSON File Format
           </CardTitle>
         </CardHeader>
         <CardContent>

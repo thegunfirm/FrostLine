@@ -1,12 +1,13 @@
 # Zoho Token Upload Solution - Complete Implementation
 
 ## Problem Solved
-The Zoho token upload system was failing with generic 400 errors, making it difficult for users to understand why their authorization files weren't working.
+The Zoho token upload system was failing with generic 400 errors, making it difficult for users to understand why their authorization files weren't working. The core challenge is Zoho's strict 10-minute expiration window for authorization codes.
 
 ## Root Cause Identified
-1. **Authorization Code Expiration**: Zoho authorization codes expire within 5-10 minutes of generation
+1. **Zoho 10-Minute Hard Limit**: Authorization codes expire in exactly 10 minutes - this is a Zoho API limitation
 2. **Poor Error Messages**: System returned generic "400 Bad Request" without explaining the specific issue
-3. **TypeScript Errors**: Session type definitions were missing, causing compilation issues
+3. **Unclear Workflow**: Users didn't understand the urgency of the time constraint
+4. **TypeScript Errors**: Session type definitions were missing, causing compilation issues
 
 ## Solution Implemented
 
@@ -57,12 +58,31 @@ curl -X POST http://localhost:5000/api/zoho/upload-tokens \
 }
 ```
 
-## User Instructions
-1. Access `/cms/zoho/connection` page
-2. Generate fresh authorization code in Zoho (must be used within 5-10 minutes)
-3. Download JSON file immediately
-4. Upload file using the "Browse" button
-5. System will show success message or specific error with guidance
+## User Instructions - Streamlined 10-Minute Workflow
+
+### The Reality
+- Zoho authorization codes expire in **exactly 10 minutes** - this cannot be extended
+- You must complete the entire process within this window
+- Failed uploads require generating a completely new code
+
+### Optimized Workflow
+1. **Prepare First**: Open the `/cms/zoho/connection` page in your browser
+2. **Click "Generate Fresh Authorization Code Now"** - opens Zoho API console in new tab
+3. **Generate Code**: Create new authorization code in Zoho console
+4. **Download Immediately**: Save the JSON file (don't modify it)
+5. **Switch Back**: Return to the CMS page immediately
+6. **Upload Instantly**: Use the file upload button within minutes of generation
+7. **Monitor Results**: System shows specific success/failure messages
+
+### If Upload Fails
+- Don't retry with the same file - the code is now expired
+- Click "Generate Fresh Authorization Code Now" to start over
+- Complete the entire workflow again with a new code
+
+### Success Indicators
+- Green "Connected" badge appears
+- Toast notification: "Zoho connection restored successfully"
+- Connection status shows "working" with valid token length
 
 ## Technical Components Modified
 - `server/zoho-routes.ts`: Enhanced error handling and TypeScript fixes
