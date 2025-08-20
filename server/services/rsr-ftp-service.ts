@@ -31,7 +31,7 @@ export class RSRFTPService {
     this.ensureDownloadDirectory();
     
     this.config = {
-      host: process.env.RSR_FTP_HOST || 'ftp.rsrgroup.com',
+      host: process.env.RSR_FTP_HOST || 'ftps.rsrgroup.com',
       user: process.env.RSR_USERNAME || '',
       password: process.env.RSR_PASSWORD || '',
       secure: true,
