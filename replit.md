@@ -18,6 +18,7 @@ GLOBAL SCROLL-TO-TOP: Implement site-wide scroll-to-top functionality on page na
 VERIFICATION REQUIREMENT: Never claim features are "working" or "successful" without verifying actual results in external systems (Zoho CRM, databases, APIs). Always check the end result, not just log messages or API responses that claim success.
 INVENTORY DATA PROTECTION: Never modify live inventory/product data in the database. This is business-critical customer data that must not be altered during testing or development. Use only existing data as-is for any testing purposes.
 CRITICAL SECURITY POLICY: NEVER place tokens, API keys, or any credentials directly in code. ALWAYS use environment variables and the account secrets system. No hardcoded credentials, no "fallback" values, no exceptions. This policy is mandatory to prevent security breaches and development delays.
+RSR IMPORT STANDARD: RSR Comprehensive Import System is the ONLY active RSR system. All legacy RSR sync endpoints deprecated and redirect to comprehensive system. No business decisions on frequencies - uses RSR's exact recommendations. Single source of truth for all RSR operations.
 
 ## System Architecture
 
@@ -51,7 +52,7 @@ CRITICAL SECURITY POLICY: NEVER place tokens, API keys, or any credentials direc
 - **Permanent Zoho Token Management System**: Implemented ZohoTokenService with triple persistence (memory + file + environment), automatic refresh cycles, comprehensive error handling, and rate limit protection for persistent authentication.
 - **Tier-Based Order Processing System**: Full validation of order processing across all membership pricing tiers.
 - **Proper TGF Order Numbering System**: Complete implementation of TGF order numbering specification with comprehensive format rules for both single and multiple shipment groups.
-- **RSR-Compliant Import Frequency System**: Full implementation of RSR's recommended import frequencies - inventory updates every 2 hours, quantity updates every 15 minutes, daily data integrity monitoring. Includes comprehensive scheduler service, FTP automation, admin controls, and emergency update capabilities.
+- **RSR-Compliant Import Frequency System**: Full implementation of RSR's recommended import frequencies - inventory updates every 2 hours, quantity updates every 15 minutes, daily data integrity monitoring. Includes comprehensive scheduler service, FTP automation, admin controls, and emergency update capabilities. **CONSOLIDATED STANDARD** - All legacy RSR systems deprecated, single definitive system for all RSR operations.
 
 ### Technical Stack
 - **Frontend**: React 18 (TypeScript), Wouter, TanStack Query, React Context, Shadcn/ui (Radix UI), Tailwind CSS, Vite.

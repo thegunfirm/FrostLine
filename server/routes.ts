@@ -3377,15 +3377,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // RSR Auto-Sync endpoints
+  // LEGACY RSR AUTO-SYNC ENDPOINTS - DEPRECATED
+  // These endpoints are replaced by the RSR Comprehensive Import System
+  // Maintained for backward compatibility only
   app.get("/api/admin/rsr/sync-status", async (req, res) => {
     try {
-      const status = rsrAutoSync.getStatus();
-      res.json({
-        ...status,
-        message: status.isScheduled 
-          ? `RSR auto-sync running every 2 hours. Last sync: ${status.lastSync.toISOString()}`
-          : "RSR auto-sync is not running"
+      // Redirect to comprehensive status
+      res.status(301).json({ 
+        message: "This endpoint is deprecated. Use /api/admin/rsr/comprehensive-status instead",
+        redirectTo: "/api/admin/rsr/comprehensive-status"
       });
     } catch (error) {
       console.error("RSR sync status error:", error);
@@ -3395,8 +3395,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/rsr/sync-start", async (req, res) => {
     try {
-      rsrAutoSync.start();
-      res.json({ message: "RSR 2-hour auto-sync started successfully" });
+      // Redirect to comprehensive scheduler
+      res.status(301).json({ 
+        message: "This endpoint is deprecated. Use /api/admin/rsr/start-comprehensive-scheduler instead",
+        redirectTo: "/api/admin/rsr/start-comprehensive-scheduler"
+      });
     } catch (error) {
       console.error("RSR sync start error:", error);
       res.status(500).json({ error: "Failed to start RSR auto-sync" });
@@ -3405,8 +3408,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/rsr/sync-stop", async (req, res) => {
     try {
-      rsrAutoSync.stop();
-      res.json({ message: "RSR auto-sync stopped successfully" });
+      // Redirect to comprehensive scheduler
+      res.status(301).json({ 
+        message: "This endpoint is deprecated. Use /api/admin/rsr/stop-comprehensive-scheduler instead",
+        redirectTo: "/api/admin/rsr/stop-comprehensive-scheduler"
+      });
     } catch (error) {
       console.error("RSR sync stop error:", error);
       res.status(500).json({ error: "Failed to stop RSR auto-sync" });
@@ -3443,46 +3449,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // LEGACY RSR SYNC FREQUENCY ENDPOINT - DEPRECATED  
+  // This endpoint is replaced by the RSR Comprehensive Import System
   app.post("/api/admin/settings/rsr-sync-frequency", async (req, res) => {
     try {
-      const { frequency, enabled } = req.body;
-      
-      // Update RSR sync frequency setting
-      await db.insert(systemSettings)
-        .values({
-          key: "rsr_sync_frequency",
-          value: frequency,
-          description: "RSR inventory sync frequency in hours",
-          category: "sync"
-        })
-        .onConflictDoUpdate({
-          target: systemSettings.key,
-          set: { value: frequency, updatedAt: new Date() }
-        });
-      
-      // Update RSR sync enabled setting
-      await db.insert(systemSettings)
-        .values({
-          key: "rsr_sync_enabled",
-          value: enabled.toString(),
-          description: "Enable or disable RSR inventory sync",
-          category: "sync"
-        })
-        .onConflictDoUpdate({
-          target: systemSettings.key,
-          set: { value: enabled.toString(), updatedAt: new Date() }
-        });
-      
-      // Restart sync with new settings
-      rsrAutoSync.stop();
-      if (enabled) {
-        rsrAutoSync.start();
-      }
-      
-      res.json({ 
-        message: enabled 
-          ? `RSR sync updated to run every ${frequency} hours`
-          : "RSR sync disabled"
+      res.status(301).json({
+        message: "This endpoint is deprecated. RSR import frequencies are now managed by the comprehensive scheduler.",
+        info: {
+          currentSchedule: {
+            fullInventory: "Every 2 hours (RSR recommended)",
+            quantities: "Every 15 minutes (optimized)",
+            monitoring: "Daily at 6:00 AM"
+          },
+          managementEndpoints: {
+            status: "/api/admin/rsr/comprehensive-status",
+            start: "/api/admin/rsr/start-comprehensive-scheduler", 
+            stop: "/api/admin/rsr/stop-comprehensive-scheduler"
+          }
+        }
       });
     } catch (error) {
       console.error("RSR sync frequency update error:", error);
