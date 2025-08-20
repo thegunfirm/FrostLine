@@ -185,20 +185,19 @@ class RSRFileProcessor {
       return;
     }
 
-    // Check if product exists
-    const existingProduct = await storage.getProductBySku(record.stockNumber);
+    // FIXED: Use manufacturer part number as customer-facing SKU
+    const customerSku = record.manufacturerPartNumber || record.stockNumber;
+    
+    // Check if product exists by customer SKU
+    const existingProduct = await storage.getProductBySku(customerSku);
     
     const productData: InsertProduct = {
       name: record.description,
       description: record.expandedDescription || record.description,
       category: this.mapDepartmentToCategory(record.departmentNumber),
-      // CRITICAL: Add RSR classification fields for proper handgun filtering
-      subcategoryName: record.subcategoryName || null,
-      departmentDesc: record.departmentDesc || null,
-      subDepartmentDesc: record.subDepartmentDesc || null,
-      manufacturerPartNumber: record.manufacturerPartNumber || null,
       manufacturer: record.fullManufacturerName,
-      sku: record.stockNumber,
+      sku: customerSku,                              // FIXED: Customer-facing SKU (manufacturer part number)
+      rsrStockNumber: record.stockNumber,            // RSR distributor code for ordering
       upcCode: record.upcCode,
       priceWholesale: record.rsrPricing || "0",
       priceMSRP: record.retailPrice || "0",
@@ -241,8 +240,15 @@ class RSRFileProcessor {
 
     if (existingProduct) {
       await storage.updateProduct(existingProduct.id, productData);
+      console.log(`🔄 Updated: ${customerSku} (RSR: ${record.stockNumber})`);
     } else {
       await storage.createProduct(productData);
+      console.log(`➕ Created: ${customerSku} (RSR: ${record.stockNumber})`);
+    }
+    
+    // Log field correction when manufacturer part number differs from RSR stock number
+    if (record.manufacturerPartNumber && record.manufacturerPartNumber !== record.stockNumber) {
+      console.log(`   ✅ Fixed SKU mapping: ${record.stockNumber} → ${record.manufacturerPartNumber}`);
     }
   }
 

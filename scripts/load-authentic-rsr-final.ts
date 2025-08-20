@@ -18,48 +18,40 @@ function parseRSRLine(line: string) {
   const fields = line.split(';');
   if (fields.length < 20) return null;
   
-  const stockNo = fields[0]?.trim();
-  const upc = fields[1]?.trim();
-  const description = fields[2]?.trim();
-  const departmentNumber = fields[3]?.trim();
-  const manufacturer = fields[4]?.trim();
-  const retailPrice = parseFloat(fields[5]) || 0;
-  const rsrPrice = parseFloat(fields[6]) || 0;
-  const inventoryQuantity = parseInt(fields[7]) || 0;
-  const allocated = parseInt(fields[8]) || 0;
-  const fullDescription = fields[9]?.trim();
-  const weight = parseFloat(fields[10]) || 0;
-  const height = parseFloat(fields[11]) || 0;
-  const width = parseFloat(fields[12]) || 0;
-  const length = parseFloat(fields[13]) || 0;
-  const imageDisclaimer = fields[14]?.trim();
-  const restrictedState = fields[15]?.trim();
-  const mapPrice = parseFloat(fields[16]) || retailPrice;
-  const subCategory = fields[17]?.trim();
-  const fflRequired = fields[18]?.trim() === 'Y';
+  const stockNo = fields[0]?.trim();                    // Field 1: RSR stock number (distributor code)
+  const upc = fields[1]?.trim();                        // Field 2: UPC code
+  const description = fields[2]?.trim();                // Field 3: Product description
+  const departmentNumber = fields[3]?.trim();           // Field 4: Department number
+  const manufacturerId = fields[4]?.trim();             // Field 5: Manufacturer ID
+  const retailPrice = parseFloat(fields[5]) || 0;       // Field 6: MSRP
+  const rsrPrice = parseFloat(fields[6]) || 0;          // Field 7: RSR dealer price
+  const weight = parseFloat(fields[7]) || 0;            // Field 8: Weight
+  const inventoryQuantity = parseInt(fields[8]) || 0;   // Field 9: Quantity
+  const model = fields[9]?.trim();                      // Field 10: Model
+  const manufacturer = fields[10]?.trim();              // Field 11: Full manufacturer name
+  const manufacturerPartNumber = fields[11]?.trim();    // Field 12: MANUFACTURER PART NUMBER (customer-facing SKU)
+  const allocated = fields[12]?.trim();                 // Field 13: Allocated/closeout/deleted
+  const fullDescription = fields[13]?.trim();           // Field 14: Expanded description
+  const imageName = fields[14]?.trim();                 // Field 15: Image name
   
   if (!stockNo || !description) return null;
   
   return {
-    stockNo,
+    stockNo,                      // RSR distributor code (for ordering from RSR)
     upc,
     description,
     departmentNumber,
-    manufacturer,
+    manufacturerId,
+    manufacturer,                 // Full manufacturer name
+    manufacturerPartNumber,       // ACTUAL manufacturer part number (customer-facing SKU)
     retailPrice,
     rsrPrice,
+    weight,
     inventoryQuantity,
+    model,
     allocated,
     fullDescription,
-    weight,
-    height,
-    width,
-    length,
-    imageDisclaimer,
-    restrictedState,
-    mapPrice,
-    subCategory,
-    fflRequired
+    imageName
   };
 }
 
@@ -116,7 +108,8 @@ function transformRSRProduct(rsrProduct: any) {
     description: rsrProduct.fullDescription || rsrProduct.description,
     category,
     manufacturer: rsrProduct.manufacturer,
-    sku: rsrProduct.stockNo,
+    sku: rsrProduct.manufacturerPartNumber,              // FIXED: Use manufacturer part number as customer-facing SKU
+    rsrStockNumber: rsrProduct.stockNo,                  // Store RSR code separately for ordering
     upcCode: rsrProduct.upc,
     priceWholesale: dealerPrice.toFixed(2),
     priceMSRP: msrp.toFixed(2), 
@@ -126,18 +119,8 @@ function transformRSRProduct(rsrProduct: any) {
     pricePlatinum: dealerPrice.toFixed(2),
     stockQuantity: rsrProduct.inventoryQuantity,
     inStock: rsrProduct.inventoryQuantity > 0,
-    requiresFFL: rsrProduct.fflRequired,
+    requiresFFL: ['1', '2', '3', '4'].includes(rsrProduct.departmentNumber), // Firearms require FFL
     weight: rsrProduct.weight.toFixed(2),
-    dimensions: {
-      height: rsrProduct.height,
-      width: rsrProduct.width,
-      length: rsrProduct.length
-    },
-    tags: [
-      category,
-      rsrProduct.manufacturer,
-      rsrProduct.subCategory
-    ].filter(Boolean),
     images,
     distributor: 'RSR' as const,
     isActive: true
