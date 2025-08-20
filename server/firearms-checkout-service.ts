@@ -23,6 +23,7 @@ export interface CheckoutPayload {
     phone?: string;
   };
   fflRecipientId?: number;
+  skipPaymentProcessing?: boolean; // For testing
 }
 
 export interface CheckoutResult {
@@ -73,16 +74,27 @@ export class FirearmsCheckoutService {
       if (complianceResult.requiresHold) {
         // NEW POLICY: Charge card immediately for firearms but hold RSR processing
         console.log('Step 3a: Processing payment with hold...');
-        authResult = await authorizeNetService.authCaptureTransaction(
-          totalAmount,
-          payload.paymentMethod.cardNumber,
-          payload.paymentMethod.expirationDate,
-          payload.paymentMethod.cvv,
-          {
-            ...payload.customerInfo,
-            address: payload.shippingAddress,
-          }
-        );
+        
+        if (payload.skipPaymentProcessing) {
+          console.log('⚠️  SKIPPING payment processing for test...');
+          authResult = {
+            success: true,
+            transactionId: 'TEST_SKIP_' + Date.now(),
+            authCode: 'TEST123'
+          };
+          console.log('✅ Mock payment result created:', authResult);
+        } else {
+          authResult = await authorizeNetService.authCaptureTransaction(
+            totalAmount,
+            payload.paymentMethod.cardNumber,
+            payload.paymentMethod.expirationDate,
+            payload.paymentMethod.cvv,
+            {
+              ...payload.customerInfo,
+              address: payload.shippingAddress,
+            }
+          );
+        }
 
         if (!authResult.success) {
           return {
@@ -100,30 +112,40 @@ export class FirearmsCheckoutService {
       } else {
         // Normal checkout - capture immediately
         console.log('Step 3b: Processing normal payment...');
-        console.log('About to call Authorize.Net SANDBOX with amount:', totalAmount);
         
-        try {
-          authResult = await Promise.race([
-            authorizeNetService.authCaptureTransaction(
-              totalAmount,
-              payload.paymentMethod.cardNumber,
-              payload.paymentMethod.expirationDate,
-              payload.paymentMethod.cvv,
-              {
-                ...payload.customerInfo,
-                address: payload.shippingAddress,
-              }
-            ),
-            new Promise<AuthResult>((_, reject) => 
-              setTimeout(() => reject(new Error('Payment processing timeout')), 15000)
-            )
-          ]);
-        } catch (error: any) {
-          console.error('Payment processing error:', error);
+        if (payload.skipPaymentProcessing) {
+          console.log('⚠️  SKIPPING payment processing for test...');
           authResult = {
-            success: false,
-            error: error.message || 'Payment processing failed'
+            success: true,
+            transactionId: 'TEST_SKIP_' + Date.now(),
+            authCode: 'TEST123'
           };
+        } else {
+          console.log('About to call Authorize.Net SANDBOX with amount:', totalAmount);
+          
+          try {
+            authResult = await Promise.race([
+              authorizeNetService.authCaptureTransaction(
+                totalAmount,
+                payload.paymentMethod.cardNumber,
+                payload.paymentMethod.expirationDate,
+                payload.paymentMethod.cvv,
+                {
+                  ...payload.customerInfo,
+                  address: payload.shippingAddress,
+                }
+              ),
+              new Promise<AuthResult>((_, reject) => 
+                setTimeout(() => reject(new Error('Payment processing timeout')), 15000)
+              )
+            ]);
+          } catch (error: any) {
+            console.error('Payment processing error:', error);
+            authResult = {
+              success: false,
+              error: error.message || 'Payment processing failed'
+            };
+          }
         }
         
         console.log('✅ Payment processing result:', authResult);
@@ -171,7 +193,7 @@ export class FirearmsCheckoutService {
       // Step 5: Create order line items
       const orderLineData: InsertOrderLine[] = payload.cartItems.map(item => ({
         orderId: newOrder.id,
-        productId: item.id,
+        productId: item.productId, // Use productId (integer) not id (string)
         quantity: item.quantity,
         unitPrice: item.price.toString(),
         totalPrice: (item.price * item.quantity).toString(),
@@ -179,6 +201,8 @@ export class FirearmsCheckoutService {
       }));
 
       console.log('About to insert order lines...');
+      console.log('Cart items being processed:', JSON.stringify(payload.cartItems, null, 2));
+      console.log('Order line data:', JSON.stringify(orderLineData, null, 2));
       await db.insert(orderLines).values(orderLineData);
       console.log('✅ Order lines created');
 

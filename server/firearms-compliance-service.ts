@@ -22,9 +22,10 @@ export interface ComplianceCheckResult {
 }
 
 export interface CartItem {
-  id: number;
-  name: string;
-  sku: string;
+  id: string; // Composite ID from client
+  productId: number; // Actual product ID for database
+  productName: string;
+  productSku: string;
   quantity: number;
   price: number;
   isFirearm: boolean;
@@ -101,17 +102,23 @@ export class FirearmsComplianceService {
    * Check if user has verified FFL on file
    */
   async userHasVerifiedFFL(userId: number): Promise<boolean> {
-    // Check if user has preferredFflId set and that FFL is active
-    const result = await db.execute(sql`
-      SELECT f.is_atf_active
-      FROM users u
-      JOIN ffls f ON f.id = u.preferred_ffl_id
-      WHERE u.id = ${userId}
-        AND u.preferred_ffl_id IS NOT NULL
-        AND f.is_atf_active = true
-    `);
+    try {
+      // Check if user has preferredFflId set and that FFL is active
+      const result = await db.execute(sql`
+        SELECT 1 as has_ffl
+        FROM users u
+        INNER JOIN ffls f ON f.id = u.preferred_ffl_id
+        WHERE u.id = ${userId}
+          AND u.preferred_ffl_id IS NOT NULL
+          AND f.is_atf_active = true
+        LIMIT 1
+      `);
 
-    return result.rows.length > 0;
+      return result.rows.length > 0;
+    } catch (error) {
+      console.error('Error checking user FFL:', error);
+      return false;
+    }
   }
 
   /**
