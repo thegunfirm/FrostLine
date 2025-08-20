@@ -49,14 +49,20 @@ export default function ZohoConnection() {
       const response = await apiRequest('POST', '/api/zoho/upload-tokens', tokenData);
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (data.success) {
         toast({
           title: "Connection Restored",
           description: data.message,
         });
+        
+        // Force immediate cache invalidation and refetch
         queryClient.invalidateQueries({ queryKey: ['/api/zoho/status'] });
-        refetch();
+        
+        // Wait a moment for server state to settle, then refetch
+        setTimeout(async () => {
+          await refetch();
+        }, 500);
       } else {
         const errorMessage = data.helpText ? 
           `${data.error}. ${data.helpText}` : 
@@ -87,13 +93,20 @@ export default function ZohoConnection() {
       const response = await apiRequest('POST', '/api/zoho/refresh-token');
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (data.success) {
         toast({
           title: "Tokens Refreshed",
           description: "Zoho connection has been refreshed successfully",
         });
+        
+        // Force immediate cache invalidation and refetch
         queryClient.invalidateQueries({ queryKey: ['/api/zoho/status'] });
+        
+        // Wait a moment for server state to settle, then refetch
+        setTimeout(async () => {
+          await refetch();
+        }, 500);
       } else {
         toast({
           title: "Refresh Failed",
@@ -151,8 +164,12 @@ export default function ZohoConnection() {
     }
   };
 
-  const isConnected = status?.configured && !status?.error;
-  const hasTokens = status?.configured;
+  // Fix connection detection logic based on actual server response
+  const isConnected = status?.status === "working" && status?.hasToken;
+  const hasTokens = status?.hasToken;
+  
+  // Debug logging to see what we're getting
+  console.log('Status check:', { status, isConnected, hasTokens });
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -181,19 +198,37 @@ export default function ZohoConnection() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Connection Status
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Check Now
+              </Button>
+              
+              {hasTokens && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refreshTokenMutation.mutate()}
+                  disabled={refreshTokenMutation.isPending}
+                >
+                  {refreshTokenMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  Refresh Tokens
+                </Button>
               )}
-              Refresh
-            </Button>
+            </div>
           </CardTitle>
           <CardDescription>
             Monitor your Zoho CRM integration status and manage authentication tokens
