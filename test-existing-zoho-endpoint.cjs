@@ -27,7 +27,7 @@ async function testExistingZohoEndpoint() {
         sku: 'PA175S203',
         manufacturerPartNumber: 'PA175S203',
         rsrStockNumber: 'GLPA175S203',
-        upcCode: '810188100849', // Add the UPC from our product database
+        upcCode: '764503037108', // Correct RSR UPC for GLOCK PA175S203
         quantity: 1,
         unitPrice: 647.00,
         price: 647.00,
