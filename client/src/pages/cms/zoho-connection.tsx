@@ -270,9 +270,17 @@ export default function ZohoConnection() {
                 {isUploading ? "Uploading..." : "Browse"}
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Upload a JSON file containing client_id, client_secret, code, and grant_type fields
-            </p>
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p>Upload a JSON file with the following format:</p>
+              <pre className="bg-muted p-2 rounded text-xs font-mono">
+{`{
+  "client_id": "your_client_id",
+  "client_secret": "your_client_secret", 
+  "code": "authorization_code",
+  "grant_type": "authorization_code"
+}`}
+              </pre>
+            </div>
           </div>
 
           {/* Action Buttons */}

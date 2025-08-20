@@ -160,16 +160,25 @@ export function registerZohoRoutes(app: Express): void {
   // Token upload endpoint - restore connection from JSON file
   app.post("/api/zoho/upload-tokens", async (req, res) => {
     try {
+      console.log('📁 Token upload request received:', JSON.stringify(req.body, null, 2));
+      
       const { client_id, client_secret, code, grant_type } = req.body;
       
       // Validate the uploaded data
       if (!client_id || !client_secret || !code || grant_type !== 'authorization_code') {
+        console.log('❌ Validation failed:', {
+          hasClientId: !!client_id,
+          hasClientSecret: !!client_secret,
+          hasCode: !!code,
+          grantType: grant_type
+        });
         return res.status(400).json({ 
           error: 'Invalid token file format. Expected client_id, client_secret, code, and grant_type fields.' 
         });
       }
 
       // Exchange the authorization code for tokens
+      console.log('🔄 Attempting token exchange with Zoho...');
       const tokenResponse = await fetch('https://accounts.zoho.com/oauth/v2/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -182,6 +191,11 @@ export function registerZohoRoutes(app: Express): void {
       });
 
       const tokenData = await tokenResponse.json();
+      console.log('📝 Token exchange response:', { 
+        status: tokenResponse.status, 
+        success: !!tokenData.access_token,
+        error: tokenData.error || 'none'
+      });
 
       if (tokenData.access_token && tokenData.refresh_token) {
         // Clear any existing tokens first
