@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enhanced Order Flow Test - TheGunFirm.com</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .step { margin: 20px 0; padding: 15px; border-left: 4px solid #007bff; background: #f8f9fa; }
+        .product { margin: 10px 0; padding: 10px; background: #fff; border: 1px solid #ddd; }
+        .highlight { background: #fff3cd; padding: 5px; border-radius: 3px; }
+        .success { color: #28a745; font-weight: bold; }
+        .info { color: #17a2b8; }
+        .warning { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Enhanced Order Flow Test Demonstration</h1>
+    <p><strong>Test Configuration:</strong> Fake customer, Real RSR inventory, Real FFL, Sandbox Authorize.Net, No RSR API interaction</p>
+
+    <div class="step">
+        <h2>Step 1: Product Selection (Real RSR Inventory)</h2>
+        <div class="product">
+            <strong>🔫 GLOCK 43X 9mm Luger</strong><br>
+            SKU: GLOCK43X | Price: $478.99 | <span class="warning">Requires FFL</span><br>
+            Stock: 15 units available
+        </div>
+        <div class="product">
+            <strong>🔧 ZAF Upper Parts Kit for Glock 19 Gen 1-3</strong><br>
+            SKU: ZAF19UPK | Price: $85.49 | <span class="success">No FFL Required</span><br>
+            Stock: 25 units available
+        </div>
+        <div class="product">
+            <strong>🔧 ZAF Upper Parts Kit for Glock 19 Gen 5</strong><br>
+            SKU: ZAFUPK195 | Price: $94.99 | <span class="success">No FFL Required</span><br>
+            Stock: 6 units available
+        </div>
+        <p class="info"><strong>Total Order Value:</strong> $659.47</p>
+    </div>
+
+    <div class="step">
+        <h2>Step 2: Enhanced UI Elements to Demonstrate</h2>
+        <ul>
+            <li class="highlight">✅ TGF Order Numbers (e.g., TGF154217)</li>
+            <li class="highlight">✅ Order Status Progression with visual tracking</li>
+            <li class="highlight">✅ Firearms Compliance Status and hold types</li>
+            <li class="highlight">✅ Deal Names from Zoho CRM integration</li>
+            <li class="highlight">✅ Pipeline Stages and fulfillment information</li>
+            <li class="highlight">✅ Estimated ship dates and carrier tracking</li>
+            <li class="highlight">✅ Complete order timeline visibility</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>Step 3: Test Flow Process</h2>
+        <ol>
+            <li><strong>Navigate to website:</strong> <a href="http://localhost:5000" target="_blank">http://localhost:5000</a></li>
+            <li><strong>Register test user:</strong> testuser-demo@example.com</li>
+            <li><strong>Add products to cart:</strong> Glock + 2 accessories</li>
+            <li><strong>Select FFL dealer:</strong> Real FFL from database</li>
+            <li><strong>Enter shipping info:</strong> Fake customer details</li>
+            <li><strong>Process payment:</strong> Sandbox Authorize.Net</li>
+            <li><strong>View enhanced order confirmation:</strong> Shows TGF number, compliance status</li>
+            <li><strong>Check account orders:</strong> Enhanced with Zoho deal data</li>
+            <li><strong>Access order details:</strong> Complete Zoho CRM integration display</li>
+        </ol>
+    </div>
+
+    <div class="step">
+        <h2>Step 4: Enhanced Data Display</h2>
+        <p>The new UI will show data previously only visible in Zoho:</p>
+        <ul>
+            <li><strong>Order Confirmation Page:</strong> TGF order number, compliance status, estimated processing time</li>
+            <li><strong>Account Orders Page:</strong> Deal names, pipeline stages, fulfillment types, hold status</li>
+            <li><strong>Order Detail Page:</strong> Complete Zoho deal information, carrier tracking, estimated ship dates</li>
+            <li><strong>Status Progression:</strong> Visual pipeline with Order Received → Processing → Background Check → Shipping</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>🚀 Ready to Start Test</h2>
+        <p class="success">Click the link above to begin the enhanced order flow demonstration!</p>
+        <p class="info">This test will showcase how customers now see comprehensive order information that was previously hidden in the CRM.</p>
+    </div>
+
+    <script>
+        // Auto-redirect to the application
+        setTimeout(() => {
+            if (confirm('Ready to start the enhanced order flow test?')) {
+                window.open('http://localhost:5000', '_blank');
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
