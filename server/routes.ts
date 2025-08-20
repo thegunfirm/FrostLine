@@ -6272,7 +6272,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if user is authenticated to get tier pricing
       const sessionUser = (req.session as any)?.user;
-      let currentPrice = parseFloat(product.price || "0");
+      console.log('🔍 Cart add - sessionUser:', sessionUser ? `User ID ${sessionUser.id}, tier: ${sessionUser.membershipTier}` : 'Not logged in');
+      // Get correct pricing based on membership tier - using the correct field names from database
+      console.log('🔍 Product pricing fields:', {
+        priceBronze: product.priceBronze,
+        priceGold: product.priceGold,
+        pricePlatinum: product.pricePlatinum
+      });
+      
+      let currentPrice = parseFloat(product.priceBronze || "0"); // Default to Bronze pricing
       
       if (sessionUser?.membershipTier) {
         const tier = sessionUser.membershipTier.toLowerCase();
@@ -6280,10 +6288,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currentPrice = parseFloat(product.priceGold);
         } else if (tier === 'platinum' && product.pricePlatinum) {
           currentPrice = parseFloat(product.pricePlatinum);
+        } else {
+          // Bronze tier or no specific tier pricing
+          currentPrice = parseFloat(product.priceBronze || "0");
         }
       }
       
-      // Cart is handled client-side, just return success with product details
+      console.log('🔍 Calculated price for tier', sessionUser?.membershipTier || 'anonymous', ':', currentPrice);
+      
+      // If user is authenticated, save to database cart as well as returning product details
+      console.log('🔍 Cart add - about to check if sessionUser exists:', !!sessionUser);
+      if (sessionUser) {
+        console.log('🔍 Cart add - sessionUser confirmed, proceeding with cart save');
+        try {
+          // Convert string user ID to numeric equivalent for cart storage compatibility
+          const numericUserId = stringToNumericUserId(sessionUser.id);
+          
+          // Get existing cart
+          const existingCart = await storage.getUserCart(numericUserId);
+          let items = [];
+          
+          try {
+            items = existingCart?.items || [];
+            if (typeof items === 'string') {
+              items = JSON.parse(items);
+            }
+          } catch (parseError) {
+            console.error('⚠️ Cart items parsing error:', parseError);
+            items = [];
+          }
+          
+          // Create cart item
+          const cartItem = {
+            id: `${product.sku}-${Date.now()}`, // Unique item ID
+            productId: product.id,
+            sku: product.sku,
+            name: product.name,
+            price: currentPrice,
+            quantity: parseInt(quantity),
+            requiresFFL: product.requiresFfl,
+            manufacturer: product.manufacturer,
+            imageUrl: product.imageUrl
+          };
+          
+          // Check if item already exists in cart
+          const existingItemIndex = items.findIndex((item: any) => item.sku === product.sku);
+          
+          if (existingItemIndex >= 0) {
+            // Update quantity AND price of existing item (in case tier pricing changed)
+            items[existingItemIndex].quantity += parseInt(quantity);
+            items[existingItemIndex].price = currentPrice; // Update price to current tier pricing
+            items[existingItemIndex].requiresFFL = product.requiresFfl; // Update FFL requirement
+            console.log(`📦 Updated existing cart item: ${product.sku} (new qty: ${items[existingItemIndex].quantity}, price: $${currentPrice})`);
+          } else {
+            // Add new item to cart
+            items.push(cartItem);
+            console.log(`📦 Added new cart item: ${product.sku} (qty: ${quantity})`);
+          }
+          
+          // Save updated cart
+          await storage.saveUserCart(numericUserId, items);
+          console.log(`✅ Cart saved for user ${sessionUser.id} (numeric: ${numericUserId})`);
+          
+        } catch (cartError) {
+          console.error('⚠️ Cart persistence error:', cartError);
+          // Continue with success response even if cart save fails
+        }
+      }
+      
+      // Return success with product details for client-side handling
       res.json({ 
         success: true,
         product: {
@@ -6291,7 +6364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sku: product.sku,
           name: product.name,
           price: currentPrice,
-          requiresFFL: product.fflRequired,
+          requiresFFL: product.requiresFfl,
           manufacturer: product.manufacturer,
           imageUrl: product.imageUrl
         }
