@@ -37,6 +37,7 @@ import PaymentTest from "@/pages/payment-test";
 import Categories from "@/pages/categories";
 import Browse from "@/pages/browse";
 import OrderSummary from "@/pages/order-summary";
+import { OrderSummaryPage } from "@/pages/OrderSummary";
 import FflSelection from "@/pages/ffl-selection";
 
 import Shipping from "@/pages/shipping";
@@ -97,6 +98,7 @@ function Router() {
         <Route path="/product/:id" component={ProductDetail} />
         <Route path="/cart" component={Cart} />
         <Route path="/order-summary" component={OrderSummary} />
+        <Route path="/unified-order" component={OrderSummaryPage} />
         <Route path="/ffl-selection" component={FflSelection} />
 
         <Route path="/shipping" component={Shipping} />

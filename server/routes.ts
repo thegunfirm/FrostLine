@@ -516,6 +516,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Unified Order Summary API (Zoho as system of record)
+  app.get('/api/orders/unified/:orderNumber', async (req, res) => {
+    try {
+      const { orderNumber } = req.params;
+      const { unifiedOrderService } = await import('./unified-order-service');
+      
+      const orderSummary = await unifiedOrderService.getUnifiedOrderSummary(orderNumber);
+      
+      if (!orderSummary) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      
+      res.json(orderSummary);
+    } catch (error) {
+      console.error('Error fetching unified order:', error);
+      res.status(500).json({ error: 'Failed to fetch order summary' });
+    }
+  });
+
+  // Customer Order History API (Zoho as system of record)
+  app.get('/api/orders/history/:email', async (req, res) => {
+    try {
+      const { email } = req.params;
+      const { unifiedOrderService } = await import('./unified-order-service');
+      
+      const orderHistory = await unifiedOrderService.getCustomerOrderHistory(email);
+      
+      res.json(orderHistory);
+    } catch (error) {
+      console.error('Error fetching order history:', error);
+      res.status(500).json({ error: 'Failed to fetch order history' });
+    }
+  });
+
+  // Zoho Deal Search Endpoint (for unified order service)
+  app.get('/api/zoho/deals/search', async (req, res) => {
+    try {
+      const { criteria } = req.query;
+      const { ZohoService } = await import('./zoho-service');
+      
+      // Use the existing working Zoho service
+      const zohoService = new ZohoService();
+      const response = await zohoService.makeZohoRequest({
+        method: 'GET',
+        endpoint: `/deals/search?criteria=${encodeURIComponent(criteria as string)}`
+      });
+      
+      res.json(response);
+    } catch (error) {
+      console.error('Error searching Zoho deals:', error);
+      res.status(500).json({ error: 'Failed to search deals' });
+    }
+  });
+
   // Zoho-based login
   app.post("/api/login", async (req, res) => {
     try {
