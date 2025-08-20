@@ -228,6 +228,35 @@ export class AutomaticZohoTokenManager {
     }
   }
 
+  // Public method to save tokens directly from successful OAuth exchange
+  async saveTokensDirectly(tokenResponse: { 
+    access_token: string; 
+    refresh_token: string; 
+    expires_in: number; 
+    api_domain: string; 
+  }): Promise<boolean> {
+    try {
+      const tokenData: TokenData = {
+        accessToken: tokenResponse.access_token,
+        refreshToken: tokenResponse.refresh_token,
+        expiresAt: Date.now() + (tokenResponse.expires_in * 1000),
+        lastRefresh: Date.now()
+      };
+
+      this.saveTokens(tokenData);
+      
+      // Also save to environment variables for compatibility
+      process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN = tokenResponse.access_token;
+      process.env.ZOHO_WEBSERVICES_REFRESH_TOKEN = tokenResponse.refresh_token;
+      
+      console.log('✅ Tokens saved successfully from direct exchange');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to save tokens directly:', error);
+      return false;
+    }
+  }
+
   // Public method to force clear tokens (use during user switches)
   forceReset(): void {
     console.log('🔄 Force resetting Zoho token system');

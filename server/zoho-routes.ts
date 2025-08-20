@@ -207,14 +207,19 @@ export function registerZohoRoutes(app: Express): void {
         // Clear any existing tokens first
         automaticZohoTokenManager.forceReset();
         
-        // Save the new tokens using the token manager
-        const success = await automaticZohoTokenManager.generateFromAuthCode(code);
+        // Save the tokens directly from the successful exchange
+        const success = await automaticZohoTokenManager.saveTokensDirectly({
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          expires_in: tokenData.expires_in || 3600,
+          api_domain: tokenData.api_domain || 'https://www.zohoapis.com'
+        });
         
         if (success) {
           res.json({ 
             success: true, 
             message: 'Zoho connection restored successfully from uploaded file',
-            expiresAt: new Date(Date.now() + 3600 * 1000).toISOString()
+            expiresAt: new Date(Date.now() + (tokenData.expires_in || 3600) * 1000).toISOString()
           });
         } else {
           res.status(500).json({ error: 'Failed to save tokens after successful exchange' });
