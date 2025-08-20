@@ -248,28 +248,42 @@ export function registerZohoRoutes(app: Express): void {
     }
   });
 
-  // Token refresh endpoint
+  // Token refresh endpoint - force refresh existing tokens
   app.post("/api/zoho/refresh-token", async (req, res) => {
     try {
-      const { getZohoTokenService } = await import('./zoho-token-service.js');
-      const tokenService = getZohoTokenService();
-      const accessToken = await tokenService.getAccessToken();
+      console.log('🔄 Manual token refresh requested...');
       
-      res.json({
-        success: true,
-        message: 'Token refreshed successfully using permanent service',
-        hasToken: !!accessToken,
-        timestamp: new Date().toISOString()
-      });
+      // Try to use the automatic token manager for refresh
+      const success = await automaticZohoTokenManager.forceRefreshNow();
+      
+      if (success) {
+        res.json({
+          success: true,
+          message: 'Tokens refreshed successfully - CRM access restored',
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Token refresh failed - may need re-authorization',
+          timestamp: new Date().toISOString()
+        });
+      }
     } catch (error: any) {
       console.error("Token refresh error:", error);
       
-      // Handle rate limiting gracefully
-      if (error.message?.includes('too many requests')) {
+      if (error.message?.includes('too many requests') || error.message?.includes('rate limit')) {
         res.status(429).json({
           success: false,
-          error: 'Rate limited - this is temporary during testing',
-          note: 'Permanent system is working, will retry automatically',
+          error: 'Rate limited - will retry automatically',
+          note: 'Zoho API has temporary rate limits during heavy usage',
+          timestamp: new Date().toISOString()
+        });
+      } else if (error.message?.includes('scope') || error.message?.includes('oauth')) {
+        res.status(401).json({
+          success: false,
+          error: 'OAuth scope issue - need fresh authorization',
+          note: 'Current tokens lack required CRM permissions',
           timestamp: new Date().toISOString()
         });
       } else {

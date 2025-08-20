@@ -257,6 +257,24 @@ export class AutomaticZohoTokenManager {
     }
   }
 
+  // Public method to force refresh tokens immediately
+  async forceRefreshNow(): Promise<boolean> {
+    console.log('🔄 Force refresh requested - refreshing tokens immediately');
+    try {
+      const token = await this.refreshToken();
+      if (token) {
+        console.log('✅ Force refresh successful');
+        return true;
+      } else {
+        console.log('❌ Force refresh failed');
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Force refresh error:', error);
+      return false;
+    }
+  }
+
   // Public method to force clear tokens (use during user switches)
   forceReset(): void {
     console.log('🔄 Force resetting Zoho token system');
