@@ -202,7 +202,7 @@ export const ffls = pgTable("ffls", {
 // Cart persistence for authenticated users
 export const carts = pgTable("carts", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: text("user_id").notNull(),
   items: json("items").notNull(), // Array of cart items
   updatedAt: timestamp("updated_at").defaultNow(),
 });

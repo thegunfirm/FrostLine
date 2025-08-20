@@ -206,8 +206,8 @@ export class FirearmsCheckoutService {
       await db.insert(orderLines).values(orderLineData);
       console.log('✅ Order lines created');
 
-      // Step 6: Submit order to RSR for fulfillment (if not on hold)
-      if (!complianceResult.requiresHold) {
+      // Step 6: Submit order to RSR for fulfillment (if not on hold and not skipped)
+      if (!complianceResult.requiresHold && !payload.skipRSROrdering) {
         try {
           console.log(`📦 Submitting order ${orderNumber} to RSR for fulfillment...`);
           
@@ -237,6 +237,14 @@ export class FirearmsCheckoutService {
         } catch (rsrError) {
           console.error('RSR order submission error (non-blocking):', rsrError);
         }
+      } else if (payload.skipRSROrdering) {
+        console.log(`🧪 RSR ordering skipped for testing - order ${orderNumber} marked as ready for manual processing`);
+        await db.update(orders)
+          .set({ 
+            status: 'Ready for Fulfillment (Test Mode)',
+            notes: 'RSR ordering skipped for testing'
+          })
+          .where(eq(orders.id, newOrder.id));
       }
 
       // Step 7: Sync to Zoho CRM

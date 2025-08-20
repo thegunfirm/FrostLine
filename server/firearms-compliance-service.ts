@@ -128,10 +128,16 @@ export class FirearmsComplianceService {
     userId: number,
     cartItems: CartItem[]
   ): Promise<ComplianceCheckResult> {
+    console.log('🔍 Compliance check received userId:', userId);
+    console.log('🔍 Compliance check received cartItems:', JSON.stringify(cartItems, null, 2));
+    console.log('🔍 CartItems is array?', Array.isArray(cartItems));
+    console.log('🔍 CartItems length:', cartItems?.length);
+    
     const config = await this.loadConfig();
     
     // Validate input
     if (!cartItems || !Array.isArray(cartItems)) {
+      console.error('❌ Invalid cartItems - not an array or null/undefined');
       throw new Error('Invalid cartItems provided to compliance check');
     }
     

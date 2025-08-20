@@ -280,7 +280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const bcrypt = require('bcrypt');
       const passwordHash = await bcrypt.hash(password, 10);
 
-      // Create user with email already verified
+      // Create user with email already verified (using only existing columns)
       const newUser = await db.insert(users).values({
         email,
         password: passwordHash,
@@ -329,11 +329,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/checkout/process', async (req, res) => {
     try {
       console.log('🔧 Processing checkout via direct endpoint...');
+      console.log('🔍 Received checkout data:', JSON.stringify(req.body, null, 2));
+      
+      // Get authenticated user
+      const sessionUser = (req.session as any)?.user;
+      if (!sessionUser) {
+        return res.status(401).json({
+          success: false,
+          error: 'User must be authenticated to checkout'
+        });
+      }
+      
+      // Convert the incoming request format to the expected CheckoutPayload format
+      const { items, payment, shipping, preferredFflLicense, skipRSROrdering } = req.body;
+      
+      // Validate required fields
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Cart items are required'
+        });
+      }
+      
+      // Convert items to CartItem format expected by the service
+      const cartItems = items.map((item: any) => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.name || item.productName,
+        productSku: item.productSku || item.sku,
+        quantity: item.quantity,
+        price: item.price,
+        isFirearm: item.requiresFFL || item.fflRequired || false, // Treat FFL required items as firearms
+        requiresFFL: item.requiresFFL || item.fflRequired || false,
+        manufacturer: item.manufacturer
+      }));
+      
+      // Convert string user ID to numeric equivalent for consistency
+      const numericUserId = stringToNumericUserId(sessionUser.id);
+      
+      // Transform to expected CheckoutPayload format
+      const checkoutPayload = {
+        userId: numericUserId,
+        cartItems: cartItems,
+        shippingAddress: {
+          firstName: shipping?.firstName || 'Test',
+          lastName: shipping?.lastName || 'User',
+          address: shipping?.address || '123 Test St',
+          city: shipping?.city || 'Test City',
+          state: shipping?.state || 'FL',
+          zipCode: shipping?.zipCode || '12345'
+        },
+        paymentMethod: {
+          cardNumber: payment?.cardNumber || '4111111111111111',
+          expirationDate: payment?.expirationDate || '12/25',
+          cvv: payment?.cvv || '123'
+        },
+        customerInfo: {
+          firstName: shipping?.firstName || sessionUser.firstName || 'Test',
+          lastName: shipping?.lastName || sessionUser.lastName || 'User',
+          email: shipping?.email || sessionUser.email || 'test@example.com',
+          phone: shipping?.phone || '555-123-4567'
+        },
+        fflRecipientId: preferredFflLicense ? undefined : undefined, // Will be resolved by service
+        skipPaymentProcessing: skipRSROrdering || false
+      };
+      
+      console.log('🔄 Transformed payload:', JSON.stringify(checkoutPayload, null, 2));
+      console.log('🔍 CartItems being sent to compliance check:', JSON.stringify(cartItems, null, 2));
       
       // Import the firearms checkout service
       const { firearmsCheckoutService } = await import('./firearms-checkout-service');
       
-      const checkoutResult = await firearmsCheckoutService.processCheckout(req.body);
+      const checkoutResult = await firearmsCheckoutService.processCheckout(checkoutPayload);
       
       if (checkoutResult.success) {
         res.json({
@@ -6037,6 +6104,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Cart API endpoints
+  // Add item to cart endpoint
+  app.post("/api/cart/add", async (req, res) => {
+    try {
+      const { sku, quantity } = req.body;
+      
+      if (!sku || !quantity) {
+        return res.status(400).json({ error: "SKU and quantity are required" });
+      }
+      
+      // Get product details from database
+      const product = await storage.getProductBySku(sku);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      
+      // Check if user is authenticated to get tier pricing
+      const sessionUser = (req.session as any)?.user;
+      let currentPrice = parseFloat(product.price || "0");
+      
+      if (sessionUser?.membershipTier) {
+        const tier = sessionUser.membershipTier.toLowerCase();
+        if (tier === 'gold' && product.priceGold) {
+          currentPrice = parseFloat(product.priceGold);
+        } else if (tier === 'platinum' && product.pricePlatinum) {
+          currentPrice = parseFloat(product.pricePlatinum);
+        }
+      }
+      
+      // Cart is handled client-side, just return success with product details
+      res.json({ 
+        success: true,
+        product: {
+          id: product.id,
+          sku: product.sku,
+          name: product.name,
+          price: currentPrice,
+          requiresFFL: product.fflRequired,
+          manufacturer: product.manufacturer,
+          imageUrl: product.imageUrl
+        }
+      });
+    } catch (error: any) {
+      console.error("Add to cart error:", error);
+      res.status(500).json({ error: "Failed to add item to cart" });
+    }
+  });
+
   // Enhanced cart persistence endpoints
   app.post("/api/cart/sync", async (req, res) => {
     try {
@@ -6058,8 +6172,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🔍 Cart sync - sessionUser:`, sessionUser ? `User ID ${sessionUser.id}` : 'Not logged in');
       
       if (sessionUser) {
-        console.log(`📦 Calling saveUserCart for user ${sessionUser.id} with ${items.length} items`);
-        await storage.saveUserCart(sessionUser.id, items);
+        // Convert string user ID to numeric equivalent for cart storage compatibility
+        const numericUserId = stringToNumericUserId(sessionUser.id);
+        console.log(`📦 Calling saveUserCart for user ${sessionUser.id} (numeric: ${numericUserId}) with ${items.length} items`);
+        await storage.saveUserCart(numericUserId, items);
       } else {
         console.log(`⚠️ No sessionUser found - cart not persisted to database`);
       }
@@ -6075,21 +6191,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint to debug routing
+  app.get("/api/test", (req, res) => {
+    console.log('🧪 Test endpoint hit');
+    res.json({ message: "API routing works", timestamp: new Date().toISOString() });
+  });
+
+  // Helper function to convert string user IDs to numeric equivalents for cart storage
+  function stringToNumericUserId(stringId: string): number {
+    // Create a consistent hash from the string ID
+    let hash = 0;
+    for (let i = 0; i < stringId.length; i++) {
+      const char = stringId.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    // Ensure positive number within PostgreSQL integer range
+    return Math.abs(hash) % 2147483647;
+  }
+
+  // General cart endpoint (for current authenticated user)
+  app.get("/api/cart", async (req, res) => {
+    try {
+      console.log('🛒 Cart GET request received');
+      res.setHeader('Content-Type', 'application/json');
+      const sessionUser = (req.session as any)?.user;
+      console.log('🔍 Session user:', sessionUser ? `User ID ${sessionUser.id}` : 'Not logged in');
+      
+      if (!sessionUser) {
+        console.log('⚠️ No session user - returning empty cart');
+        return res.json({ items: [], total: 0 }); // Empty cart for non-authenticated users
+      }
+      
+      // Convert string user ID to numeric equivalent for cart storage compatibility
+      const numericUserId = stringToNumericUserId(sessionUser.id);
+      console.log(`📦 Fetching cart for user ${sessionUser.id} (numeric: ${numericUserId})`);
+      const cart = await storage.getUserCart(numericUserId);
+      console.log('🔍 Raw cart data:', cart);
+      
+      let items = [];
+      try {
+        items = cart?.items || [];
+        if (typeof items === 'string') {
+          items = JSON.parse(items);
+        }
+      } catch (parseError) {
+        console.error('⚠️ Cart items parsing error:', parseError);
+        items = [];
+      }
+      
+      const total = Array.isArray(items) ? items.reduce((sum: number, item: any) => {
+        const itemTotal = (item.price || 0) * (item.quantity || 0);
+        return sum + itemTotal;
+      }, 0) : 0;
+      
+      console.log(`✅ Returning cart: ${items.length} items, total: $${total}`);
+      res.json({ items, total });
+    } catch (error: any) {
+      console.error("Cart fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch cart" });
+    }
+  });
+
   app.get("/api/cart/:userId", async (req, res) => {
     try {
-      const userId = parseInt(req.params.userId);
+      const requestedUserId = req.params.userId;
       
-      if (!userId) {
+      if (!requestedUserId) {
         return res.status(400).json({ error: "Invalid user ID" });
       }
       
       // Allow access if user is authenticated and accessing their own cart
       const sessionUser = (req.session as any)?.user;
-      if (sessionUser && sessionUser.id !== userId) {
+      if (sessionUser && sessionUser.id !== requestedUserId) {
         return res.status(403).json({ error: "Access denied" });
       }
       
-      const cart = await storage.getUserCart(userId);
+      // Convert string user ID to numeric equivalent for cart storage compatibility
+      const numericUserId = stringToNumericUserId(requestedUserId);
+      console.log(`📦 Fetching cart for user ${requestedUserId} (numeric: ${numericUserId})`);
+      const cart = await storage.getUserCart(numericUserId);
       res.json({ items: cart?.items || [] });
     } catch (error: any) {
       console.error("Cart fetch error:", error);
