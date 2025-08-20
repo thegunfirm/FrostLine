@@ -8,7 +8,7 @@ import bcrypt from "bcrypt";
 import { insertUserSchema, insertProductSchema, insertOrderSchema, type InsertProduct, type Product, tierPricingRules, products, heroCarouselSlides, categoryRibbons, adminSettings, systemSettings, membershipTierSettings, type User, type FFL, ffls, orders, carts, checkoutSettings, fulfillmentSettings, users } from "@shared/schema";
 import { pricingEngine } from "./services/pricing-engine";
 import { db } from "./db";
-import { sql, eq, and, ne, inArray, desc } from "drizzle-orm";
+import { sql, eq, and, ne, inArray, desc, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { authorizeNetService } from "./authorize-net-service";
 // import { hybridSearch } from "./services/hybrid-search";
@@ -2535,83 +2535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           allProducts = allProducts.concat(products.slice(0, 20)); // Limit to 20 per manufacturer
         } catch (error: any) {
           console.error(`Error fetching ${manufacturer} products:`, error.message);
-          
-          // If external RSR API is unavailable, use mock data for development
-          if (error.cause?.code === 'ENOTFOUND' && allProducts.length === 0) {
-            console.log("RSR API unavailable - using mock product data for development");
-            allProducts = [
-              {
-                stockNo: "GLOCK19GEN5",
-                upc: "764503026157", 
-                description: "GLOCK 19 Gen 5 9mm Luger 4.02\" Barrel 15-Round",
-                categoryDesc: "Handguns",
-                manufacturer: "Glock Inc",
-                mfgName: "Glock Inc",
-                retailPrice: 599.99,
-                rsrPrice: 449.99,
-                weight: 1.85,
-                quantity: 12,
-                imgName: "glock19gen5.jpg",
-                departmentDesc: "Firearms",
-                subDepartmentDesc: "Striker Fired Pistols",
-                fullDescription: "The GLOCK 19 Gen 5 represents the pinnacle of GLOCK engineering excellence. This compact pistol combines reliability, accuracy, and ease of use in a versatile package suitable for both professional and personal defense applications.",
-                additionalDesc: "Features the GLOCK Marksman Barrel (GMB), enhanced trigger, ambidextrous slide stop lever, and improved magazine release.",
-                accessories: "3 magazines, case, cleaning kit, manual",
-                promo: "MAP Protected",
-                allocated: "N",
-                mfgPartNumber: "PA195S201",
-                newItem: false,
-                expandedData: null
-              },
-              {
-                stockNo: "SW12039",
-                upc: "022188120394",
-                description: "Smith & Wesson M&P9 Shield Plus 9mm 3.1\" Barrel 13-Round",
-                categoryDesc: "Handguns", 
-                manufacturer: "Smith & Wesson",
-                mfgName: "Smith & Wesson",
-                retailPrice: 479.99,
-                rsrPrice: 359.99,
-                weight: 1.4,
-                quantity: 8,
-                imgName: "mp9shieldplus.jpg",
-                departmentDesc: "Firearms",
-                subDepartmentDesc: "Concealed Carry Pistols",
-                fullDescription: "The M&P Shield Plus delivers maximum capacity in a micro-compact design. Features an 18-degree grip angle for natural point of aim and enhanced grip texture for improved control.",
-                additionalDesc: "Flat face trigger, tactile and audible trigger reset, optimal 18-degree grip angle",
-                accessories: "2 magazines (10rd & 13rd), case, manual",
-                promo: "Free shipping",
-                allocated: "N", 
-                mfgPartNumber: "13242",
-                newItem: true,
-                expandedData: null
-              },
-              {
-                stockNo: "RUGER10/22",
-                upc: "736676011018",
-                description: "Ruger 10/22 Carbine .22 LR 18.5\" Barrel 10-Round",
-                categoryDesc: "Rifles", 
-                manufacturer: "Sturm, Ruger & Co.",
-                mfgName: "Sturm, Ruger & Co.",
-                retailPrice: 319.99,
-                rsrPrice: 239.99,
-                weight: 5.0,
-                quantity: 15,
-                imgName: "ruger1022.jpg",
-                departmentDesc: "Firearms",
-                subDepartmentDesc: "Sporting Rifles",
-                fullDescription: "The Ruger 10/22 is America's favorite .22 rifle. This proven design has remained virtually unchanged since its introduction in 1964. All 10/22 rifles feature an extended magazine release.",
-                additionalDesc: "Cold hammer-forged barrel, dual extractors, independent trigger return spring",
-                accessories: "1 magazine, scope mounting rail, manual",
-                promo: "Classic American",
-                allocated: "N", 
-                mfgPartNumber: "1103",
-                newItem: false,
-                expandedData: null
-              }
-            ];
-            break; // Exit the loop since we have mock data
-          }
+          // No fallback data - only use authentic RSR products
         }
       }
       
@@ -8279,6 +8203,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerZohoRoutes(app);
 
   console.log('✓ FAP integration routes registered successfully');
+
+  // Database to Algolia sync endpoint
+  app.post("/api/admin/sync-algolia-from-db", async (req, res) => {
+    try {
+      console.log('🔄 Starting Algolia sync from clean database...');
+      
+      // Get all products from database
+      const allProducts = await db.select().from(products).where(isNotNull(products.departmentNumber)).limit(1000);
+      console.log(`📦 Found ${allProducts.length} products in database`);
+      
+      if (allProducts.length === 0) {
+        return res.json({ message: "No products found in database to sync", synced: 0 });
+      }
+
+      // Convert database products to Algolia format
+      const algoliaObjects = allProducts.map(product => ({
+        objectID: product.sku,
+        title: product.name,
+        description: product.description,
+        sku: product.sku,
+        upc: product.upcCode || '',
+        manufacturerName: product.manufacturer || '',
+        categoryName: product.category || '',
+        subcategoryName: product.category || '', // Use same as category for now
+        inventory: {
+          onHand: product.stockQuantity || 0,
+          allocated: product.allocated === 'Y',
+          dropShippable: true
+        },
+        price: {
+          msrp: parseFloat(product.priceBronze || '0'),
+          retailMap: parseFloat(product.priceBronze || '0'),
+          dealerPrice: parseFloat(product.priceGold || '0'),
+          dealerCasePrice: parseFloat(product.pricePlatinum || '0')
+        },
+        images: product.images || [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        // Additional search fields
+        departmentNumber: product.departmentNumber,
+        inStock: product.inStock || false
+      }));
+
+      // Batch upload to Algolia
+      const response = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/products/batch`, {
+        method: 'POST',
+        headers: {
+          'X-Algolia-API-Key': process.env.ALGOLIA_ADMIN_API_KEY!,
+          'X-Algolia-Application-Id': process.env.ALGOLIA_APP_ID!,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          requests: algoliaObjects.map(obj => ({
+            action: 'addObject',
+            body: obj
+          }))
+        })
+      });
+
+      if (response.ok) {
+        console.log(`✅ Successfully synced ${algoliaObjects.length} products to Algolia`);
+        res.json({ 
+          message: "Database to Algolia sync completed successfully", 
+          synced: algoliaObjects.length,
+          sampleProduct: algoliaObjects[0]
+        });
+      } else {
+        console.error('❌ Failed to sync to Algolia:', await response.text());
+        res.status(500).json({ error: "Failed to sync to Algolia" });
+      }
+
+    } catch (error) {
+      console.error("Database to Algolia sync error:", error);
+      res.status(500).json({ error: "Failed to sync database to Algolia", details: error.message });
+    }
+  });
 
   return httpServer;
 }

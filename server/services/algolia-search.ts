@@ -181,28 +181,30 @@ class AlgoliaSearchService {
 
     return {
       objectID: rsrProduct.stockNo,
-      stockNo: rsrProduct.stockNo,
-      name: rsrProduct.description,
-      description: rsrProduct.description,
-      fullDescription: rsrProduct.fullDescription,
-      category: rsrProduct.categoryDesc,
-      subCategory: rsrProduct.subDepartmentDesc,
-      manufacturer: rsrProduct.manufacturer || rsrProduct.mfgName,
-      mfgPartNumber: rsrProduct.mfgPartNumber,
-      upc: rsrProduct.upc,
-      retailPrice: rsrProduct.retailPrice,
-      rsrPrice: rsrProduct.rsrPrice,
-      weight: rsrProduct.weight,
-      inStock: rsrProduct.quantity > 0,
-      quantity: rsrProduct.quantity,
-      imageUrl: rsrProduct.imgName ? `https://img.rsrgroup.com/highres-itemimages/${rsrProduct.imgName}` : '',
-      newItem: rsrProduct.newItem,
-      promo: rsrProduct.promo,
-      allocated: rsrProduct.allocated,
-      accessories: rsrProduct.accessories,
-      searchableText,
-      tags,
-      isCompleteFirearm: isCompleteHandgun ? 1 : 0  // Ranking boost for complete handguns
+      title: rsrProduct.description,
+      description: rsrProduct.fullDescription || rsrProduct.description,
+      sku: rsrProduct.mfgPartNumber || rsrProduct.stockNo,
+      upc: rsrProduct.upc || '',
+      manufacturerName: rsrProduct.manufacturer || rsrProduct.mfgName || '',
+      categoryName: rsrProduct.categoryDesc || '',
+      subcategoryName: rsrProduct.subDepartmentDesc || '',
+      inventory: {
+        onHand: rsrProduct.quantity || 0,
+        allocated: rsrProduct.allocated === 'Y',
+        dropShippable: true
+      },
+      price: {
+        msrp: rsrProduct.retailPrice || 0,
+        retailMap: rsrProduct.retailPrice || 0,
+        dealerPrice: rsrProduct.rsrPrice || 0,
+        dealerCasePrice: rsrProduct.rsrPrice || 0
+      },
+      images: rsrProduct.imgName ? [{
+        image: `https://img.rsrgroup.com/highres-itemimages/${rsrProduct.imgName}`,
+        id: rsrProduct.imgName
+      }] : [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
   }
 
