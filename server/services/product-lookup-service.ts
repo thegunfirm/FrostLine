@@ -72,7 +72,12 @@ export class ProductLookupService {
         return null;
       }
 
-      return product;
+      return {
+        ...product,
+        requiresFFL: product.requiresFFL ?? false,
+        dropShippable: product.dropShippable ?? false,
+        isFirearm: product.isFirearm ?? false
+      };
     } catch (error: any) {
       console.error(`❌ Error looking up product ${sku}:`, error.message);
       return null;
@@ -113,7 +118,12 @@ export class ProductLookupService {
         )
         .limit(limit);
 
-      return searchResults;
+      return searchResults.map(product => ({
+        ...product,
+        requiresFFL: product.requiresFFL ?? false,
+        dropShippable: product.dropShippable ?? false,
+        isFirearm: product.isFirearm ?? false
+      }));
     } catch (error: any) {
       console.error(`❌ Error searching products:`, error.message);
       return [];
@@ -238,7 +248,12 @@ export class ProductLookupService {
         .where(sql`manufacturer IS NOT NULL AND sku IS NOT NULL`)
         .limit(limit);
 
-      return sampleProducts;
+      return sampleProducts.map(product => ({
+        ...product,
+        requiresFFL: product.requiresFFL ?? false,
+        dropShippable: product.dropShippable ?? false,
+        isFirearm: product.isFirearm ?? false
+      }));
     } catch (error: any) {
       console.error(`❌ Error getting sample products:`, error.message);
       return [];
