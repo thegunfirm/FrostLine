@@ -1,0 +1,35 @@
+RSR Field Number,RSR Field Name,Current Database Mapping,Current Issues,Recommended Mapping,Notes
+1,stockNumber,sku (customer-facing),Customers see distributor codes,rsr_stock_number,RSR ordering code - not customer-facing
+2,upcCode,upc_code,Correct,upc_code,Universal Product Code
+3,description,name,Correct,name,Product name/title
+4,departmentNumber,department_number,Correct,department_number,Product classification
+5,manufacturerId,Not mapped,Missing manufacturer ID,manufacturer_id,Internal manufacturer code
+6,retailPrice,price_msrp,Correct,price_msrp,Manufacturer suggested retail price
+7,rsrPricing,price_wholesale,Correct,price_wholesale,Dealer cost from RSR
+8,productWeight,weight,Correct,weight,Shipping weight
+9,inventoryQuantity,stock_quantity,Correct,stock_quantity,Available inventory
+10,model,Not mapped,Missing model field,model,Product model designation
+11,fullManufacturerName,manufacturer,Correct,manufacturer,Brand/manufacturer name
+12,manufacturerPartNumber,manufacturer_part_number,Stored but not used as SKU,sku (customer-facing),Customer should see this as SKU
+13,allocatedCloseoutDeleted,allocated,Correct,allocated,Product status
+14,expandedDescription,description,Correct,description,Detailed product description
+15,imageName,images,Correct,images,Product image filename
+16-66,stateRestrictions,state_restrictions,Correct,state_restrictions,State-by-state shipping restrictions
+67,groundShipOnly,ground_ship_only,Correct,ground_ship_only,Ground shipping requirement
+68,adultSignatureRequired,adult_signature_required,Correct,adult_signature_required,Adult signature requirement
+69,blockedFromDropShip,drop_shippable (inverted),Correct logic,drop_shippable (inverted),Drop shipping eligibility
+70,dateEntered,Not mapped,Missing date tracking,date_entered,When product was added to RSR
+71,retailMAP,price_map,Correct,price_map,Minimum advertised price
+72,imageDisclaimer,Not mapped,Missing disclaimer,image_disclaimer,Image usage disclaimer
+73,shippingLength,dimensions.length,Correct,dimensions.length,Package length
+74,shippingWidth,dimensions.width,Correct,dimensions.width,Package width
+75,shippingHeight,dimensions.height,Correct,dimensions.height,Package height
+76,prop65,prop65,Correct,prop65,California Prop 65 warning
+77,vendorApprovalRequired,Not mapped,Missing approval flag,vendor_approval_required,Requires vendor approval
+
+Summary Issues:
+- Field 1 (stockNumber) should map to rsr_stock_number (ordering code)
+- Field 12 (manufacturerPartNumber) should map to sku (customer-facing)
+- Currently both fields map incorrectly causing customers to see distributor codes
+- Affects 99.9% of accessories and parts (12826 of 12827 products)
+- Only firearms have correct separation due to different import logic
