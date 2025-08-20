@@ -9,6 +9,7 @@ Image policy: NEVER use Unsplash or any placeholder images. Only use authentic d
 Code preservation: Always maintain working solutions - never overwrite functioning code without explicit user request.
 Email verification: Users must verify their email address before being able to sign in.
 CRITICAL INVENTORY POLICY: NEVER use fabricated, test, or placeholder product data. ONLY use products that exist in our live RSR feed. When working with inventory, verify products exist in the database first. No exceptions. No fallback data. No test SKUs like GLOCK17GEN5. FFL directory must use only authentic FFL data - no fake dealers should be added to the system.
+DISTRIBUTOR NUMBER SEPARATION FIX: Fixed critical backend issue where RSR stock numbers (distributor) were incorrectly used as SKUs instead of manufacturer part numbers. System now properly separates manufacturer part numbers (SKUs) from RSR stock numbers (for ordering). Date: 2025-01-20.
 CRITICAL IMAGE HANDLING RULE: For product images in cart/order displays, NEVER use containers with gray backgrounds or fixed heights. Use direct image elements with `w-[size] h-auto object-contain` classes only. This prevents background showing through and maintains natural image proportions.
 CART CORRUPTION SOLUTION: Implement comprehensive clearing mechanism including both localStorage removal and server-side force-clear endpoint for cart items.
 FFL SELECTOR IMPROVEMENTS: Add proper error handling, loading states, and retry logic to the FFL selector component.

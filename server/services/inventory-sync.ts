@@ -476,9 +476,9 @@ class InventorySyncService {
       description: rsrProduct.fullDescription || rsrProduct.description,
       category: rsrProduct.categoryDesc,
       manufacturer: rsrProduct.manufacturer,
-      manufacturerPartNumber: rsrProduct.mfgPartNumber || null, // CRITICAL FIX: Map manufacturer part number
-      sku: rsrProduct.stockNo, // Use RSR stock number as SKU
-      rsrStockNumber: rsrProduct.stockNo, // CRITICAL FIX: Also store RSR stock number separately
+      manufacturerPartNumber: rsrProduct.mfgPartNumber || null, // CRITICAL FIX: Manufacturer's actual part number
+      sku: rsrProduct.mfgPartNumber || rsrProduct.stockNo, // CRITICAL FIX: Use manufacturer part number as SKU, fallback to RSR stock
+      rsrStockNumber: rsrProduct.stockNo, // CRITICAL FIX: RSR distributor stock number stored separately
       priceWholesale: rsrProduct.rsrPrice.toString(),
       priceMAP: rsrPricing.mapPrice?.toString() || null,
       priceMSRP: rsrPricing.msrpPrice?.toString() || null,
