@@ -321,6 +321,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   } catch (error) {
     console.error('Failed to initialize compliance config:', error);
   }
+
+  // Initialize RSR Comprehensive Import System
+  try {
+    console.log('🚀 Initializing RSR Comprehensive Import System...');
+    const { rsrSchedulerService } = await import('./services/rsr-scheduler-service.js');
+    await rsrSchedulerService.startScheduler();
+    console.log('✅ RSR Comprehensive Import System started successfully');
+  } catch (error) {
+    console.error('⚠️  Failed to initialize RSR Comprehensive Import System:', error);
+    console.error('   RSR imports will be available via manual admin controls');
+  }
   
   // Firearms Compliance Routes
   app.use('/api/firearms-compliance', (await import('./routes/firearms-compliance-routes')).default);
@@ -3476,6 +3487,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("RSR sync frequency update error:", error);
       res.status(500).json({ error: "Failed to update RSR sync frequency" });
+    }
+  });
+
+  // ===== RSR COMPREHENSIVE IMPORT SYSTEM =====
+  // Import the new RSR scheduler service
+  const { rsrSchedulerService } = await import('./services/rsr-scheduler-service.js');
+  const { rsrFTPService } = await import('./services/rsr-ftp-service.js');
+  const { rsrMonitoringService } = await import('./services/rsr-monitoring-service.js');
+
+  // RSR System Status (comprehensive dashboard)
+  app.get("/api/admin/rsr/comprehensive-status", async (req, res) => {
+    try {
+      const schedulerStatus = rsrSchedulerService.getStatus();
+      const monitoringStatus = rsrMonitoringService.getStatus();
+      const fileStatuses = rsrFTPService.getAllFileStatuses();
+
+      res.json({
+        scheduler: schedulerStatus,
+        monitoring: monitoringStatus,
+        files: fileStatuses,
+        timestamp: new Date().toISOString(),
+        recommendations: {
+          inventoryUpdate: "Every 2 hours (RSR recommended)",
+          quantityUpdate: "Every 15 minutes (optimized from RSR's 5 min recommendation)",
+          dataIntegrityCheck: "Daily at 6:00 AM"
+        }
+      });
+    } catch (error: any) {
+      console.error('Error getting comprehensive RSR status:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Start RSR Comprehensive Scheduler
+  app.post("/api/admin/rsr/start-comprehensive-scheduler", async (req, res) => {
+    try {
+      await rsrSchedulerService.startScheduler();
+      res.json({ 
+        success: true, 
+        message: 'RSR comprehensive scheduler started successfully',
+        schedule: {
+          fullInventory: "Every 2 hours",
+          quantities: "Every 15 minutes", 
+          dailyMonitoring: "Daily at 6:00 AM"
+        }
+      });
+    } catch (error: any) {
+      console.error('Error starting comprehensive RSR scheduler:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Stop RSR Comprehensive Scheduler
+  app.post("/api/admin/rsr/stop-comprehensive-scheduler", async (req, res) => {
+    try {
+      rsrSchedulerService.stopScheduler();
+      res.json({ 
+        success: true, 
+        message: 'RSR comprehensive scheduler stopped successfully'
+      });
+    } catch (error: any) {
+      console.error('Error stopping comprehensive RSR scheduler:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Emergency RSR Update
+  app.post("/api/admin/rsr/emergency-update", async (req, res) => {
+    try {
+      const result = await rsrSchedulerService.runEmergencyUpdate();
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          message: result.message 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          error: result.message 
+        });
+      }
+    } catch (error: any) {
+      console.error('Error running emergency update:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Test RSR FTP Connection
+  app.post("/api/admin/rsr/test-ftp-connection", async (req, res) => {
+    try {
+      const result = await rsrFTPService.testConnection();
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          message: 'RSR FTP connection successful' 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          error: result.error 
+        });
+      }
+    } catch (error: any) {
+      console.error('Error testing RSR FTP connection:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Download specific RSR file
+  app.post("/api/admin/rsr/download/:fileType", async (req, res) => {
+    try {
+      const fileType = req.params.fileType as 'inventory' | 'quantities' | 'attributes' | 'deleted' | 'restrictions';
+      
+      const validFileTypes = ['inventory', 'quantities', 'attributes', 'deleted', 'restrictions'];
+      if (!validFileTypes.includes(fileType)) {
+        return res.status(400).json({ 
+          error: 'Invalid file type. Must be one of: ' + validFileTypes.join(', ') 
+        });
+      }
+
+      const result = await rsrFTPService.downloadFile(fileType);
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          message: `${fileType} file downloaded successfully`,
+          fileInfo: rsrFTPService.getFileInfo(fileType)
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          error: result.error 
+        });
+      }
+    } catch (error: any) {
+      console.error('Error downloading RSR file:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Run data integrity check
+  app.post("/api/admin/rsr/integrity-check", async (req, res) => {
+    try {
+      const result = await rsrMonitoringService.checkFieldIntegrity();
+      
+      res.json({
+        success: true,
+        message: 'Data integrity check completed',
+        result
+      });
+    } catch (error: any) {
+      console.error('Error running integrity check:', error);
+      res.status(500).json({ error: error.message });
     }
   });
 

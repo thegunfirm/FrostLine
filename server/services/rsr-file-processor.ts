@@ -417,3 +417,4 @@ class RSRFileProcessor {
 }
 
 export const rsrFileProcessor = new RSRFileProcessor();
+export { RSRFileProcessor };

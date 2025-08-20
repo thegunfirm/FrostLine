@@ -51,6 +51,7 @@ CRITICAL SECURITY POLICY: NEVER place tokens, API keys, or any credentials direc
 - **Permanent Zoho Token Management System**: Implemented ZohoTokenService with triple persistence (memory + file + environment), automatic refresh cycles, comprehensive error handling, and rate limit protection for persistent authentication.
 - **Tier-Based Order Processing System**: Full validation of order processing across all membership pricing tiers.
 - **Proper TGF Order Numbering System**: Complete implementation of TGF order numbering specification with comprehensive format rules for both single and multiple shipment groups.
+- **RSR-Compliant Import Frequency System**: Full implementation of RSR's recommended import frequencies - inventory updates every 2 hours, quantity updates every 15 minutes, daily data integrity monitoring. Includes comprehensive scheduler service, FTP automation, admin controls, and emergency update capabilities.
 
 ### Technical Stack
 - **Frontend**: React 18 (TypeScript), Wouter, TanStack Query, React Context, Shadcn/ui (Radix UI), Tailwind CSS, Vite.
