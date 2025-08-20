@@ -1,0 +1,2760 @@
+[
+  {
+    "RSR_Stock_Number": "10",
+    "Product_Name": "SAV REVEL DLX 22WMR 18\" 9RD BLK",
+    "Manufacturer": "",
+    "Category": "Rifles",
+    "Database_ID": 123931
+  },
+  {
+    "RSR_Stock_Number": "1791TAC-PDHOWBGLK43BKR",
+    "Product_Name": "1791 KYDEX PADDLE GLOCK 43 BLK RH",
+    "Manufacturer": "1791",
+    "Category": "Accessories",
+    "Database_ID": 124047
+  },
+  {
+    "RSR_Stock_Number": "1791BLT-01-34-38-SBR-A",
+    "Product_Name": "1791 BELT 01 SIGNATURE BROWN 34/38",
+    "Manufacturer": "1791 Gunleather",
+    "Category": "Clothing",
+    "Database_ID": 123964
+  },
+  {
+    "RSR_Stock_Number": "1791BLT-01-36-40-SBL-A",
+    "Product_Name": "1791 BELT 01 STEALTH BLACK SZ 36/40",
+    "Manufacturer": "1791 Gunleather",
+    "Category": "Clothing",
+    "Database_ID": 123965
+  },
+  {
+    "RSR_Stock_Number": "1791BLT-01-40-44-SBL-A",
+    "Product_Name": "1791 BELT 01 STEALTH BLACK SZ 40/44",
+    "Manufacturer": "1791 Gunleather",
+    "Category": "Clothing",
+    "Database_ID": 123967
+  },
+  {
+    "RSR_Stock_Number": "1791OR-BH1-SBL-R",
+    "Product_Name": "1791 OPTC RDY STEALTH BLK RH SZ 1",
+    "Manufacturer": "1791 Gunleather",
+    "Category": "Accessories",
+    "Database_ID": 123984
+  },
+  {
+    "RSR_Stock_Number": "1791OR-BH2-4S-CBR-R",
+    "Product_Name": "1791 OPTIC READY BH2.4S CLASS BRN RH",
+    "Manufacturer": "1791 Gunleather",
+    "Category": "Accessories",
+    "Database_ID": 123986
+  },
+  {
+    "RSR_Stock_Number": "1791RVH-IWB-1C-SBL-R",
+    "Product_Name": "1791 RVLVR IWB CLIP CLASS BLK RH SZ1",
+    "Manufacturer": "1791 Gunleather",
+    "Category": "Accessories",
+    "Database_ID": 124021
+  },
+  {
+    "RSR_Stock_Number": "ACTSI-5-100",
+    "Product_Name": "ACTION TGT BLSEYE ORG CENTERS 100PK",
+    "Manufacturer": "ACTION",
+    "Category": "Targets",
+    "Database_ID": 124259
+  },
+  {
+    "RSR_Stock_Number": "AGM3142451004SI21",
+    "Product_Name": "AGM SIDEWINDER TM25-384 THERMAL MONO",
+    "Manufacturer": "AGMGLB",
+    "Category": "Optics",
+    "Database_ID": 124604
+  },
+  {
+    "RSR_Stock_Number": "ALN15551-50",
+    "Product_Name": "ALLEN EZ AIM PAPER 12X18 IPSC 50PK",
+    "Manufacturer": "ALLEN",
+    "Category": "Targets",
+    "Database_ID": 124730
+  },
+  {
+    "RSR_Stock_Number": "ALN4159",
+    "Product_Name": "ALLEN ULTRX BT EBUD NECKBAND",
+    "Manufacturer": "ALLEN",
+    "Category": "Accessories",
+    "Database_ID": 124830
+  },
+  {
+    "RSR_Stock_Number": "MGAM13556MOD2FDE10",
+    "Product_Name": "MAG AMEND2 AR15 556 10RD MOD2 FDE",
+    "Manufacturer": "AMEND2",
+    "Category": "Magazines",
+    "Database_ID": 138677
+  },
+  {
+    "RSR_Stock_Number": "MGAM762MOD2GRY20",
+    "Product_Name": "MAG AMEND2 SR25/AR10 7.62 GRY 20RD",
+    "Manufacturer": "AMEND2",
+    "Category": "High Capacity Magazines",
+    "Database_ID": 138704
+  },
+  {
+    "RSR_Stock_Number": "AFS1E-9-BK-17-OR",
+    "Product_Name": "AMPF STRIKE ONE ERGL 9MM 5\" 17RD BLK",
+    "Manufacturer": "AMERPF",
+    "Category": "Handguns",
+    "Database_ID": 124406
+  },
+  {
+    "RSR_Stock_Number": "AMGGL-203O",
+    "Product_Name": "AMERIGLO PRO-IDOT TRIT FOR GLK20/21",
+    "Manufacturer": "AMG",
+    "Category": "Accessories",
+    "Database_ID": 124901
+  },
+  {
+    "RSR_Stock_Number": "AMI300B150FMJ-A20",
+    "Product_Name": "AMMO INC 300BLK 150GR FMJ 20/500",
+    "Manufacturer": "AMMOIN",
+    "Category": "Rifle Ammunition",
+    "Database_ID": 124957
+  },
+  {
+    "RSR_Stock_Number": "AMI357158TMC-A50",
+    "Product_Name": "AMMO INC 357 MAG 158GR TMC 50/1000",
+    "Manufacturer": "AMMOIN",
+    "Category": "Handgun Ammunition",
+    "Database_ID": 124958
+  },
+  {
+    "RSR_Stock_Number": "AMI38158TMC",
+    "Product_Name": "AMMO INC 38 SPEC 158GR TMC 50/1000",
+    "Manufacturer": "AMMOIN",
+    "Category": "Ammunition",
+    "Database_ID": 124960
+  },
+  {
+    "RSR_Stock_Number": "AMI45230JHP",
+    "Product_Name": "AMMO INC 45 ACP 230GR XTP JHP 20/200",
+    "Manufacturer": "AMMOIN",
+    "Category": "Handgun Ammunition",
+    "Database_ID": 124962
+  },
+  {
+    "RSR_Stock_Number": "AMI45C250TMC",
+    "Product_Name": "AMMO INC 45 COLT 250GR TMC 50/1000",
+    "Manufacturer": "AMMOIN",
+    "Category": "Ammunition",
+    "Database_ID": 124965
+  },
+  {
+    "RSR_Stock_Number": "AMI556055M193-A20",
+    "Product_Name": "AMMO INC ST 5.56 55GR M193 20/500",
+    "Manufacturer": "AMMOIN",
+    "Category": "Rifle Ammunition",
+    "Database_ID": 124966
+  },
+  {
+    "RSR_Stock_Number": "AMI9165TMC-STL",
+    "Product_Name": "AMMO INC STEALTH 9MM 165GR 50/1000",
+    "Manufacturer": "AMMOIN",
+    "Category": "Handgun Ammunition",
+    "Database_ID": 124971
+  },
+  {
+    "RSR_Stock_Number": "MGATIGERMGSG1622",
+    "Product_Name": "MAG ATI GSG-16 22LR 22RD BLK",
+    "Manufacturer": "AMTAC",
+    "Category": "High Capacity Magazines",
+    "Database_ID": 138767
+  },
+  {
+    "RSR_Stock_Number": "ANGAAMDP29FG6",
+    "Product_Name": "ANGSTADT MDP-9 9MM SBR 6\" 27RD TGRY",
+    "Manufacturer": "ANGSTD",
+    "Category": "NFA Products",
+    "Database_ID": 124999
+  },
+  {
+    "RSR_Stock_Number": "ANGAAMDP29PG6",
+    "Product_Name": "ANGSTADT MDP-9 9MM PSTL 6\" 27RD TGRY",
+    "Manufacturer": "ANGSTD",
+    "Category": "Handguns",
+    "Database_ID": 125005
+  },
+  {
+    "RSR_Stock_Number": "ANGAAMDP29PS6",
+    "Product_Name": "ANGSTADT MDP-9 9MM PSTL 6\" 27RD GRY",
+    "Manufacturer": "ANGSTD",
+    "Category": "Handguns",
+    "Database_ID": 125007
+  },
+  {
+    "RSR_Stock_Number": "ANGAAUTV09105",
+    "Product_Name": "ANGSTADT VANQUISH 9MM ISB 10.5\" UPR",
+    "Manufacturer": "ANGSTD",
+    "Category": "NFA Products",
+    "Database_ID": 125013
+  },
+  {
+    "RSR_Stock_Number": "ANGAAVIS09B0R",
+    "Product_Name": "ANGSTADT VANQUISH 9MM ISB 16\" BLK",
+    "Manufacturer": "ANGSTD",
+    "Category": "NFA Products",
+    "Database_ID": 125020
+  },
+  {
+    "RSR_Stock_Number": "ANGAAVIS22BFR",
+    "Product_Name": "ANGSTADT VANQUISH 22LR 18\" 10/22 FDE",
+    "Manufacturer": "ANGSTD",
+    "Category": "NFA Products",
+    "Database_ID": 125025
+  },
+  {
+    "RSR_Stock_Number": "APX102-111",
+    "Product_Name": "APEX ACT ENH TGR APEX BAR FOR GLK G5",
+    "Manufacturer": "APEX",
+    "Category": "Parts",
+    "Database_ID": 125230
+  },
+  {
+    "RSR_Stock_Number": "APX102-150",
+    "Product_Name": "APEX RED ACT ENH TRGR FOR GLK G3 BAR",
+    "Manufacturer": "APEX",
+    "Category": "Parts",
+    "Database_ID": 125235
+  },
+  {
+    "RSR_Stock_Number": "APFRI246",
+    "Product_Name": "APF DMR 2.0 204 RUGER 18\" 20RD BLK",
+    "Manufacturer": "APF",
+    "Category": "Rifles",
+    "Database_ID": 125125
+  },
+  {
+    "RSR_Stock_Number": "APFRI270",
+    "Product_Name": "APF TARGET 2.0 204 RUGER 24\" 20RD BK",
+    "Manufacturer": "APF",
+    "Category": "Rifles",
+    "Database_ID": 125130
+  },
+  {
+    "RSR_Stock_Number": "APFRI274",
+    "Product_Name": "APF TARGET 2.0 22-250 24\" 8RD BLK",
+    "Manufacturer": "APF",
+    "Category": "Rifles",
+    "Database_ID": 125132
+  },
+  {
+    "RSR_Stock_Number": "APFRI282CR",
+    "Product_Name": "APF GUARDIAN 556 NATO 16\" 30RD CRMSN",
+    "Manufacturer": "APF",
+    "Category": "Rifles",
+    "Database_ID": 125134
+  },
+  {
+    "RSR_Stock_Number": "APFRI283",
+    "Product_Name": "APF GUARDIAN 300 BLK 16\" 30RD BLK",
+    "Manufacturer": "APF",
+    "Category": "Rifles",
+    "Database_ID": 125136
+  },
+  {
+    "RSR_Stock_Number": "AQU85412",
+    "Product_Name": "AQUAM TACTICAL RIGGER BLACK",
+    "Manufacturer": "AQUA",
+    "Category": "Survival & Camping Supplies",
+    "Database_ID": 125264
+  },
+  {
+    "RSR_Stock_Number": "ARSOM2-ACRO-154-FDE",
+    "Product_Name": "ARISAKA RDM AIMPNT ACRO 1.54\" FDE",
+    "Manufacturer": "ARSKA",
+    "Category": "Accessories",
+    "Database_ID": 125501
+  },
+  {
+    "RSR_Stock_Number": "ATNACMUDCQDMHH",
+    "Product_Name": "ATN QDM DUALCANTILEVER 30MM MOUNT HP",
+    "Manufacturer": "ATN",
+    "Category": "Accessories",
+    "Database_ID": 125614
+  },
+  {
+    "RSR_Stock_Number": "ATNACMUDCQDMHL",
+    "Product_Name": "ATN QDM DUALCANTILEVER 30MM MOUNT LP",
+    "Manufacturer": "ATN",
+    "Category": "Accessories",
+    "Database_ID": 125615
+  },
+  {
+    "RSR_Stock_Number": "ATNDGWSXS309LTV",
+    "Product_Name": "ATN X-SIGHT LTV 3-9X DAY/NIGHT SCP",
+    "Manufacturer": "ATN",
+    "Category": "Optics",
+    "Database_ID": 125624
+  },
+  {
+    "RSR_Stock_Number": "BANDT-42001-US-CT-TB",
+    "Product_Name": "B&T TP380 PSTL 380APC 5\" 30RD C TAN",
+    "Manufacturer": "B&T",
+    "Category": "Handguns",
+    "Database_ID": 126313
+  },
+  {
+    "RSR_Stock_Number": "BANDT-42001-US-TB",
+    "Product_Name": "B&T TP380 PSTL 380APC 5\" 30RD BLK",
+    "Manufacturer": "B&T",
+    "Category": "Handguns",
+    "Database_ID": 126314
+  },
+  {
+    "RSR_Stock_Number": "BANDT-430003",
+    "Product_Name": "B&T USW-A1 9MM 4.3\" 17RD BLK",
+    "Manufacturer": "B&T",
+    "Category": "Handguns",
+    "Database_ID": 126315
+  },
+  {
+    "RSR_Stock_Number": "BANDTSD-556SRBS",
+    "Product_Name": "B&T SRBS 556NATO W/SF HUB ADAPTER",
+    "Manufacturer": "B&T",
+    "Category": "NFA Products",
+    "Database_ID": 126387
+  },
+  {
+    "RSR_Stock_Number": "BANDTSD556ROTEXCMPCTTI",
+    "Product_Name": "B&T ROTEX COMP 556 W/SF HUB ADPTR",
+    "Manufacturer": "B&T",
+    "Category": "NFA Products",
+    "Database_ID": 126395
+  },
+  {
+    "RSR_Stock_Number": "MGBANDT-430103",
+    "Product_Name": "MAG B&T USW-A1 PISTOL 9MM 30RD BLK",
+    "Manufacturer": "B&T",
+    "Category": "High Capacity Magazines",
+    "Database_ID": 138787
+  },
+  {
+    "RSR_Stock_Number": "BABATN22TT16P",
+    "Product_Name": "BALLISTIC BBL 10-22 TKD 16.1\" BULL",
+    "Manufacturer": "BALLIS",
+    "Category": "Barrels, Choke Tubes & Muzzle Devices",
+    "Database_ID": 126044
+  },
+  {
+    "RSR_Stock_Number": "BABATN22TT16PL",
+    "Product_Name": "BALLISTIC BBL 10-22 TKD 16.1\" STFLT",
+    "Manufacturer": "BALLIS",
+    "Category": "Barrels, Choke Tubes & Muzzle Devices",
+    "Database_ID": 126046
+  },
+  {
+    "RSR_Stock_Number": "BRJ42XD18L",
+    "Product_Name": "BERETTA A400 XTREME LH KO 12/28 SYN",
+    "Manufacturer": "BERETA",
+    "Category": "Rifles",
+    "Database_ID": 128180
+  },
+  {
+    "RSR_Stock_Number": "BRGB26714",
+    "Product_Name": "BERGER 6.5MM 140G HYBRID TARGT 500CT",
+    "Manufacturer": "BERG",
+    "Category": "Reloading Equipment",
+    "Database_ID": 128105
+  },
+  {
+    "RSR_Stock_Number": "BERB14S522CF",
+    "Product_Name": "BERGARA RIDGE CARBON WLDRNSS 6.5CM",
+    "Manufacturer": "BERGAR",
+    "Category": "Rifles",
+    "Database_ID": 127300
+  },
+  {
+    "RSR_Stock_Number": "BFM18495",
+    "Product_Name": "BARRETT MRAD 308 GRY 17\" 10RD",
+    "Manufacturer": "BFM",
+    "Category": "Rifles",
+    "Database_ID": 127469
+  },
+  {
+    "RSR_Stock_Number": "BFM18515",
+    "Product_Name": "BARRETT MRAD SMR 308 FDE 24\"",
+    "Manufacturer": "BFM",
+    "Category": "Rifles",
+    "Database_ID": 127479
+  },
+  {
+    "RSR_Stock_Number": "BFM18798",
+    "Product_Name": "BARRETT MRAD SMR 300PRC BLK 26\"",
+    "Manufacturer": "BFM",
+    "Category": "Rifles",
+    "Database_ID": 127486
+  },
+  {
+    "RSR_Stock_Number": "BFM19505",
+    "Product_Name": "BARRETT MK22 MOD0 300NORM 26\" LP SCP",
+    "Manufacturer": "BFM",
+    "Category": "Rifles",
+    "Database_ID": 127493
+  },
+  {
+    "RSR_Stock_Number": "BFM19505BLEM",
+    "Product_Name": "BARRETT MK22 MOD0 300NORM 26\"LP BLEM",
+    "Manufacturer": "BFM",
+    "Category": "Rifles",
+    "Database_ID": 127494
+  },
+  {
+    "RSR_Stock_Number": "MGBFM19592",
+    "Product_Name": "BARRETT MRAD ELR SINGLE FEED ADAPTER",
+    "Manufacturer": "BFM",
+    "Category": "Magazines",
+    "Database_ID": 138813
+  },
+  {
+    "RSR_Stock_Number": "BH410531BK-L",
+    "Product_Name": "BH SERPA CQC BL/PDL XD SUBCMP LH BLK",
+    "Manufacturer": "BH",
+    "Category": "Accessories",
+    "Database_ID": 127576
+  },
+  {
+    "RSR_Stock_Number": "BH41VT42BK",
+    "Product_Name": "BH INSTRTR GUNBLT COBRA BCKL 51\" BLK",
+    "Manufacturer": "BH",
+    "Category": "Clothing",
+    "Database_ID": 127670
+  },
+  {
+    "RSR_Stock_Number": "BH74RB01BK",
+    "Product_Name": "BH SPRTSTR DLX RANGE BAG BLK",
+    "Manufacturer": "BH",
+    "Category": "Accessories",
+    "Database_ID": 127751
+  },
+  {
+    "RSR_Stock_Number": "BLFHWTQH-TNOW-EMPTY-CB",
+    "Product_Name": "BL FORCE HW TRNIQT POUCH (EMPTY) CB",
+    "Manufacturer": "BLF",
+    "Category": "Accessories",
+    "Database_ID": 127817
+  },
+  {
+    "RSR_Stock_Number": "BRN051821490",
+    "Product_Name": "BRN 1911-22 BLK LABEL CMPCT SR 22LR",
+    "Manufacturer": "BRN",
+    "Category": "Handguns",
+    "Database_ID": 128468
+  },
+  {
+    "RSR_Stock_Number": "BRZ9204416U3-TB",
+    "Product_Name": "ROSSI R92 44MAG 16\" 8RD FDE",
+    "Manufacturer": "BRZ",
+    "Category": "Rifles",
+    "Database_ID": 128627
+  },
+  {
+    "RSR_Stock_Number": "BRZ920451693",
+    "Product_Name": "ROSSI R92 45LC 16\" 8RD ST RND",
+    "Manufacturer": "BRZ",
+    "Category": "Rifles",
+    "Database_ID": 128630
+  },
+  {
+    "RSR_Stock_Number": "BAD-AUTH-UR10-5B-Y-15",
+    "Product_Name": "BAD 10.5 UPPR AUTH ELITE 556AMBI BLK",
+    "Manufacturer": "BTLARM",
+    "Category": "Uppers/Lowers",
+    "Database_ID": 126184
+  },
+  {
+    "RSR_Stock_Number": "BAD-AUTH-UR16G-Y-15",
+    "Product_Name": "BAD 16 UPPR AUTH ELITE 556 AMBI GRAY",
+    "Manufacturer": "BTLARM",
+    "Category": "Uppers/Lowers",
+    "Database_ID": 126190
+  },
+  {
+    "RSR_Stock_Number": "BAD-WH-UR10-5G-Y-15C",
+    "Product_Name": "BAD 10.5 UPR WRKHORSE 556AMBI C GRAY",
+    "Manufacturer": "BTLARM",
+    "Category": "Uppers/Lowers",
+    "Database_ID": 126259
+  },
+  {
+    "RSR_Stock_Number": "BAD-WH-UR10.5B-Y-15",
+    "Product_Name": "BAD 10.5 UPPR AUTH ELITE 556AMBI BLK",
+    "Manufacturer": "BTLARM",
+    "Category": "Uppers/Lowers",
+    "Database_ID": 126260
+  },
+  {
+    "RSR_Stock_Number": "BDT409B",
+    "Product_Name": "BULLDOG TACT RANGE GO BACKPACK BLK",
+    "Manufacturer": "BULL",
+    "Category": "Accessories",
+    "Database_ID": 127177
+  },
+  {
+    "RSR_Stock_Number": "BU626038",
+    "Product_Name": "BURRIS LENS COVERS XTR II & III 42MM",
+    "Manufacturer": "BURRIS",
+    "Category": "Accessories",
+    "Database_ID": 128953
+  },
+  {
+    "RSR_Stock_Number": "BU626040",
+    "Product_Name": "BURRIS LENS COVERS FF IV 6-24X50MM",
+    "Manufacturer": "BURRIS",
+    "Category": "Accessories",
+    "Database_ID": 128954
+  },
+  {
+    "RSR_Stock_Number": "BU626042",
+    "Product_Name": "BURRIS LENS COVERS  SIG HD 40MM OBJ",
+    "Manufacturer": "BURRIS",
+    "Category": "Accessories",
+    "Database_ID": 128955
+  },
+  {
+    "RSR_Stock_Number": "BS119904DX",
+    "Product_Name": "BUSHNELL 20MP PRIME L20 TAN",
+    "Manufacturer": "BUSHNL",
+    "Category": "Electronics",
+    "Database_ID": 128726
+  },
+  {
+    "RSR_Stock_Number": "BS119930BX",
+    "Product_Name": "BUSHNELL 20MP PRIME L20 TAN",
+    "Manufacturer": "BUSHNL",
+    "Category": "Electronics",
+    "Database_ID": 128728
+  },
+  {
+    "RSR_Stock_Number": "CCOCBG-1040-EA",
+    "Product_Name": "CBG BTL OPNR/WHSTL KYCHN DSPLY 24PC",
+    "Manufacturer": "CALGOR",
+    "Category": "Accessories",
+    "Database_ID": 129329
+  },
+  {
+    "RSR_Stock_Number": "CARI4093-N",
+    "Product_Name": "CENT ARMS VSKA TRP 762X39 16.5\" 30RD",
+    "Manufacturer": "CENTAR",
+    "Category": "Rifles",
+    "Database_ID": 129170
+  },
+  {
+    "RSR_Stock_Number": "CHP340-334",
+    "Product_Name": "CHIAPPA RHINO 60DS 357MAG 6\" 6RD",
+    "Manufacturer": "CHIAP",
+    "Category": "Handguns",
+    "Database_ID": 129508
+  },
+  {
+    "RSR_Stock_Number": "CPRD-DUTY-RD",
+    "Product_Name": "C&H DUTY OPTIC 3 MOA DOT RED",
+    "Manufacturer": "CHPWS",
+    "Category": "Optics",
+    "Database_ID": 130175
+  },
+  {
+    "RSR_Stock_Number": "CPWLPDP2-0-509T-ST",
+    "Product_Name": "C&H PLT WLTHR PDP 2.0 TO 509T STL",
+    "Manufacturer": "CHPWS",
+    "Category": "Accessories",
+    "Database_ID": 130210
+  },
+  {
+    "RSR_Stock_Number": "CIMCA2057AS1",
+    "Product_Name": "CIMARRON US MARSHAL IT CARB 357 18.5",
+    "Manufacturer": "CIM",
+    "Category": "Rifles",
+    "Database_ID": 129665
+  },
+  {
+    "RSR_Stock_Number": "CIMPP410",
+    "Product_Name": "CIMARRON FRONTIER 45LC 4.75\" 6RD",
+    "Manufacturer": "CIM",
+    "Category": "Handguns",
+    "Database_ID": 129690
+  },
+  {
+    "RSR_Stock_Number": "CIMPPP9MMN",
+    "Product_Name": "CIMARRON PISTOLERO 9MM 4.75\" 6RD NCK",
+    "Manufacturer": "CIM",
+    "Category": "Handguns",
+    "Database_ID": 129698
+  },
+  {
+    "RSR_Stock_Number": "CIMPPP9MMN35",
+    "Product_Name": "CIMARRON PISTOLERO 9MM 3.5\" 6RD NICK",
+    "Manufacturer": "CIM",
+    "Category": "Handguns",
+    "Database_ID": 129699
+  },
+  {
+    "RSR_Stock_Number": "CIT454LVR",
+    "Product_Name": "CITADEL LEVTAC 92 454CAS 16.5\" BLK",
+    "Manufacturer": "CIT",
+    "Category": "Rifles",
+    "Database_ID": 129720
+  },
+  {
+    "RSR_Stock_Number": "CSFL-43ARC",
+    "Product_Name": "COLD STL ARC ANGEL BAILSONG BLK",
+    "Manufacturer": "CLDSTL",
+    "Category": "Knives & Tools",
+    "Database_ID": 130447
+  },
+  {
+    "RSR_Stock_Number": "CHR10290-112522",
+    "Product_Name": "CHRISTENSEN CA-15G2 CF 223WYLDE 16\"",
+    "Manufacturer": "CRSTNS",
+    "Category": "Rifles",
+    "Database_ID": 129564
+  },
+  {
+    "RSR_Stock_Number": "CVACR4806",
+    "Product_Name": "CVA SCOUT 45-70 25\" SS BLK",
+    "Manufacturer": "CVA",
+    "Category": "Rifles",
+    "Database_ID": 130704
+  },
+  {
+    "RSR_Stock_Number": "DAADA423-N",
+    "Product_Name": "DEAD AIR THREAD SPACER 1/2X28",
+    "Manufacturer": "DAA",
+    "Category": "Barrels, Choke Tubes & Muzzle Devices",
+    "Database_ID": 130930
+  },
+  {
+    "RSR_Stock_Number": "DAASIERRA5XM-N",
+    "Product_Name": "DEAD AIR SIERRA 5 XM 556 W/XENO BLK",
+    "Manufacturer": "DAA",
+    "Category": "NFA Products",
+    "Database_ID": 130988
+  },
+  {
+    "RSR_Stock_Number": "DAC363059",
+    "Product_Name": "WIN UNIV PISTOL CLEANING KIT 21PC",
+    "Manufacturer": "DAC",
+    "Category": "Accessories",
+    "Database_ID": 131002
+  },
+  {
+    "RSR_Stock_Number": "DAC363066",
+    "Product_Name": "WIN UNIV PISTOL CLEANING KIT 24PC",
+    "Manufacturer": "DAC",
+    "Category": "Accessories",
+    "Database_ID": 131003
+  },
+  {
+    "RSR_Stock_Number": "DAC363073",
+    "Product_Name": "WIN UNIV RIFLE CLEANING KIT 18PC",
+    "Manufacturer": "DAC",
+    "Category": "Accessories",
+    "Database_ID": 131004
+  },
+  {
+    "RSR_Stock_Number": "DAC363158",
+    "Product_Name": "WIN SCREWDRIVER SET 51 PC",
+    "Manufacturer": "DAC",
+    "Category": "Knives & Tools",
+    "Database_ID": 131005
+  },
+  {
+    "RSR_Stock_Number": "DACWINHGC",
+    "Product_Name": "WIN COMPACT PISTOL CLNG 8 PC ALUM",
+    "Manufacturer": "DAC",
+    "Category": "Accessories",
+    "Database_ID": 131028
+  },
+  {
+    "RSR_Stock_Number": "DBT9MM115T50",
+    "Product_Name": "DBLTAP 9MM 115GR FMJ 50/1000",
+    "Manufacturer": "DBLTAP",
+    "Category": "Handgun Ammunition",
+    "Database_ID": 131172
+  },
+  {
+    "RSR_Stock_Number": "DSG002BA8ZZ0",
+    "Product_Name": "DESANTIS SPD SCAB ECHELON 4\" RH BLK",
+    "Manufacturer": "DESANT",
+    "Category": "Accessories",
+    "Database_ID": 131395
+  },
+  {
+    "RSR_Stock_Number": "DSG033BA8BZ0",
+    "Product_Name": "DESANTIS DUALCARRY II GL43/43X RH BK",
+    "Manufacturer": "DESANT",
+    "Category": "Accessories",
+    "Database_ID": 131417
+  },
+  {
+    "RSR_Stock_Number": "DSG215NJE1Z0",
+    "Product_Name": "DESANTIS TRANSIT FOR GLK 26 AMBI TN",
+    "Manufacturer": "DESANT",
+    "Category": "Accessories",
+    "Database_ID": 131490
+  },
+  {
+    "RSR_Stock_Number": "DSGE25BJ42Z3",
+    "Product_Name": "DESANTIS ECONO BELT SIZE 42 BLK",
+    "Manufacturer": "DESANT",
+    "Category": "Clothing",
+    "Database_ID": 131522
+  },
+  {
+    "RSR_Stock_Number": "DHJ100235R",
+    "Product_Name": "D HUME FR POCKET SEECAMP BRN",
+    "Manufacturer": "DH",
+    "Category": "Accessories",
+    "Database_ID": 131299
+  },
+  {
+    "RSR_Stock_Number": "DHJ168111R",
+    "Product_Name": "D HUME H715-M 41-1 FOR GLK 29 BRN RH",
+    "Manufacturer": "DH",
+    "Category": "Accessories",
+    "Database_ID": 131301
+  },
+  {
+    "RSR_Stock_Number": "DNZ12300",
+    "Product_Name": "DNZ HOWA 1500 SA HIGH MOUNT 1\" BLK",
+    "Manufacturer": "DNZ",
+    "Category": "Accessories",
+    "Database_ID": 131316
+  },
+  {
+    "RSR_Stock_Number": "ELF-APEX-170-R-S",
+    "Product_Name": "ELFTMANN APEX TRIGGER LP STRT RED",
+    "Manufacturer": "ELF",
+    "Category": "Parts",
+    "Database_ID": 131750
+  },
+  {
+    "RSR_Stock_Number": "ELF-APEX-B-C-FA",
+    "Product_Name": "ELFTMANN APEX TRIGGER CURVED FA BLK",
+    "Manufacturer": "ELF",
+    "Category": "Parts",
+    "Database_ID": 131752
+  },
+  {
+    "RSR_Stock_Number": "FABFX-BUNGEET",
+    "Product_Name": "FAB DEF BUNGEE 1PT TACT SLING TAN",
+    "Manufacturer": "FAB",
+    "Category": "Accessories",
+    "Database_ID": 132103
+  },
+  {
+    "RSR_Stock_Number": "EG4055BK",
+    "Product_Name": "ERGO TACT DLX AR15 SUREGRIP W/SP BLK",
+    "Manufacturer": "FALCON",
+    "Category": "Accessories",
+    "Database_ID": 131746
+  },
+  {
+    "RSR_Stock_Number": "FXFF-P-A-COMP-SS-G-01",
+    "Product_Name": "FAXON EXOS-523 COMP FOR GLK 43",
+    "Manufacturer": "FAXON",
+    "Category": "Barrels, Choke Tubes & Muzzle Devices",
+    "Database_ID": 133132
+  },
+  {
+    "RSR_Stock_Number": "FEAE40SJ1",
+    "Product_Name": "FED SYNTECH 40SW 165GR TSJ 50/500",
+    "Manufacturer": "FED",
+    "Category": "Handgun Ammunition",
+    "Database_ID": 132243
+  },
+  {
+    "RSR_Stock_Number": "FEP65PRCTC1",
+    "Product_Name": "FED PRM 6.5PRC 120GR TC 20/200",
+    "Manufacturer": "FED",
+    "Category": "Rifle Ammunition",
+    "Database_ID": 132480
+  },
+  {
+    "RSR_Stock_Number": "FESS12H175",
+    "Product_Name": "FED EST SS 12GA 2.75\" #7.5 1 OZ 25/",
+    "Manufacturer": "FED",
+    "Category": "Shotgun Ammunition",
+    "Database_ID": 132591
+  },
+  {
+    "RSR_Stock_Number": "FETP10VHP1",
+    "Product_Name": "FED TRAIN/PROTCT 10MM 180GR VHP 50",
+    "Manufacturer": "FED",
+    "Category": "Handgun Ammunition",
+    "Database_ID": 132631
+  },
+  {
+    "RSR_Stock_Number": "FL15111",
+    "Product_Name": "FIGHT MCR EXTENDED BOLT CATCH",
+    "Manufacturer": "FIGHT",
+    "Category": "Parts",
+    "Database_ID": 132689
+  },
+  {
+    "RSR_Stock_Number": "FIMEFM-922US",
+    "Product_Name": "FIME AK/RPK TRIGGER BLK",
+    "Manufacturer": "FIME",
+    "Category": "Parts",
+    "Database_ID": 132688
+  },
+  {
+    "RSR_Stock_Number": "F38A",
+    "Product_Name": "FIOCCHI 38SPL 130GR FMJ 50/1000",
+    "Manufacturer": "FIOC",
+    "Category": "Handgun Ammunition",
+    "Database_ID": 131995
+  },
+  {
+    "RSR_Stock_Number": "FN38-101244",
+    "Product_Name": "FN SCAR 15P VPR 556 BLK 10RD 7.5",
+    "Manufacturer": "FN",
+    "Category": "Handguns",
+    "Database_ID": 132765
+  },
+  {
+    "RSR_Stock_Number": "FN38-101705-02",
+    "Product_Name": "FN SCAR 20S NRCH 7.62 20\" CHOC 10RD",
+    "Manufacturer": "FN",
+    "Category": "Rifles",
+    "Database_ID": 132768
+  },
+  {
+    "RSR_Stock_Number": "FN38-101747",
+    "Product_Name": "FN SCAR 17S DMR 6.5CM 16.25 BLK 10RD",
+    "Manufacturer": "FN",
+    "Category": "Rifles",
+    "Database_ID": 132769
+  },
+  {
+    "RSR_Stock_Number": "FN66-100746",
+    "Product_Name": "FN 509M TACT 9MM 4.5\" 10RD FDE NS",
+    "Manufacturer": "FN",
+    "Category": "Handguns",
+    "Database_ID": 132796
+  },
+  {
+    "RSR_Stock_Number": "FN66-100781",
+    "Product_Name": "FN 509C TACT 9MM 4.32\" 10RD FDE",
+    "Manufacturer": "FN",
+    "Category": "Handguns",
+    "Database_ID": 132798
+  },
+  {
+    "RSR_Stock_Number": "FN98621-2",
+    "Product_Name": "FN SCAR 16S NRCH 556 16.25\" BLK 10RD",
+    "Manufacturer": "FN",
+    "Category": "Rifles",
+    "Database_ID": 132881
+  },
+  {
+    "RSR_Stock_Number": "GALHAW894RB",
+    "Product_Name": "GALCO HAWKEYE SIG P365X-MACRO RH BLK",
+    "Manufacturer": "GALCO",
+    "Category": "Accessories",
+    "Database_ID": 133210
+  },
+  {
+    "RSR_Stock_Number": "GALRS9B",
+    "Product_Name": "GALCO SLING LEATHER BLK",
+    "Manufacturer": "GALCO",
+    "Category": "Accessories",
+    "Database_ID": 133212
+  },
+  {
+    "RSR_Stock_Number": "GALTUC894B",
+    "Product_Name": "GALCO TUCK-N-GO SIG 365X MACRO RH BK",
+    "Manufacturer": "GALCO",
+    "Category": "Accessories",
+    "Database_ID": 133215
+  },
+  {
+    "RSR_Stock_Number": "GAM611006325554",
+    "Product_Name": "GAMO WHSPR FUSION MACH 1 22 W/3-9X40",
+    "Manufacturer": "GAMO",
+    "Category": "Airguns",
+    "Database_ID": 133228
+  },
+  {
+    "RSR_Stock_Number": "GEM12123",
+    "Product_Name": "GEMTECH AURORA II SUPPRESSOR 9MM BLK",
+    "Manufacturer": "GEMTCH",
+    "Category": "NFA Products",
+    "Database_ID": 133457
+  },
+  {
+    "RSR_Stock_Number": "GH-42-MINIMED",
+    "Product_Name": "GHOST MAG EXTENSION FOR GLK 42",
+    "Manufacturer": "GHOST",
+    "Category": "Parts",
+    "Database_ID": 133741
+  },
+  {
+    "RSR_Stock_Number": "GLPA175S204-OD",
+    "Product_Name": "GLOCK 17 GEN5 9MM 17RD OD GREEN",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 133975
+  },
+  {
+    "RSR_Stock_Number": "GLPA195S204-BB",
+    "Product_Name": "GLOCK 19 GEN5 9MM 15RD BURNT BRONZE",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 133990
+  },
+  {
+    "RSR_Stock_Number": "GLPA195S204-BWF",
+    "Product_Name": "GLOCK 19 GEN5 9MM 15RD RWB BW FLAG",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 133991
+  },
+  {
+    "RSR_Stock_Number": "GLPA195S204-OD",
+    "Product_Name": "GLOCK 19 GEN5 9MM 15RD OD GREEN",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 133993
+  },
+  {
+    "RSR_Stock_Number": "GLPA195S204MOS-BWF",
+    "Product_Name": "GLOCK 19 GEN5 9MM 15RD RWB BW FLAG",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 133994
+  },
+  {
+    "RSR_Stock_Number": "GLPA195S204MOS-CT",
+    "Product_Name": "GLOCK 19 GEN5 9MM 15RD COYOTE TAN",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 133995
+  },
+  {
+    "RSR_Stock_Number": "GLPA195S204N-BT",
+    "Product_Name": "GLOCK 19 GEN5 9MM 15RD BLUE TITANIUM",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 133996
+  },
+  {
+    "RSR_Stock_Number": "GLPA455S204-BT",
+    "Product_Name": "GLOCK 45 9MM 17RD FS BLUE TITANIUM",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134016
+  },
+  {
+    "RSR_Stock_Number": "GLPA455S204-OD",
+    "Product_Name": "GLOCK 45 9MM 17RD FS OD GREEN",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134018
+  },
+  {
+    "RSR_Stock_Number": "GLPA455S204-SG",
+    "Product_Name": "GLOCK 45 9MM 17RD FS SNIPER GREY",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134019
+  },
+  {
+    "RSR_Stock_Number": "GLPA455S204MOS-AGCBLAS",
+    "Product_Name": "GLOCK 45 9MM 17 3MAGS MOS AGOGE GRN",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134020
+  },
+  {
+    "RSR_Stock_Number": "GLPA475S204MOS-CT",
+    "Product_Name": "GLOCK 47 GEN5 9MM 17RD COYOTE TAN",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134028
+  },
+  {
+    "RSR_Stock_Number": "GLPA4850204FRMOS-BWF",
+    "Product_Name": "GLOCK 48 9MM 10RD MOS FS RWB BW FLAG",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134035
+  },
+  {
+    "RSR_Stock_Number": "GLPI1750204-BB",
+    "Product_Name": "GLOCK 17 GEN3 9MM 17RD BURNT BRONZE",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134053
+  },
+  {
+    "RSR_Stock_Number": "GLPI2250203-SB",
+    "Product_Name": "GLOCK 22 GEN3 40SW 15RD SMOKED BRZ",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134062
+  },
+  {
+    "RSR_Stock_Number": "GLPX4350204FRMOSN-FDE",
+    "Product_Name": "GLOCK 43X 9MM 10RD MOS FS FDE",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134126
+  },
+  {
+    "RSR_Stock_Number": "GLPX4350204FRMOSN-RG",
+    "Product_Name": "GLOCK 43X 9MM 10RD MOS FS ROSE GOLD",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134127
+  },
+  {
+    "RSR_Stock_Number": "GLUA265S204-MB",
+    "Product_Name": "GLOCK 26 GEN5 9MM 10RD MIDNITE BRONZ",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134320
+  },
+  {
+    "RSR_Stock_Number": "GLUA4850204FRMOS-MOO",
+    "Product_Name": "GLOCK 48 9MM 10RD MOS FS COW PRINT",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134322
+  },
+  {
+    "RSR_Stock_Number": "GLUA4850204FRMOS-REB",
+    "Product_Name": "GLOCK 48 9MM 10RD MOS FS ROBINS EGG",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134323
+  },
+  {
+    "RSR_Stock_Number": "GLUI4250201-MOO",
+    "Product_Name": "GLOCK 42 380ACP 6RD COW PRINT",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134334
+  },
+  {
+    "RSR_Stock_Number": "GLUI4250204-REBCS",
+    "Product_Name": "GLOCK 42 380ACP 6RD ROBINS EGG/SILVR",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134335
+  },
+  {
+    "RSR_Stock_Number": "GLUI4250204-RG",
+    "Product_Name": "GLOCK 42 380ACP 6RD ROSE GOLD",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134336
+  },
+  {
+    "RSR_Stock_Number": "GLUI4350204MOO",
+    "Product_Name": "GLOCK 43 9MM 6RD COW PRINT",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134338
+  },
+  {
+    "RSR_Stock_Number": "GLUX4350204FRMOSN-RG",
+    "Product_Name": "GLOCK 43X 9MM 10RD MOS FS ROSE GOLD",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134373
+  },
+  {
+    "RSR_Stock_Number": "GLUX4350204FRMOSNTCTJJ",
+    "Product_Name": "GLOCK 43X 9MM 10 MOS TAN/GRN SLIDE",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134375
+  },
+  {
+    "RSR_Stock_Number": "GLUX4350204FRN-MOO",
+    "Product_Name": "GLOCK 43X 9MM 10RD COW PRINT FRTRAIL",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134379
+  },
+  {
+    "RSR_Stock_Number": "GLUX4350204FRN-RG",
+    "Product_Name": "GLOCK 43X 9MM 10RD ROSE GOLD FRTRAIL",
+    "Manufacturer": "GLOCK",
+    "Category": "Handguns",
+    "Database_ID": 134381
+  },
+  {
+    "RSR_Stock_Number": "GRIFGAOPT",
+    "Product_Name": "GRIFFIN OPTIMUS SPRSR MODULAR 9MM",
+    "Manufacturer": "GRIFIN",
+    "Category": "NFA Products",
+    "Database_ID": 134512
+  },
+  {
+    "RSR_Stock_Number": "GTAC81",
+    "Product_Name": "GROVTEC STOCK SHELL HOLDER RIFLE",
+    "Manufacturer": "GRVTEC",
+    "Category": "Parts",
+    "Database_ID": 134568
+  },
+  {
+    "RSR_Stock_Number": "GTHM321",
+    "Product_Name": "GROVTEC G-STOP REVSBLE HAND STOP",
+    "Manufacturer": "GRVTEC",
+    "Category": "Accessories",
+    "Database_ID": 134584
+  },
+  {
+    "RSR_Stock_Number": "GTSW236",
+    "Product_Name": "GROVTEC RAIL MLOK 5 SLOT 2.2\"",
+    "Manufacturer": "GRVTEC",
+    "Category": "Accessories",
+    "Database_ID": 134631
+  },
+  {
+    "RSR_Stock_Number": "GTSW86",
+    "Product_Name": "GROVTEC REM 870 LCK SWIVEL SET 20GA",
+    "Manufacturer": "GRVTEC",
+    "Category": "Accessories",
+    "Database_ID": 134650
+  },
+  {
+    "RSR_Stock_Number": "GFRO-P320C-0101111",
+    "Product_Name": "GFI RONIN RH P320 CMP FC BLK/BLK",
+    "Manufacturer": "GUNFI",
+    "Category": "Accessories",
+    "Database_ID": 133500
+  },
+  {
+    "RSR_Stock_Number": "HEBL41028BK",
+    "Product_Name": "HERITAGE BADLANDER SXS 410 28\"",
+    "Manufacturer": "HERTG",
+    "Category": "Shotguns",
+    "Database_ID": 135099
+  },
+  {
+    "RSR_Stock_Number": "HEXHXGT-BLK-V1",
+    "Product_Name": "HEXMAG GRIP TAPE BLK",
+    "Manufacturer": "HEXMG",
+    "Category": "Accessories",
+    "Database_ID": 135343
+  },
+  {
+    "RSR_Stock_Number": "MGHEXHX1530-AR15S2-V1",
+    "Product_Name": "MAG HEXMAG SERIES 2 5.56 15RD BLK",
+    "Manufacturer": "HEXMG",
+    "Category": "High Capacity Magazines",
+    "Database_ID": 139290
+  },
+  {
+    "RSR_Stock_Number": "MGHEXHX30-AR15S2-V1",
+    "Product_Name": "MAG HEXMAG SERIES 2 5.56 30RD ODG",
+    "Manufacturer": "HEXMG",
+    "Category": "High Capacity Magazines",
+    "Database_ID": 139298
+  },
+  {
+    "RSR_Stock_Number": "HSGI33SLB3CB",
+    "Product_Name": "HSGI LSR SLIM GRP PD BLT SLTD XL COY",
+    "Manufacturer": "HGHSPD",
+    "Category": "Accessories",
+    "Database_ID": 135948
+  },
+  {
+    "RSR_Stock_Number": "HK81001005",
+    "Product_Name": "HK MR762 7.62X51 16.5\" FLECKTARN",
+    "Manufacturer": "HK",
+    "Category": "Rifles",
+    "Database_ID": 135428
+  },
+  {
+    "RSR_Stock_Number": "HO88000",
+    "Product_Name": "HOGUE MONOGRIP RUGER SPD SIX BLK",
+    "Manufacturer": "HOGUE",
+    "Category": "Accessories",
+    "Database_ID": 135683
+  },
+  {
+    "RSR_Stock_Number": "HSHE509T-RD-X2-FDE",
+    "Product_Name": "H-SUN 509T X2 REFLEX MRS RED SLR FDE",
+    "Manufacturer": "HS",
+    "Category": "Optics",
+    "Database_ID": 135978
+  },
+  {
+    "RSR_Stock_Number": "HSPSLG-SLM-1-1-MCA",
+    "Product_Name": "HSP D3 SLIM SLING MC ARID",
+    "Manufacturer": "HSP",
+    "Category": "Accessories",
+    "Database_ID": 136103
+  },
+  {
+    "RSR_Stock_Number": "TS85601",
+    "Product_Name": "AMER CLSC GOVT 1911 45ACP 5\" 8RD BLU",
+    "Manufacturer": "IMPORT",
+    "Category": "Handguns",
+    "Database_ID": 151170
+  },
+  {
+    "RSR_Stock_Number": "TS85635",
+    "Product_Name": "AMER CLSC TRPY 1911 45ACP 5\" 8RD CHR",
+    "Manufacturer": "IMPORT",
+    "Category": "Handguns",
+    "Database_ID": 151174
+  },
+  {
+    "RSR_Stock_Number": "KSA2240PKG",
+    "Product_Name": "KSA CRICKETT G2 22LR BLK SYN SCP PKG",
+    "Manufacturer": "KEY",
+    "Category": "Rifles",
+    "Database_ID": 137025
+  },
+  {
+    "RSR_Stock_Number": "KIM3000432",
+    "Product_Name": "KIMBER RAPIDE DUSK 10MM 5\" 8RD",
+    "Manufacturer": "KIMBER",
+    "Category": "Handguns",
+    "Database_ID": 136687
+  },
+  {
+    "RSR_Stock_Number": "KIM3000457",
+    "Product_Name": "KIMBER LW SHADOW GHOST 9MM OR TB",
+    "Manufacturer": "KIMBER",
+    "Category": "Handguns",
+    "Database_ID": 136690
+  },
+  {
+    "RSR_Stock_Number": "KIM3100016",
+    "Product_Name": "KIMBER KDS9C 9MM 4.09\" 18RD NS GRY",
+    "Manufacturer": "KIMBER",
+    "Category": "Handguns",
+    "Database_ID": 136713
+  },
+  {
+    "RSR_Stock_Number": "KIM3200309",
+    "Product_Name": "KIMBER SUPER MATCH II 45ACP 5\" 8RD",
+    "Manufacturer": "KIMBER",
+    "Category": "Handguns",
+    "Database_ID": 136738
+  },
+  {
+    "RSR_Stock_Number": "KIM3200328",
+    "Product_Name": "KIMBER STAINLESS II 45 5\" 8RD FOD FO",
+    "Manufacturer": "KIMBER",
+    "Category": "Handguns",
+    "Database_ID": 136742
+  },
+  {
+    "RSR_Stock_Number": "KIM3200391",
+    "Product_Name": "KIMBER ULTRA CARRY II 45ACP TT LG 7R",
+    "Manufacturer": "KIMBER",
+    "Category": "Handguns",
+    "Database_ID": 136749
+  },
+  {
+    "RSR_Stock_Number": "KIM3300252",
+    "Product_Name": "KIMBER MICRO 9 RTC SHDW GHT 7RD BNDL",
+    "Manufacturer": "KIMBER",
+    "Category": "Handguns",
+    "Database_ID": 136762
+  },
+  {
+    "RSR_Stock_Number": "KIM3700621",
+    "Product_Name": "KIMBER K6S DASA 357MAG 4\" TRGT RED",
+    "Manufacturer": "KIMBER",
+    "Category": "Handguns",
+    "Database_ID": 136790
+  },
+  {
+    "RSR_Stock_Number": "KIM3800019",
+    "Product_Name": "KMBR R7 MAKO CC 9MM 4.42\" OI TB 15RD",
+    "Manufacturer": "KIMBER",
+    "Category": "Handguns",
+    "Database_ID": 136804
+  },
+  {
+    "RSR_Stock_Number": "KIM3800025",
+    "Product_Name": "KIMBER R7 MAKO 9MM 3.37\" 10RD BLACK",
+    "Manufacturer": "KIMBER",
+    "Category": "Handguns",
+    "Database_ID": 136807
+  },
+  {
+    "RSR_Stock_Number": "KNSSIGHTPAK",
+    "Product_Name": "KNS AR15 POST SIGHT PACK",
+    "Manufacturer": "KNS",
+    "Category": "Accessories",
+    "Database_ID": 136894
+  },
+  {
+    "RSR_Stock_Number": "MGLS2320-41",
+    "Product_Name": "LANCER L5AWM 223REM 10RD TRANS FDE",
+    "Manufacturer": "LANCER",
+    "Category": "Magazines",
+    "Database_ID": 139457
+  },
+  {
+    "RSR_Stock_Number": "LAN01-FA-14-DELUXE-RAV",
+    "Product_Name": "LANTAC 16\" 300 BLACKOUT BARREL BLK",
+    "Manufacturer": "LANTAC",
+    "Category": "Barrels, Choke Tubes & Muzzle Devices",
+    "Database_ID": 137202
+  },
+  {
+    "RSR_Stock_Number": "LAN01-FA-14DELUXERAVEN",
+    "Product_Name": "LANTAC RAVEN 14.5\" P&W 223WYLDE 30RD",
+    "Manufacturer": "LANTAC",
+    "Category": "Rifles",
+    "Database_ID": 137203
+  },
+  {
+    "RSR_Stock_Number": "LAN01-FA-223-3GUN",
+    "Product_Name": "LANTAC SF15 3 GUN 18\" 223 WYLDE 30RD",
+    "Manufacturer": "LANTAC",
+    "Category": "Rifles",
+    "Database_ID": 137204
+  },
+  {
+    "RSR_Stock_Number": "LAN01-FA-223-DMR",
+    "Product_Name": "LANTAC SF15 DMR 18\" 223 WYLDE 30RD",
+    "Manufacturer": "LANTAC",
+    "Category": "Rifles",
+    "Database_ID": 137205
+  },
+  {
+    "RSR_Stock_Number": "LAN01-FA-223-DMR-UPR",
+    "Product_Name": "LANTAC DMR UPPER 223 WYLDE 18\"",
+    "Manufacturer": "LANTAC",
+    "Category": "Uppers/Lowers",
+    "Database_ID": 137206
+  },
+  {
+    "RSR_Stock_Number": "LAN01-FA-300-UTP-UPR",
+    "Product_Name": "LANTAC UTP UPPER 300 BO 11.5\" BLK",
+    "Manufacturer": "LANTAC",
+    "Category": "Uppers/Lowers",
+    "Database_ID": 137218
+  },
+  {
+    "RSR_Stock_Number": "LAN01-GB-G17-TH-SS",
+    "Product_Name": "LANTAC 9INE FOR G17 FLTD THRD SS BBL",
+    "Manufacturer": "LANTAC",
+    "Category": "Barrels, Choke Tubes & Muzzle Devices",
+    "Database_ID": 137220
+  },
+  {
+    "RSR_Stock_Number": "LAN01-GB-G43-TH-SS",
+    "Product_Name": "LANTAC 9INE FOR G43 THREADED BBL SS",
+    "Manufacturer": "LANTAC",
+    "Category": "Barrels, Choke Tubes & Muzzle Devices",
+    "Database_ID": 137226
+  },
+  {
+    "RSR_Stock_Number": "LAN01-RV-BSET-15-RAVEN",
+    "Product_Name": "LANTAC RVN BLLT BUILDER SET 15\" RL",
+    "Manufacturer": "LANTAC",
+    "Category": "Uppers/Lowers",
+    "Database_ID": 137257
+  },
+  {
+    "RSR_Stock_Number": "LAN01GBG19NTHSS",
+    "Product_Name": "LANTAC BBL FOR G19 FLUTED SS",
+    "Manufacturer": "LANTAC",
+    "Category": "Barrels, Choke Tubes & Muzzle Devices",
+    "Database_ID": 137268
+  },
+  {
+    "RSR_Stock_Number": "LAN01GBG19THBRNZ",
+    "Product_Name": "LANTAC BBL FOR G19 FLUTED THRD BRNZ",
+    "Manufacturer": "LANTAC",
+    "Category": "Barrels, Choke Tubes & Muzzle Devices",
+    "Database_ID": 137270
+  },
+  {
+    "RSR_Stock_Number": "LAN01GBG19THSS",
+    "Product_Name": "LANTAC BBL FOR G19 FLUTED THRD SS",
+    "Manufacturer": "LANTAC",
+    "Category": "Barrels, Choke Tubes & Muzzle Devices",
+    "Database_ID": 137271
+  },
+  {
+    "RSR_Stock_Number": "LANLA00242",
+    "Product_Name": "LANTAC 16\" 300 BLACKOUT BARREL BLK",
+    "Manufacturer": "LANTAC",
+    "Category": "Barrels, Choke Tubes & Muzzle Devices",
+    "Database_ID": 137317
+  },
+  {
+    "RSR_Stock_Number": "LAP4317563",
+    "Product_Name": "LAPUA 30-06 185GR MEGA SP 20/600",
+    "Manufacturer": "LAPUA",
+    "Category": "Rifle Ammunition",
+    "Database_ID": 137326
+  },
+  {
+    "RSR_Stock_Number": "LBBAR163M",
+    "Product_Name": "LBE AR 5.56NATO 1/7 TWIST 16.25\" BLK",
+    "Manufacturer": "LBE",
+    "Category": "Barrels, Choke Tubes & Muzzle Devices",
+    "Database_ID": 137528
+  },
+  {
+    "RSR_Stock_Number": "LBGLK17SLD",
+    "Product_Name": "LBE SLIDE FOR GLOCK 17 BLK",
+    "Manufacturer": "LBE",
+    "Category": "Parts",
+    "Database_ID": 137531
+  },
+  {
+    "RSR_Stock_Number": "LD1117251",
+    "Product_Name": "LOCKDOWN AUTOMATIC DEHUMIDIFIER",
+    "Manufacturer": "LCKDWN",
+    "Category": "Accessories",
+    "Database_ID": 137559
+  },
+  {
+    "RSR_Stock_Number": "UTGPVC-DC38B-A",
+    "Product_Name": "UTG 38\" DC TACT GUN CASE W/PCKT  BLK",
+    "Manufacturer": "LEAP",
+    "Category": "Accessories",
+    "Database_ID": 151620
+  },
+  {
+    "RSR_Stock_Number": "UTGTL-CHL01",
+    "Product_Name": "UTG EXTND TACT CHRGING HANDLE LATCH",
+    "Manufacturer": "LEAP",
+    "Category": "Parts",
+    "Database_ID": 151676
+  },
+  {
+    "RSR_Stock_Number": "LHLA223-55-CC",
+    "Product_Name": "LEHIGH CTRL CHAOS 223REM 55GR 20/200",
+    "Manufacturer": "LEHIGH",
+    "Category": "Rifle Ammunition",
+    "Database_ID": 137669
+  },
+  {
+    "RSR_Stock_Number": "LP171334",
+    "Product_Name": "LEUP CNTRY SLOT BASE REM700 LA",
+    "Manufacturer": "LEUPLD",
+    "Category": "Accessories",
+    "Database_ID": 137825
+  },
+  {
+    "RSR_Stock_Number": "LP171386",
+    "Product_Name": "LEUP VX-5HD 2-10X42 DUPLEX",
+    "Manufacturer": "LEUPLD",
+    "Category": "Optics",
+    "Database_ID": 137832
+  },
+  {
+    "RSR_Stock_Number": "LONELWD-DUSK19-ORB-TH",
+    "Product_Name": "LWD DUSK 19 RMR 9MM 15RD BRZ/BRN TB",
+    "Manufacturer": "LONE",
+    "Category": "Handguns",
+    "Database_ID": 137791
+  },
+  {
+    "RSR_Stock_Number": "LONELWD-DUSK19BLKORBTH",
+    "Product_Name": "LWD DUSK 19 RMR 9MM 15RD BLK/BRN TB",
+    "Manufacturer": "LONE",
+    "Category": "Handguns",
+    "Database_ID": 137792
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1003ODG",
+    "Product_Name": "MAGPUL PRO 700L FXD REM 700 LA ODG",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140484
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1044-1-001-1100",
+    "Product_Name": "MAGPUL DEFIANT POL BLK FRM GRY",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140495
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1044-1-001-1140",
+    "Product_Name": "MAGPUL DEFIANT BLK FRM PLRZD GRY LNS",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140496
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1069-GRY-LT",
+    "Product_Name": "MAGPUL HUNTR SAV 110 SA STK LH GRY",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140511
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1069-ODG-RT",
+    "Product_Name": "MAGPUL HUNTR SAV 110 SA STK RH ODG",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140514
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1097-0-001-3000",
+    "Product_Name": "MAGPUL HELIX BLK FRM ROSE",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140529
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1097-1-001-2020",
+    "Product_Name": "MAGPUL HELIX POL BLK FRM BRZ/BL",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140530
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1098-1-1100",
+    "Product_Name": "MAGPUL HELIX REPLACEMENT GRY LNS",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140531
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1126-1-001-2020",
+    "Product_Name": "MAGPUL RIFT POL BLK FRM BRONZE/BLUE",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140546
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1126-1-001-4050",
+    "Product_Name": "MAGPUL RIFT POL BLK FRM VIOLET/GRN",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140547
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1128-1-204-2020",
+    "Product_Name": "MAGPUL PIVOT POL TRTOSE FRM BRZ/BLUE",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140548
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1130-0-001-1100",
+    "Product_Name": "MAGPUL APEX BLK FRM GRY",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140549
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1132-1-001-4050",
+    "Product_Name": "MAGPUL ASCENT POL BLK FRM VIOLET/GRN",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140550
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1145-1-001-1110",
+    "Product_Name": "MAGPUL RADIUS POL BLK FRM GRY/SLV",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140556
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1145-1-245-1100",
+    "Product_Name": "MAGPUL RADIUS FDE FRM GRY LENS",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140557
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1147-0-001-1000",
+    "Product_Name": "MAGPUL EXPLORER BLK FRM CLEAR LENS",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140559
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1147-0-001-1100",
+    "Product_Name": "MAGPUL EXPLORER BLK FRM GRY",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140560
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1147-1-001-1110",
+    "Product_Name": "MAGPUL EXPLORER POL BLK FRM GRY/SLV",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140561
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1147-1-001-1900",
+    "Product_Name": "MAGPUL EXPLORER POL BLK FRM GRY GRN",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140562
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1147-1-001-2020",
+    "Product_Name": "MAGPUL EXPLORER POL BLK FRM BRZ/BL",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140563
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1148-0-001-1100",
+    "Product_Name": "MAGPUL EXPLORER XL BLK FRM GRY",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140565
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1148-1-001-2020",
+    "Product_Name": "MAGPUL EXPLOR XL POL BLK FRM BRZ/BL",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140566
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1148-1-001-2030",
+    "Product_Name": "MAGPUL EXPLOR XL POL BLK FRM BRZ/GLD",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140567
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1148-1-204-2030",
+    "Product_Name": "MAGPUL EXPLOR XL POL TOR FRM BRZ/GLD",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140568
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1155-GRY",
+    "Product_Name": "MAGPUL DAKA CAN LARGE GRY",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140571
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1155-ODG",
+    "Product_Name": "MAGPUL DAKA CAN LARGE ODG",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140572
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1277-1-001-1140",
+    "Product_Name": "MAGPUL RIDER BLK FRAME GRY/RED LENS",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140630
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1277-1-007-1110",
+    "Product_Name": "MAGPUL RIDER GLOSS BLK FRM GRY LENS",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140631
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1277-1-231-1900",
+    "Product_Name": "MAGPUL RIDER TRTISE FRM GRY/GRN LNS",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140633
+  },
+  {
+    "RSR_Stock_Number": "MPIMAG1277-1-332-1500",
+    "Product_Name": "MAGPUL RIDER DSRT VRDE FRM GRY LENS",
+    "Manufacturer": "MAGPUL",
+    "Category": "Accessories",
+    "Database_ID": 140634
+  },
+  {
+    "RSR_Stock_Number": "MRBFR30-30-6",
+    "Product_Name": "BFR REVOLVER 30-30 10\" 6RD STS",
+    "Manufacturer": "MAGRES",
+    "Category": "Handguns",
+    "Database_ID": 141189
+  },
+  {
+    "RSR_Stock_Number": "MAR70916E",
+    "Product_Name": "MARLIN 1894 GUIDE 357MAG 18.63\" 9RD",
+    "Manufacturer": "MARLIN",
+    "Category": "Rifles",
+    "Database_ID": 138257
+  },
+  {
+    "RSR_Stock_Number": "MDT103452-BLK",
+    "Product_Name": "MDT SRS-XF FOLDING BUTTSTOCK XTN BLK",
+    "Manufacturer": "MDT",
+    "Category": "Accessories",
+    "Database_ID": 138334
+  },
+  {
+    "RSR_Stock_Number": "MDT103452-FDE",
+    "Product_Name": "MDT SRS-XF FOLDING BUTTSTOCK XTN FDE",
+    "Manufacturer": "MDT",
+    "Category": "Accessories",
+    "Database_ID": 138335
+  },
+  {
+    "RSR_Stock_Number": "MEP0227703101",
+    "Product_Name": "MEPROLT TD S&W ADJ K L N",
+    "Manufacturer": "MEPRO",
+    "Category": "Accessories",
+    "Database_ID": 138491
+  },
+  {
+    "RSR_Stock_Number": "MEP0631153108",
+    "Product_Name": "MEPROLT FT BE RS SIG P SERIES",
+    "Manufacturer": "MEPRO",
+    "Category": "Accessories",
+    "Database_ID": 138507
+  },
+  {
+    "RSR_Stock_Number": "MESA95170",
+    "Product_Name": "MESA SURSHL AL MOSS 500/590 6-20GA",
+    "Manufacturer": "MESA",
+    "Category": "Parts",
+    "Database_ID": 138579
+  },
+  {
+    "RSR_Stock_Number": "MFTBMSMILGY",
+    "Product_Name": "MFT BTTLELNK MNIMLST STK MIL SPC GRY",
+    "Manufacturer": "MFT",
+    "Category": "Accessories",
+    "Database_ID": 138591
+  },
+  {
+    "RSR_Stock_Number": "MFTH2RUEC9AIWBM",
+    "Product_Name": "MFT MINIMALIST HLSTR RUG EC9/S LC9/S",
+    "Manufacturer": "MFT",
+    "Category": "Accessories",
+    "Database_ID": 138616
+  },
+  {
+    "RSR_Stock_Number": "AMGW309S",
+    "Product_Name": "MGW SIGHT TOOL FOR GLK STRAIGHT TALL",
+    "Manufacturer": "MGW",
+    "Category": "Knives & Tools",
+    "Database_ID": 124947
+  },
+  {
+    "RSR_Stock_Number": "AMGWSP105",
+    "Product_Name": "MGW SHOE PLATE FOR COLT 1911",
+    "Manufacturer": "MGW",
+    "Category": "Knives & Tools",
+    "Database_ID": 124950
+  },
+  {
+    "RSR_Stock_Number": "AMGWSP110",
+    "Product_Name": "MGW SHOE PLATE FOR SIG PRO SERIES",
+    "Manufacturer": "MGW",
+    "Category": "Knives & Tools",
+    "Database_ID": 124951
+  },
+  {
+    "RSR_Stock_Number": "AMGWSP149",
+    "Product_Name": "MGW SHOE PLATE FOR TAURUS MILL PT11O",
+    "Manufacturer": "MGW",
+    "Category": "Knives & Tools",
+    "Database_ID": 124954
+  },
+  {
+    "RSR_Stock_Number": "MS28045",
+    "Product_Name": "MSBRG PRED 308WIN 22\" 4RD BRN/CAMO",
+    "Manufacturer": "MSBRG",
+    "Category": "Rifles",
+    "Database_ID": 141281
+  },
+  {
+    "RSR_Stock_Number": "MS28050",
+    "Product_Name": "MSBRG PATRIOT SPRBAN 6.5CM/20\" SCOPE",
+    "Manufacturer": "MSBRG",
+    "Category": "Rifles",
+    "Database_ID": 141282
+  },
+  {
+    "RSR_Stock_Number": "MS85161",
+    "Product_Name": "MSBRG 940 PRO TACT 12/18.5\" 7RD W/HS",
+    "Manufacturer": "MSBRG",
+    "Category": "Shotguns",
+    "Database_ID": 141429
+  },
+  {
+    "RSR_Stock_Number": "MWMI-QD30SM-20MOA",
+    "Product_Name": "MIDWEST 30MM QD SCOPE MOUNT - 20MOA",
+    "Manufacturer": "MWI",
+    "Category": "Accessories",
+    "Database_ID": 141727
+  },
+  {
+    "RSR_Stock_Number": "MWMI-QD34SM",
+    "Product_Name": "MIDWEST QD SCP MNT 34MM W/1.5\" OFFSE",
+    "Manufacturer": "MWI",
+    "Category": "Accessories",
+    "Database_ID": 141728
+  },
+  {
+    "RSR_Stock_Number": "MWMI-SM30G2",
+    "Product_Name": "MIDWEST 30MM SCOPE MOUNT GEN2 BLK",
+    "Manufacturer": "MWI",
+    "Category": "Accessories",
+    "Database_ID": 141751
+  },
+  {
+    "RSR_Stock_Number": "NITCM-550XL-GL",
+    "Product_Name": "NIGHTSTICK CMPCT WPN LGHT/LASER",
+    "Manufacturer": "NIGHTS",
+    "Category": "Accessories",
+    "Database_ID": 141963
+  },
+  {
+    "RSR_Stock_Number": "NITCM-550XLS",
+    "Product_Name": "NIGHTSTICK CMPCT WPN LGHT STRBE",
+    "Manufacturer": "NIGHTS",
+    "Category": "Accessories",
+    "Database_ID": 141964
+  },
+  {
+    "RSR_Stock_Number": "OERMB-20C",
+    "Product_Name": "OD EDGE RAZOR-MAX 6 BLADES ORG",
+    "Manufacturer": "OUTEDG",
+    "Category": "Knives & Tools",
+    "Database_ID": 142656
+  },
+  {
+    "RSR_Stock_Number": "OERSB35-6C",
+    "Product_Name": "OD EDGE 3.5\" RAZOR-PRO S ORANGE",
+    "Manufacturer": "OUTEDG",
+    "Category": "Knives & Tools",
+    "Database_ID": 142672
+  },
+  {
+    "RSR_Stock_Number": "PH5SAFE90-BLUE",
+    "Product_Name": "PHASE5 AMBI SAFETY SELECTOR BLUE",
+    "Manufacturer": "PHASE5",
+    "Category": "Parts",
+    "Database_ID": 142967
+  },
+  {
+    "RSR_Stock_Number": "MGPMAA762R-01",
+    "Product_Name": "PROMAG ARCHANGEL M-1891 5RD POLY",
+    "Manufacturer": "PROMAG",
+    "Category": "Magazines",
+    "Database_ID": 139661
+  },
+  {
+    "RSR_Stock_Number": "MGPMDRM-A28",
+    "Product_Name": "PROMAG AK5.56MM 65RD DRUM BLACK POLY",
+    "Manufacturer": "PROMAG",
+    "Category": "High Capacity Magazines",
+    "Database_ID": 139715
+  },
+  {
+    "RSR_Stock_Number": "MGPMMOS-A2",
+    "Product_Name": "PROMAG MOSSBERG MC2 9MM 20RD BLK",
+    "Manufacturer": "PROMAG",
+    "Category": "High Capacity Magazines",
+    "Database_ID": 139808
+  },
+  {
+    "RSR_Stock_Number": "PS156MGC",
+    "Product_Name": "PS MEAN GREEN OC SPRAY 1.5OZ FOG",
+    "Manufacturer": "PSPROD",
+    "Category": "Accessories",
+    "Database_ID": 143463
+  },
+  {
+    "RSR_Stock_Number": "PWSM111UF01-1F",
+    "Product_Name": "PWS MK111 MOD 1-M UPR 11.85\" 7.62X39",
+    "Manufacturer": "PWS",
+    "Category": "Uppers/Lowers",
+    "Database_ID": 143550
+  },
+  {
+    "RSR_Stock_Number": "Q-TURNBUCKLE",
+    "Product_Name": "Q HONEY BADGER TURNBUCKLE ASSEMBLY",
+    "Manufacturer": "Q",
+    "Category": "Parts",
+    "Database_ID": 143667
+  },
+  {
+    "RSR_Stock_Number": "RADSB0110CS",
+    "Product_Name": "RADIANS SKYBOW GLASSES BLUE GRY/CLR",
+    "Manufacturer": "RAD",
+    "Category": "Accessories",
+    "Database_ID": 143761
+  },
+  {
+    "RSR_Stock_Number": "RDN10098",
+    "Product_Name": "REARDEN ATLAS CHARLIE MNT NITRIDE",
+    "Manufacturer": "RDNMFG",
+    "Category": "Barrels, Choke Tubes & Muzzle Devices",
+    "Database_ID": 143883
+  },
+  {
+    "RSR_Stock_Number": "REMR82102",
+    "Product_Name": "REM 870 SLUG 12/25.5/3\" FR KRYPTEK",
+    "Manufacturer": "REM",
+    "Category": "Rifles",
+    "Database_ID": 144276
+  },
+  {
+    "RSR_Stock_Number": "REM25569",
+    "Product_Name": "Remington 870 Express 12GA 28\" Barrel 4-Round",
+    "Manufacturer": "Remington Arms",
+    "Category": "Shotguns",
+    "Database_ID": 153788
+  },
+  {
+    "RSR_Stock_Number": "RISERA1012BLK",
+    "Product_Name": "RISE BCG .308/7.62 BLACK",
+    "Manufacturer": "RISE",
+    "Category": "Parts",
+    "Database_ID": 144511
+  },
+  {
+    "RSR_Stock_Number": "RUG02015",
+    "Product_Name": "RUGER WRANGLER BH 22LR 3.75\" 6RD BLK",
+    "Manufacturer": "RUGER",
+    "Category": "Handguns",
+    "Database_ID": 144849
+  },
+  {
+    "RSR_Stock_Number": "RUG02016",
+    "Product_Name": "RUGER WRANGLER BH 22LR 3.75\" 6RD SLV",
+    "Manufacturer": "RUGER",
+    "Category": "Handguns",
+    "Database_ID": 144850
+  },
+  {
+    "RSR_Stock_Number": "RUG03285",
+    "Product_Name": "RUGER EC9S 9MM 3.1\" TURQ 7RD",
+    "Manufacturer": "RUGER",
+    "Category": "Handguns",
+    "Database_ID": 144867
+  },
+  {
+    "RSR_Stock_Number": "RUG13200",
+    "Product_Name": "RUGER EC9S 9MM 3.1\" TURQ 7RD",
+    "Manufacturer": "RUGER",
+    "Category": "Handguns",
+    "Database_ID": 145098
+  },
+  {
+    "RSR_Stock_Number": "RUG46922E",
+    "Product_Name": "RUGER AMER RANCH GEN2 450BM 16.4\"",
+    "Manufacturer": "RUGER",
+    "Category": "Rifles",
+    "Database_ID": 145310
+  },
+  {
+    "RSR_Stock_Number": "SB9NTA",
+    "Product_Name": "S&B NON TOX 9MM 115GR TFMJ 50/1000",
+    "Manufacturer": "S&B",
+    "Category": "Handgun Ammunition",
+    "Database_ID": 145882
+  },
+  {
+    "RSR_Stock_Number": "SB9NTB",
+    "Product_Name": "S&B NON TOX 9MM 124GR TFMJ 50/1000",
+    "Manufacturer": "S&B",
+    "Category": "Handgun Ammunition",
+    "Database_ID": 145883
+  },
+  {
+    "RSR_Stock_Number": "SW10211",
+    "Product_Name": "S&W M&P15-22 22LR 16\" 25RD KRYPTEK",
+    "Manufacturer": "S&W",
+    "Category": "Rifles",
+    "Database_ID": 149233
+  },
+  {
+    "RSR_Stock_Number": "SW12066",
+    "Product_Name": "S&W M&P15-22 22LR 16\" 25RD BLU PLAT",
+    "Manufacturer": "S&W",
+    "Category": "Rifles",
+    "Database_ID": 149266
+  },
+  {
+    "RSR_Stock_Number": "SW12081",
+    "Product_Name": "S&W PC VICTORY 22LR CARBON CT REDDOT",
+    "Manufacturer": "S&W",
+    "Category": "Handguns",
+    "Database_ID": 149270
+  },
+  {
+    "RSR_Stock_Number": "SW12938",
+    "Product_Name": "S&W M&P15 SPTII 556N OR 10RD BLK CA",
+    "Manufacturer": "S&W",
+    "Category": "Rifles",
+    "Database_ID": 149291
+  },
+  {
+    "RSR_Stock_Number": "SW14026",
+    "Product_Name": "S&W SHIELD PLUS 9MM 3.1\" 13RD RS GLD",
+    "Manufacturer": "S&W",
+    "Category": "Handguns",
+    "Database_ID": 149382
+  },
+  {
+    "RSR_Stock_Number": "SW150786",
+    "Product_Name": "S&W 10 CLASSIC 38SPL+P 4\" BLUED HB",
+    "Manufacturer": "S&W",
+    "Category": "Handguns",
+    "Database_ID": 149462
+  },
+  {
+    "RSR_Stock_Number": "SW170341",
+    "Product_Name": "S&W PC 929 9MM 6.5\" 8RD STS/TTNM AS",
+    "Manufacturer": "S&W",
+    "Category": "Handguns",
+    "Database_ID": 149522
+  },
+  {
+    "RSR_Stock_Number": "SW178044",
+    "Product_Name": "S&W PC 640 PRO 357MAG 2.13 5RD ST NS",
+    "Manufacturer": "S&W",
+    "Category": "Handguns",
+    "Database_ID": 149534
+  },
+  {
+    "RSR_Stock_Number": "SABPA-USA-02",
+    "Product_Name": "SABRE PERSONAL ALARM W/CLP USA THEME",
+    "Manufacturer": "SABRE",
+    "Category": "Accessories",
+    "Database_ID": 145709
+  },
+  {
+    "RSR_Stock_Number": "SAM04-06114-32",
+    "Product_Name": "SAMSON PIC SIDE FLDR ADPT FDE",
+    "Manufacturer": "SAMSON",
+    "Category": "Accessories",
+    "Database_ID": 145769
+  },
+  {
+    "RSR_Stock_Number": "MGSV55231",
+    "Product_Name": "MAG SAV AXIS 22-250REM 4RD BL",
+    "Manufacturer": "SAVAGE",
+    "Category": "Magazines",
+    "Database_ID": 140188
+  },
+  {
+    "RSR_Stock_Number": "SV58098",
+    "Product_Name": "SAV 110 KLYM 308WIN 22\" 4RD CRBN FBR",
+    "Manufacturer": "SAVAGE",
+    "Category": "Rifles",
+    "Database_ID": 149140
+  },
+  {
+    "RSR_Stock_Number": "SV58100",
+    "Product_Name": "SAV 110 KLYM 7PRC 22\" 3RD CRBN FBR",
+    "Manufacturer": "SAVAGE",
+    "Category": "Rifles",
+    "Database_ID": 149142
+  },
+  {
+    "RSR_Stock_Number": "SV67210",
+    "Product_Name": "SAV 1911 45ACP 5\" 8RD BLK W/RAIL",
+    "Manufacturer": "SAVAGE",
+    "Category": "Handguns",
+    "Database_ID": 149177
+  },
+  {
+    "RSR_Stock_Number": "SEEK0011710069-F-MS",
+    "Product_Name": "SEEKINS HAVAK ELMNT 6.5PRC MS 21\" 3R",
+    "Manufacturer": "SEEK",
+    "Category": "Rifles",
+    "Database_ID": 146135
+  },
+  {
+    "RSR_Stock_Number": "SEEK0011710083-F-DS",
+    "Product_Name": "SEEKINS HAVAK ELEMENT 300PRC MS 3RD",
+    "Manufacturer": "SEEK",
+    "Category": "Rifles",
+    "Database_ID": 146137
+  },
+  {
+    "RSR_Stock_Number": "SS-1306",
+    "Product_Name": "SHDW FOUNDATION MR920 9MM 4\" BBL",
+    "Manufacturer": "SHDWSY",
+    "Category": "Handguns",
+    "Database_ID": 148339
+  },
+  {
+    "RSR_Stock_Number": "SS-3306",
+    "Product_Name": "SHDW FOUNDATION XR920 9MM 4\" BBL",
+    "Manufacturer": "SHDWSY",
+    "Category": "Handguns",
+    "Database_ID": 148366
+  },
+  {
+    "RSR_Stock_Number": "SS-3310",
+    "Product_Name": "SHDW XR920 9MM BLK FOUND THD BLK",
+    "Manufacturer": "SHDWSY",
+    "Category": "Handguns",
+    "Database_ID": 148368
+  },
+  {
+    "RSR_Stock_Number": "SS-4306",
+    "Product_Name": "SHDW CR920 9MM BLK FOUND NTHD BLK",
+    "Manufacturer": "SHDWSY",
+    "Category": "Handguns",
+    "Database_ID": 148377
+  },
+  {
+    "RSR_Stock_Number": "SS-5305",
+    "Product_Name": "SHDW CR920X 9MM FND 3.4\" BRZ/BK 15RD",
+    "Manufacturer": "SHDWSY",
+    "Category": "Handguns",
+    "Database_ID": 148383
+  },
+  {
+    "RSR_Stock_Number": "SS-5306",
+    "Product_Name": "SHDW CR920X 9MM FND 3.4\" BLK 15RD",
+    "Manufacturer": "SHDWSY",
+    "Category": "Handguns",
+    "Database_ID": 148384
+  },
+  {
+    "RSR_Stock_Number": "SS-5306-1D",
+    "Product_Name": "SHDW CR920X 9MM FND 3.4\" BLK 15RD 1D",
+    "Manufacturer": "SHDWSY",
+    "Category": "Handguns",
+    "Database_ID": 148385
+  },
+  {
+    "RSR_Stock_Number": "SG365XCA-9-SAND-SCT",
+    "Product_Name": "SIG P365 X-MACRO 9MM 3.1\" 17RD SAND",
+    "Manufacturer": "SIG",
+    "Category": "Handguns",
+    "Database_ID": 146491
+  },
+  {
+    "RSR_Stock_Number": "SGAIR-MCX-SCP-177-30-F",
+    "Product_Name": "SIG MCX AIR FDE SCOPE-14X24WR .177",
+    "Manufacturer": "SIG",
+    "Category": "Airguns",
+    "Database_ID": 146560
+  },
+  {
+    "RSR_Stock_Number": "SGRM400-SDI-16B-DH3",
+    "Product_Name": "SIG M400 DH3 556NATO 16\" 30RD",
+    "Manufacturer": "SIG",
+    "Category": "Rifles",
+    "Database_ID": 146689
+  },
+  {
+    "RSR_Stock_Number": "SGSLX762-QD",
+    "Product_Name": "SIG SLX 762 QD BLK W/MOUNT",
+    "Manufacturer": "SIG",
+    "Category": "NFA Products",
+    "Database_ID": 146715
+  },
+  {
+    "RSR_Stock_Number": "SGSOEC12210",
+    "Product_Name": "SIG ECHO THRML 1.5-12X35MM 640X512",
+    "Manufacturer": "SIG",
+    "Category": "Optics",
+    "Database_ID": 146747
+  },
+  {
+    "RSR_Stock_Number": "SGSOFEF001",
+    "Product_Name": "SIG FOXTROT-EDC F RCHRGBL LIGHT BLK",
+    "Manufacturer": "SIG",
+    "Category": "Accessories",
+    "Database_ID": 146758
+  },
+  {
+    "RSR_Stock_Number": "SGSOTM62001",
+    "Product_Name": "SIG TANGO MSR 2-12X44 34MM FFP MRAD",
+    "Manufacturer": "SIG",
+    "Category": "Optics",
+    "Database_ID": 146865
+  },
+  {
+    "RSR_Stock_Number": "SL7053-750-411",
+    "Product_Name": "7053 SIG P320C 9/40 SAFSEV BLK RH",
+    "Manufacturer": "SL",
+    "Category": "Accessories",
+    "Database_ID": 147400
+  },
+  {
+    "RSR_Stock_Number": "SLINCOG-0-199A7CX161MC",
+    "Product_Name": "SL INCOG S&W EQ/SHLD EZ LGT MC RT",
+    "Manufacturer": "SL",
+    "Category": "Accessories",
+    "Database_ID": 147445
+  },
+  {
+    "RSR_Stock_Number": "SLMHH-KIT1-450-551",
+    "Product_Name": "SL MHH M17 SIG M17 SAFSEV TAN499 RH",
+    "Manufacturer": "SL",
+    "Category": "Accessories",
+    "Database_ID": 147472
+  },
+  {
+    "RSR_Stock_Number": "SLMHH-KIT1-450-552",
+    "Product_Name": "SL MHH M17 SIG M17 SAFSEV TAN499 LH",
+    "Manufacturer": "SL",
+    "Category": "Accessories",
+    "Database_ID": 147473
+  },
+  {
+    "RSR_Stock_Number": "SLQUICK-KIT3-2",
+    "Product_Name": "SL QUICK-KIT 19 LOCKING FORK 22 RCVR",
+    "Manufacturer": "SL",
+    "Category": "Accessories",
+    "Database_ID": 147476
+  },
+  {
+    "RSR_Stock_Number": "SLVLT-1-450-1-7-D0-411",
+    "Product_Name": "SL VAULT DTY 1 SIG P320 TLR7 BLK RH",
+    "Manufacturer": "SL",
+    "Category": "Accessories",
+    "Database_ID": 147491
+  },
+  {
+    "RSR_Stock_Number": "SLVLT-1-835-1-7D0411NH",
+    "Product_Name": "SL VAULT DTY 1 FOR GLK 17/19 TLR7 RH",
+    "Manufacturer": "SL",
+    "Category": "Accessories",
+    "Database_ID": 147493
+  },
+  {
+    "RSR_Stock_Number": "SW686",
+    "Product_Name": "Smith & Wesson Model 686 .357 Magnum 4\" Barrel 6-Round",
+    "Manufacturer": "Smith & Wesson",
+    "Category": "Handguns",
+    "Database_ID": 153785
+  },
+  {
+    "RSR_Stock_Number": "SNAP75433",
+    "Product_Name": "SNAPSAFE ONE-GUN KEYPAD VAULT",
+    "Manufacturer": "SNAP",
+    "Category": "Accessories",
+    "Database_ID": 147549
+  },
+  {
+    "RSR_Stock_Number": "SOG17-21-01-57",
+    "Product_Name": "SOG SEAL FX PARTIALLY SRTED 4.3\" BLK",
+    "Manufacturer": "SOG",
+    "Category": "Knives & Tools",
+    "Database_ID": 147568
+  },
+  {
+    "RSR_Stock_Number": "SOG18-30-04-43",
+    "Product_Name": "SOG RAPID EDGE BLACK / RED",
+    "Manufacturer": "SOG",
+    "Category": "Knives & Tools",
+    "Database_ID": 147571
+  },
+  {
+    "RSR_Stock_Number": "SOLGW556-77HPBT-1000",
+    "Product_Name": "SOLGW 556NATO 77GR HPBT 50/1000",
+    "Manufacturer": "SOLGW",
+    "Category": "Rifle Ammunition",
+    "Database_ID": 147643
+  },
+  {
+    "RSR_Stock_Number": "SOLGWEXO3-13",
+    "Product_Name": "SOLGW 13\" EXO3 RAIL W/ ALUM QD",
+    "Manufacturer": "SOLGW",
+    "Category": "Accessories",
+    "Database_ID": 147668
+  },
+  {
+    "RSR_Stock_Number": "SPBAB924300PRCY",
+    "Product_Name": "SPGFLD M2020 BOUNDARY 300PRC 24\" GRY",
+    "Manufacturer": "SPGFLD",
+    "Category": "Rifles",
+    "Database_ID": 147747
+  },
+  {
+    "RSR_Stock_Number": "SPEC9409B-U-15-GU25",
+    "Product_Name": "SPRGFLD ECHELON 4.0C 9MM 15R BK GU",
+    "Manufacturer": "SPGFLD",
+    "Category": "Handguns",
+    "Database_ID": 147818
+  },
+  {
+    "RSR_Stock_Number": "SPEC9409BLC-U-GU25",
+    "Product_Name": "SPRGFLD ECHELON 4.0C 9MM 10R BK GU",
+    "Manufacturer": "SPGFLD",
+    "Category": "Handguns",
+    "Database_ID": 147821
+  },
+  {
+    "RSR_Stock_Number": "SPEC9459BLC-U-GU25",
+    "Product_Name": "SPRGFLD ECHELON 4.5 9MM 10R BK GU",
+    "Manufacturer": "SPGFLD",
+    "Category": "Handguns",
+    "Database_ID": 147841
+  },
+  {
+    "RSR_Stock_Number": "SPSTV916308BLC-GU25",
+    "Product_Name": "SPRGFLD ST VIC 308WIN 16\" 10R BK GU",
+    "Manufacturer": "SPGFLD",
+    "Category": "Rifles",
+    "Database_ID": 148092
+  },
+  {
+    "RSR_Stock_Number": "SPSTV916556B-B5-GU25",
+    "Product_Name": "SPRGFLD SAINT VCTR 556 16\" 30R BK GU",
+    "Manufacturer": "SPGFLD",
+    "Category": "Rifles",
+    "Database_ID": 148093
+  },
+  {
+    "RSR_Stock_Number": "SPSTV916556BLC-B5-GU25",
+    "Product_Name": "SPRGFLD SAINT VCTR 556 16\" 10R BK GU",
+    "Manufacturer": "SPGFLD",
+    "Category": "Rifles",
+    "Database_ID": 148097
+  },
+  {
+    "RSR_Stock_Number": "SPKSLA500P-K",
+    "Product_Name": "SPIKE'S BUFFER TUBE ASSEMBLY PISTOL",
+    "Manufacturer": "SPIKE",
+    "Category": "Accessories",
+    "Database_ID": 147947
+  },
+  {
+    "RSR_Stock_Number": "SRM1216STS",
+    "Product_Name": "SRM 1216 18.5\" 12GA 16RD FDE",
+    "Manufacturer": "SRM",
+    "Category": "Shotguns",
+    "Database_ID": 148315
+  },
+  {
+    "RSR_Stock_Number": "ST2683",
+    "Product_Name": "STEINER 10X50 MIL BINO M1050 LRF",
+    "Manufacturer": "STEINR",
+    "Category": "Optics",
+    "Database_ID": 148405
+  },
+  {
+    "RSR_Stock_Number": "STY610501",
+    "Product_Name": "STEYR HS50M1 50BMG 24\" 5RD BLK",
+    "Manufacturer": "STEYR",
+    "Category": "Rifles",
+    "Database_ID": 148811
+  },
+  {
+    "RSR_Stock_Number": "STL69480",
+    "Product_Name": "STRMLGHT TLR-7 X W/ SIG P320 REMOTE",
+    "Manufacturer": "STL",
+    "Category": "Accessories",
+    "Database_ID": 148665
+  },
+  {
+    "RSR_Stock_Number": "STRK380100TMC-GRN",
+    "Product_Name": "STREAK GRN 380AUTO 100GR TMC 50/1000",
+    "Manufacturer": "STREAK",
+    "Category": "Handgun Ammunition",
+    "Database_ID": 148741
+  },
+  {
+    "RSR_Stock_Number": "STRK40180TMC-GRN",
+    "Product_Name": "STREAK GRN 40S&W 180GR TMC 50/1000",
+    "Manufacturer": "STREAK",
+    "Category": "Ammunition",
+    "Database_ID": 148743
+  },
+  {
+    "RSR_Stock_Number": "STRK40180TMC-RED",
+    "Product_Name": "STREAK RED 40S&W 180GR TMC 50/1000",
+    "Manufacturer": "STREAK",
+    "Category": "Ammunition",
+    "Database_ID": 148744
+  },
+  {
+    "RSR_Stock_Number": "SI-G4-MDCOMP-S",
+    "Product_Name": "STRIKE MASS DRV COMP FOR GLOCK 17/G4",
+    "Manufacturer": "STRIKE",
+    "Category": "Barrels, Choke Tubes & Muzzle Devices",
+    "Database_ID": 147106
+  },
+  {
+    "RSR_Stock_Number": "SFE2T-MV",
+    "Product_Name": "SUREFIRE TACTICIAN 6V 5-800 LU BLK",
+    "Manufacturer": "SURE",
+    "Category": "Accessories",
+    "Database_ID": 146236
+  },
+  {
+    "RSR_Stock_Number": "TAC1081168",
+    "Product_Name": "TACSTAR HNTR SIDE SADDLE REM 4RD",
+    "Manufacturer": "TACSTR",
+    "Category": "Parts",
+    "Database_ID": 149579
+  },
+  {
+    "RSR_Stock_Number": "TAGIPH4-355",
+    "Product_Name": "TAGUA IPH 4-IN-1 FOR GLK 43 RH BLK",
+    "Manufacturer": "TAG",
+    "Category": "Accessories",
+    "Database_ID": 149595
+  },
+  {
+    "RSR_Stock_Number": "TAGIWH-004",
+    "Product_Name": "TAGUA IWH IN/PANT LRG FRM AMBI BRN",
+    "Manufacturer": "TAG",
+    "Category": "Accessories",
+    "Database_ID": 149596
+  },
+  {
+    "RSR_Stock_Number": "TAGSOFT-1010",
+    "Product_Name": "TAGUA SUPER SOFT S&W SHIELD RH BLK",
+    "Manufacturer": "TAG",
+    "Category": "Accessories",
+    "Database_ID": 149599
+  },
+  {
+    "RSR_Stock_Number": "TAGSOFT-330",
+    "Product_Name": "TAGUA SUPER SOFT FOR GLK 26 RH BLK",
+    "Manufacturer": "TAG",
+    "Category": "Accessories",
+    "Database_ID": 149601
+  },
+  {
+    "RSR_Stock_Number": "TAGSOFT-355",
+    "Product_Name": "TAGUA SUPER SOFT FOR GLK 43 RH BLK",
+    "Manufacturer": "TAG",
+    "Category": "Accessories",
+    "Database_ID": 149602
+  },
+  {
+    "RSR_Stock_Number": "TAGTWHS-330",
+    "Product_Name": "TAGUA TWHS FOR GLK 26  RH BLK",
+    "Manufacturer": "TAG",
+    "Category": "Accessories",
+    "Database_ID": 149603
+  },
+  {
+    "RSR_Stock_Number": "TAGTWHS-710",
+    "Product_Name": "TAGUA TWHS J FRM RH BLK",
+    "Manufacturer": "TAG",
+    "Category": "Accessories",
+    "Database_ID": 149605
+  },
+  {
+    "RSR_Stock_Number": "TAGTWHS-H4-520",
+    "Product_Name": "TAG 4IN1 MULTIFIT HLSTR DBL STK BLK",
+    "Manufacturer": "TAG",
+    "Category": "Accessories",
+    "Database_ID": 149606
+  },
+  {
+    "RSR_Stock_Number": "TAGTX-EP-BH2-355",
+    "Product_Name": "TAGUA TX 1836 BH2 FOR GLK 43 RH BLK",
+    "Manufacturer": "TAG",
+    "Category": "Accessories",
+    "Database_ID": 149609
+  },
+  {
+    "RSR_Stock_Number": "TAGTX-IPH4-640",
+    "Product_Name": "TAGUA TX 1836 IPH4 FOR GLK 26 RH BLK",
+    "Manufacturer": "TAG",
+    "Category": "Accessories",
+    "Database_ID": 149612
+  },
+  {
+    "RSR_Stock_Number": "TAGTX-SOFT-490",
+    "Product_Name": "TAGUA SOFT IWB SIG P35/TAURUS GX4 RH",
+    "Manufacturer": "TAG",
+    "Category": "Accessories",
+    "Database_ID": 149613
+  },
+  {
+    "RSR_Stock_Number": "TALONEV05-PRO",
+    "Product_Name": "TALON EVO GRP FOR S&W SHIELD RBR",
+    "Manufacturer": "TALON",
+    "Category": "Accessories",
+    "Database_ID": 149648
+  },
+  {
+    "RSR_Stock_Number": "TA168125X",
+    "Product_Name": "TASCO ESSENTIALS 10X25MM CMPCT BINO",
+    "Manufacturer": "TASCO",
+    "Category": "Optics",
+    "Database_ID": 149568
+  },
+  {
+    "RSR_Stock_Number": "TIM691S",
+    "Product_Name": "TIMNEY TRIG FITS FN SCAR-17S 3.5(308",
+    "Manufacturer": "TIMNEY",
+    "Category": "Parts",
+    "Database_ID": 150262
+  },
+  {
+    "RSR_Stock_Number": "SDS10100557",
+    "Product_Name": "TISAS 1911 NGHT STLKR 9MM 10RD TB",
+    "Manufacturer": "TISAS",
+    "Category": "Handguns",
+    "Database_ID": 146069
+  },
+  {
+    "RSR_Stock_Number": "TRUTP-P365FB-XBL",
+    "Product_Name": "TRUE PREC BBL SIG P365 FUSE BLK NIT",
+    "Manufacturer": "TPRCSN",
+    "Category": "Barrels, Choke Tubes & Muzzle Devices",
+    "Database_ID": 151053
+  },
+  {
+    "RSR_Stock_Number": "TRAC22059",
+    "Product_Name": "TRIJICON BOLT MNT STATIC 30MM 1.125\"",
+    "Manufacturer": "TRIJ",
+    "Category": "Accessories",
+    "Database_ID": 150679
+  },
+  {
+    "RSR_Stock_Number": "TRAC22075",
+    "Product_Name": "TRIJICON SCOPE RINGS W/QLOC 35MM XHI",
+    "Manufacturer": "TRIJ",
+    "Category": "Accessories",
+    "Database_ID": 150694
+  },
+  {
+    "RSR_Stock_Number": "TRYSCAR-CA4-16BT-B1",
+    "Product_Name": "TROY A4 RFL BILLET UPPR 223 16\" 30RD",
+    "Manufacturer": "TROY",
+    "Category": "Rifles",
+    "Database_ID": 151105
+  },
+  {
+    "RSR_Stock_Number": "TRYSLWR-556-K0BT-00",
+    "Product_Name": "TROY LPK 556 BLK",
+    "Manufacturer": "TROY",
+    "Category": "Parts",
+    "Database_ID": 151112
+  },
+  {
+    "RSR_Stock_Number": "TRYSRAI-SR1-10FT-00",
+    "Product_Name": "TROY LOW-PROFILE SOCC RAIL 223 10.5\"",
+    "Manufacturer": "TROY",
+    "Category": "Accessories",
+    "Database_ID": 151124
+  },
+  {
+    "RSR_Stock_Number": "TG13FN1A",
+    "Product_Name": "TRUGLO BRITE-SITE TFX FN FNX9",
+    "Manufacturer": "TRUGLO",
+    "Category": "Accessories",
+    "Database_ID": 149809
+  },
+  {
+    "RSR_Stock_Number": "TG231AR1",
+    "Product_Name": "TRUGLO AR-15 FRONT SIGHT TRIT WHITE",
+    "Manufacturer": "TRUGLO",
+    "Category": "Accessories",
+    "Database_ID": 149835
+  },
+  {
+    "RSR_Stock_Number": "TG231MP4W",
+    "Product_Name": "TRUGLO TRIT PRO FOR S&W EZ 9 WHT",
+    "Manufacturer": "TRUGLO",
+    "Category": "Accessories",
+    "Database_ID": 149863
+  },
+  {
+    "RSR_Stock_Number": "AALMATCHDOT2",
+    "Product_Name": "AAL UD 30MM TUBE MATCHDOT 2 RET BLK",
+    "Manufacturer": "UDD",
+    "Category": "Optics",
+    "Database_ID": 124131
+  },
+  {
+    "RSR_Stock_Number": "AALUD25SG2",
+    "Product_Name": "AAL GEN2 25MM RED DOT 2MOA SILVER",
+    "Manufacturer": "UDD",
+    "Category": "Optics",
+    "Database_ID": 124132
+  },
+  {
+    "RSR_Stock_Number": "AALULDT0304B",
+    "Product_Name": "AAL UD 30MM TUBE 4\" BLK",
+    "Manufacturer": "UDD",
+    "Category": "Optics",
+    "Database_ID": 124133
+  },
+  {
+    "RSR_Stock_Number": "UTYAXNS-UCI7B",
+    "Product_Name": "UNITY AXON SYNC LNK USB-C/CRN 7\" BLK",
+    "Manufacturer": "UNITY",
+    "Category": "Accessories",
+    "Database_ID": 151714
+  },
+  {
+    "RSR_Stock_Number": "USOTS-12XSFP",
+    "Product_Name": "US OPTICS 3-12X44 SFP TRIPLEX",
+    "Manufacturer": "USO",
+    "Category": "Optics",
+    "Database_ID": 151568
+  },
+  {
+    "RSR_Stock_Number": "USOTS-20XGENIIXR",
+    "Product_Name": "US OPTICS 2.5-20X50 FFP GEN II XR",
+    "Manufacturer": "USO",
+    "Category": "Optics",
+    "Database_ID": 151569
+  },
+  {
+    "RSR_Stock_Number": "USOTS-6XMS2",
+    "Product_Name": "US OPTICS 1-6X24 FFP MS2",
+    "Manufacturer": "USO",
+    "Category": "Optics",
+    "Database_ID": 151571
+  },
+  {
+    "RSR_Stock_Number": "MGCAMA944A",
+    "Product_Name": "MAG US PALM AK30R 7.62X39MM 30RD FDE",
+    "Manufacturer": "USPALM",
+    "Category": "High Capacity Magazines",
+    "Database_ID": 138881
+  },
+  {
+    "RSR_Stock_Number": "WN535705226",
+    "Product_Name": "WIN XPR 270WIN 24\" W/ SCOPE BLK",
+    "Manufacturer": "USRAC",
+    "Category": "Rifles",
+    "Database_ID": 152639
+  },
+  {
+    "RSR_Stock_Number": "VCVSL211G19",
+    "Product_Name": "VRSCRY VSLIDE OWB FITS GLK 19 RH BRN",
+    "Manufacturer": "VC",
+    "Category": "Accessories",
+    "Database_ID": 151899
+  },
+  {
+    "RSR_Stock_Number": "VCVLTSECBN",
+    "Product_Name": "VAULT SECURE CASE CARBON FIBER",
+    "Manufacturer": "VCC",
+    "Category": "Accessories",
+    "Database_ID": 151897
+  },
+  {
+    "RSR_Stock_Number": "SCSHF-CRS08",
+    "Product_Name": "SHOOTERS CHOICE COPPER REMOVER 4OZ",
+    "Manufacturer": "VENTCO",
+    "Category": "Accessories",
+    "Database_ID": 146026
+  },
+  {
+    "RSR_Stock_Number": "MGWA580103",
+    "Product_Name": "MAG WAL PDP PRO-X PMM 9MM 20RD",
+    "Manufacturer": "WALTHR",
+    "Category": "High Capacity Magazines",
+    "Database_ID": 140326
+  },
+  {
+    "RSR_Stock_Number": "WA2880016",
+    "Product_Name": "WAL PDP COMPACT 9MM 4\" STL 10RD BLK",
+    "Manufacturer": "WALTHR",
+    "Category": "Handguns",
+    "Database_ID": 152017
+  },
+  {
+    "RSR_Stock_Number": "WRXSKEL1DE",
+    "Product_Name": "WARNE GEN 2 EXTND SKELETON 1\" DE",
+    "Manufacturer": "WARNE",
+    "Category": "Accessories",
+    "Database_ID": 153182
+  },
+  {
+    "RSR_Stock_Number": "WYH653140IL",
+    "Product_Name": "WBY AMMO 6.5-300WBY 140GR HDY 20/200",
+    "Manufacturer": "WBY",
+    "Category": "Rifle Ammunition",
+    "Database_ID": 153306
+  },
+  {
+    "RSR_Stock_Number": "WYMBT20N280AR6B",
+    "Product_Name": "WBY MKV BCKCNTRY 2.0 TI 280AI 24\"",
+    "Manufacturer": "WBY",
+    "Category": "Rifles",
+    "Database_ID": 153310
+  },
+  {
+    "RSR_Stock_Number": "WYMHC01N257WR8B",
+    "Product_Name": "WBY MKV HI COUNTRY 257WBY 26\" 3RD",
+    "Manufacturer": "WBY",
+    "Category": "Rifles",
+    "Database_ID": 153314
+  },
+  {
+    "RSR_Stock_Number": "WYMHC01N653WR8B",
+    "Product_Name": "WBY MKV HI COUNTRY 6.5-300WBY 26\"",
+    "Manufacturer": "WBY",
+    "Category": "Rifles",
+    "Database_ID": 153320
+  },
+  {
+    "RSR_Stock_Number": "WTT15-556-14-ASR-BLK",
+    "Product_Name": "WATCHTOWER 15 556 14.5\" ASR 30RD BLK",
+    "Manufacturer": "WTCHF1",
+    "Category": "Rifles",
+    "Database_ID": 153187
+  },
+  {
+    "RSR_Stock_Number": "WTT15-CL-FDE",
+    "Product_Name": "WATCHTOWER 15 BILLET CMPLTE LWR FDE",
+    "Manufacturer": "WTCHF1",
+    "Category": "Uppers/Lowers",
+    "Database_ID": 153190
+  },
+  {
+    "RSR_Stock_Number": "WTT15-CL-ODG",
+    "Product_Name": "WATCHTOWER 15 BILLET CMPLTE LWR ODG",
+    "Manufacturer": "WTCHF1",
+    "Category": "Uppers/Lowers",
+    "Database_ID": 153191
+  },
+  {
+    "RSR_Stock_Number": "WTT15M-556-14-ASR-ODG",
+    "Product_Name": "WATCHTOWER 15M 556NATO 14.5\" 30R ODG",
+    "Manufacturer": "WTCHF1",
+    "Category": "Rifles",
+    "Database_ID": 153192
+  },
+  {
+    "RSR_Stock_Number": "WTT15M-556-16CHF-FDE",
+    "Product_Name": "WATCHTOWER 15M 556NATO 16\" 30RD FDE",
+    "Manufacturer": "WTCHF1",
+    "Category": "Rifles",
+    "Database_ID": 153193
+  },
+  {
+    "RSR_Stock_Number": "XSCZ-R202S-6N",
+    "Product_Name": "XS R3D 2.0 FOR CZ P10 STND HGHT ORG",
+    "Manufacturer": "XS",
+    "Category": "Accessories",
+    "Database_ID": 153410
+  },
+  {
+    "RSR_Stock_Number": "XSSSW-0034N-3Y",
+    "Product_Name": "XS BIG DOT J FM INT TRIT YELLOW",
+    "Manufacturer": "XS",
+    "Category": "Accessories",
+    "Database_ID": 153509
+  },
+  {
+    "RSR_Stock_Number": "ZASSRM93050",
+    "Product_Name": "ZASTAVA M93 50BMG 33\" BLACK",
+    "Manufacturer": "ZAST",
+    "Category": "Rifles",
+    "Database_ID": 153742
+  }
+]
