@@ -143,23 +143,93 @@ export function registerZohoRoutes(app: Express): void {
     }
   });
 
-  // Connection status endpoint
+  // Connection status endpoint - tests actual CRM connectivity
   app.get("/api/zoho/status", async (req, res) => {
     try {
-      const hasClientId = !!(process.env.ZOHO_CLIENT_ID || '1000.8OVSJ4V07OOVJWYAC0KA1JEFNH2W3M');
-      const hasClientSecret = !!(process.env.ZOHO_CLIENT_SECRET || '4d4b2ab7f0f731102c7d15d6754f1f959251db68e0');
+      const tokens = automaticZohoTokenManager.getCurrentToken();
       
-      res.json({
-        configured: hasClientId && hasClientSecret,
-        hasClientId,
-        hasClientSecret,
-        redirectUri: `https://${req.get('host')}/api/zoho/auth/callback`,
-        authUrl: `/api/zoho/auth/initiate`,
-        timestamp: new Date().toISOString(),
-        note: "Using hardcoded credentials due to environment sync issue"
+      if (!tokens) {
+        return res.json({
+          status: "not_configured",
+          hasToken: false,
+          message: "No Zoho tokens available - OAuth authorization needed",
+          authUrl: `/api/zoho/auth/initiate`,
+          automaticRefresh: false
+        });
+      }
+
+      // Test actual CRM connectivity using working endpoints
+      try {
+        const axios = require('axios');
+        
+        // Test deals endpoint (confirmed working)
+        const testResponse = await axios.get('https://www.zohoapis.com/crm/v2/deals?per_page=1', {
+          headers: {
+            'Authorization': `Zoho-oauthtoken ${tokens.accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 5000
+        });
+
+        if (testResponse.status === 200 || testResponse.status === 204) {
+          return res.json({
+            status: "working",
+            hasToken: true,
+            tokenLength: tokens.accessToken?.length || 0,
+            automaticRefresh: true,
+            message: "Zoho API is operational with automatic token management"
+          });
+        }
+      } catch (apiError: any) {
+        if (apiError.response?.status === 401) {
+          // Token expired or invalid - try to refresh
+          const refreshed = await automaticZohoTokenManager.forceRefreshNow();
+          if (refreshed) {
+            return res.json({
+              status: "refreshed",
+              hasToken: true,
+              tokenLength: tokens.accessToken?.length || 0,
+              automaticRefresh: true,
+              message: "Tokens refreshed automatically - CRM access restored"
+            });
+          } else {
+            return res.json({
+              status: "expired",
+              hasToken: false,
+              message: "Token refresh failed - need new OAuth authorization",
+              authUrl: `/api/zoho/auth/initiate`,
+              automaticRefresh: false
+            });
+          }
+        } else {
+          // Other API error
+          return res.json({
+            status: "api_error",
+            hasToken: true,
+            tokenLength: tokens.accessToken?.length || 0,
+            automaticRefresh: true,
+            message: `CRM API error: ${apiError.response?.data?.code || apiError.message}`,
+            error: apiError.response?.data
+          });
+        }
+      }
+
+      // Fallback response
+      return res.json({
+        status: "unknown",
+        hasToken: true,
+        tokenLength: tokens.accessToken?.length || 0,
+        automaticRefresh: true,
+        message: "Token exists but connectivity unclear"
       });
+      
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ 
+        status: "error",
+        hasToken: false,
+        error: error.message,
+        automaticRefresh: false
+      });
     }
   });
 

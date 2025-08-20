@@ -271,15 +271,14 @@ export default function ZohoConnection() {
                 </Alert>
               )}
 
-              <Alert variant={isConnected ? "default" : "destructive"}>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>{isConnected ? "Scope Issue Detected:" : "Authorization Required:"}</strong> {isConnected 
-                    ? "Current tokens lack CRM permissions. Need fresh authorization with full API access."
-                    : "Click \"Authorize Zoho Access\" below to grant proper permissions for CRM integration."
-                  }
-                </AlertDescription>
-              </Alert>
+              {!isConnected && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Authorization Required:</strong> Click "Authorize Zoho Access" below to grant CRM integration permissions.
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {status?.note && (
                 <Alert>
