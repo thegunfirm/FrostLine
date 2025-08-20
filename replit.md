@@ -9,6 +9,13 @@ Image policy: NEVER use Unsplash or any placeholder images. Only use authentic d
 Code preservation: Always maintain working solutions - never overwrite functioning code without explicit user request.
 Email verification: Users must verify their email address before being able to sign in.
 CRITICAL INVENTORY POLICY: NEVER use fabricated, test, or placeholder product data. ONLY use products that exist in our live RSR feed. When working with inventory, verify products exist in the database first. No exceptions. No fallback data. No test SKUs like GLOCK17GEN5. FFL directory must use only authentic FFL data - no fake dealers should be added to the system.
+
+MANDATORY DATA VERIFICATION PROTOCOL: 
+1. ALWAYS run `node check-product-upc.cjs` or query the products table BEFORE using ANY product data
+2. NEVER assume what product data should be - ALWAYS verify against live RSR database
+3. When testing integrations, use ONLY products found in the actual database
+4. If product data doesn't exist in database, work with user to import authentic RSR data
+5. ALL SKUs, UPCs, RSR stock numbers, and product names must match live database exactly
 DISTRIBUTOR NUMBER SEPARATION FIX: Fixed critical backend issue where RSR stock numbers (distributor) were incorrectly used as SKUs instead of manufacturer part numbers. System now properly separates manufacturer part numbers (SKUs) from RSR stock numbers (for ordering). Date: 2025-01-20.
 FIELD CORRUPTION RESOLUTION COMPLETE: Successfully resolved Field 12 corruption issue with 94.90% separation (27,926 products) where manufacturer part numbers were properly separated from RSR distributor codes. Remaining 5.10% (1,502 products) identified as legitimate cases where RSR intentionally matches distributor stock numbers to manufacturer part numbers. System now correctly handles both scenarios - separated codes when different, identical codes when intentionally matched. Date: 2025-01-20.
 CRITICAL IMAGE HANDLING RULE: For product images in cart/order displays, NEVER use containers with gray backgrounds or fixed heights. Use direct image elements with `w-[size] h-auto object-contain` classes only. This prevents background showing through and maintains natural image proportions.
