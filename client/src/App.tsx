@@ -54,6 +54,7 @@ import DeliverySettings from "@/pages/cms/delivery-settings";
 import AtfDirectoryManagement from "@/pages/management/atf-directory";
 import Account from "@/pages/account";
 import AccountOrders from "@/pages/account-orders";
+import OrderDetail from "@/pages/order-detail";
 import ZohoSetup from "@/pages/ZohoSetup";
 import EmailVerificationSimulator from "@/pages/EmailVerificationSimulator";
 import CMSOrderManagement from "@/pages/cms-order-management";
@@ -107,6 +108,7 @@ function Router() {
         <Route path="/order-confirmation" component={OrderConfirmation} />
         <Route path="/account" component={Account} />
         <Route path="/account/orders" component={AccountOrders} />
+        <Route path="/order/:orderNumber" component={OrderDetail} />
         <Route path="/cms/orders" component={CMSOrderManagement} />
         <Route path="/membership" component={Membership} />
         <Route path="/image-test" component={ImageTest} />

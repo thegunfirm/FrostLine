@@ -5,8 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Package, MapPin, CreditCard, Clock, CheckCircle, XCircle, Truck, FileText } from "lucide-react";
+import { Package, MapPin, CreditCard, Clock, CheckCircle, XCircle, Truck, FileText, Shield, AlertCircle, Calendar, User, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { OrderStatusProgress } from "@/components/OrderStatusProgress";
+import { useLocation } from "wouter";
 
 const formatPrice = (price: number | string) => {
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
@@ -62,26 +64,48 @@ const getStatusIcon = (status: string) => {
 
 function OrderCard({ order }: { order: any }) {
   const [expanded, setExpanded] = useState(false);
+  const [, setLocation] = useLocation();
   const items = Array.isArray(order.items) ? order.items : [];
+
+  const handleViewDetails = () => {
+    const orderNumber = order.tgfOrderNumber || order.orderNumber || order.id;
+    setLocation(`/order/${orderNumber}`);
+  };
 
   return (
     <Card className="mb-6">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-lg">Order #{order.id}</CardTitle>
+            <CardTitle className="text-lg">
+              {order.tgfOrderNumber ? `TGF Order ${order.tgfOrderNumber}` : `Order #${order.id}`}
+            </CardTitle>
             <p className="text-sm text-gray-600 mt-1">
               Placed on {formatDate(order.orderDate)}
             </p>
+            {order.dealName && (
+              <p className="text-xs text-blue-600 font-medium mt-1">
+                Deal: {order.dealName}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-3">
-            <Badge className={`${getStatusColor(order.status)} flex items-center gap-1`}>
-              {getStatusIcon(order.status)}
-              {order.status}
+            <Badge className={`${getStatusColor(order.orderStatus || order.status)} flex items-center gap-1`}>
+              {getStatusIcon(order.orderStatus || order.status)}
+              {order.orderStatus || order.status}
             </Badge>
             <span className="text-lg font-semibold text-gray-900">
               {formatPrice(order.totalPrice)}
             </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleViewDetails}
+              className="ml-2"
+            >
+              <ExternalLink className="w-3 h-3 mr-1" />
+              Details
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -115,6 +139,84 @@ function OrderCard({ order }: { order: any }) {
             </div>
           )}
         </div>
+
+        {/* Order Status Information */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          {order.fulfillmentType && (
+            <div className="flex items-center gap-2">
+              <Truck className="w-4 h-4 text-gray-500" />
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">Fulfillment</p>
+                <p className="text-sm font-medium">{order.fulfillmentType}</p>
+              </div>
+            </div>
+          )}
+
+          {order.estimatedShipDate && (
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-gray-500" />
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">Est. Ship Date</p>
+                <p className="text-sm font-medium">{order.estimatedShipDate}</p>
+              </div>
+            </div>
+          )}
+
+          {order.consigneeType && (
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-gray-500" />
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">Consignee</p>
+                <p className="text-sm font-medium">{order.consigneeType}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Compliance Status for Firearms */}
+        {order.holdType && (
+          <Alert className="bg-amber-50 border-amber-200 mb-4">
+            <Shield className="w-4 h-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div>
+                  <span className="font-semibold">Hold Status:</span> {order.holdType}
+                </div>
+                {order.holdStartedAt && (
+                  <div>
+                    <span className="font-semibold">Hold Started:</span> {order.holdStartedAt}
+                  </div>
+                )}
+              </div>
+              {order.holdClearedAt && (
+                <div className="mt-1">
+                  <span className="font-semibold text-green-800">Hold Cleared:</span> {order.holdClearedAt}
+                </div>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Tracking Information */}
+        {(order.carrier || order.trackingNumber) && (
+          <Alert className="bg-blue-50 border-blue-200 mb-4">
+            <Truck className="w-4 h-4 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {order.carrier && (
+                  <div>
+                    <span className="font-semibold">Carrier:</span> {order.carrier}
+                  </div>
+                )}
+                {order.trackingNumber && (
+                  <div>
+                    <span className="font-semibold">Tracking:</span> {order.trackingNumber}
+                  </div>
+                )}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Savings Banner */}
         {order.savingsRealized && parseFloat(order.savingsRealized) > 0 && (
@@ -153,6 +255,23 @@ function OrderCard({ order }: { order: any }) {
 
         <Separator />
 
+        {/* Order Status Progress */}
+        {expanded && (
+          <div className="mb-6">
+            <h4 className="font-medium mb-3">Order Progress</h4>
+            <OrderStatusProgress
+              orderStatus={order.orderStatus || order.status}
+              pipelineStage={order.pipelineStage}
+              holdType={order.holdType}
+              holdStartedAt={order.holdStartedAt}
+              holdClearedAt={order.holdClearedAt}
+              estimatedShipDate={order.estimatedShipDate}
+              carrier={order.carrier}
+              trackingNumber={order.trackingNumber}
+            />
+          </div>
+        )}
+
         {/* Order Items Toggle */}
         <div className="flex items-center justify-between">
           <h4 className="font-medium">Order Items ({items.length})</h4>
@@ -161,7 +280,7 @@ function OrderCard({ order }: { order: any }) {
             size="sm"
             onClick={() => setExpanded(!expanded)}
           >
-            {expanded ? 'Hide Items' : 'Show Items'}
+            {expanded ? 'Hide Details' : 'Show Details'}
           </Button>
         </div>
 

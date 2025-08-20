@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Home, ShoppingBag, Shield } from "lucide-react";
+import { OrderStatusProgress } from "@/components/OrderStatusProgress";
 
 const formatPrice = (price: number | string) => {
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
@@ -64,30 +65,85 @@ export default function OrderConfirmation() {
             </CardContent>
           </Card>
 
-          {/* Order Details */}
+          {/* Order Information */}
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ShoppingBag className="w-5 h-5" />
-                Order Details
+                Order Information
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {orderData.items?.map((item: any, index: number) => (
-                <div key={index} className="flex justify-between items-start space-x-3 pb-3 border-b border-gray-200 last:border-b-0">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">
-                      {item.description || `Item ${index + 1}`}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Qty: {item.quantity || 1}
-                    </p>
-                  </div>
-                  <p className="text-sm font-medium text-gray-900 flex-shrink-0">
-                    {formatPrice((item.price || 0) * (item.quantity || 1))}
-                  </p>
+            <CardContent className="space-y-6">
+              
+              {/* Order Numbers and Status */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">TGF Order Number</label>
+                  <p className="text-lg font-bold text-gray-900">{orderData.orderNumber || orderData.tgfOrderNumber}</p>
                 </div>
-              ))}
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Order Status</label>
+                  <p className="text-lg font-semibold text-blue-600">{orderData.orderStatus || 'Processing'}</p>
+                </div>
+                {orderData.estimatedShipDate && (
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Estimated Ship Date</label>
+                    <p className="text-sm font-medium text-gray-900">{orderData.estimatedShipDate}</p>
+                  </div>
+                )}
+                {orderData.fulfillmentType && (
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Fulfillment Type</label>
+                    <p className="text-sm font-medium text-gray-900">{orderData.fulfillmentType}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Compliance Status for Firearms */}
+              {orderData.holdType && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <h4 className="font-medium text-amber-800 mb-2">Compliance Status</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-medium text-amber-600 uppercase tracking-wide">Hold Type</label>
+                      <p className="text-sm font-medium text-amber-800">{orderData.holdType}</p>
+                    </div>
+                    {orderData.holdStartedAt && (
+                      <div>
+                        <label className="text-xs font-medium text-amber-600 uppercase tracking-wide">Hold Started</label>
+                        <p className="text-sm text-amber-700">{orderData.holdStartedAt}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Order Items */}
+              <div>
+                <h4 className="font-medium text-gray-900 mb-3">Order Items</h4>
+                <div className="space-y-3">
+                  {orderData.items?.map((item: any, index: number) => (
+                    <div key={index} className="flex justify-between items-start space-x-3 pb-3 border-b border-gray-200 last:border-b-0">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">
+                          {item.description || item.name || `Item ${index + 1}`}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Qty: {item.quantity || 1}
+                        </p>
+                        {item.requiresFFL && (
+                          <span className="inline-block px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full mt-1">
+                            FFL Required
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-medium text-gray-900 flex-shrink-0">
+                        {formatPrice((item.price || 0) * (item.quantity || 1))}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
               
               <div className="pt-4 border-t">
                 <div className="flex justify-between items-center">
@@ -97,6 +153,25 @@ export default function OrderConfirmation() {
                   </span>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Order Status Progress */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Order Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <OrderStatusProgress
+                orderStatus={orderData.orderStatus || 'Processing'}
+                pipelineStage={orderData.pipelineStage || 'Qualification'}
+                holdType={orderData.holdType}
+                holdStartedAt={orderData.holdStartedAt}
+                holdClearedAt={orderData.holdClearedAt}
+                estimatedShipDate={orderData.estimatedShipDate}
+                carrier={orderData.carrier}
+                trackingNumber={orderData.trackingNumber}
+              />
             </CardContent>
           </Card>
 
