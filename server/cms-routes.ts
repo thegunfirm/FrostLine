@@ -1,8 +1,9 @@
 import type { Express } from "express";
 import { storage } from "./storage";
 import { db } from "./db";
-import { users, orders, rolePermissions, type RolePermission, type InsertRolePermission } from "@shared/schema";
+import { users, orders, rolePermissions, type RolePermission, type InsertRolePermission, products } from "@shared/schema";
 import { sql, eq } from "drizzle-orm";
+import { algoliaSearch } from "./services/algolia-search";
 
 // Enhanced role-based access middleware (supports both regular and SAML auth)
 const requireRole = (allowedRoles: string[]) => {
@@ -135,6 +136,74 @@ export function registerCMSRoutes(app: Express) {
     } catch (error) {
       console.error("Get activity logs error:", error);
       res.status(500).json({ message: "Failed to fetch activity logs" });
+    }
+  });
+
+  // ====================
+  // ALGOLIA SEARCH MANAGEMENT
+  // ====================
+
+  // Sync corrected database products to Algolia search
+  app.post("/api/cms/admin/algolia/sync", requireRole(['admin']), async (req, res) => {
+    try {
+      console.log('🔄 Starting Algolia search sync...');
+
+      // Get corrected products from database
+      const dbProducts = await db.select().from(products).limit(10000);
+      console.log(`📊 Found ${dbProducts.length} products in database`);
+
+      if (dbProducts.length === 0) {
+        return res.json({ 
+          success: false, 
+          message: "No products found in database to sync",
+          synced: 0
+        });
+      }
+
+      // Configure Algolia search settings first
+      await algoliaSearch.configureSearchSettings();
+      console.log('⚙️ Algolia search settings configured');
+
+      // Index database products to Algolia (with corrected SKUs)
+      await algoliaSearch.indexDatabaseProducts(dbProducts);
+      
+      console.log('✅ Algolia search sync completed successfully');
+      
+      res.json({ 
+        success: true, 
+        message: `Successfully synced ${dbProducts.length} products to Algolia search`,
+        synced: dbProducts.length
+      });
+    } catch (error: any) {
+      console.error("Algolia sync error:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to sync products to Algolia search", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Get Algolia search status
+  app.get("/api/cms/admin/algolia/status", requireRole(['admin']), async (req, res) => {
+    try {
+      // Test search to verify index exists and is working
+      const testResult = await algoliaSearch.searchProducts("test", {}, { hitsPerPage: 1 });
+      
+      res.json({
+        status: "active",
+        totalProducts: testResult.nbHits,
+        searchable: true,
+        message: `Algolia search index contains ${testResult.nbHits} products`
+      });
+    } catch (error: any) {
+      console.error("Algolia status check error:", error);
+      res.json({
+        status: "error", 
+        searchable: false,
+        message: "Algolia search index not accessible",
+        error: error.message
+      });
     }
   });
 
@@ -480,6 +549,7 @@ export function registerCMSRoutes(app: Express) {
         'inventory.view': { name: 'View Inventory', category: 'Inventory', description: 'View product inventory and stock levels' },
         'inventory.sync': { name: 'Sync Inventory', category: 'Inventory', description: 'Trigger inventory synchronization' },
         'products.featured': { name: 'Featured Products', category: 'Inventory', description: 'Manage featured product selections' },
+        'algolia.sync': { name: 'Sync Algolia Search', category: 'Inventory', description: 'Sync products to Algolia search index' },
         
         // Analytics & Reports
         'analytics.dashboard': { name: 'Dashboard Stats', category: 'Analytics', description: 'View dashboard statistics and metrics' },

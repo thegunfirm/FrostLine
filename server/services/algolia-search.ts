@@ -237,7 +237,8 @@ class AlgoliaSearchService {
         'name,description',
         'fullDescription',
         'manufacturer',
-        'mfgPartNumber',
+        'sku', // Customer-facing SKU (corrected manufacturer part number)
+        'mfgPartNumber', // Original manufacturer part number for backward compatibility
         'category',
         'subCategory',
         'upc',
@@ -395,6 +396,74 @@ class AlgoliaSearchService {
       console.error('Error getting search analytics:', error);
       return null;
     }
+  }
+
+  // Index corrected database products to Algolia (preferred method)
+  async indexDatabaseProducts(dbProducts: any[]): Promise<void> {
+    if (!this.adminClient) {
+      throw new Error('Admin API key required for indexing');
+    }
+
+    const algoliaProducts = dbProducts.map(product => this.dbToAlgoliaProduct(product));
+    
+    try {
+      await this.adminClient.saveObjects({
+        indexName: this.adminIndex,
+        objects: algoliaProducts
+      });
+      console.log(`✅ Indexed ${algoliaProducts.length} corrected database products in Algolia`);
+    } catch (error) {
+      console.error('Error indexing database products in Algolia:', error);
+      throw error;
+    }
+  }
+
+  // Convert database product to Algolia format (with corrected field mapping)
+  private dbToAlgoliaProduct(dbProduct: any): any {
+    // Build searchable text including BOTH SKU and manufacturer part number
+    const searchableText = [
+      dbProduct.name,
+      dbProduct.description,
+      dbProduct.manufacturer,
+      dbProduct.sku, // Customer-facing manufacturer part number
+      dbProduct.manufacturerPartNumber, // Original manufacturer part number
+      dbProduct.upcCode,
+      dbProduct.category
+    ].filter(Boolean).join(' ');
+
+    return {
+      objectID: dbProduct.rsrStockNumber || dbProduct.id, // Use RSR stock number as primary ID
+      stockNo: dbProduct.rsrStockNumber,
+      name: dbProduct.name,
+      description: dbProduct.description,
+      fullDescription: dbProduct.description,
+      category: dbProduct.category,
+      subCategory: dbProduct.subCategory,
+      manufacturer: dbProduct.manufacturer,
+      sku: dbProduct.sku, // Customer-facing SKU (corrected manufacturer part number)
+      mfgPartNumber: dbProduct.manufacturerPartNumber, // Original manufacturer part number for backward compatibility
+      upc: dbProduct.upcCode,
+      retailPrice: parseFloat(dbProduct.priceBronze || '0'),
+      rsrPrice: parseFloat(dbProduct.pricePlatinum || '0'),
+      weight: dbProduct.weight,
+      inStock: dbProduct.inStock,
+      quantity: dbProduct.quantity || 0,
+      imageUrl: dbProduct.imageUrl || '',
+      requiresFFL: dbProduct.requiresFFL,
+      searchableText, // Enhanced searchable text with both SKU and MPN
+      tags: this.generateTags(dbProduct),
+      isCompleteFirearm: dbProduct.requiresFFL ? 1 : 0
+    };
+  }
+
+  // Generate tags for database products
+  private generateTags(product: any): string[] {
+    const tags = [];
+    if (product.requiresFFL) tags.push('FFL Required');
+    if (product.inStock) tags.push('In Stock');
+    if (product.category) tags.push(product.category);
+    if (product.manufacturer) tags.push(product.manufacturer);
+    return tags;
   }
 
   // Update product inventory
