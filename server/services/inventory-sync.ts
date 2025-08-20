@@ -54,7 +54,7 @@ class InventorySyncService {
       'SPAHELLCAT': 'HC9319B',
       'SPA911RO': 'PI9129L',
       'SPRINGFIELD1911': 'PI8020LP',
-      'RUGERLCP2': '3701',
+      'RUGERLCP2': '03701',
       'RUG1103': '1103',
       'RUGERAR556': '8500',
       'RUGER10/22': '1103',

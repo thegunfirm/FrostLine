@@ -42,8 +42,8 @@ WHERE rsr_stock_number = 'SPA911RO' AND manufacturer = 'Springfield Armory';
 
 UPDATE products 
 SET 
-  manufacturer_part_number = '3701',  -- Ruger's part for LCP II
-  sku = '3701'
+  manufacturer_part_number = '03701',  -- Ruger's actual part for LCP II  
+  sku = '03701'
 WHERE rsr_stock_number = 'RUGERLCP2' AND manufacturer = 'Sturm, Ruger & Co.';
 
 UPDATE products 
