@@ -302,10 +302,10 @@ export default function CMSDashboard() {
                     Branding Management
                   </Button>
                 </Link>
-                <Link href="/cms/admin/zoho-integration">
+                <Link href="/cms/zoho/connection">
                   <Button variant="outline" className="w-full justify-start">
                     <Settings className="mr-2 h-4 w-4" />
-                    Zoho CRM Integration
+                    Zoho CRM Connection
                   </Button>
                 </Link>
                 <Link href="/cms/admin/api-field-discovery">

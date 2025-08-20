@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { ZohoService } from "./zoho-service";
+import { automaticZohoTokenManager } from "./services/automatic-zoho-token-manager.js";
 
 export function registerZohoRoutes(app: Express): void {
   // OAuth initiation endpoint
@@ -153,6 +154,60 @@ export function registerZohoRoutes(app: Express): void {
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Token upload endpoint - restore connection from JSON file
+  app.post("/api/zoho/upload-tokens", async (req, res) => {
+    try {
+      const { client_id, client_secret, code, grant_type } = req.body;
+      
+      // Validate the uploaded data
+      if (!client_id || !client_secret || !code || grant_type !== 'authorization_code') {
+        return res.status(400).json({ 
+          error: 'Invalid token file format. Expected client_id, client_secret, code, and grant_type fields.' 
+        });
+      }
+
+      // Exchange the authorization code for tokens
+      const tokenResponse = await fetch('https://accounts.zoho.com/oauth/v2/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id,
+          client_secret,
+          code,
+          grant_type
+        })
+      });
+
+      const tokenData = await tokenResponse.json();
+
+      if (tokenData.access_token && tokenData.refresh_token) {
+        // Clear any existing tokens first
+        automaticZohoTokenManager.forceReset();
+        
+        // Save the new tokens using the token manager
+        const success = await automaticZohoTokenManager.generateFromAuthCode(code);
+        
+        if (success) {
+          res.json({ 
+            success: true, 
+            message: 'Zoho connection restored successfully from uploaded file',
+            expiresAt: new Date(Date.now() + 3600 * 1000).toISOString()
+          });
+        } else {
+          res.status(500).json({ error: 'Failed to save tokens after successful exchange' });
+        }
+      } else {
+        res.status(400).json({ 
+          error: 'Token exchange failed', 
+          details: tokenData.error || 'Unknown error' 
+        });
+      }
+    } catch (error: any) {
+      console.error('Token upload error:', error);
+      res.status(500).json({ error: 'Failed to process token file: ' + error.message });
     }
   });
 

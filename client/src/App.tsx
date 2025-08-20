@@ -49,6 +49,7 @@ import CMSDashboard from "@/pages/cms/cms-dashboard";
 import SupportTickets from "@/pages/cms/support/support-tickets";
 import EmailTemplates from "@/pages/cms/email-templates";
 import FAPIntegration from "@/pages/cms/fap-integration";
+import ZohoConnection from "@/pages/cms/zoho-connection";
 import TierPricing from "@/pages/cms/tier-pricing";
 import DeliverySettings from "@/pages/cms/delivery-settings";
 import AtfDirectoryManagement from "@/pages/management/atf-directory";
@@ -134,6 +135,7 @@ function Router() {
         <Route path="/cms/support/tickets" component={SupportTickets} />
         <Route path="/cms/emails/templates" component={EmailTemplates} />
         <Route path="/cms/fap/integration" component={FAPIntegration} />
+        <Route path="/cms/zoho/connection" component={ZohoConnection} />
         <Route path="/cms/tier-pricing" component={TierPricing} />
         <Route path="/cms/delivery-settings" component={DeliverySettings} />
         <Route path="/cms/admin/branding" component={BrandingManagement} />
