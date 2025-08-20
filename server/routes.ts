@@ -2054,7 +2054,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         refreshToken: process.env.ZOHO_REFRESH_TOKEN
       });
 
-      const dealData = await zohoService.getDeal(dealId);
+      const dealData = await zohoService.getDealById(dealId);
       
       if (dealData) {
         console.log(`✅ Retrieved Deal ${dealId} for verification`);
