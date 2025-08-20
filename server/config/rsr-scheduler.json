@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2025-08-20T09:00:00.061Z",
+  "lastUpdated": "2025-08-20T10:15:00.030Z",
   "stats": {
-    "totalRuns": 9,
-    "successfulRuns": 0,
-    "failedRuns": 9,
+    "totalRuns": 16,
+    "successfulRuns": 1,
+    "failedRuns": 15,
     "lastError": "Quantity download failed: connect ECONNREFUSED 72.21.12.50:21 (control socket)"
   }
 }
