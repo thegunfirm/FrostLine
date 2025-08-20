@@ -914,10 +914,18 @@ export class ZohoService {
   async createDealSubformWithProductIds(dealId: string, orderItems: any[], productIds: Map<string, string>): Promise<boolean> {
     try {
       console.log(`🔄 Creating subform entries for deal ${dealId} with valid Product IDs...`);
+      console.log(`🔍 DEBUG: Raw orderItems received:`, JSON.stringify(orderItems, null, 2));
       
       const subformRecords = orderItems.map((item, index) => {
         const sku = item.sku || item.productCode || 'UNKNOWN';
         const productId = productIds.get(sku);
+        
+        console.log(`🔍 DEBUG: Processing item ${index + 1}:`, {
+          sku,
+          productId,
+          upcCode: item.upcCode,
+          itemKeys: Object.keys(item)
+        });
         
 
         
@@ -950,6 +958,8 @@ export class ZohoService {
 
       console.log(`📋 Prepared ${subformRecords.length} subform records with Product IDs:`, 
         JSON.stringify(subformRecords, null, 2));
+      console.log(`🔍 DEBUG UPC ISSUE: First item UPC value: "${subformRecords[0]?.UPC}"`);
+      console.log(`🔍 DEBUG UPC ISSUE: First orderItem:`, JSON.stringify(orderItems[0], null, 2));
 
       // Update deal with subform data
       const updatePayload = {

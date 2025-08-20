@@ -2126,6 +2126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sku: p.sku,
           manufacturerPartNumber: p.manufacturerPartNumber, // Add manufacturer part number for Product_Code mapping
           rsrStockNumber: p.rsrStockNumber || p.sku,
+          upcCode: p.upcCode, // Add UPC code mapping
           quantity: p.quantity || 1,
           unitPrice: p.unitPrice || p.price || 0,
           totalPrice: (p.quantity || 1) * (p.unitPrice || p.price || 0),
