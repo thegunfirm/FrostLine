@@ -12,6 +12,7 @@ interface FTPConfig {
   user: string;
   password: string;
   secure: boolean;
+  port: number;
   downloadPath: string;
   files: {
     inventory: string;
@@ -35,6 +36,7 @@ export class RSRFTPService {
       user: process.env.RSR_USERNAME || '',
       password: process.env.RSR_PASSWORD || '',
       secure: true,
+      port: 2222, // RSR uses port 2222 for FTPS
       downloadPath: '/reports/',
       files: {
         inventory: 'rsrinventory-new.txt',
@@ -68,8 +70,11 @@ export class RSRFTPService {
       console.log('📥 Connecting to RSR FTP server...');
       
       const client = new Client();
+      client.ftp.verbose = true; // Enable verbose logging for debugging
+      
       await client.access({
         host: this.config.host,
+        port: this.config.port,
         user: this.config.user,
         password: this.config.password,
         secure: this.config.secure
@@ -132,8 +137,11 @@ export class RSRFTPService {
       console.log(`📥 Downloading ${fileName}...`);
 
       const client = new Client();
+      client.ftp.verbose = true; // Enable verbose logging
+      
       await client.access({
         host: this.config.host,
+        port: this.config.port,
         user: this.config.user,
         password: this.config.password,
         secure: this.config.secure
