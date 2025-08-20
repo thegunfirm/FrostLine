@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 interface ZohoStatus {
-  configured: boolean;
+  configured?: boolean;
   hasClientId?: boolean;
   hasClientSecret?: boolean;
   redirectUri?: string;
@@ -28,6 +28,12 @@ interface ZohoStatus {
   timestamp?: string;
   note?: string;
   error?: string;
+  // Properties from the actual server response
+  status?: string;
+  hasToken?: boolean;
+  tokenLength?: number;
+  automaticRefresh?: boolean;
+  message?: string;
 }
 
 export default function ZohoConnection() {
@@ -177,17 +183,17 @@ export default function ZohoConnection() {
         <h1 className="text-2xl font-bold">Zoho CRM Connection</h1>
         <Badge 
           variant={isConnected ? "default" : "destructive"}
-          className="text-sm"
+          className={`text-sm ${isConnected ? 'text-green-700 border-green-300 bg-green-50' : 'text-red-700 border-red-300 bg-red-50'}`}
         >
           {isConnected ? (
             <>
-              <CheckCircle className="mr-1 h-3 w-3" />
-              Connected
+              <CheckCircle className="mr-1 h-3 w-3 text-green-600" />
+              <span className="text-green-700 font-medium">Connected and working</span>
             </>
           ) : (
             <>
-              <AlertCircle className="mr-1 h-3 w-3" />
-              Disconnected
+              <AlertCircle className="mr-1 h-3 w-3 text-red-600" />
+              <span className="text-red-700 font-medium">Disconnected</span>
             </>
           )}
         </Badge>
@@ -244,8 +250,8 @@ export default function ZohoConnection() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium">Status</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {isConnected ? "Connected and working" : "Not connected"}
+                  <p className={`text-sm font-medium ${isConnected ? 'text-green-700' : 'text-red-700'}`}>
+                    {isConnected ? "✓ Connected and working" : "✗ Not connected"}
                   </p>
                 </div>
                 <div>
