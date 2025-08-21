@@ -21,9 +21,9 @@ class ImageService {
   /**
    * Generate multiple image variants from RSR image name
    * RSR follows these patterns:
-   * - Thumbnails: https://img.rsrgroup.com/pimages/{STOCK}_1_thumb.jpg, {STOCK}_2_thumb.jpg, etc.
-   * - Product: https://img.rsrgroup.com/pimages/{STOCK}_1.jpg, {STOCK}_2.jpg, etc.
-   * - High-res: https://img.rsrgroup.com/highres-pimages/{STOCK}_1_HR.jpg, etc.
+   * - Thumbnails: https://www.rsrgroup.com/images/inventory/thumb/{STOCK}.jpg
+   * - Product: https://www.rsrgroup.com/images/inventory/{STOCK}.jpg  
+   * - High-res: https://www.rsrgroup.com/images/inventory/large/{STOCK}.jpg
    */
   generateRSRImageVariants(imageName: string, productName: string): ProductImage {
     const cleanImageName = imageName.replace(/\.(jpg|jpeg|png|gif)$/i, '');

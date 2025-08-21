@@ -2938,14 +2938,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           switch (size) {
             case 'thumb':
-              rsrImageUrl = `https://img.rsrgroup.com/pimages/${stockNo}_${view}_thumb.jpg`;
+              rsrImageUrl = `https://www.rsrgroup.com/images/inventory/thumb/${stockNo}.jpg`;
               break;
             case 'standard':
-              rsrImageUrl = `https://img.rsrgroup.com/pimages/${stockNo}_${view}.jpg`;
+              rsrImageUrl = `https://www.rsrgroup.com/images/inventory/${stockNo}.jpg`;
               break;
             case 'highres':
             case 'large':
-              rsrImageUrl = `https://img.rsrgroup.com/highres-pimages/${stockNo}_${view}_HR.jpg`;
+              rsrImageUrl = `https://www.rsrgroup.com/images/inventory/large/${stockNo}.jpg`;
               break;
           }
           
@@ -3126,7 +3126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Try multiple RSR image URL patterns to find actual product photos
       const urlPatterns = [
-        // Try img.rsrgroup.com first (user suggested this domain)
+        // Try www.rsrgroup.com/images/inventory/ (the working domain)
         `https://img.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
         `https://img.rsrgroup.com/images/inventory/${size}/${cleanImgName}.jpg`,
         `https://img.rsrgroup.com/images/inventory/large/${cleanImgName}.jpg`,

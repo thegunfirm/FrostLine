@@ -179,7 +179,7 @@ class HybridSearchService {
         retailPrice: product.retailPrice,
         inStock: product.quantity > 0,
         quantity: product.quantity,
-        imageUrl: product.imgName ? `https://img.rsrgroup.com/highres-itemimages/${product.imgName}` : '',
+        imageUrl: product.imgName ? `https://www.rsrgroup.com/images/inventory/${product.imgName}` : '',
         source: 'rsr' as const,
         relevanceScore: 0.8
       }))

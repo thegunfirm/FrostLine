@@ -200,7 +200,7 @@ class AlgoliaSearchService {
         dealerCasePrice: rsrProduct.rsrPrice || 0
       },
       images: rsrProduct.imgName ? [{
-        image: `https://img.rsrgroup.com/highres-itemimages/${rsrProduct.imgName}`,
+        image: `https://www.rsrgroup.com/images/inventory/${rsrProduct.imgName}`,
         id: rsrProduct.imgName
       }] : [],
       createdAt: new Date().toISOString(),
