@@ -5,6 +5,7 @@ This project is a full-stack e-commerce platform specializing in firearms and ac
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
+Code preservation: CRITICAL - Always verify what's actually broken before attempting fixes. Avoid rebuilding working systems based on misleading error messages. Recognize functional systems and preserve them.
 Image policy: NEVER use Unsplash or any placeholder images. Only use authentic distributor images (RSR, etc.) even if they show "Image Coming Soon" placeholders.
 Code preservation: Always maintain working solutions - never overwrite functioning code without explicit user request.
 Email verification: Users must verify their email address before being able to sign in.
