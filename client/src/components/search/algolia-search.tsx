@@ -22,17 +22,47 @@ interface SearchResult {
   title: string;
   description: string;
   sku: string;
+  name?: string;
   manufacturerName: string;
   categoryName: string;
+  subcategoryName?: string;
+  departmentNumber?: string;
+  departmentDesc?: string;
+  subDepartmentDesc?: string;
+  stockNumber?: string;
+  upc?: string;
+  mpn?: string;
   tierPricing: {
-    bronze: number;
-    gold: number;
-    platinum: number;
+    bronze: {
+      msrp: number;
+      retailMap: number;
+      dealerPrice: number;
+      dealerCasePrice: number;
+    };
+    gold: {
+      msrp: number;
+      retailMap: number;
+      dealerPrice: number;
+      dealerCasePrice: number;
+    };
+    platinum: {
+      msrp: number;
+      retailMap: number;
+      dealerPrice: number;
+      dealerCasePrice: number;
+    };
+  };
+  price?: {
+    msrp: number;
+    retailMap: number;
+    dealerPrice: number;
+    dealerCasePrice: number;
   };
   inventory: {
     onHand: number;
     allocated: boolean;
   };
+  inventoryQuantity?: number;
   images: Array<{
     image: string;
     id: string;
@@ -41,6 +71,11 @@ interface SearchResult {
   distributor: string;
   caliber?: string;
   capacity?: number;
+  fflRequired?: boolean;
+  tags?: string[];
+  weight?: number;
+  dropShippable?: boolean;
+  newItem?: boolean;
 }
 
 interface SearchResponse {
@@ -917,7 +952,30 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               mustRouteThroughGunFirm: false,
               firearmType: null,
               compatibilityTags: null,
-              inStock: hit.inStock || false
+              inStock: hit.inStock || false,
+              // Add missing fields required by ProductGrid
+              caliber: hit.caliber || null,
+              capacity: hit.capacity || null,
+              barrelLength: null,
+              finish: null,
+              frameSize: null,
+              actionType: null,
+              sightType: null,
+              partType: null,
+              nfaItemType: null,
+              nfaBarrelLength: null,
+              nfaFinish: null,
+              accessoryType: null,
+              compatibility: null,
+              material: null,
+              mountType: null,
+              receiverType: null,
+              internalSpecial: false,
+              specialDescription: null,
+              frontSight: null,
+              rearSight: null,
+              trigger: null,
+              rsrPrice: null
             }))}
             loading={false}
           />
@@ -1002,7 +1060,30 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                   mustRouteThroughGunFirm: false,
                   firearmType: null,
                   compatibilityTags: null,
-                  inStock: item.inStock || false
+                  inStock: item.inStock || false,
+                  // Add missing fields required by ProductGrid
+                  caliber: item.caliber || null,
+                  capacity: item.capacity || null,
+                  barrelLength: null,
+                  finish: null,
+                  frameSize: null,
+                  actionType: null,
+                  sightType: null,
+                  partType: null,
+                  nfaItemType: null,
+                  nfaBarrelLength: null,
+                  nfaFinish: null,
+                  accessoryType: null,
+                  compatibility: null,
+                  material: null,
+                  mountType: null,
+                  receiverType: null,
+                  internalSpecial: false,
+                  specialDescription: null,
+                  frontSight: null,
+                  rearSight: null,
+                  trigger: null,
+                  rsrPrice: null
                 }))}
                 loading={false}
               />

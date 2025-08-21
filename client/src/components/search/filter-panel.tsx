@@ -16,6 +16,8 @@ interface FilterOptions {
   frameSizes: Array<{ value: string; count: number }>;
   actionTypes: Array<{ value: string; count: number }>;
   sightTypes: Array<{ value: string; count: number }>;
+  newItems: Array<{ value: string; count: number }>;
+  internalSpecials: Array<{ value: string; count: number }>;
   shippingMethods: Array<{ value: string; count: number }>;
   platformCategories: Array<{ value: string; count: number }>;
   partTypeCategories: Array<{ value: string; count: number }>;
@@ -27,6 +29,7 @@ interface FilterOptions {
   materials: Array<{ value: string; count: number }>;
   mountTypes: Array<{ value: string; count: number }>;
   receiverTypes: Array<{ value: string; count: number }>;
+  productTypes: Array<{ value: string; count: number }>;
 }
 
 interface FilterPanelProps {
