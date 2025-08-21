@@ -121,14 +121,17 @@ export default function ProductDetail() {
     },
     enabled: !!id,
     staleTime: 30 * 1000, // 30 seconds - fresh pricing data
-    cacheTime: 60 * 1000, // 1 minute
+    gcTime: 60 * 1000, // 1 minute
     retry: 2,
   });
 
   // Fetch dynamic fallback image from CMS
   const { data: fallbackImageSetting } = useQuery({
     queryKey: ["/api/admin/fallback-image"],
-    queryFn: () => apiRequest("GET", "/api/admin/fallback-image"),
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/admin/fallback-image");
+      return response.json();
+    },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
@@ -147,7 +150,7 @@ export default function ProductDetail() {
     },
     enabled: !!product,
     staleTime: 10 * 1000, // 10 seconds
-    cacheTime: 30 * 1000, // 30 seconds
+    gcTime: 30 * 1000, // 30 seconds
   });
 
   // Fetch FFLs if required
@@ -164,7 +167,7 @@ export default function ProductDetail() {
 
   // Auto-populate user ZIP if logged in
   useEffect(() => {
-    if (user?.shippingAddress?.zip) {
+    if (user && 'shippingAddress' in user && user.shippingAddress && 'zip' in user.shippingAddress) {
       setUserZip(user.shippingAddress.zip);
     }
   }, [user]);
@@ -210,15 +213,17 @@ export default function ProductDetail() {
     return Math.max(0, savings);
   };
 
-  // Image handling with multiple angles
+  // Image handling with multiple angles - Use RSR stock number for images
   const getImageUrl = (angle: number = 1) => {
-    if (!product?.sku) return fallbackImage;
-    return `/api/rsr-image/${product.sku}?angle=${angle}`;
+    const imageKey = product?.rsrStockNumber || product?.sku;
+    if (!imageKey) return fallbackImage;
+    return `/api/rsr-image/${imageKey}?angle=${angle}`;
   };
 
   const getThumbnailUrl = (angle: number = 1) => {
-    if (!product?.sku) return fallbackImage;
-    return `/api/rsr-image/${product.sku}?angle=${angle}&size=thumbnail`;
+    const imageKey = product?.rsrStockNumber || product?.sku;
+    if (!imageKey) return fallbackImage;
+    return `/api/rsr-image/${imageKey}?angle=${angle}&size=thumbnail`;
   };
 
   // Image loading state management
@@ -234,7 +239,8 @@ export default function ProductDetail() {
 
   // Check available images on product load
   useEffect(() => {
-    if (product?.sku) {
+    const imageKey = product?.rsrStockNumber || product?.sku;
+    if (imageKey) {
       setImageLoading(true);
       setImageError(false);
       
@@ -246,7 +252,7 @@ export default function ProductDetail() {
       setImageLoading(false);
       setImageError(false);
     }
-  }, [product?.sku]);
+  }, [product?.rsrStockNumber, product?.sku]);
 
   // Update image source when angle changes
   useEffect(() => {
@@ -283,7 +289,7 @@ export default function ProductDetail() {
       productId: product.id,
       productSku: product.sku,
       productName: product.name,
-      productImage: product.sku ? `/api/rsr-image/${product.sku}` : "/fallback-logo.png",
+      productImage: (product.rsrStockNumber || product.sku) ? `/api/rsr-image/${product.rsrStockNumber || product.sku}` : "/fallback-logo.png",
       quantity: quantity,
       price: currentPrice, // Use tier-appropriate pricing
       priceBronze: parseFloat(product.priceBronze || "0"),
@@ -460,7 +466,7 @@ export default function ProductDetail() {
                     </div>
                     <div className="p-4">
                       <img
-                        src={`/api/rsr-image/${product.sku}?angle=${currentAngle}&size=highres`}
+                        src={`/api/rsr-image/${product.rsrStockNumber || product.sku}?angle=${currentAngle}&size=highres`}
                         alt={`${product.name} - High Resolution View ${currentAngle}`}
                         className="max-w-full max-h-[70vh] object-contain mx-auto"
                       />
