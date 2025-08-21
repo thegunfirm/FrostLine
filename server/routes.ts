@@ -3058,33 +3058,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break;
       }
       
-      // Fetch image from RSR using session with age verification
-      const rsrSession = await rsrSessionManager.getAuthenticatedSession();
-      const response = await axios.get(rsrImageUrl, {
-        responseType: "arraybuffer",
-        timeout: 10000,
-        headers: {
-          'Cookie': rsrSession.cookies.join('; '),
-          Referer: "https://www.rsrgroup.com/",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
-        }
-      });
-
-      if (response.status === 200) {
-        const contentType = response.headers['content-type'] || 'image/jpeg';
-        const imageBuffer = response.data;
-        
-        // Set proper caching headers
-        res.set({
-          'Content-Type': contentType,
-          'Cache-Control': 'public, max-age=86400', // 24 hours
-          'Content-Length': imageBuffer.length.toString()
-        });
-        
-        res.send(imageBuffer);
-      } else {
-        throw new Error(`RSR returned status ${response.status}`);
-      }
+      // RSR requires age verification for direct image access
+      // For now, serve placeholder until we implement proper image caching during imports
+      throw new Error('RSR images require authentication - serving placeholder');
     } catch (error: any) {
       console.error(`RSR Image Error for ${req.params.imageName}:`, error.message);
       
