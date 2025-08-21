@@ -3040,17 +3040,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let rsrImageUrl = '';
       
+      // FIXED: Use the correct RSR image URL pattern that actually works
+      // The old img.rsrgroup.com/pimages/ pattern was returning 404s
+      // Use www.rsrgroup.com/images/inventory/ which works correctly
       switch (size) {
         case 'thumb':
         case 'thumbnail':
-          rsrImageUrl = `https://img.rsrgroup.com/pimages/${imageName}_${imageAngle}_thumb.jpg`;
+          rsrImageUrl = `https://www.rsrgroup.com/images/inventory/thumb/${imageName}.jpg`;
           break;
         case 'standard':
-          rsrImageUrl = `https://img.rsrgroup.com/pimages/${imageName}_${imageAngle}.jpg`;
+          rsrImageUrl = `https://www.rsrgroup.com/images/inventory/${imageName}.jpg`;
           break;
         case 'highres':
         case 'large':
-          rsrImageUrl = `https://img.rsrgroup.com/highres-pimages/${imageName}_${imageAngle}_HR.jpg`;
+          rsrImageUrl = `https://www.rsrgroup.com/images/inventory/large/${imageName}.jpg`;
           break;
       }
       
