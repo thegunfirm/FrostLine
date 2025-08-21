@@ -34,12 +34,6 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
   const imageUrl = getImageUrl();
   const altText = product.name || 'Product Image';
 
-
-
-
-
-
-
   return (
     <Link href={`/product/${product.sku || product.id}`}>
       <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer">
