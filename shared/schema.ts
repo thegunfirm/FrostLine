@@ -511,15 +511,14 @@ export const orderNotes = pgTable("order_notes", {
 // System Settings (Admin Only)
 export const systemSettings = pgTable("system_settings", {
   id: serial("id").primaryKey(),
-  key: text("key").notNull().unique(), // Fixed column name
-  value: text("value").notNull(), // Fixed column name
-  dataType: text("data_type").notNull(), // string, number, boolean, json
-  category: text("category").notNull(), // site, shipping, payments, inventory
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
   description: text("description"),
-  isPublic: boolean("is_public").default(false), // whether setting is visible to frontend
-  lastModifiedBy: integer("last_modified_by"),
+  category: text("category").notNull(),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  isEditable: boolean("is_editable").default(true),
 });
 
 // Membership Tier Settings (CMS Management) - Updated for 5-tier structure
@@ -659,12 +658,13 @@ export const orderNotesRelations = relations(orderNotes, ({ one }) => ({
   }),
 }));
 
-export const systemSettingsRelations = relations(systemSettings, ({ one }) => ({
-  lastModifiedByUser: one(users, {
-    fields: [systemSettings.lastModifiedBy],
-    references: [users.id],
-  }),
-}));
+// Remove broken relation since lastModifiedBy field doesn't exist
+// export const systemSettingsRelations = relations(systemSettings, ({ one }) => ({
+//   lastModifiedByUser: one(users, {
+//     fields: [systemSettings.lastModifiedBy],
+//     references: [users.id],
+//   }),
+// }));
 
 export const userActivityLogsRelations = relations(userActivityLogs, ({ one }) => ({
   user: one(users, {

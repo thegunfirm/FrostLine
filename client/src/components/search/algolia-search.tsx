@@ -245,7 +245,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       "Uppers/Lowers": "uppers"
     };
     
-    const productType = categoryToProductType[initialCategory] || "";
+    const productType = categoryToProductType[initialCategory as keyof typeof categoryToProductType] || "";
     
     // FILTER PRESERVATION FIX: Preserve user-applied filters, only reset system filters
     console.log("Setting productType to:", productType);
@@ -267,9 +267,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         if (!userAppliedFilters.has(key) && key !== 'productType' && key !== 'manufacturer') {
           // Reset to default values
           if (key === 'inStock' || key === 'newItem' || key === 'internalSpecial') {
-            newFilters[key] = null;
+            (newFilters as any)[key] = null;
           } else {
-            newFilters[key] = "";
+            (newFilters as any)[key] = "";
           }
         }
       });
@@ -297,7 +297,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
       
       // Update receiver type labels for industry standard terminology
       if (data.receiverTypes) {
-        data.receiverTypes = data.receiverTypes.map(rt => ({
+        data.receiverTypes = data.receiverTypes.map((rt: any) => ({
           ...rt,
           value: rt.value === 'Handgun Lower' ? 'Frame' : rt.value
         }));
@@ -430,7 +430,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
     
     // Track user-applied filters (when they actually set a value)
     if (value && value !== "" && value !== null) {
-      setUserAppliedFilters(prev => new Set([...prev, key]));
+      setUserAppliedFilters(prev => new Set([...Array.from(prev), key]));
     } else {
       // Remove from user-applied if they clear the filter
       setUserAppliedFilters(prev => {
@@ -458,7 +458,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         "uppers": "Uppers/Lowers"
       };
       
-      const newCategory = productTypeToCategory[value] || "all";
+      const newCategory = productTypeToCategory[value as keyof typeof productTypeToCategory] || "all";
       setCategory(newCategory);
       
       // Update URL so ribbon can detect the change
@@ -517,7 +517,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         "parts": "Parts",
         "nfa": "NFA Products"
       };
-      return typeMap[filters.productType] || "Products";
+      return typeMap[filters.productType as keyof typeof typeMap] || "Products";
     }
     
     // Then check if a category is selected from ribbon buttons
@@ -534,7 +534,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         "Parts": "Parts",
         "NFA Products": "NFA Products"
       };
-      return categoryMap[category] || category;
+      return categoryMap[category as keyof typeof categoryMap] || category;
     }
     
     // Check if there's an initial category from URL that should be displayed
