@@ -34,10 +34,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
   const imageUrl = getImageUrl();
   const altText = product.name || 'Product Image';
 
-  // Only show pricing if any tier has a price > 0
-  const hasPricing = parseFloat(product.priceBronze || "0") > 0 || 
-                     parseFloat(product.priceGold || "0") > 0 || 
-                     parseFloat(product.pricePlatinum || "0") > 0;
+
 
   return (
     <Link href={`/product/${product.sku || product.id}`}>
@@ -77,18 +74,11 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
                 </span>
               </div>
             </div>
-            {hasPricing && (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 text-xs">
-                <span className="text-black px-2 py-1 sm:px-1 sm:py-0.5 rounded text-xs font-medium" style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}>${(parseFloat(product.priceBronze || "0")).toFixed(2)}</span>
-                <span className="text-black px-2 py-1 sm:px-1 sm:py-0.5 rounded text-xs font-medium" style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}>${(parseFloat(product.priceGold || "0")).toFixed(2)}</span>
-                <span className="text-black px-2 py-1 sm:px-1 sm:py-0.5 rounded text-xs font-medium" style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}>${(parseFloat(product.pricePlatinum || "0")).toFixed(2).replace(/\d/g, '*')}</span>
-              </div>
-            )}
-            {!hasPricing && (
-              <div className="text-xs text-gray-500 italic">
-                Contact for pricing
-              </div>
-            )}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 text-xs">
+              <span className="text-black px-2 py-1 sm:px-1 sm:py-0.5 rounded text-xs font-medium" style={{background: 'linear-gradient(135deg, rgb(251 191 36) 0%, rgb(245 158 11) 50%, rgb(217 119 6) 100%)'}}>${(parseFloat(product.priceBronze || "0")).toFixed(2)}</span>
+              <span className="text-black px-2 py-1 sm:px-1 sm:py-0.5 rounded text-xs font-medium" style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}>${(parseFloat(product.priceGold || "0")).toFixed(2)}</span>
+              <span className="text-black px-2 py-1 sm:px-1 sm:py-0.5 rounded text-xs font-medium" style={{background: 'linear-gradient(135deg, rgb(209 213 219) 0%, rgb(156 163 175) 50%, rgb(107 114 128) 100%)'}}>${(parseFloat(product.pricePlatinum || "0")).toFixed(2).replace(/\d/g, '*')}</span>
+            </div>
           </div>
         </CardContent>
       </Card>
