@@ -983,7 +983,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               barrelLengthNfa: null,
               finishNfa: null,
               materialFinish: null,
-              rsrStockNumber: hit.stockNumber || hit.sku
+              rsrStockNumber: (hit.stockNumber || hit.sku)?.replace(/-\d+$/, '') || null
             }))}
             loading={false}
           />
@@ -1099,7 +1099,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                   barrelLengthNfa: null,
                   finishNfa: null,
                   materialFinish: null,
-                  rsrStockNumber: item.stockNumber || item.objectID
+                  rsrStockNumber: (item.stockNumber || item.objectID)?.replace(/-\d+$/, '') || null
                 }))}
                 loading={false}
               />
