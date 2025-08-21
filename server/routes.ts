@@ -3060,30 +3060,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break;
       }
       
-      // Use the working axios method that was already proven to work
-      const response = await axios.get(rsrImageUrl, {
-        responseType: "arraybuffer",
-        timeout: 10000,
-        headers: {
-          Referer: "https://www.rsrgroup.com/",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
-        }
-      });
-
-      const imageBuffer = response.data;
-      
-      // Check if we actually got an image, not HTML
-      const contentType = response.headers['content-type'] || 'image/jpeg';
-      if (contentType.includes('text/html') || imageBuffer.toString().includes('<!DOCTYPE')) {
-        throw new Error('Received HTML instead of image - authentication failed');
-      }
+      // Use the existing RSR session manager that already bypasses age verification
+      const imageBuffer = await rsrSessionManager.downloadImage(rsrImageUrl);
       
       // Set proper caching headers
       res.set({
-        'Content-Type': contentType,
+        'Content-Type': 'image/jpeg',
         'Cache-Control': 'public, max-age=86400', // 24 hours
-        'Content-Length': imageBuffer.length.toString(),
-        'Access-Control-Allow-Origin': '*'
+        'Content-Length': imageBuffer.length.toString()
       });
       
       res.send(imageBuffer);
