@@ -1,0 +1,24 @@
+name: deploy-prod
+
+on:
+  push:
+    branches: ["prod"]   # inert until you push to a 'prod' branch
+  workflow_dispatch:     # allows manual runs
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Test server connection (no deploy yet)
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "mkdir -p '${{ secrets.APP_PATH }}' && echo '✅ Connected to' $(hostname) 'at' $(date)"
