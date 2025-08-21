@@ -21,54 +21,43 @@ interface SearchResult {
   objectID: string;
   title: string;
   description: string;
-  sku: string;
+  sku?: string;
   name?: string;
-  manufacturerName: string;
-  categoryName: string;
+  manufacturerName?: string;  // Can be null from API
+  categoryName?: string;
   subcategoryName?: string;
   departmentNumber?: string;
   departmentDesc?: string;
   subDepartmentDesc?: string;
   stockNumber?: string;
+  rsrStockNumber?: string;
   upc?: string;
   mpn?: string;
-  tierPricing: {
-    bronze: {
-      msrp: number;
-      retailMap: number;
-      dealerPrice: number;
-      dealerCasePrice: number;
-    };
-    gold: {
-      msrp: number;
-      retailMap: number;
-      dealerPrice: number;
-      dealerCasePrice: number;
-    };
-    platinum: {
-      msrp: number;
-      retailMap: number;
-      dealerPrice: number;
-      dealerCasePrice: number;
-    };
+  // Simplified tier pricing structure that matches API response
+  tierPricing?: {
+    bronze?: number;
+    gold?: number;
+    platinum?: number;
   };
+  // Legacy price structure (may not be used)
   price?: {
     msrp: number;
     retailMap: number;
     dealerPrice: number;
     dealerCasePrice: number;
   };
-  inventory: {
+  // Simplified inventory structure matching API
+  inventory?: {
     onHand: number;
     allocated: boolean;
   };
   inventoryQuantity?: number;
-  images: Array<{
+  images?: Array<{
     image: string;
     id: string;
   }>;
-  inStock: boolean;
-  distributor: string;
+  inStock?: boolean;
+  distributor?: string;
   caliber?: string;
   capacity?: number;
   fflRequired?: boolean;
@@ -954,6 +943,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               compatibilityTags: null,
               inStock: hit.inStock || false,
               // Add missing fields required by ProductGrid
+              rsrStockNumber: hit.rsrStockNumber || null,
               caliber: hit.caliber || null,
               capacity: hit.capacity || null,
               barrelLength: null,
@@ -982,8 +972,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               isFirearm: hit.fflRequired || false,
               barrelLengthNfa: null,
               finishNfa: null,
-              materialFinish: null,
-              rsrStockNumber: hit.stockNumber || hit.sku
+              materialFinish: null
             }))}
             loading={false}
           />

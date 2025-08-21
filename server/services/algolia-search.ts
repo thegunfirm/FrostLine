@@ -434,27 +434,47 @@ class AlgoliaSearchService {
     ].filter(Boolean).join(' ');
 
     return {
-      objectID: dbProduct.rsrStockNumber || dbProduct.id, // Use RSR stock number as primary ID
-      stockNo: dbProduct.rsrStockNumber,
+      objectID: dbProduct.sku || dbProduct.id, // Use SKU as primary ID for database products
+      title: dbProduct.name, // Add title field that the frontend expects
+      stockNumber: dbProduct.sku,
+      rsrStockNumber: dbProduct.rsrStockNumber,
       name: dbProduct.name,
       description: dbProduct.description,
       fullDescription: dbProduct.description,
-      category: dbProduct.category,
-      subCategory: dbProduct.subCategory,
-      manufacturer: dbProduct.manufacturer,
+      categoryName: dbProduct.category, // Map to categoryName for consistency
+      subcategoryName: dbProduct.subcategoryName,
+      manufacturerName: dbProduct.manufacturer, // Map to manufacturerName for API consistency
       sku: dbProduct.sku, // Customer-facing SKU (corrected manufacturer part number)
-      mfgPartNumber: dbProduct.manufacturerPartNumber, // Original manufacturer part number for backward compatibility
+      mpn: dbProduct.manufacturerPartNumber, // Map to mpn for API consistency
       upc: dbProduct.upcCode,
+      // Simplified tier pricing structure matching what the API expects
+      tierPricing: {
+        bronze: parseFloat(dbProduct.priceBronze || '0'),
+        gold: parseFloat(dbProduct.priceGold || '0'),
+        platinum: parseFloat(dbProduct.pricePlatinum || '0')
+      },
       retailPrice: parseFloat(dbProduct.priceBronze || '0'),
-      rsrPrice: parseFloat(dbProduct.pricePlatinum || '0'),
+      msrp: parseFloat(dbProduct.priceMSRP || '0'),
+      dealerPrice: parseFloat(dbProduct.pricePlatinum || '0'),
       weight: dbProduct.weight,
       inStock: dbProduct.inStock,
-      quantity: dbProduct.quantity || 0,
-      imageUrl: dbProduct.imageUrl || '',
-      requiresFFL: dbProduct.requiresFFL,
+      inventoryQuantity: dbProduct.stockQuantity || 0,
+      images: dbProduct.rsrStockNumber ? [{
+        image: `/api/rsr-image/${dbProduct.rsrStockNumber}`,
+        id: dbProduct.rsrStockNumber
+      }] : [],
+      fflRequired: dbProduct.requiresFFL,
+      caliber: dbProduct.caliber,
+      capacity: dbProduct.capacity,
+      barrelLength: dbProduct.barrelLength,
+      finish: dbProduct.finish,
+      frameSize: dbProduct.frameSize,
+      actionType: dbProduct.actionType,
+      sightType: dbProduct.sightType,
+      newItem: dbProduct.newItem || false,
+      dropShippable: dbProduct.dropShippable !== false,
       searchableText, // Enhanced searchable text with both SKU and MPN
-      tags: this.generateTags(dbProduct),
-      isCompleteFirearm: dbProduct.requiresFFL ? 1 : 0
+      tags: this.generateTags(dbProduct)
     };
   }
 
