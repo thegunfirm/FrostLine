@@ -3093,63 +3093,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`CDN returned invalid response, trying authenticated methods`);
           }
         } catch (cdnError) {
-          // Try pimages path with www.rsrgroup.com authentication first
-          const pimagesUrl = `https://www.rsrgroup.com/pimages/${imageName}_${imageNumber}.jpg`;
-          console.log(`CDN failed, trying authenticated pimages: ${pimagesUrl}`);
-          
-          try {
-            response = await axios.get(pimagesUrl, {
-              responseType: "arraybuffer",
-              timeout: 5000,
-              auth: {
-                username: process.env.RSR_USERNAME!,
-                password: process.env.RSR_PASSWORD!
-              },
-              headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept': 'image/jpeg,image/png,image/*,*/*',
-                'Referer': 'https://www.rsrgroup.com',
-                'Cookie': 'age_verified=true; RSR_USER_AGE_VERIFIED=1; rsr_age_verified=1'
-              }
-            });
-            console.log(`✓ RSR authenticated pimages loaded: ${imageName}_${imageNumber}.jpg (${response.data.length} bytes)`);
-          } catch (pimagesError) {
-            // Final fallback to authenticated inventory images
-            const wwwImageUrl = `https://www.rsrgroup.com/images/inventory/${imageName}_${imageNumber}.jpg`;
-            console.log(`Pimages failed, trying inventory: ${wwwImageUrl}`);
-            
-            response = await axios.get(wwwImageUrl, {
-              responseType: "arraybuffer",
-              timeout: 5000,
-              auth: {
-                username: process.env.RSR_USERNAME!,
-                password: process.env.RSR_PASSWORD!
-              },
-              headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept': 'image/jpeg,image/png,image/*,*/*',
-                'Referer': 'https://www.rsrgroup.com',
-                'Cookie': 'age_verified=true; RSR_USER_AGE_VERIFIED=1; rsr_age_verified=1'
-              }
-            });
-          }
-          // Check if we actually got an image or HTML by examining the first bytes
-          const firstBytes = Buffer.from(response.data).slice(0, 20);
-          const isJpeg = firstBytes[0] === 0xFF && firstBytes[1] === 0xD8 && firstBytes[2] === 0xFF;
-          
-          if (!isJpeg) {
-            // If not JPEG, check if it's HTML
-            const textContent = firstBytes.toString('utf8');
-            console.log(`RSR response first 20 bytes for ${imageName}: ${Array.from(firstBytes).map(b => '0x' + b.toString(16)).join(' ')}`);
-            const isHtml = textContent.includes('<!DOCTYPE') || textContent.includes('<html') || textContent.includes('<HTML');
-            if (isHtml) {
-              console.log(`❌ RSR returned HTML instead of image for ${imageName}: Age verification page detected`);
-              throw new Error('RSR returned HTML age verification page');
-            }
-          } else {
-            console.log(`✅ Valid JPEG detected for ${imageName}: FF D8 FF signature found`);
-          }
-          console.log(`✓ RSR authenticated image loaded: ${imageName}_${imageNumber}.jpg (${response.data.length} bytes)`);
+          console.log(`CDN failed for ${imageName}_${imageNumber}.jpg, using fallback`);
+          throw new Error('RSR CDN image not available, using fallback');
         }
         
         if (response.status === 200 && response.data && response.data.length > 0) {
