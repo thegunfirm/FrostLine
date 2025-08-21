@@ -212,13 +212,15 @@ export default function ProductDetail() {
 
   // Image handling with multiple angles
   const getImageUrl = (angle: number = 1) => {
-    if (!product?.sku) return fallbackImage;
-    return `/api/rsr-image/${product.sku}?angle=${angle}`;
+    if (!product?.imgName) return fallbackImage;
+    const cleanImageName = product.imgName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
+    return `/api/rsr-image/${cleanImageName}?angle=${angle}`;
   };
 
   const getThumbnailUrl = (angle: number = 1) => {
-    if (!product?.sku) return fallbackImage;
-    return `/api/rsr-image/${product.sku}?angle=${angle}&size=thumbnail`;
+    if (!product?.imgName) return fallbackImage;
+    const cleanImageName = product.imgName.replace(/\.(jpg|jpeg|png|gif)$/i, '');
+    return `/api/rsr-image/${cleanImageName}?angle=${angle}&size=thumbnail`;
   };
 
   // Image loading state management
