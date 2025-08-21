@@ -3909,25 +3909,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Product type filtering (takes precedence over category)
       if (cleanedFilters.productType) {
         if (cleanedFilters.productType === "handgun") {
-          algoliaFilters.push(`departmentNumber:"01"`);
+          algoliaFilters.push(`categoryName:"Handguns"`);
         } else if (cleanedFilters.productType === "rifle") {
-          algoliaFilters.push(`departmentNumber:"05" AND categoryName:"Rifles"`);
+          algoliaFilters.push(`categoryName:"Rifles"`);
         } else if (cleanedFilters.productType === "shotgun") {
-          algoliaFilters.push(`departmentNumber:"05" AND categoryName:"Shotguns"`);
+          algoliaFilters.push(`categoryName:"Shotguns"`);
         } else if (cleanedFilters.productType === "ammunition") {
-          algoliaFilters.push(`departmentNumber:"18"`);
+          algoliaFilters.push(`categoryName:"Ammunition"`);
         } else if (cleanedFilters.productType === "optics") {
-          algoliaFilters.push(`departmentNumber:"08"`);
+          algoliaFilters.push(`categoryName:"Optics"`);
         } else if (cleanedFilters.productType === "parts") {
-          algoliaFilters.push(`departmentNumber:"34"`);
+          algoliaFilters.push(`categoryName:"Parts"`);
         } else if (cleanedFilters.productType === "nfa") {
-          algoliaFilters.push(`departmentNumber:"06"`);
+          algoliaFilters.push(`categoryName:"NFA"`);
         } else if (cleanedFilters.productType === "magazines") {
-          algoliaFilters.push(`departmentNumber:"10"`);
+          algoliaFilters.push(`categoryName:"Magazines"`);
         } else if (cleanedFilters.productType === "uppers") {
-          algoliaFilters.push(`(departmentNumber:"41" OR departmentNumber:"42" OR departmentNumber:"43")`);
+          algoliaFilters.push(`categoryName:"Uppers/Lowers"`);
         } else if (cleanedFilters.productType === "accessories") {
-          algoliaFilters.push(`(departmentNumber:"09" OR departmentNumber:"11" OR departmentNumber:"12" OR departmentNumber:"13" OR departmentNumber:"14" OR departmentNumber:"17" OR departmentNumber:"20" OR departmentNumber:"21" OR departmentNumber:"25" OR departmentNumber:"26" OR departmentNumber:"27" OR departmentNumber:"30" OR departmentNumber:"31" OR departmentNumber:"35")`);
+          algoliaFilters.push(`categoryName:"Accessories"`);
         }
         console.log(`Applied product type filter: ${cleanedFilters.productType}`);
       }
@@ -3936,75 +3936,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         algoliaFilters.push(`departmentNumber:"${cleanedFilters.departmentNumber}"`);
         console.log(`Applied department number filter: ${cleanedFilters.departmentNumber}`);
       }
-      // Basic filters using authentic RSR department numbers with proper exclusions
+      // Category filtering using categoryName from indexed products
       else if (cleanedFilters.category) {
-        // Use authentic RSR department structure with proper filtering
-        const categoryToDepartment = {
-          "Handguns": "01",        // Department 01 (pistols and revolvers only)
-          "Long Guns": "05",       // Department 05 (rifles and shotguns)
-          "Rifles": "05",          // Department 05 - rifles are in Long Guns department
-          "Shotguns": "05",        // Department 05 - shotguns are in Long Guns department  
-          "Ammunition": "18",      // Department 18 for all ammunition (shows all subcategories)
-          "Handgun Ammunition": "category",   // Filter by category name for handgun ammo
-          "Rifle Ammunition": "category",     // Filter by category name for rifle ammo
-          "Shotgun Ammunition": "category",   // Filter by category name for shotgun ammo
-          "Rimfire Ammunition": "category",   // Filter by category name for rimfire ammo
-          "Optics": "08",          // Department 08 - Optics only
-          "Optical Accessories": "optical_accessories", // Departments 09 + 31 combined
-          "Sights": "30",          // Department 30 - Sights only
-          "Parts": "34",           // Department 34 - Parts
-          "NFA": "06",             // Department 06 - NFA Products
-          "Magazines": "10",       // Department 10 - Magazines
-          "Uppers/Lowers": "uppers_lowers_multi", // Multiple departments for uppers/lowers
-          "Accessories": "accessories_multi", // Multiple departments for accessories
-          // For other categories, fall back to category name
-        };
-        
-        const department = categoryToDepartment[cleanedFilters.category];
-        if (department === "01") {
-          // For handguns, use department 01 only (authentic RSR categorization) but exclude lowers moved to Uppers/Lowers
-          algoliaFilters.push(`departmentNumber:"01"`);
-          algoliaFilters.push(`NOT categoryName:"Uppers/Lowers"`);
-          console.log(`Applied RSR department 01 filter for all handgun products (excluding lowers)`);
-        } else if (department === "05") {
-          // For Long Guns, Rifles, and Shotguns - now use proper category filtering since it's synced
-          if (cleanedFilters.category === "Rifles") {
-            algoliaFilters.push(`categoryName:"Rifles"`);
-            console.log(`Applied category filter for Rifles`);
-          } else if (cleanedFilters.category === "Shotguns") {
-            algoliaFilters.push(`categoryName:"Shotguns"`);
-            console.log(`Applied category filter for Shotguns`);
-          } else {
-            // For "Long Guns" - show both rifles and shotguns
-            algoliaFilters.push(`(categoryName:"Rifles" OR categoryName:"Shotguns")`);
-            console.log(`Applied category filter for Long Guns (rifles + shotguns)`);
-          }
-        } else if (department === "category") {
-          // For ammunition subcategories, use category name filtering
-          algoliaFilters.push(`categoryName:"${cleanedFilters.category}"`);
-          console.log(`Applied category filter: categoryName:"${cleanedFilters.category}"`);
-        } else if (department === "accessories_multi") {
-          // For accessories, combine multiple departments (09, 11, 12, 13, 14, 17, 20, 21, 25, 26, 27, 30, 31, 35)
-          algoliaFilters.push(`(departmentNumber:"09" OR departmentNumber:"11" OR departmentNumber:"12" OR departmentNumber:"13" OR departmentNumber:"14" OR departmentNumber:"17" OR departmentNumber:"20" OR departmentNumber:"21" OR departmentNumber:"25" OR departmentNumber:"26" OR departmentNumber:"27" OR departmentNumber:"30" OR departmentNumber:"31" OR departmentNumber:"35")`);
-          console.log(`Applied RSR accessories filter (multiple departments)`);
-        } else if (department === "uppers_lowers_multi") {
-          // For uppers/lowers, combine multiple departments (41, 42, 43)
-          algoliaFilters.push(`(departmentNumber:"41" OR departmentNumber:"42" OR departmentNumber:"43")`);
-          console.log(`Applied RSR uppers/lowers filter (multiple departments)`);
-        } else if (department === "18") {
-          // For ammunition (department 18), show all products including zero inventory (matches RSR behavior)
-          algoliaFilters.push(`departmentNumber:"18"`);
-          console.log(`Applied RSR department 18 filter (showing all ammunition like RSR)`);
-        } else if (department === "optical_accessories") {
-          // For optical accessories, combine departments 09 + 31
-          algoliaFilters.push(`(departmentNumber:"09" OR departmentNumber:"31")`);
-          console.log(`Applied RSR optical accessories filter (departments 09, 31)`);
-        } else if (department) {
-          // Use authentic RSR department number filtering for other departments
-          algoliaFilters.push(`departmentNumber:"${department}"`);
-          console.log(`Applied RSR department filter for ${cleanedFilters.category}: ${department}`);
+        // Handle special category cases
+        if (cleanedFilters.category === "Long Guns") {
+          // Show both rifles and shotguns for Long Guns
+          algoliaFilters.push(`(categoryName:"Rifles" OR categoryName:"Shotguns")`);
+          console.log(`Applied category filter for Long Guns (rifles + shotguns)`);
         } else {
-          // Fall back to category name for non-firearm categories
+          // Use direct category name filtering for all other categories
           algoliaFilters.push(`categoryName:"${cleanedFilters.category}"`);
           console.log(`Applied category filter: categoryName:"${cleanedFilters.category}"`);
         }
@@ -4395,36 +4335,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const baseFilters = [];
       
       if (category && category !== "all") {
-        if (category === "Handguns") {
-          baseFilters.push('departmentNumber:"01"');
-          baseFilters.push('NOT categoryName:"Uppers/Lowers"');
-        } else if (category === "Rifles") {
-          baseFilters.push('departmentNumber:"05"');
-          baseFilters.push('categoryName:"Rifles"');
-        } else if (category === "Shotguns") {
-          baseFilters.push('departmentNumber:"05"');
-          baseFilters.push('categoryName:"Shotguns"');
-        } else if (category === "Long Guns") {
-          baseFilters.push('departmentNumber:"05"');
-        } else if (category === "Ammunition") {
-          baseFilters.push('departmentNumber:"18"');
-        } else if (category === "Optics") {
-          baseFilters.push('departmentNumber:"08"');
-        } else if (category === "NFA") {
-          baseFilters.push('departmentNumber:"06"');
-        } else if (category === "Parts") {
-          baseFilters.push('departmentNumber:"34"');
-        } else if (category === "Magazines") {
-          baseFilters.push('departmentNumber:"10"');
-        } else if (category === "Accessories") {
-          // Multiple departments for accessories: 09, 11, 12, 13, 14, 17, 20, 21, 25, 26, 27, 30, 31, 35
-          baseFilters.push('(departmentNumber:"09" OR departmentNumber:"11" OR departmentNumber:"12" OR departmentNumber:"13" OR departmentNumber:"14" OR departmentNumber:"17" OR departmentNumber:"20" OR departmentNumber:"21" OR departmentNumber:"25" OR departmentNumber:"26" OR departmentNumber:"27" OR departmentNumber:"30" OR departmentNumber:"31" OR departmentNumber:"35")');
-        } else if (category === "Uppers/Lowers") {
-          // Multiple departments for uppers/lowers: 41, 42, 43
-          baseFilters.push('(departmentNumber:"41" OR departmentNumber:"42" OR departmentNumber:"43")');
-        } else {
-          baseFilters.push(`categoryName:"${category}"`);
-        }
+        // Use categoryName since our indexed products use this field from database
+        baseFilters.push(`categoryName:"${category}"`);
       }
       
       if (filters.manufacturer && filters.manufacturer !== "all") {
