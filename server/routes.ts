@@ -3058,8 +3058,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break;
       }
       
-      // Use the existing RSR session manager that already bypasses age verification
-      const imageBuffer = await rsrSessionManager.downloadImage(rsrImageUrl);
+      // Use the working axios method that was already proven to work
+      const response = await axios.get(rsrImageUrl, {
+        responseType: "arraybuffer",
+        timeout: 10000,
+        headers: {
+          Referer: "https://www.rsrgroup.com/",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
+        }
+      });
+
+      const imageBuffer = response.data;
       
       // Set proper caching headers
       res.set({
@@ -3071,6 +3080,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send(imageBuffer);
     } catch (error: any) {
       console.error(`RSR Image Error for ${req.params.imageName}:`, error.message);
+      console.error(`Full error details:`, error);
       
       // Serve the universal placeholder image for all missing images
       try {
