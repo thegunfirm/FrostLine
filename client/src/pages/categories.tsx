@@ -149,7 +149,7 @@ export default function Categories() {
       },
       enabled: expandedCategories.includes(category),
       staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
     });
   };
 
@@ -168,7 +168,7 @@ export default function Categories() {
         return data.nbHits || 0;
       },
       staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
     });
   };
 

@@ -980,7 +980,10 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               platformCategory: null,
               partTypeCategory: null,
               isFirearm: hit.fflRequired || false,
-              barrelLengthNfa: null
+              barrelLengthNfa: null,
+              finishNfa: null,
+              materialFinish: null,
+              rsrStockNumber: null
             }))}
             loading={false}
           />
@@ -1093,7 +1096,10 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                   platformCategory: null,
                   partTypeCategory: null,
                   isFirearm: false,
-                  barrelLengthNfa: null
+                  barrelLengthNfa: null,
+                  finishNfa: null,
+                  materialFinish: null,
+                  rsrStockNumber: null
                 }))}
                 loading={false}
               />
