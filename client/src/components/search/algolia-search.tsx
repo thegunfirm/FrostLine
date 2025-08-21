@@ -909,7 +909,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               departmentNumber: hit.departmentNumber || null,
               departmentDesc: hit.departmentDesc || null,
               subDepartmentDesc: hit.subDepartmentDesc || null,
-              manufacturer: hit.manufacturerName || '',
+              manufacturer: hit.manufacturerName || 'Unknown',
               manufacturerPartNumber: hit.mpn || null,
               priceWholesale: hit.tierPricing?.platinum?.toString() || '0',
               priceMAP: hit.tierPricing?.gold?.toString() || '0',

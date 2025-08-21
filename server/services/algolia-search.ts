@@ -406,6 +406,16 @@ class AlgoliaSearchService {
       throw new Error('Admin API key required for indexing');
     }
 
+    // CLEAR existing index first to remove old cached data
+    try {
+      await this.adminClient.clearObjects({
+        indexName: this.adminIndex
+      });
+      console.log('🧹 Cleared existing Algolia index');
+    } catch (error) {
+      console.error('Warning: Could not clear existing index:', error);
+    }
+
     const algoliaProducts = dbProducts.map(product => this.dbToAlgoliaProduct(product));
     
     try {
