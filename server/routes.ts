@@ -4257,7 +4257,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const searchParams: any = {
         query: searchQuery,
         hitsPerPage: Math.min(hitsPerPage || 24, 100),
-        page: page || 0
+        page: page || 0,
+        attributesToRetrieve: [
+          'objectID', 'name', 'description', 'stockNumber', 'rsrStockNumber', 
+          'manufacturerName', 'categoryName', 'tierPricing', 'inventoryQuantity', 
+          'inStock', 'caliber', 'capacity', 'barrelLength', 'finish', 'frameSize',
+          'actionType', 'sightType', 'tags', 'newItem', 'internalSpecial',
+          'retailPrice', 'retailMap', 'msrp', 'dealerPrice', 'price', 'fflRequired',
+          'mpn', 'upc', 'weight', 'dropShippable'
+        ]
       };
       
       if (algoliaFilters.length > 0) {
@@ -4323,6 +4331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           title: hit.name || hit.title,
           description: hit.description || hit.fullDescription,
           sku: hit.stockNumber || hit.sku,
+          rsrStockNumber: hit.rsrStockNumber || null,
           manufacturerName: hit.manufacturerName || hit.manufacturer,
           categoryName: hit.categoryName || hit.category,
           tierPricing: hit.tierPricing || {

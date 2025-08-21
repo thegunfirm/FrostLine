@@ -20,6 +20,7 @@ interface AlgoliaProduct {
   categoryName: string;
   departmentNumber: string;
   stockNumber: string;
+  rsrStockNumber: string;
   description: string;
   inventoryQuantity: number;
   inStock: boolean;
@@ -92,42 +93,50 @@ async function getAllProductsFromDatabase() {
 async function transformProductsForAlgolia(dbProducts: any[]) {
   console.log('🔄 Transforming products for Algolia...');
   
-  const algoliaProducts: AlgoliaProduct[] = dbProducts.map(product => ({
-    objectID: product.sku || `product_${product.id}`,
-    name: product.name || 'Unknown Product',
-    manufacturerName: product.manufacturerName || 'Unknown',
-    categoryName: product.category || 'Uncategorized',
-    departmentNumber: product.departmentNumber?.toString() || '00',
-    stockNumber: product.sku || '',
-    description: product.description || '',
-    inventoryQuantity: parseInt(product.inventoryQuantity) || 0,
-    inStock: (parseInt(product.inventoryQuantity) || 0) > 0,
-    dropShippable: product.dropShippable || false,
-    upc: product.upc || '',
-    weight: parseFloat(product.weight) || 0,
-    tierPricing: {
-      bronze: parseFloat(product.priceBronze) || 0,
-      gold: parseFloat(product.priceGold) || 0,
-      platinum: parseFloat(product.pricePlatinum) || 0,
-    },
-    caliber: product.caliber || null,
-    capacity: product.capacity ? parseInt(product.capacity) : null,
-    barrelLength: product.barrelLength || null,
-    finish: product.finish || null,
-    frameSize: product.frameSize || null,
-    actionType: product.actionType || null,
-    sightType: product.sightType || null,
-    tags: product.tags || [],
-    newItem: product.newItem || false,
-    internalSpecial: product.internalSpecial || false,
-    retailPrice: parseFloat(product.priceBronze) || 0,
-    retailMap: product.priceMAP ? parseFloat(product.priceMAP) : null,
-    msrp: product.priceMSRP ? parseFloat(product.priceMSRP) : 0,
-    dealerPrice: parseFloat(product.pricePlatinum) || 0,
-    price: parseFloat(product.priceBronze) || 0,
-    fflRequired: product.fflRequired || false,
-    mpn: product.mpn || '',
-  }));
+  const algoliaProducts: AlgoliaProduct[] = dbProducts.map((product, index) => {
+    // Debug: Log a few products to see RSR stock number mapping
+    if (index < 5 || product.sku === '110G' || product.sku?.startsWith('YHM-9670')) {
+      console.log(`🔍 Debug product ${product.sku}: RSR = "${product.rsrStockNumber}"`);
+    }
+
+    return {
+      objectID: product.sku || `product_${product.id}`,
+      name: product.name || 'Unknown Product',
+      manufacturerName: product.manufacturerName || 'Unknown',
+      categoryName: product.category || 'Uncategorized',
+      departmentNumber: product.departmentNumber?.toString() || '00',
+      stockNumber: product.sku || '',
+      rsrStockNumber: product.rsrStockNumber || product.sku || '',
+      description: product.description || '',
+      inventoryQuantity: parseInt(product.inventoryQuantity) || 0,
+      inStock: (parseInt(product.inventoryQuantity) || 0) > 0,
+      dropShippable: product.dropShippable || false,
+      upc: product.upc || '',
+      weight: parseFloat(product.weight) || 0,
+      tierPricing: {
+        bronze: parseFloat(product.priceBronze) || 0,
+        gold: parseFloat(product.priceGold) || 0,
+        platinum: parseFloat(product.pricePlatinum) || 0,
+      },
+      caliber: product.caliber || null,
+      capacity: product.capacity ? parseInt(product.capacity) : null,
+      barrelLength: product.barrelLength || null,
+      finish: product.finish || null,
+      frameSize: product.frameSize || null,
+      actionType: product.actionType || null,
+      sightType: product.sightType || null,
+      tags: product.tags || [],
+      newItem: product.newItem || false,
+      internalSpecial: product.internalSpecial || false,
+      retailPrice: parseFloat(product.priceBronze) || 0,
+      retailMap: product.priceMAP ? parseFloat(product.priceMAP) : null,
+      msrp: product.priceMSRP ? parseFloat(product.priceMSRP) : 0,
+      dealerPrice: parseFloat(product.pricePlatinum) || 0,
+      price: parseFloat(product.priceBronze) || 0,
+      fflRequired: product.fflRequired || false,
+      mpn: product.mpn || '',
+    };
+  });
   
   console.log(`🔄 Transformed ${algoliaProducts.length} products for Algolia`);
   return algoliaProducts;

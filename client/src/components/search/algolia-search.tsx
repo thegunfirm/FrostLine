@@ -983,7 +983,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               barrelLengthNfa: null,
               finishNfa: null,
               materialFinish: null,
-              rsrStockNumber: hit.stockNumber || hit.sku
+              rsrStockNumber: hit.rsrStockNumber || hit.stockNumber || hit.sku
             }))}
             loading={false}
           />
