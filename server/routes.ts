@@ -3057,18 +3057,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break;
       }
       
-      // Use the existing RSR session manager that already bypasses age verification
-      const { rsrSessionManager } = await import('./services/rsr-session');
-      const imageBuffer = await rsrSessionManager.downloadImage(rsrImageUrl);
+      // Simplified RSR image fetch with immediate fallback on timeout
+      console.log(`Trying RSR image from: ${rsrImageUrl}`);
       
-      // Set proper caching headers
-      res.set({
-        'Content-Type': 'image/jpeg',
-        'Cache-Control': 'public, max-age=86400', // 24 hours
-        'Content-Length': imageBuffer.length.toString()
-      });
+      try {
+        const response = await axios.get(rsrImageUrl, {
+          responseType: "arraybuffer",
+          timeout: 3000, // Reduced timeout
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        });
+        
+        if (response.status === 200 && response.data && response.data.length > 0) {
+          console.log(`✓ RSR image loaded successfully: ${imageName}`);
+          const imageBuffer = response.data;
+          
+          // Set proper caching headers
+          res.set({
+            'Content-Type': 'image/jpeg',
+            'Cache-Control': 'public, max-age=86400', // 24 hours
+            'Content-Length': imageBuffer.length.toString(),
+            'X-Image-Source': 'rsr-direct'
+          });
+          
+          return res.send(imageBuffer);
+        }
+      } catch (rsrError: any) {
+        console.log(`❌ RSR image failed for ${imageName}: ${rsrError.message}`);
+      }
       
-      res.send(imageBuffer);
+      // Immediate fallback to placeholder
+      throw new Error('RSR image not available, using fallback');
+
     } catch (error: any) {
       console.error(`RSR Image Error for ${req.params.imageName}:`, error.message);
       console.error(`Full error details:`, error);
