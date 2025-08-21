@@ -3089,9 +3089,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             },
             headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-              'Cookie': 'age_verified=true; RSR_USER_AGE_VERIFIED=1'
+              'Accept': 'image/jpeg,image/png,image/*,*/*',
+              'Referer': 'https://www.rsrgroup.com',
+              'Cookie': 'age_verified=true; RSR_USER_AGE_VERIFIED=1; rsr_age_verified=1'
             }
           });
+          // Check if we actually got an image or HTML by examining the first bytes
+          const firstBytes = Buffer.from(response.data).slice(0, 100).toString('utf8');
+          console.log(`RSR response first 100 bytes for ${imageName}: ${firstBytes.substring(0, 50)}...`);
+          const isHtml = firstBytes.includes('<!DOCTYPE') || firstBytes.includes('<html') || firstBytes.includes('<HTML');
+          if (isHtml) {
+            console.log(`❌ RSR returned HTML instead of image for ${imageName}: Age verification page detected`);
+            throw new Error('RSR returned HTML age verification page');
+          }
           console.log(`✓ RSR authenticated image loaded: ${imageName}_${imageNumber}.jpg (${response.data.length} bytes)`);
         }
         
