@@ -1194,11 +1194,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       let product: Product | undefined;
       
-      // Try to parse as numeric ID first
+      // Try both approaches - first numeric ID, then SKU if not found
       if (/^\d+$/.test(id)) {
         product = await storage.getProduct(parseInt(id));
+        
+        // If not found by ID, try as SKU (important for cases like SKU "10044")
+        if (!product) {
+          product = await storage.getProductBySku(id);
+        }
       } else {
-        // If not numeric, treat as SKU
         product = await storage.getProductBySku(id);
       }
       
