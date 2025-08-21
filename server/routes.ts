@@ -3040,37 +3040,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let rsrImageUrl = '';
       
-      // FIXED: Use the correct RSR image URL pattern that actually works
-      // The old img.rsrgroup.com/pimages/ pattern was returning 404s
-      // Use www.rsrgroup.com/images/inventory/ which works correctly
+      // Use RSR's documented naming convention: RSRSKU_imagenumber.jpg
+      // Standard Images: AAC17-22G3_1.jpg, AAC17-22G3_2.jpg, AAC17-22G3_3.jpg
+      // High Resolution: AAC17-22G3_1_HR.jpg, AAC17-22G3_2_HR.jpg, AAC17-22G3_3_HR.jpg
+      const imageNumber = imageAngle || 1;
+      
       switch (size) {
         case 'thumb':
         case 'thumbnail':
-          rsrImageUrl = `https://www.rsrgroup.com/images/inventory/thumb/${imageName}.jpg`;
-          break;
-        case 'standard':
-          rsrImageUrl = `https://www.rsrgroup.com/images/inventory/${imageName}.jpg`;
+          rsrImageUrl = `https://www.rsrgroup.com/images/inventory/thumb/${imageName}_${imageNumber}.jpg`;
           break;
         case 'highres':
         case 'large':
-          rsrImageUrl = `https://www.rsrgroup.com/images/inventory/large/${imageName}.jpg`;
+          rsrImageUrl = `https://www.rsrgroup.com/images/inventory/${imageName}_${imageNumber}_HR.jpg`;
+          break;
+        case 'standard':
+        default:
+          rsrImageUrl = `https://www.rsrgroup.com/images/inventory/${imageName}_${imageNumber}.jpg`;
           break;
       }
       
-      // Simplified RSR image fetch with immediate fallback on timeout
+      // RSR image fetch with authentication using environment credentials
       console.log(`Trying RSR image from: ${rsrImageUrl}`);
       
       try {
         const response = await axios.get(rsrImageUrl, {
           responseType: "arraybuffer",
-          timeout: 3000, // Reduced timeout
+          timeout: 5000,
+          auth: {
+            username: process.env.RSR_USERNAME!,
+            password: process.env.RSR_PASSWORD!
+          },
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
           }
         });
         
         if (response.status === 200 && response.data && response.data.length > 0) {
-          console.log(`✓ RSR image loaded successfully: ${imageName}`);
+          console.log(`✓ RSR image loaded successfully: ${imageName}_${imageNumber}.jpg (${response.data.length} bytes)`);
           const imageBuffer = response.data;
           
           // Set proper caching headers
