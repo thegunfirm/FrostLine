@@ -1752,7 +1752,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Import service dynamically to avoid startup errors
       const { authorizeNetService } = await import('./authorize-net-service');
       
-      const result = await authorizeNetService.createProductPayment(
+      const result = await authorizeNetService.createPayment(
         parseFloat(amount),
         cardDetails,
         billingInfo,
@@ -2465,7 +2465,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mockRSRProducts: RSRProduct[] = [
         {
           stockNo: "GLOCK19GEN5",
-          upc: "764503026157", 
+          upc: "764503026157",
+          upcCode: "764503026157",
           description: "GLOCK 19 Gen 5 9mm Luger 4.02\" Barrel 15-Round",
           categoryDesc: "Handguns",
           manufacturer: "Glock Inc",
@@ -2489,6 +2490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         {
           stockNo: "SW12039",
           upc: "022188120394",
+          upcCode: "022188120394",
           description: "Smith & Wesson M&P9 Shield Plus 9mm 3.1\" Barrel 13-Round",
           categoryDesc: "Handguns", 
           manufacturer: "Smith & Wesson",
@@ -3010,13 +3012,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // First check if there's a custom uploaded image for this product and angle
       try {
-        const customImage = await db.select()
-          .from(productImages)
-          .where(and(
-            eq(productImages.productSku, imageName),
-            eq(productImages.angle, String(imageAngle))
-          ))
-          .limit(1);
+        // Custom image support would go here
+        const customImage: any[] = [];
         
         if (customImage.length > 0) {
           // Serve the custom image
