@@ -1172,6 +1172,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { limit = "8" } = req.query;
       const products = await storage.getFeaturedProducts(parseInt(limit as string));
       
+
+      
       // Format products with proper tierPricing structure
       const formattedProducts = products.map(product => ({
         ...product,
