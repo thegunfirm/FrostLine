@@ -19,6 +19,7 @@ import { rsrFTPClient } from "./services/distributors/rsr/rsr-ftp-client";
 import { rsrFileUpload } from "./services/rsr-file-upload";
 import { rsrAutoSync } from "./services/rsr-auto-sync";
 import { registerRSRFFLRoutes } from "./routes/rsr-ffl-routes";
+import { rsrSessionManager } from "./services/rsr-session";
 import { registerAuthRoutes } from './auth-routes';
 import { syncHealthMonitor } from "./services/sync-health-monitor";
 import { sendVerificationEmail, generateVerificationToken, sendPasswordResetEmail } from "./services/email-service";
@@ -3057,11 +3058,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break;
       }
       
-      // Fetch image from RSR with proper authentication
+      // Fetch image from RSR using session with age verification
+      const rsrSession = await rsrSessionManager.getAuthenticatedSession();
       const response = await axios.get(rsrImageUrl, {
         responseType: "arraybuffer",
         timeout: 10000,
         headers: {
+          'Cookie': rsrSession.cookies.join('; '),
           Referer: "https://www.rsrgroup.com/",
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36"
         }
@@ -3126,18 +3129,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Try multiple RSR image URL patterns to find actual product photos
       const urlPatterns = [
-        // Try www.rsrgroup.com/images/inventory/ (the working domain)
-        `https://img.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
-        `https://img.rsrgroup.com/images/inventory/${size}/${cleanImgName}.jpg`,
-        `https://img.rsrgroup.com/images/inventory/large/${cleanImgName}.jpg`,
-        `https://img.rsrgroup.com/images/inventory/thumb/${cleanImgName}.jpg`,
-        // Original imgtest pattern for comparison
-        `https://imgtest.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
-        // Try main RSR domain patterns
+        // ONLY use www.rsrgroup.com/images/inventory/ (the working domain)
         `https://www.rsrgroup.com/images/inventory/${cleanImgName}.jpg`,
-        `https://www.rsrgroup.com/Custom/Assets/ProductImages/${cleanImgName}.jpg`,
-        `https://www.rsrgroup.com/images/products/${cleanImgName}.jpg`,
-        `https://www.rsrgroup.com/productimages/${cleanImgName}.jpg`,
+        `https://www.rsrgroup.com/images/inventory/${size}/${cleanImgName}.jpg`,
+        `https://www.rsrgroup.com/images/inventory/large/${cleanImgName}.jpg`,
+        `https://www.rsrgroup.com/images/inventory/thumb/${cleanImgName}.jpg`,
       ];
       
       const results = [];
