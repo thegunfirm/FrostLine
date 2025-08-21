@@ -108,4 +108,4 @@ migration-progress.json
 cookies.txt
 
 # Large data files (keep structure, not data)
-rsr_inventory_*.txt
+rsr_inventory_*.txt.zoho-tokens.json
