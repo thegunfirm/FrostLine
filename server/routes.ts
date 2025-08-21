@@ -3048,15 +3048,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       switch (size) {
         case 'thumb':
         case 'thumbnail':
-          rsrImageUrl = `https://www.rsrgroup.com/images/inventory/thumb/${imageName}_${imageNumber}.jpg`;
+          rsrImageUrl = `https://img.rsrgroup.com/images/inventory/thumb/${imageName}_${imageNumber}.jpg`;
           break;
         case 'highres':
         case 'large':
-          rsrImageUrl = `https://www.rsrgroup.com/images/inventory/${imageName}_${imageNumber}_HR.jpg`;
+          rsrImageUrl = `https://img.rsrgroup.com/images/inventory/${imageName}_${imageNumber}_HR.jpg`;
           break;
         case 'standard':
         default:
-          rsrImageUrl = `https://www.rsrgroup.com/images/inventory/${imageName}_${imageNumber}.jpg`;
+          rsrImageUrl = `https://img.rsrgroup.com/images/inventory/${imageName}_${imageNumber}.jpg`;
           break;
       }
       
@@ -3064,21 +3064,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Trying RSR image from: ${rsrImageUrl}`);
       
       try {
-        const response = await axios.get(rsrImageUrl, {
-          responseType: "arraybuffer",
-          timeout: 5000,
-          auth: {
-            username: process.env.RSR_USERNAME!,
-            password: process.env.RSR_PASSWORD!
-          },
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Cookie': 'age_verified=true; RSR_USER_AGE_VERIFIED=1'
-          }
-        });
+        // Try RSR's CDN first - no authentication needed
+        let response;
+        try {
+          response = await axios.get(rsrImageUrl, {
+            responseType: "arraybuffer",
+            timeout: 5000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+          });
+          console.log(`✓ RSR CDN image loaded: ${imageName}_${imageNumber}.jpg (${response.data.length} bytes)`);
+        } catch (cdnError) {
+          // Fallback to authenticated www.rsrgroup.com if CDN fails
+          const wwwImageUrl = rsrImageUrl.replace('img.rsrgroup.com', 'www.rsrgroup.com');
+          console.log(`CDN failed, trying authenticated: ${wwwImageUrl}`);
+          
+          response = await axios.get(wwwImageUrl, {
+            responseType: "arraybuffer",
+            timeout: 5000,
+            auth: {
+              username: process.env.RSR_USERNAME!,
+              password: process.env.RSR_PASSWORD!
+            },
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Cookie': 'age_verified=true; RSR_USER_AGE_VERIFIED=1'
+            }
+          });
+          console.log(`✓ RSR authenticated image loaded: ${imageName}_${imageNumber}.jpg (${response.data.length} bytes)`);
+        }
         
         if (response.status === 200 && response.data && response.data.length > 0) {
-          console.log(`✓ RSR image loaded successfully: ${imageName}_${imageNumber}.jpg (${response.data.length} bytes)`);
           const imageBuffer = response.data;
           
           // Set proper caching headers
