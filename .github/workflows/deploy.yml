@@ -2,8 +2,8 @@ name: deploy-prod
 
 on:
   push:
-    branches: ["prod"]   # inert until you push to a 'prod' branch
-  workflow_dispatch:     # allows manual runs
+    branches: ["prod"]   # inert until a 'prod' branch exists
+  workflow_dispatch:     # run manually from Actions tab
 
 jobs:
   deploy:
@@ -18,7 +18,60 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      - name: Test server connection (no deploy yet)
+      - name: Test server connection (no deploy)
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "mkdir -p '${{ secrets.APP_PATH }}' && echo '✅ Connected to' $(hostname) 'at' $(date)"
+            "mkdir -p '${{ secrets.APP_PATH }}' && echo '✅ Connected to' \$(hostname) 'at' \$(date)"
+
+      - name: Detect build type
+        id: detect
+        shell: bash
+        run: |
+          set -e
+          echo "Repository root contents:"
+          ls -la || true
+
+          MODE="unknown"
+          HAS_DOCKERFILE="no"
+          HAS_COMPOSE="no"
+          HAS_NODE="no"
+          IS_NEXTJS="no"
+
+          # Compose?
+          if [ -f docker-compose.yml ] || [ -f docker-compose.yaml ]; then
+            MODE="docker-compose"
+            HAS_COMPOSE="yes"
+          fi
+
+          # Dockerfile only?
+          if [ "$MODE" = "unknown" ] && [ -f Dockerfile ]; then
+            MODE="dockerfile"
+            HAS_DOCKERFILE="yes"
+          elif [ -f Dockerfile ]; then
+            HAS_DOCKERFILE="yes"
+          fi
+
+          # Node?
+          if [ -f package.json ]; then
+            HAS_NODE="yes"
+            if [ "$MODE" = "unknown" ]; then MODE="node"; fi
+            # Try to print scripts without jq
+            node -e "try{const p=require('./package.json');console.log('scripts.build='+(p.scripts?.build||''));console.log('scripts.start='+(p.scripts?.start||''));}catch(e){process.exit(0)}"
+            # Heuristic: presence of "next" dep suggests Next.js
+            if grep -q '"next"' package.json; then IS_NEXTJS="yes"; fi
+          fi
+
+          echo "mode=$MODE" >> $GITHUB_OUTPUT
+          echo "has_dockerfile=$HAS_DOCKERFILE" >> $GITHUB_OUTPUT
+          echo "has_compose=$HAS_COMPOSE" >> $GITHUB_OUTPUT
+          echo "has_node=$HAS_NODE" >> $GITHUB_OUTPUT
+          echo "is_nextjs=$IS_NEXTJS" >> $GITHUB_OUTPUT
+
+          {
+            echo "### Detection Result"
+            echo "- Mode: $MODE"
+            echo "- Dockerfile: $HAS_DOCKERFILE"
+            echo "- docker-compose: $HAS_COMPOSE"
+            echo "- package.json: $HAS_NODE"
+            echo "- Next.js (heuristic): $IS_NEXTJS"
+          } >> $GITHUB_STEP_SUMMARY
