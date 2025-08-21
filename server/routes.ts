@@ -3074,7 +3074,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
           });
-          console.log(`✓ RSR CDN image loaded: ${imageName}_${imageNumber}.jpg (${response.data.length} bytes)`);
+          
+          // Check if we got a valid JPEG image from CDN
+          const firstBytes = Buffer.from(response.data).slice(0, 3);
+          const isJpeg = firstBytes[0] === 0xFF && firstBytes[1] === 0xD8 && firstBytes[2] === 0xFF;
+          
+          if (isJpeg && response.data.length > 1000) {
+            console.log(`✓ RSR CDN image loaded: ${imageName}_${imageNumber}.jpg (${response.data.length} bytes)`);
+            // Return CDN image immediately if it's valid
+            res.set({
+              'Content-Type': 'image/jpeg',
+              'Cache-Control': 'public, max-age=86400',
+              'Content-Length': response.data.length.toString(),
+              'X-Image-Source': 'rsr-cdn'
+            });
+            return res.send(response.data);
+          } else {
+            console.log(`CDN returned invalid response, trying authenticated methods`);
+          }
         } catch (cdnError) {
           // Try pimages path with www.rsrgroup.com authentication first
           const pimagesUrl = `https://www.rsrgroup.com/pimages/${imageName}_${imageNumber}.jpg`;
