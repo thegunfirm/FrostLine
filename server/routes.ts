@@ -3058,9 +3058,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break;
       }
       
-      // RSR requires age verification for direct image access
-      // For now, serve placeholder until we implement proper image caching during imports
-      throw new Error('RSR images require authentication - serving placeholder');
+      // Use the existing RSR session manager that already bypasses age verification
+      const imageBuffer = await rsrSessionManager.downloadImage(rsrImageUrl);
+      
+      // Set proper caching headers
+      res.set({
+        'Content-Type': 'image/jpeg',
+        'Cache-Control': 'public, max-age=86400', // 24 hours
+        'Content-Length': imageBuffer.length.toString()
+      });
+      
+      res.send(imageBuffer);
     } catch (error: any) {
       console.error(`RSR Image Error for ${req.params.imageName}:`, error.message);
       
