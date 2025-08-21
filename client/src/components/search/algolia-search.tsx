@@ -911,7 +911,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
         <div className="relative">
           <ProductGrid 
             products={allLoadedProducts.map((hit, index) => ({
-              id: hit.objectID || `product-${index}`,
+              id: parseInt(hit.objectID) || index,
               sku: hit.objectID,
               name: hit.name || '',
               description: hit.description || '',
@@ -936,7 +936,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               tags: hit.tags || [],
               images: [],
               upcCode: hit.upc || null,
-              weight: hit.weight || 0,
+              weight: (hit.weight || 0).toString(),
               dimensions: null,
               restrictions: null,
               stateRestrictions: null,
@@ -983,7 +983,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               barrelLengthNfa: null,
               finishNfa: null,
               materialFinish: null,
-              rsrStockNumber: hit.rsrStockNumber || hit.stockNumber || hit.sku
+              rsrStockNumber: hit.stockNumber || hit.sku
             }))}
             loading={false}
           />
@@ -1027,7 +1027,7 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               
               <ProductGrid 
                 products={categoryGroup.items.map((item, index) => ({
-                  id: item.objectID || `suggestion-${groupIndex}-${index}`,
+                  id: parseInt(item.objectID) || (groupIndex * 1000 + index),
                   sku: item.objectID,
                   name: item.name || '',
                   description: '',
