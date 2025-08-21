@@ -975,7 +975,12 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               frontSight: null,
               rearSight: null,
               trigger: null,
-              rsrPrice: null
+              rsrPrice: null,
+              // Add critical missing schema fields
+              platformCategory: null,
+              partTypeCategory: null,
+              isFirearm: hit.fflRequired || false,
+              barrelLengthNfa: null
             }))}
             loading={false}
           />
@@ -1083,7 +1088,12 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                   frontSight: null,
                   rearSight: null,
                   trigger: null,
-                  rsrPrice: null
+                  rsrPrice: null,
+                  // Add critical missing schema fields
+                  platformCategory: null,
+                  partTypeCategory: null,
+                  isFirearm: false,
+                  barrelLengthNfa: null
                 }))}
                 loading={false}
               />
