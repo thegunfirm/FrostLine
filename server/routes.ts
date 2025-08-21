@@ -3061,6 +3061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Use the existing RSR session manager that already bypasses age verification
+      const { rsrSessionManager } = await import('./services/rsr-session');
       const imageBuffer = await rsrSessionManager.downloadImage(rsrImageUrl);
       
       // Set proper caching headers
