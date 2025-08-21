@@ -3072,7 +3072,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             password: process.env.RSR_PASSWORD!
           },
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Cookie': 'age_verified=true; RSR_USER_AGE_VERIFIED=1'
           }
         });
         
