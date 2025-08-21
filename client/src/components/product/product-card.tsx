@@ -44,10 +44,12 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
               alt={altText}
               className="w-full h-auto object-contain transition-opacity duration-300 max-w-full"
               onError={(e) => {
-                // Use fallback logo for missing RSR images
-                console.log('RSR image failed, using fallback:', fallbackImage);
-                e.currentTarget.src = fallbackImage;
-                e.currentTarget.onerror = null; // Prevent infinite loop
+                // Only use fallback after actual image load failure, not pre-check failure
+                if (e.currentTarget.src !== fallbackImage) {
+                  console.log('RSR image failed, using fallback:', fallbackImage);
+                  e.currentTarget.src = fallbackImage;
+                  e.currentTarget.onerror = null; // Prevent infinite loop
+                }
               }}
             />
           </div>

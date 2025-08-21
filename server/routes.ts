@@ -3006,6 +3006,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use 'angle' parameter from frontend, fallback to 'view' for backward compatibility
       const imageAngle = angle || view || '1';
       
+      console.log(`RSR Image Request: ${imageName}, size: ${size}, angle: ${imageAngle}`);
+      
       // First check if there's a custom uploaded image for this product and angle
       try {
         const customImage = await db.select()
@@ -3070,11 +3072,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const imageBuffer = response.data;
       
+      // Check if we actually got an image, not HTML
+      const contentType = response.headers['content-type'] || 'image/jpeg';
+      if (contentType.includes('text/html') || imageBuffer.toString().includes('<!DOCTYPE')) {
+        throw new Error('Received HTML instead of image - authentication failed');
+      }
+      
       // Set proper caching headers
       res.set({
-        'Content-Type': 'image/jpeg',
+        'Content-Type': contentType,
         'Cache-Control': 'public, max-age=86400', // 24 hours
-        'Content-Length': imageBuffer.length.toString()
+        'Content-Length': imageBuffer.length.toString(),
+        'Access-Control-Allow-Origin': '*'
       });
       
       res.send(imageBuffer);

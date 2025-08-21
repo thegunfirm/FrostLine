@@ -238,38 +238,13 @@ export default function ProductDetail() {
       setImageLoading(true);
       setImageError(false);
       
-      // Check all available angles
-      const checkImages = async () => {
-        const available: number[] = [];
-        
-        for (const angle of availableAngles) {
-          try {
-            const response = await fetch(getImageUrl(angle));
-            if (response.ok) {
-              available.push(angle);
-            }
-          } catch (error) {
-            // Continue checking other angles
-          }
-        }
-        
-        setAvailableImages(available);
-        
-        if (available.length > 0) {
-          // Set first available image as current
-          setCurrentAngle(available[0]);
-          setImageSrc(getImageUrl(available[0]));
-          setImageLoading(false);
-          setImageError(false);
-        } else {
-          // No images available, use fallback
-          setImageSrc(fallbackImage);
-          setImageLoading(false);
-          setImageError(false);
-        }
-      };
-      
-      checkImages();
+      // Skip pre-validation - just try to load the images directly
+      // The backend is working fine, let the image onLoad/onError handle it
+      setAvailableImages([1, 2, 3]); // Allow all angles
+      setCurrentAngle(1);
+      setImageSrc(getImageUrl(1));
+      setImageLoading(false);
+      setImageError(false);
     }
   }, [product?.sku]);
 
