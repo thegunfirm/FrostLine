@@ -191,7 +191,7 @@ function OrderSummaryPageContent() {
                 return (
                   <div key={item.id} className="flex items-start gap-3 p-3 border rounded-lg">
                     <img
-                      src={`/api/rsr-image/${item.productSku}`}
+                      src={item.productImage || `/api/rsr-image/${item.productSku}`}
                       alt={item.productName}
                       className="w-32 h-auto object-contain rounded-lg flex-shrink-0"
                       onError={(e) => {
