@@ -42,7 +42,7 @@ export default function AdminRSRFTP() {
   const [showPassword, setShowPassword] = useState(false);
   const [config, setConfig] = useState<Partial<RSRFTPConfig>>({
     host: '',
-    username: '63824',
+    username: '60742',
     syncSchedule: '2hours',
     autoProcessFiles: true,
     downloadImages: false,

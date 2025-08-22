@@ -45,7 +45,7 @@ class RSRFTPClient {
     this.config = {
       host: process.env.RSR_FTP_HOST || 'ftps.rsrgroup.com',
       username: process.env.RSR_USERNAME || '60742',
-      password: process.env.RSR_PASSWORD || '2SSinQ58',
+      password: process.env.RSR_PASSWORD || '',
       port: 2222,
       secure: true,
       syncSchedule: '2hours', // RSR updates every 2 hours
