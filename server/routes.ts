@@ -1416,8 +1416,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           refreshToken: process.env.ZOHO_REFRESH_TOKEN
         });
 
-        // Create deal name with TGF format
-        const dealName = `TGF-ORDER-${order.id}`;
+        // Import TGF order numbering service
+        const { ZohoOrderFieldsService } = await import('./services/zoho-order-fields-service');
+        const orderFieldsService = new ZohoOrderFieldsService();
+        
+        // Determine if order has FFL items
+        const hasFFL = orderItems.some((item: any) => item.fflRequired);
+        
+        // Generate proper TGF order number
+        const tgfOrderNumber = orderFieldsService.buildTGFOrderNumber(
+          order.id,     // Use database ID as base sequence
+          true,         // isTest = true for testing environment
+          false,        // isMultiple = false for single shipment
+          0             // groupIndex = 0 for single group
+        );
+        
+        // Create deal name with proper TGF format
+        const dealName = `TGF-ORDER-${tgfOrderNumber}`;
         
         // First, find or create contact
         const contactResult = await zohoService.findOrCreateContact({
@@ -1479,7 +1494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fflDealerName: fflInfo ? fflInfo.businessName : undefined,
           orderStatus: 'Confirmed',
           systemFields: {
-            TGF_Order_Number: order.id.toString(),
+            TGF_Order_Number: tgfOrderNumber, // Use proper TGF format instead of raw ID
             Customer_Name: customerInfo.name,
             Customer_Email: customerInfo.email,
             Payment_Method: order.payment_method || 'Credit Card',
@@ -1506,7 +1521,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               dealId: dealResult.dealId,
               dealName: dealName,
               contactId: contactResult.contactId,
-              productsCount: zohoOrderItems.length
+              productsCount: productReferences.length,
+              tgfOrderNumber: tgfOrderNumber
             }
           });
         } else {
