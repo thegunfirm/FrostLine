@@ -126,19 +126,20 @@ export class ComprehensiveDealFieldMapper {
       APP_Status: 'Order processed successfully',
       APP_Response: this.generateAppResponse(orderData),
       
-      // Shipping Information
-      Carrier: undefined, // Will be set when order ships
-      Tracking_Number: undefined, // Will be set when order ships
+      // Shipping & Tracking Information
       Estimated_Ship_Date: this.calculateEstimatedShipDate(orderData.shippingOutcome),
       Distributor_Order_Number: `RSR-${orderData.tgfOrderNumber}`,
+      Carrier: null, // Will be set when order ships
+      Tracking_Number: null, // Will be set when order ships
+      Last_Distributor_Update: null, // Will be set by RSR updates
       
       // Timestamps
       Submitted: timestamp,
       APP_Confirmed: timestamp,
-      Last_Distributor_Update: undefined, // Will be set by RSR updates
       
       // Standard Zoho Deal Management Fields  
       Deal_Owner: 'Webservices App',
+      Webservices_App: 'TGF E-commerce System',
       Account_Name: 'Direct Customer',
       Contact_Name: `${orderData.customerInfo.firstName} ${orderData.customerInfo.lastName}`,
       Type: 'E-commerce Order', 
@@ -156,10 +157,10 @@ export class ComprehensiveDealFieldMapper {
       // Extended Order Management Fields
       Conversion_Channel: 'Website',
       Confirmed: 'Yes',
-      Hold_Type: undefined, // Will be set if order goes on hold
-      Hold_Started_At: undefined, // Will be set if order goes on hold
-      Hold_Cleared_At: undefined, // Will be set when hold is cleared
-      Return_Status: undefined, // Will be set for returns
+      Hold_Type: null, // Will be set if order goes on hold
+      Hold_Started_At: null, // Will be set if order goes on hold
+      Hold_Cleared_At: null, // Will be set when hold is cleared
+      Return_Status: null, // Will be set for returns
       Consignee_Type: this.mapConsignee(orderData.shippingOutcome, orderData.fflInfo),
       
       // System Fields
