@@ -1361,9 +1361,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const customer = await db.select({
           id: users.id,
           email: users.email,
-          first_name: users.first_name,
-          last_name: users.last_name,
-          subscription_tier: users.subscription_tier
+          firstName: users.firstName,
+          lastName: users.lastName,
+          subscriptionTier: users.subscriptionTier
         }).from(users).where(eq(users.id, order.user_id)).limit(1);
         
         if (!customer.length) {
@@ -1372,10 +1372,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const customerInfo = {
           email: customer[0].email,
-          name: `${customer[0].first_name} ${customer[0].last_name}`,
-          firstName: customer[0].first_name,
-          lastName: customer[0].last_name,
-          membershipTier: customer[0].subscription_tier,
+          name: `${customer[0].firstName} ${customer[0].lastName}`,
+          firstName: customer[0].firstName,
+          lastName: customer[0].lastName,
+          membershipTier: customer[0].subscriptionTier,
           zohoContactId: undefined
         };
 
@@ -1596,6 +1596,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const order = await storage.createOrder(orderData);
       console.log('✅ TESTING: Order created with ID:', order.id);
+      console.log('🔍 TESTING: Order object structure:', JSON.stringify(order, null, 2));
 
       // Continue with same Zoho integration logic as main endpoint...
       try {
@@ -1605,21 +1606,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const customer = await db.select({
           id: users.id,
           email: users.email,
-          first_name: users.first_name,
-          last_name: users.last_name,
-          subscription_tier: users.subscription_tier
-        }).from(users).where(eq(users.id, order.user_id)).limit(1);
+          firstName: users.firstName,
+          lastName: users.lastName,
+          subscriptionTier: users.subscriptionTier
+        }).from(users).where(eq(users.id, orderDataWithUser.userId)).limit(1);
         
         if (!customer.length) {
-          throw new Error(`Customer not found for user_id: ${order.user_id}`);
+          throw new Error(`Customer not found for user_id: ${orderDataWithUser.userId}`);
         }
 
         const customerInfo = {
           email: customer[0].email,
-          name: `${customer[0].first_name} ${customer[0].last_name}`,
-          firstName: customer[0].first_name,
-          lastName: customer[0].last_name,
-          membershipTier: customer[0].subscription_tier,
+          name: `${customer[0].firstName} ${customer[0].lastName}`,
+          firstName: customer[0].firstName,
+          lastName: customer[0].lastName,
+          membershipTier: customer[0].subscriptionTier,
           zohoContactId: undefined
         };
 
@@ -1682,7 +1683,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`📊 TESTING: Deal Name: ${dealName}`);
         
         // First, find or create contact
-        const contactResult = await zohoService.findOrCreateContact({
+        const contactResult = await zohoService.createContact({
           email: customerInfo.email,
           firstName: customerInfo.firstName,
           lastName: customerInfo.lastName
@@ -1820,9 +1821,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const customer = await db.select({
         id: users.id,
         email: users.email,
-        first_name: users.first_name,
-        last_name: users.last_name,
-        subscription_tier: users.subscription_tier
+        firstName: users.firstName,
+        lastName: users.lastName,
+        subscriptionTier: users.subscriptionTier
       }).from(users).where(eq(users.id, order.user_id)).limit(1);
       
       if (!customer.length) {
@@ -1834,10 +1835,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const customerInfo = {
         email: customer[0].email,
-        firstName: customer[0].first_name,
-        lastName: customer[0].last_name,
-        name: `${customer[0].first_name} ${customer[0].last_name}`,
-        membershipTier: customer[0].subscription_tier
+        firstName: customer[0].firstName,
+        lastName: customer[0].lastName,
+        name: `${customer[0].firstName} ${customer[0].lastName}`,
+        membershipTier: customer[0].subscriptionTier
       };
 
       // Get FFL info if needed
