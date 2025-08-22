@@ -512,7 +512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Registration routes are now handled by auth-routes.ts
 
-  // Email verification endpoint (Zoho-based)
+  // Email verification endpoint
   app.get("/verify-email", async (req, res) => {
     try {
       const { token } = req.query;
@@ -521,11 +521,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Verification token required" });
       }
       
-      // In Zoho-first approach, verification is handled differently
-      // For now, we'll just redirect to login page
-      res.redirect(`/login?verified=true`);
+      console.log(`📧 Processing email verification for token: ${token}`);
+      console.log(`🔍 Token type: ${typeof token}, length: ${token.length}`);
+      
+      // Find user with this verification token
+      const userResult = await db.execute(sql`
+        SELECT id, email, first_name FROM users 
+        WHERE email_verification_token = ${token} AND email_verified = false
+      `);
+      
+      console.log(`🔍 Query returned ${userResult.rows.length} rows`);
+      
+      if (userResult.rows.length === 0) {
+        console.log(`❌ Email verification failed: Invalid or expired verification token`);
+        // Let's also check what users exist with tokens
+        const debugResult = await db.execute(sql`
+          SELECT id, email, email_verified, email_verification_token FROM users 
+          WHERE email_verification_token IS NOT NULL
+        `);
+        console.log(`🔧 Debug: Found ${debugResult.rows.length} users with tokens:`, debugResult.rows);
+        return res.status(400).json({ message: "Invalid or expired verification token" });
+      }
+      
+      const user = userResult.rows[0];
+      console.log(`✅ Found user for verification: ${user.email}`);
+      
+      // Update user to mark email as verified and clear the token
+      await db.execute(sql`
+        UPDATE users 
+        SET email_verified = true, email_verification_token = null 
+        WHERE id = ${user.id}
+      `);
+      
+      console.log(`📧 Email verification completed successfully for: ${user.email}`);
+      
+      // Redirect to login page with success message
+      res.redirect(`/login?verified=success&email=${encodeURIComponent(user.email)}`);
     } catch (error) {
-      console.error("Email verification error:", error);
+      console.error("❌ Email verification failed:", error);
       res.status(500).json({ message: "Verification failed" });
     }
   });
