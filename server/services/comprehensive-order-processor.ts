@@ -220,12 +220,23 @@ export class ComprehensiveOrderProcessor {
       );
 
       // Get all logs and summary
-      const logs = await OrderActivityLogger.getOrderLogs(data.orderId);
+      const rawLogs = await OrderActivityLogger.getOrderLogs(data.orderId);
       const summary = await OrderActivityLogger.getOrderSummary(data.orderId);
+
+      // Format logs for consistent response
+      const formattedLogs = rawLogs.map(log => ({
+        id: log.id,
+        event_type: log.eventType,
+        success: log.eventStatus === 'success',
+        timestamp: log.createdAt,
+        tgf_order_number: log.tgfOrderNumber,
+        description: log.description,
+        details: log.details
+      }));
 
       return {
         success: true,
-        logs,
+        logs: formattedLogs,
         summary
       };
       

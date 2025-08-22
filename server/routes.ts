@@ -1664,9 +1664,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Import and use OrderActivityLogger
       const { OrderActivityLogger } = await import('./services/order-activity-logger');
-      const logs = await OrderActivityLogger.getOrderLogs(orderId);
+      const rawLogs = await OrderActivityLogger.getOrderLogs(orderId);
       
-      res.json(logs);
+      // Format logs for API response
+      const formattedLogs = rawLogs.map(log => ({
+        id: log.id,
+        event_type: log.eventType,
+        success: log.eventStatus === 'success',
+        timestamp: log.createdAt,
+        tgf_order_number: log.tgfOrderNumber,
+        description: log.description,
+        details: log.details
+      }));
+      
+      res.json({ logs: formattedLogs });
     } catch (error) {
       console.error("Get activity logs error:", error);
       res.status(500).json({ message: "Failed to fetch activity logs" });
@@ -1703,13 +1714,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { ComprehensiveOrderProcessor } = await import('./services/comprehensive-order-processor');
       const result = await ComprehensiveOrderProcessor.demonstrateWithRealData();
       
-      res.json(result);
+      res.json({
+        success: result.success,
+        orderId: result.orderId,
+        tgfOrderNumber: result.tgfOrderNumber,
+        totalLogs: result.logs.length,
+        logs: result.logs,
+        summary: result.summary
+      });
+      
     } catch (error) {
-      console.error("Comprehensive logging demonstration error:", error);
+      console.error('Comprehensive logging demonstration error:', error);
       res.status(500).json({ 
-        success: false,
-        message: "Failed to run comprehensive logging demonstration",
-        error: error instanceof Error ? error.message : 'Unknown error'
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  // Working order processing with comprehensive logging
+  app.post("/api/process-test-order", async (req, res) => {
+    try {
+      console.log('🚀 Processing test order with comprehensive logging...');
+      
+      // Create a real order first
+      const testOrderData = {
+        userId: 5,
+        totalPrice: '1216.08',
+        status: 'pending',
+        items: JSON.stringify([
+          {
+            productId: 133979,
+            sku: 'PA175S204N-1',
+            name: 'GLOCK 17CK GEN5 9MM 17RD W/ACRO',
+            quantity: 1,
+            price: 1192.00,
+            fflRequired: true,
+            manufacturer: 'GLOCK',
+            category: 'Handguns'
+          },
+          {
+            productId: 140442,
+            sku: 'UP64B',
+            name: 'MAGLULA 22LR-380 PSTL BABYUPLULA BLK',
+            quantity: 1,
+            price: 24.08,
+            fflRequired: false,
+            manufacturer: 'MAGULA',
+            category: 'Magazines'
+          }
+        ]),
+        fflRecipientId: 1414,
+        paymentMethod: 'credit_card',
+        shippingAddress: JSON.stringify({
+          street: '123 Test Street',
+          city: 'Test City',
+          state: 'FL',
+          zipCode: '12345'
+        })
+      };
+      
+      // Create order using storage
+      const order = await storage.createOrder(testOrderData);
+      console.log('✅ Test order created with ID:', order.id);
+      
+      // Process with comprehensive logging
+      const { ComprehensiveOrderProcessor } = await import('./services/comprehensive-order-processor');
+      const orderItems = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+      const processingData = {
+        orderId: order.id,
+        tgfOrderNumber: `test${String(order.id).padStart(8, '0')}`,
+        orderItems: orderItems,
+        customerInfo: {
+          email: 'testorder@gunfirm.local',
+          firstName: 'End',
+          lastName: 'ToEnd',
+          membershipTier: 'Bronze'
+        },
+        fflInfo: {
+          license: '1-59-017-07-6F-13700',
+          businessName: 'BACK ACRE GUN WORKS',
+          address: { city: 'INVERNESS', state: 'FL' }
+        },
+        paymentData: {
+          method: 'credit_card',
+          cardNumber: '4111111111111111',
+          result: {
+            transactionId: `test_${Date.now()}`,
+            responseCode: '1',
+            authCode: 'TEST123',
+            sandbox: true
+          }
+        }
+      };
+      
+      const result = await ComprehensiveOrderProcessor.processWithLogging(processingData);
+      
+      res.json({
+        success: result.success,
+        orderId: order.id,
+        tgfOrderNumber: processingData.tgfOrderNumber,
+        totalLogs: result.logs.length,
+        logs: result.logs,
+        summary: result.summary,
+        message: 'Order processed with comprehensive activity logging'
+      });
+      
+    } catch (error) {
+      console.error('Test order processing error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
       });
     }
   });
