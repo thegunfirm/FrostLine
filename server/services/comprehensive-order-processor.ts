@@ -298,7 +298,7 @@ export class ComprehensiveOrderProcessor {
         orderId: demoOrderId,
         tgfOrderNumber,
         orderItems: [{
-          sku: realProduct.sku,
+          sku: realProduct.sku || 'UNKNOWN_SKU',
           name: realProduct.name,
           quantity: 1,
           price: parseFloat(realProduct.priceWholesale as string) || 99.99,

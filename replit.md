@@ -10,16 +10,12 @@ Image policy: NEVER use Unsplash or any placeholder images. Only use authentic d
 Code preservation: Always maintain working solutions - never overwrite functioning code without explicit user request.
 Email verification: Users must verify their email address before being able to sign in.
 CRITICAL INVENTORY POLICY: NEVER use fabricated, test, or placeholder product data. ONLY use products that exist in our live RSR feed. When working with inventory, verify products exist in the database first. No exceptions. No fallback data. No test SKUs like GLOCK17GEN5. FFL directory must use only authentic FFL data - no fake dealers should be added to the system.
-
-MANDATORY DATA VERIFICATION PROTOCOL: 
+MANDATORY DATA VERIFICATION PROTOCOL:
 1. ALWAYS run `node check-product-upc.cjs` or query the products table BEFORE using ANY product data
 2. NEVER assume what product data should be - ALWAYS verify against live RSR database
 3. When testing integrations, use ONLY products found in the actual database
 4. If product data doesn't exist in database, work with user to import authentic RSR data
 5. ALL SKUs, UPCs, RSR stock numbers, and product names must match live database exactly
-DISTRIBUTOR NUMBER SEPARATION FIX: Fixed critical backend issue where RSR stock numbers (distributor) were incorrectly used as SKUs instead of manufacturer part numbers. System now properly separates manufacturer part numbers (SKUs) from RSR stock numbers (for ordering). Date: 2025-01-20.
-FIELD CORRUPTION RESOLUTION COMPLETE: Successfully resolved Field 12 corruption issue with 94.90% separation (27,926 products) where manufacturer part numbers were properly separated from RSR distributor codes. Remaining 5.10% (1,502 products) identified as legitimate cases where RSR intentionally matches distributor stock numbers to manufacturer part numbers. System now correctly handles both scenarios - separated codes when different, identical codes when intentionally matched. Date: 2025-01-20.
-COMPLETE ORDER WORKFLOW BREAKTHROUGH: Successfully resolved all critical Drizzle ORM database query issues that were preventing order creation and Zoho integration. Fixed column name mapping problems (firstName vs first_name), corrected method calls (findOrCreateContact to createContact), and achieved complete end-to-end order workflow including proper TGF order numbering (test00000280 format). Database operations, customer retrieval, and order processing now fully functional. Only remaining issue is Zoho token authentication which requires valid API credentials. Date: 2025-08-22.
 CRITICAL IMAGE HANDLING RULE: For product images in cart/order displays, NEVER use containers with gray backgrounds or fixed heights. Use direct image elements with `w-[size] h-auto object-contain` classes only. This prevents background showing through and maintains natural image proportions.
 CART CORRUPTION SOLUTION: Implement comprehensive clearing mechanism including both localStorage removal and server-side force-clear endpoint for cart items.
 FFL SELECTOR IMPROVEMENTS: Add proper error handling, loading states, and retry logic to the FFL selector component.
@@ -62,8 +58,8 @@ RSR IMPORT STANDARD: RSR Comprehensive Import System is the ONLY active RSR syst
 - **Tier-Based Order Processing System**: Full validation of order processing across all membership pricing tiers.
 - **Proper TGF Order Numbering System**: Complete implementation of TGF order numbering specification with comprehensive format rules for both single and multiple shipment groups.
 - **RSR-Compliant Import Frequency System**: Full implementation of RSR's recommended import frequencies - inventory updates every 2 hours, quantity updates every 15 minutes, daily data integrity monitoring. Includes comprehensive scheduler service, FTP automation, admin controls, and emergency update capabilities. **CONSOLIDATED STANDARD** - All legacy RSR systems deprecated, single definitive system for all RSR operations.
-- **Enhanced Algolia Search Integration**: Complete dual indexing system supporting both manufacturer part number (SKU) and product name searches. Includes CMS admin management endpoints for search synchronization and status monitoring. Verified working with 1,628+ indexed products and comprehensive field mapping. Date: 2025-01-20.
-- **RSR Image Integration - Age Verification Limitation**: Implemented comprehensive RSR image system with HTML detection and proper fallback handling using authentic RSR stock numbers from live database. RSR enforces strict age verification that cannot be bypassed programmatically, even with valid credentials and authentic product data. System correctly serves authentic placeholder images when RSR images are inaccessible. **CRITICAL UPDATE**: RSR has implemented universal age verification blocking ALL programmatic access to product images, including authentic stock numbers like FEDERAL-XM193, SAVAXIS, TAUG2C. All requests now return HTML age verification pages instead of images. System properly falls back to professional placeholder images maintaining user experience. Date: 2025-01-21.
+- **Enhanced Algolia Search Integration**: Complete dual indexing system supporting both manufacturer part number (SKU) and product name searches. Includes CMS admin management endpoints for search synchronization and status monitoring.
+- **RSR Image Integration - Age Verification Limitation**: Implemented comprehensive RSR image system with HTML detection and proper fallback handling using authentic RSR stock numbers from live database. System correctly serves authentic placeholder images when RSR images are inaccessible due to age verification.
 
 ### Technical Stack
 - **Frontend**: React 18 (TypeScript), Wouter, TanStack Query, React Context, Shadcn/ui (Radix UI), Tailwind CSS, Vite.
@@ -84,7 +80,6 @@ RSR IMPORT STANDARD: RSR Comprehensive Import System is the ONLY active RSR syst
 - **Database**: Neon (serverless PostgreSQL).
 - **Frontend Libraries**: React, React Query, React Hook Form, Radix UI, Shadcn/ui, Tailwind CSS, class-variance-authority, Lucide React.
 - **Backend Libraries**: Express, bcrypt, connect-pg-simple, ws (WebSockets).
-- **Development Tools**: Vite, TypeScript, ESLint, Prettier.
 - **Commerce Integration**: Authorize.Net.
 - **Distributor Integration**: RSR.
 - **Search**: Algolia.
