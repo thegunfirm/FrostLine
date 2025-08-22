@@ -278,8 +278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'User already exists' });
       }
 
-      // Hash password
-      const bcrypt = require('bcrypt');
+      // Hash password using bcrypt import
       const passwordHash = await bcrypt.hash(password, 10);
 
       // Create user with email already verified (using only existing columns)
@@ -306,6 +305,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         error: 'Test user creation failed',
         details: error.message
+      });
+    }
+  });
+
+  // Registration endpoint that matches frontend expectation
+  app.post('/api/register', async (req, res) => {
+    try {
+      const { email, password, firstName, lastName, membershipTier } = req.body;
+      
+      console.log('Registration attempt for:', email);
+      
+      // Validate required fields
+      if (!email || !password || !firstName || !lastName) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'All fields are required' 
+        });
+      }
+
+      // Check if user already exists using direct SQL with safer approach
+      const existingCheck = await db.execute(sql`SELECT COUNT(*) as count FROM users WHERE email = ${email}`);
+      if (Number(existingCheck.rows[0].count) > 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'An account with this email already exists' 
+        });
+      }
+
+      // Hash password using bcrypt that's already imported at the top
+      const passwordHash = await bcrypt.hash(password, 12);
+
+      // Use direct SQL insert to avoid schema mismatch issues
+      const result = await db.execute(sql`
+        INSERT INTO users (email, password, first_name, last_name, subscription_tier, email_verified, role)
+        VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, ${membershipTier || 'Bronze'}, ${true}, 'user')
+        RETURNING id
+      `);
+
+      console.log(`✅ User registered successfully: ${email} with ID: ${result.rows[0].id}`);
+
+      res.json({
+        success: true,
+        message: 'Registration successful. You can now log in.',
+        userId: result.rows[0].id
+      });
+
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Registration failed. Please try again.' 
       });
     }
   });
@@ -650,40 +700,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Zoho-based login
+  // Local database login
   app.post("/api/login", async (req, res) => {
     try {
       const { email, password } = req.body;
+      
+      console.log('Login attempt for:', email);
       
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password required" });
       }
       
-      // Login using Zoho CRM as primary database
-      const zohoUser = await loginWithZoho(email, password);
-      if (!zohoUser) {
+      // Find user in local database using direct SQL
+      const userResult = await db.execute(sql`
+        SELECT id, email, password, first_name, last_name, subscription_tier, email_verified, role 
+        FROM users 
+        WHERE email = ${email} 
+        LIMIT 1
+      `);
+      
+      if (userResult.rows.length === 0) {
         return res.status(401).json({ 
           message: "No account found with this email address. Please check your email or create a new account.",
           errorType: "email_not_found"
         });
       }
       
-      // Store user in session
-      req.session.userId = zohoUser.id;
-      req.session.user = zohoUser;
+      const user = userResult.rows[0];
       
-      console.log(`✅ User ${zohoUser.email} logged in successfully from Zoho CRM`);
+      // Check if email is verified
+      if (!user.email_verified) {
+        return res.status(401).json({ 
+          message: "Please verify your email address before logging in.",
+          errorType: "email_not_verified"
+        });
+      }
+      
+      // Verify password using bcrypt
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) {
+        return res.status(401).json({ 
+          message: "Invalid password. Please try again.",
+          errorType: "invalid_password"
+        });
+      }
+      
+      // Store user in session
+      req.session.userId = user.id;
+      req.session.user = {
+        id: user.id,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        membershipTier: user.subscription_tier,
+        emailVerified: user.email_verified,
+        role: user.role
+      };
+      
+      console.log(`✅ User ${user.email} logged in successfully from local database`);
       
       res.json({
-        id: zohoUser.id,
-        email: zohoUser.email,
-        firstName: zohoUser.firstName,
-        lastName: zohoUser.lastName,
-        membershipTier: zohoUser.membershipTier,
-        isVerified: zohoUser.isVerified
+        id: user.id,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        membershipTier: user.subscription_tier,
+        isVerified: user.email_verified,
+        success: true
       });
     } catch (error) {
-      console.error("Zoho login error:", error);
+      console.error("Local login error:", error);
       res.status(500).json({ message: "Login failed" });
     }
   });

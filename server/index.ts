@@ -72,9 +72,22 @@ app.use(session({
   }
 }));
 
-// Initialize Passport for SAML authentication
-app.use(passport.initialize());
-app.use(passport.session());
+// Initialize Passport for SAML authentication, but skip for local auth endpoints
+app.use((req, res, next) => {
+  // Skip Passport processing for local authentication endpoints
+  if (req.path === '/api/login' || req.path === '/api/register') {
+    return next();
+  }
+  passport.initialize()(req, res, next);
+});
+
+app.use((req, res, next) => {
+  // Skip Passport session processing for local authentication endpoints
+  if (req.path === '/api/login' || req.path === '/api/register') {
+    return next();
+  }
+  passport.session()(req, res, next);
+});
 
 // Passport session serialization
 passport.serializeUser((user: any, done) => {

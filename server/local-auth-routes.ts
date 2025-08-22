@@ -4,8 +4,11 @@ import { z } from 'zod';
 
 const localAuthService = new LocalAuthService();
 
+// Export the service instance and schema for reuse
+export { localAuthService };
+
 // Validation schemas
-const registrationSchema = z.object({
+export const registrationSchema = z.object({
   email: z.string().email(),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
