@@ -381,9 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register specialized routes first  
   await registerRSRFFLRoutes(app);
-  // Use local authentication instead of Zoho
-  const { registerLocalAuthRoutes } = await import('./local-auth-routes.js');
-  registerLocalAuthRoutes(app);
+  // Local authentication routes removed - using main auth system only
   
   // Initialize firearms compliance configuration
   try {
