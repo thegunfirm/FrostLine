@@ -1662,9 +1662,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Order not found" });
       }
 
-      // Import and use OrderActivityLogger
-      const { OrderActivityLogger } = await import('./services/order-activity-logger');
-      const rawLogs = await OrderActivityLogger.getOrderLogs(orderId);
+      // Import and use EnhancedOrderActivityLogger for enhanced logs
+      const { EnhancedOrderActivityLogger } = await import('./services/enhanced-order-activity-logger');
+      const rawLogs = await EnhancedOrderActivityLogger.getOrderLogs(orderId);
       
       // Format logs for API response
       const formattedLogs = rawLogs.map(log => ({
@@ -1694,9 +1694,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Order not found" });
       }
 
-      // Import and use OrderActivityLogger
-      const { OrderActivityLogger } = await import('./services/order-activity-logger');
-      const summary = await OrderActivityLogger.getOrderSummary(orderId);
+      // Import and use EnhancedOrderActivityLogger for enhanced summary
+      const { EnhancedOrderActivityLogger } = await import('./services/enhanced-order-activity-logger');
+      const summary = await EnhancedOrderActivityLogger.getOrderSummary(orderId);
       
       res.json(summary);
     } catch (error) {
