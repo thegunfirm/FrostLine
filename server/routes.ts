@@ -1705,7 +1705,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Comprehensive logging demonstration endpoint
+  // Enhanced comprehensive logging demonstration endpoint
+  app.post("/api/demo/enhanced-logging", async (req, res) => {
+    try {
+      console.log('🔍 Starting enhanced comprehensive logging demonstration...');
+      
+      // Import and use ComprehensiveOrderProcessorV2
+      const { ComprehensiveOrderProcessorV2 } = await import('./services/comprehensive-order-processor-v2');
+      const result = await ComprehensiveOrderProcessorV2.demonstrateWithRealData();
+      
+      res.json({
+        success: result.success,
+        orderId: result.orderId,
+        tgfOrderNumber: result.tgfOrderNumber,
+        totalLogs: result.logs.length,
+        logs: result.logs,
+        summary: result.summary,
+        appResponseData: result.appResponseData
+      });
+      
+    } catch (error) {
+      console.error('Enhanced logging demonstration error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  // Comprehensive logging demonstration endpoint (legacy)
   app.post("/api/demo/comprehensive-logging", async (req, res) => {
     try {
       console.log('🔍 Starting comprehensive logging demonstration...');
@@ -1732,7 +1760,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Working order processing with comprehensive logging
+  // Enhanced order processing with comprehensive logging
+  app.post("/api/process-enhanced-order", async (req, res) => {
+    try {
+      console.log('🚀 Processing enhanced order with comprehensive logging...');
+      
+      // Create a real order first
+      const testOrderData = {
+        userId: 5,
+        totalPrice: '1244.49',
+        status: 'pending',
+        items: JSON.stringify([
+          {
+            productId: 153821,
+            sku: 'O1911C',
+            name: 'Colt 1911 Government .45 ACP 5" Barrel 7-Round',
+            quantity: 1,
+            price: 1219.99,
+            fflRequired: true,
+            manufacturer: 'COLT',
+            category: 'Handguns'
+          },
+          {
+            productId: 147466,
+            sku: 'J-C7',
+            name: 'SL J-C7 COMP I SPEED LDR S&W J-FRM',
+            quantity: 1,
+            price: 24.50,
+            fflRequired: false,
+            manufacturer: 'SL',
+            category: 'Magazines'
+          }
+        ]),
+        fflRecipientId: 2142,
+        paymentMethod: 'credit_card',
+        shippingAddress: JSON.stringify({
+          street: '456 Enhanced Test Street',
+          city: 'Enhanced City',
+          state: 'NY',
+          zipCode: '12345'
+        })
+      };
+      
+      // Create order using storage
+      const order = await storage.createOrder(testOrderData);
+      console.log('✅ Enhanced test order created with ID:', order.id);
+      
+      // Process with enhanced logging
+      const { ComprehensiveOrderProcessorV2 } = await import('./services/comprehensive-order-processor-v2');
+      const orderItems = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+      const processingData = {
+        orderId: order.id,
+        tgfOrderNumber: `test${String(order.id).padStart(8, '0')}`,
+        orderItems: orderItems,
+        customerInfo: {
+          email: `enhanced_customer_${Date.now()}@gunfirm.local`,
+          firstName: 'Enhanced',
+          lastName: 'Customer',
+          phone: '555-987-6543',
+          membershipTier: 'Bronze',
+          isFakeCustomer: true
+        },
+        fflInfo: {
+          fflId: 2142,
+          businessName: '"76" ARMS & AMMO LLC',
+          licenseNumber: '6-16-009-01-04754',
+          city: 'RANDOLPH',
+          state: 'NY'
+        },
+        paymentData: {
+          method: 'credit_card',
+          cardNumber: '4111111111111111',
+          amount: 1244.49,
+          result: {
+            transactionId: `enhanced_${Date.now()}`,
+            responseCode: '1',
+            authCode: 'ENH123',
+            sandbox: true
+          }
+        }
+      };
+      
+      const result = await ComprehensiveOrderProcessorV2.processWithEnhancedLogging(processingData);
+      
+      res.json({
+        success: result.success,
+        orderId: order.id,
+        tgfOrderNumber: processingData.tgfOrderNumber,
+        totalLogs: result.logs.length,
+        logs: result.logs,
+        summary: result.summary,
+        appResponseData: result.appResponseData,
+        message: 'Order processed with enhanced activity logging including APP Response data'
+      });
+      
+    } catch (error) {
+      console.error('Enhanced order processing error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  // Working order processing with comprehensive logging (legacy)
   app.post("/api/process-test-order", async (req, res) => {
     try {
       console.log('🚀 Processing test order with comprehensive logging...');
