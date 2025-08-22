@@ -1384,14 +1384,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const orderItems = Array.isArray(order.items) ? order.items : 
                           (typeof order.items === 'string' ? JSON.parse(order.items) : []);
 
-        // Create comprehensive Zoho deal
+        // Create comprehensive Zoho deal with automatic token refresh
+        const { AutomaticZohoTokenManager } = await import('./services/automatic-zoho-token-manager');
+        const tokenManager = new AutomaticZohoTokenManager();
+        
+        // Ensure we have a valid token before proceeding with sale
+        const validToken = await tokenManager.ensureValidToken();
+        if (!validToken) {
+          console.log('⚠️ Unable to obtain valid Zoho token for order integration, order will be created without Zoho sync');
+        }
+
         const zohoService = new ZohoService({
           clientId: process.env.ZOHO_CLIENT_ID!,
           clientSecret: process.env.ZOHO_CLIENT_SECRET!,
           redirectUri: process.env.ZOHO_REDIRECT_URI!,
           accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
           apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com',
-          accessToken: process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN,
+          accessToken: validToken,
           refreshToken: process.env.ZOHO_REFRESH_TOKEN
         });
 
@@ -1575,14 +1584,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const orderItems = Array.isArray(order.items) ? order.items : 
                         (typeof order.items === 'string' ? JSON.parse(order.items) : []);
 
-      // Create Zoho service
+      // Create Zoho service with automatic token refresh
+      const { AutomaticZohoTokenManager } = await import('./services/automatic-zoho-token-manager');
+      const tokenManager = new AutomaticZohoTokenManager();
+      
+      // Ensure we have a valid token before proceeding
+      const validToken = await tokenManager.ensureValidToken();
+      if (!validToken) {
+        return res.status(500).json({ 
+          success: false, 
+          error: "Unable to obtain valid Zoho token" 
+        });
+      }
+
       const zohoService = new ZohoService({
         clientId: process.env.ZOHO_CLIENT_ID!,
         clientSecret: process.env.ZOHO_CLIENT_SECRET!,
         redirectUri: process.env.ZOHO_REDIRECT_URI!,
         accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
         apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com',
-        accessToken: process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN,
+        accessToken: validToken,
         refreshToken: process.env.ZOHO_REFRESH_TOKEN
       });
 
