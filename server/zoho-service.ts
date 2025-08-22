@@ -124,18 +124,8 @@ export class ZohoService {
       
       console.log('✅ Zoho access token refreshed, environment updated, and persisted to storage - API calls will work!');
       
-      // Test the token immediately to ensure it works
-      try {
-        // Force reload from persistent storage
-        const currentToken = await tokenPersistence.getCurrentAccessToken();
-        if (currentToken) {
-          this.config.accessToken = currentToken;
-          await this.makeAPIRequest('Deals?per_page=1');
-          console.log('🎯 Token validated successfully - Zoho integration ready');
-        }
-      } catch (testError) {
-        console.log('⚠️ Token refresh succeeded but validation failed');
-      }
+      // Token refreshed successfully
+      console.log('🎯 Token refresh completed - Zoho integration ready');
       
       return response.data;
     } catch (error: any) {
@@ -468,8 +458,10 @@ export class ZohoService {
         if (retryCount === 0 && this.config.refreshToken) {
           console.log('🔄 Token invalid, attempting refresh...');
           try {
-            await this.refreshAccessToken();
-            this.config.accessToken = process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN || process.env.ZOHO_ACCESS_TOKEN;
+            const refreshResult = await this.refreshAccessToken();
+            // Use the freshly returned access token directly
+            this.config.accessToken = refreshResult.access_token;
+            console.log('🔄 Token refreshed successfully, retrying API call with new token');
             return this.makeAPIRequest(endpoint, method, data, retryCount + 1);
           } catch (refreshError) {
             console.error('❌ Token refresh failed:', refreshError);

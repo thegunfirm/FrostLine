@@ -2744,6 +2744,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoints for Zoho token management
+  app.post("/api/admin/zoho/refresh-token", async (req, res) => {
+    try {
+      console.log('🔄 Admin: Force refreshing Zoho tokens...');
+      
+      const zohoConfig = {
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
+        accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
+        apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com',
+        accessToken: process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN || process.env.ZOHO_ACCESS_TOKEN,
+        refreshToken: process.env.ZOHO_REFRESH_TOKEN
+      };
+
+      const { ZohoService } = await import('./zoho-service');
+      const zohoService = new ZohoService(zohoConfig);
+      
+      const refreshResult = await zohoService.refreshAccessToken();
+      
+      res.json({
+        success: true,
+        message: 'Zoho tokens refreshed successfully',
+        tokenLength: refreshResult.access_token.length,
+        expiresIn: refreshResult.expires_in
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Admin token refresh failed:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  app.get("/api/admin/zoho/test-connection", async (req, res) => {
+    try {
+      console.log('🧪 Admin: Testing Zoho connection...');
+      
+      const accessToken = process.env.ZOHO_WEBSERVICES_ACCESS_TOKEN || process.env.ZOHO_ACCESS_TOKEN;
+      
+      if (!accessToken) {
+        return res.status(400).json({
+          success: false,
+          error: 'No access token available'
+        });
+      }
+
+      // Test direct API call
+      const response = await fetch('https://www.zohoapis.com/crm/v2/users?per_page=1', {
+        headers: {
+          'Authorization': `Zoho-oauthtoken ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.text();
+      
+      if (response.ok) {
+        const userData = JSON.parse(result);
+        res.json({
+          success: true,
+          message: 'Zoho connection working',
+          users: userData.users ? userData.users.length : 0,
+          tokenLength: accessToken.length
+        });
+      } else {
+        res.status(response.status).json({
+          success: false,
+          error: 'API call failed',
+          status: response.status,
+          response: result
+        });
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Admin connection test failed:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   // RSR API Integration and Hybrid Search Endpoints
   app.post("/api/admin/sync-rsr-catalog", async (req, res) => {
     try {
