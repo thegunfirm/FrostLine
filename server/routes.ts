@@ -5911,6 +5911,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check Zoho deals and products configuration
+  app.post("/api/zoho/test-deals-check", async (req, res) => {
+    try {
+      console.log('🔍 Checking Zoho Deals and Products modules...');
+      
+      // Create Zoho service with automatic token refresh
+      const { AutomaticZohoTokenManager } = await import('./services/automatic-zoho-token-manager');
+      const tokenManager = new AutomaticZohoTokenManager();
+      
+      // Ensure we have a valid token
+      const validToken = await tokenManager.ensureValidToken();
+      if (!validToken) {
+        return res.status(500).json({ 
+          success: false, 
+          error: "Unable to obtain valid Zoho token for verification" 
+        });
+      }
+
+      const zohoService = new ZohoService({
+        clientId: process.env.ZOHO_CLIENT_ID!,
+        clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+        redirectUri: process.env.ZOHO_REDIRECT_URI!,
+        accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
+        apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com',
+        accessToken: validToken,
+        refreshToken: process.env.ZOHO_REFRESH_TOKEN
+      });
+
+      const results = {
+        success: true,
+        deals: [],
+        products: [],
+        issues: []
+      };
+
+      try {
+        // Get recent deals
+        console.log('📋 Fetching recent deals...');
+        const dealsResponse = await zohoService.makeRequest('GET', '/crm/v6/Deals', {
+          fields: 'Deal_Name,Amount,Stage,Created_Time,Product_Details',
+          sort_order: 'desc',
+          sort_by: 'Created_Time',
+          per_page: 5
+        });
+
+        if (dealsResponse.data) {
+          results.deals = dealsResponse.data;
+          console.log(`✅ Found ${dealsResponse.data.length} recent deals`);
+        }
+      } catch (dealError) {
+        console.error('❌ Error fetching deals:', dealError);
+        results.issues.push(`Failed to fetch deals: ${dealError.message}`);
+      }
+
+      try {
+        // Get recent products from Products module
+        console.log('🏭 Fetching recent products...');
+        const productsResponse = await zohoService.makeRequest('GET', '/crm/v6/Products', {
+          fields: 'Product_Name,Product_Code,Manufacturer,Unit_Price,Created_Time',
+          sort_order: 'desc',
+          sort_by: 'Created_Time',
+          per_page: 5
+        });
+
+        if (productsResponse.data) {
+          results.products = productsResponse.data;
+          console.log(`✅ Found ${productsResponse.data.length} recent products`);
+        }
+      } catch (productError) {
+        console.error('❌ Error fetching products:', productError);
+        results.issues.push(`Failed to fetch products: ${productError.message}`);
+      }
+
+      // Check for missing fields or issues
+      results.deals.forEach((deal, index) => {
+        if (!deal.Product_Details || deal.Product_Details.length === 0) {
+          results.issues.push(`Deal "${deal.Deal_Name}" has no products in subform`);
+        }
+      });
+
+      res.json(results);
+
+    } catch (error: any) {
+      console.error('Zoho check error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        message: 'Zoho deals and products check failed'
+      });
+    }
+  });
+
   // Test endpoint for checkout system field auto-population
   app.post("/api/test/checkout-fields", async (req, res) => {
     try {
