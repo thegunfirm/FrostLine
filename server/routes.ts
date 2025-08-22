@@ -1564,6 +1564,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Direct order endpoint for testing comprehensive logging (bypasses authentication)
+  app.post("/api/direct-order", async (req, res) => {
+    try {
+      const orderData = insertOrderSchema.parse(req.body);
+      console.log('📝 Creating direct test order with data:', orderData);
+      
+      const order = await storage.createOrder(orderData);
+      console.log('✅ Direct order created with ID:', order.id);
+
+      // Use comprehensive logging system
+      const { ComprehensiveOrderProcessor } = await import('./services/comprehensive-order-processor');
+      const processingData = {
+        orderId: order.id,
+        tgfOrderNumber: order.order_number || `test${String(order.id).padStart(8, '0')}`,
+        orderItems: Array.isArray(order.items) ? order.items : 
+                    (typeof order.items === 'string' ? JSON.parse(order.items) : []),
+        customerInfo: {
+          email: 'testorder@gunfirm.local',
+          firstName: 'End',
+          lastName: 'ToEnd',
+          membershipTier: 'Bronze'
+        },
+        fflInfo: order.ffl_dealer_id ? {
+          license: order.ffl_dealer_id,
+          businessName: 'Test FFL Business',
+          address: { address1: 'Test Address' }
+        } : undefined,
+        paymentData: {
+          method: 'credit_card',
+          cardNumber: '4111111111111111',
+          result: {
+            transactionId: `test_${Date.now()}`,
+            responseCode: '1',
+            authCode: 'TEST123',
+            sandbox: true
+          }
+        }
+      };
+
+      // Process with comprehensive logging
+      const result = await ComprehensiveOrderProcessor.processWithLogging(processingData);
+      
+      res.status(201).json({
+        orderId: order.id,
+        tgfOrderNumber: processingData.tgfOrderNumber,
+        success: result.success,
+        logsGenerated: result.logs.length,
+        summary: result.summary
+      });
+      
+    } catch (error) {
+      console.error("Direct order creation error:", error);
+      res.status(500).json({ message: "Failed to create direct order" });
+    }
+  });
+
   app.get("/api/orders/:id", async (req, res) => {
     try {
       const { id } = req.params;
