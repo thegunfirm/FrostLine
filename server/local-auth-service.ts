@@ -1,8 +1,9 @@
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { db } from './db.js';
-import { localUsers } from '../shared/schema.js';
+import { localUsers, users } from '../shared/schema.js';
 import { eq } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { ZohoService } from './zoho-service.js';
 
 export type User = typeof localUsers.$inferSelect;
@@ -119,7 +120,53 @@ export class LocalAuthService {
    */
   async verifyEmailAndCreateAccount(token: string): Promise<VerificationResult> {
     try {
-      // Get pending registration
+      console.log('🔄 Verifying email token:', token);
+      
+      // First check database for existing user with this token (new flow) - check main users table
+      const existingUsersResult = await db.execute(sql`
+        SELECT id, email, first_name, last_name, subscription_tier, email_verified 
+        FROM users 
+        WHERE email_verification_token = ${token} AND email_verified = false
+      `);
+      
+      console.log(`🔍 Database query returned ${existingUsersResult.rows.length} rows`);
+      if (existingUsersResult.rows.length === 0) {
+        // Debug: check what tokens exist in database
+        const debugResult = await db.execute(sql`
+          SELECT id, email, email_verified, email_verification_token FROM users 
+          WHERE email_verification_token IS NOT NULL
+        `);
+        console.log(`🔧 Debug: Found ${debugResult.rows.length} users with tokens:`, debugResult.rows);
+      }
+      
+      if (existingUsersResult.rows.length > 0) {
+        console.log('📝 Found existing user in main users table with token');
+        const existingUser = existingUsersResult.rows[0];
+        
+        // Verify the user's email in the main users table
+        console.log('📧 Marking email as verified for:', existingUser.email);
+        await db.execute(sql`
+          UPDATE users 
+          SET email_verified = true, email_verification_token = null 
+          WHERE id = ${existingUser.id}
+        `);
+        
+        console.log('✅ Email verification completed for:', existingUser.email);
+        
+        return {
+          success: true,
+          user: {
+            id: existingUser.id.toString(),
+            email: existingUser.email,
+            firstName: existingUser.first_name,
+            lastName: existingUser.last_name,
+            subscriptionTier: existingUser.subscription_tier,
+            emailVerified: true
+          }
+        };
+      }
+      
+      // Fall back to memory-based pending registration (old flow)
       const pendingUser = this.pendingRegistrations.get(token);
       if (!pendingUser) {
         return { success: false, error: 'Invalid or expired verification token' };
