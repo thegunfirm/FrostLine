@@ -1583,6 +1583,224 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Testing endpoint for complete order workflow without authentication
+  app.post("/api/orders/test-complete-workflow", async (req, res) => {
+    try {
+      const orderDataWithUser = {
+        ...req.body,
+        userId: req.body.userId || 10 // Use provided userId
+      };
+      
+      const orderData = insertOrderSchema.parse(orderDataWithUser);
+      console.log('🧪 TESTING: Creating complete order workflow with data:', orderData);
+      
+      const order = await storage.createOrder(orderData);
+      console.log('✅ TESTING: Order created with ID:', order.id);
+
+      // Continue with same Zoho integration logic as main endpoint...
+      try {
+        console.log('🔄 TESTING: Starting automatic Zoho integration for order:', order.id);
+        
+        // Get actual customer data from the database
+        const customer = await db.select({
+          id: users.id,
+          email: users.email,
+          first_name: users.first_name,
+          last_name: users.last_name,
+          subscription_tier: users.subscription_tier
+        }).from(users).where(eq(users.id, order.user_id)).limit(1);
+        
+        if (!customer.length) {
+          throw new Error(`Customer not found for user_id: ${order.user_id}`);
+        }
+
+        const customerInfo = {
+          email: customer[0].email,
+          name: `${customer[0].first_name} ${customer[0].last_name}`,
+          firstName: customer[0].first_name,
+          lastName: customer[0].last_name,
+          membershipTier: customer[0].subscription_tier,
+          zohoContactId: undefined
+        };
+
+        // Get FFL dealer info if needed
+        let fflInfo = null;
+        if (order.ffl_dealer_id) {
+          const fflResult = await db.select().from(ffls).where(eq(ffls.license_number, order.ffl_dealer_id)).limit(1);
+          if (fflResult.length) {
+            fflInfo = {
+              license: fflResult[0].license_number,
+              businessName: fflResult[0].business_name,
+              address: fflResult[0].address
+            };
+          }
+        }
+
+        // Parse order items from JSON
+        const orderItems = Array.isArray(order.items) ? order.items : 
+                          (typeof order.items === 'string' ? JSON.parse(order.items) : []);
+
+        // Create comprehensive Zoho deal with automatic token refresh
+        const { AutomaticZohoTokenManager } = await import('./services/automatic-zoho-token-manager');
+        const tokenManager = new AutomaticZohoTokenManager();
+        
+        // Ensure we have a valid token before proceeding with sale
+        const validToken = await tokenManager.ensureValidToken();
+        if (!validToken) {
+          console.log('⚠️ Unable to obtain valid Zoho token for order integration, order will be created without Zoho sync');
+        }
+
+        const zohoService = new ZohoService({
+          clientId: process.env.ZOHO_CLIENT_ID!,
+          clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+          redirectUri: process.env.ZOHO_REDIRECT_URI!,
+          accountsHost: process.env.ZOHO_ACCOUNTS_HOST || 'https://accounts.zoho.com',
+          apiHost: process.env.ZOHO_CRM_BASE || 'https://www.zohoapis.com',
+          accessToken: validToken,
+          refreshToken: process.env.ZOHO_REFRESH_TOKEN
+        });
+
+        // Import TGF order numbering service
+        const { ZohoOrderFieldsService } = await import('./services/zoho-order-fields-service');
+        const orderFieldsService = new ZohoOrderFieldsService();
+        
+        // Determine if order has FFL items
+        const hasFFL = orderItems.some((item: any) => item.fflRequired);
+        
+        // Generate proper TGF order number
+        const tgfOrderNumber = orderFieldsService.buildTGFOrderNumber(
+          order.id,     // Use database ID as base sequence
+          true,         // isTest = true for testing environment
+          false,        // isMultiple = false for single shipment
+          0             // groupIndex = 0 for single group
+        );
+        
+        // Create deal name with proper TGF format
+        const dealName = `TGF-ORDER-${tgfOrderNumber}`;
+        
+        console.log(`🏷️ TESTING: Generated TGF Order Number: ${tgfOrderNumber}`);
+        console.log(`📊 TESTING: Deal Name: ${dealName}`);
+        
+        // First, find or create contact
+        const contactResult = await zohoService.findOrCreateContact({
+          email: customerInfo.email,
+          firstName: customerInfo.firstName,
+          lastName: customerInfo.lastName
+        });
+
+        if (!contactResult.success) {
+          throw new Error(`Failed to create/find contact: ${contactResult.error}`);
+        }
+        
+        console.log(`👤 TESTING: Contact created/found with ID: ${contactResult.contactId}`);
+
+        // CRITICAL: Use proper product creation workflow
+        // Step 1: Create/Find products in Products module first
+        console.log('🏭 TESTING: Creating products in Products module first...');
+        const { ZohoProductLookupService } = await import('./services/zoho-product-lookup-service');
+        const productLookupService = new ZohoProductLookupService();
+
+        const productReferences = [];
+        for (const item of orderItems) {
+          console.log(`🔍 TESTING: Processing product: ${item.name} (SKU: ${item.sku})`);
+          
+          const productId = await productLookupService.findOrCreateProductBySKU(item.sku, {
+            productName: item.name || 'Unknown Product',
+            manufacturer: item.manufacturer || 'Unknown',
+            productCategory: item.category || 'Unknown',
+            fflRequired: item.fflRequired || false,
+            dropShipEligible: true,
+            inHouseOnly: false,
+            distributorPartNumber: item.rsrStockNumber || item.sku,
+            distributor: 'RSR',
+            upcCode: item.upcCode || ''
+          });
+
+          productReferences.push({
+            productId,
+            sku: item.sku,
+            productName: item.name || 'Unknown Product',
+            quantity: item.quantity || 1,
+            unitPrice: item.price || 0,
+            manufacturer: item.manufacturer || 'Unknown',
+            fflRequired: item.fflRequired || false,
+            rsrStockNumber: item.rsrStockNumber || item.sku,
+            upcCode: item.upcCode || ''
+          });
+
+          console.log(`✅ TESTING: Product ${item.sku} prepared with ID: ${productId}`);
+        }
+
+        // Step 2: Create deal with product references
+        console.log('📊 TESTING: Creating Zoho deal with product references:', dealName);
+        const dealResult = await zohoService.createOrderDealWithProducts({
+          contactId: contactResult.contactId,
+          orderNumber: dealName,
+          totalAmount: order.total_price,
+          productReferences: productReferences,
+          membershipTier: customerInfo.membershipTier,
+          fflRequired: order.ffl_required || false,
+          fflDealerName: fflInfo ? fflInfo.businessName : undefined,
+          orderStatus: 'Confirmed',
+          systemFields: {
+            TGF_Order_Number: tgfOrderNumber, // Use proper TGF format instead of raw ID
+            Customer_Name: customerInfo.name,
+            Customer_Email: customerInfo.email,
+            Payment_Method: order.payment_method || 'Credit Card',
+            FFL_Dealer: fflInfo ? fflInfo.businessName : null,
+            FFL_License: fflInfo ? fflInfo.license : null,
+            Order_Date: order.order_date,
+            Authorize_Net_Transaction_ID: order.authorize_net_transaction_id
+          }
+        });
+        
+        if (dealResult.success && dealResult.dealId) {
+          console.log(`✅ TESTING: Zoho deal created with subforms: ${dealResult.dealId}`);
+
+          // Update order with Zoho deal ID
+          const updatedOrder = await storage.updateOrder(order.id, {
+            notes: (order.notes || '') + ` | Zoho Deal ID: ${dealResult.dealId}`
+          });
+          
+          console.log(`✅ TESTING: Order ${order.id} successfully synced to Zoho Deal ${dealResult.dealId}`);
+          res.status(201).json({
+            ...updatedOrder,
+            zohoSync: {
+              success: true,
+              dealId: dealResult.dealId,
+              dealName: dealName,
+              contactId: contactResult.contactId,
+              productsCount: productReferences.length,
+              tgfOrderNumber: tgfOrderNumber
+            }
+          });
+        } else {
+          console.log(`❌ TESTING: Zoho deal creation failed: ${dealResult.error}`);
+          res.status(201).json({
+            ...order,
+            zohoSync: {
+              success: false,
+              error: dealResult.error,
+              tgfOrderNumber: tgfOrderNumber
+            }
+          });
+        }
+      } catch (zohoError) {
+        console.log('❌ TESTING: Zoho integration error:', zohoError);
+        res.status(201).json({
+          ...order,
+          zohoSync: {
+            success: false,
+            error: zohoError instanceof Error ? zohoError.message : String(zohoError)
+          }
+        });
+      }
+    } catch (error) {
+      console.error("TESTING: Create order error:", error);
+      res.status(500).json({ message: "Failed to create test order" });
+    }
+  });
+
   // Manual Zoho sync endpoint for testing existing orders
   app.post("/api/orders/:id/sync-zoho", async (req, res) => {
     try {
