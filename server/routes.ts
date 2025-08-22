@@ -7219,6 +7219,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Apply Algolia facet configuration updates
+  app.post("/api/admin/update-algolia-config", async (req, res) => {
+    try {
+      console.log('🔧 Updating Algolia search configuration...');
+      
+      const { algoliaSearch } = await import('./services/algolia-search');
+      await algoliaSearch.configureSearchSettings();
+      
+      console.log('✅ Algolia configuration updated successfully');
+      
+      res.json({ 
+        success: true, 
+        message: 'Algolia search configuration updated successfully' 
+      });
+    } catch (error: any) {
+      console.error('❌ Error updating Algolia configuration:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+  });
+
   app.post("/api/admin/trigger-rsr-sync", async (req, res) => {
     try {
       await syncHealthMonitor.triggerRSRSync();
