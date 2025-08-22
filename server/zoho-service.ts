@@ -757,6 +757,86 @@ export class ZohoService {
   }
 
   /**
+   * Create a new deal from order data with product references from Products module
+   */
+  async createOrderDealWithProducts(dealData: {
+    contactId: string;
+    orderNumber: string;
+    totalAmount: number;
+    productReferences: any[];
+    membershipTier: string;
+    fflRequired: boolean;
+    fflDealerName?: string;
+    orderStatus: string;
+    systemFields?: any;
+  }): Promise<{ success: boolean; dealId?: string; error?: string }> {
+    try {
+      console.log('🔄 Creating deal with product references from Products module...');
+      
+      // Step 1: Create the main deal first
+      const cleanSystemFields = dealData.systemFields ? { ...dealData.systemFields } : {};
+      
+      // Remove any problematic fields that cause Layout errors
+      delete cleanSystemFields.Layout;
+      delete cleanSystemFields.layout;
+      delete cleanSystemFields.LAYOUT;
+
+      const dealPayload: any = {
+        Deal_Name: dealData.orderNumber,
+        Amount: Math.round((dealData.totalAmount || 0) * 100) / 100,
+        Stage: this.mapOrderStatusToDealStage(dealData.orderStatus),
+        Contact_Name: dealData.contactId,
+        Description: `TGF Order - ${dealData.membershipTier} member`,
+        ...cleanSystemFields
+      };
+
+      console.log('🚀 Step 1: Creating main deal...');
+      console.log('📋 Deal payload:', JSON.stringify(dealPayload, null, 2));
+
+      const createResponse = await this.makeAPIRequest('Deals', 'POST', {
+        data: [dealPayload],
+        trigger: ["workflow"]
+      });
+
+      console.log('📥 Deal creation response:', JSON.stringify(createResponse, null, 2));
+
+      if (!createResponse.data || createResponse.data.length === 0 || createResponse.data[0].status !== 'success') {
+        console.log('❌ Deal creation failed:', JSON.stringify(createResponse, null, 2));
+        return {
+          success: false,
+          error: `Failed to create deal: ${JSON.stringify(createResponse)}`
+        };
+      }
+
+      const dealId = createResponse.data[0].details.id;
+      console.log(`✅ Main deal created successfully: ${dealId}`);
+      
+      // Step 2: Create subform entries using existing product references
+      console.log('🔄 Step 2: Creating subform entries with product references...');
+      const subformSuccess = await this.createDealSubformWithExistingProducts(dealId, dealData.productReferences);
+      
+      if (subformSuccess) {
+        console.log('✅ Subform created successfully with proper Product ID references');
+        await this.verifyDealSubform(dealId, dealData.productReferences.length);
+      } else {
+        console.warn('⚠️ Subform creation failed, but deal exists');
+      }
+
+      return {
+        success: true,
+        dealId: dealId
+      };
+
+    } catch (error: any) {
+      console.error('❌ Error creating deal with product references:', error);
+      return {
+        success: false,
+        error: `Deal creation error: ${error.message}`
+      };
+    }
+  }
+
+  /**
    * Create a new deal from order data with proper Subform_1 structure
    */
   async createOrderDeal(dealData: {
@@ -906,6 +986,76 @@ export class ZohoService {
     
     console.log(`✅ Product creation phase complete: ${productIds.size}/${orderItems.length} products processed`);
     return productIds;
+  }
+
+  /**
+   * Create subform entries using existing product references
+   */
+  async createDealSubformWithExistingProducts(dealId: string, productReferences: any[]): Promise<boolean> {
+    try {
+      console.log(`🔄 Creating subform entries for deal ${dealId} with existing product references...`);
+      
+      const subformRecords = productReferences.map((item, index) => {
+        console.log(`🔍 Processing product reference ${index + 1}:`, {
+          sku: item.sku,
+          productId: item.productId,
+          productName: item.productName
+        });
+        
+        return {
+          // Core fields
+          Product_Name: item.productName || `Product ${index + 1}`,
+          Product_Code: item.sku, // Manufacturer part number
+          Product_Lookup: item.productId ? { id: item.productId } : null, // Link to actual Product record
+          Quantity: parseInt(item.quantity) || 1,
+          Unit_Price: parseFloat(item.unitPrice) || 0,
+          
+          // Reference fields
+          Product_Ref: item.productId || '', // Product reference ID
+          Distributor_Code: item.rsrStockNumber || item.sku, // RSR stock number as distributor code
+          UPC: item.upcCode || '', // UPC field
+          
+          // Additional fields
+          Distributor_Part_Number: item.rsrStockNumber || item.sku,
+          Manufacturer: item.manufacturer || '',
+          Product_Category: item.category || 'Firearms/Accessories',
+          FFL_Required: item.fflRequired === true,
+          Drop_Ship_Eligible: true,
+          In_House_Only: false,
+          Distributor: 'RSR',
+          
+          // Calculate line total
+          Line_Total: (parseFloat(item.unitPrice) || 0) * (parseInt(item.quantity) || 1)
+        };
+      });
+
+      console.log(`📋 Prepared ${subformRecords.length} subform records with existing product references:`, 
+        JSON.stringify(subformRecords, null, 2));
+
+      // Update deal with subform data
+      const updatePayload = {
+        Subform_1: subformRecords
+      };
+
+      console.log('🚀 Updating deal with Subform_1 data (using existing product references)...');
+      const updateResponse = await this.makeAPIRequest(`Deals/${dealId}`, 'PUT', {
+        data: [updatePayload]
+      });
+
+      console.log('📥 Subform_1 update response:', JSON.stringify(updateResponse, null, 2));
+
+      if (updateResponse.data && updateResponse.data[0] && updateResponse.data[0].status === 'success') {
+        console.log('✅ Subform_1 data added successfully with existing product references');
+        return true;
+      } else {
+        console.warn('⚠️ Subform_1 update failed:', JSON.stringify(updateResponse, null, 2));
+        return false;
+      }
+
+    } catch (error: any) {
+      console.error('❌ Error creating deal subform with existing products:', error);
+      return false;
+    }
   }
 
   /**

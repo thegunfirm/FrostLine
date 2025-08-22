@@ -1418,23 +1418,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
           throw new Error(`Failed to create/find contact: ${contactResult.error}`);
         }
 
-        // Prepare order items for Zoho format
-        const zohoOrderItems = orderItems.map((item: any) => ({
-          sku: item.sku || 'UNKNOWN',
-          productName: item.name || 'Unknown Product',
-          quantity: item.quantity || 1,
-          unitPrice: item.price || 0,
-          manufacturer: item.manufacturer || 'Unknown',
-          fflRequired: item.fflRequired || false
-        }));
+        // CRITICAL: Use proper product creation workflow
+        // Step 1: Create/Find products in Products module first
+        console.log('🏭 Creating products in Products module first...');
+        const { ZohoProductLookupService } = await import('./services/zoho-product-lookup-service');
+        const productLookupService = new ZohoProductLookupService();
 
-        // Create comprehensive deal with subforms
-        console.log('📊 Creating Zoho deal with complete data:', dealName);
-        const dealResult = await zohoService.createOrderDeal({
+        const productReferences = [];
+        for (const item of orderItems) {
+          console.log(`🔍 Processing product: ${item.name} (SKU: ${item.sku})`);
+          
+          const productId = await productLookupService.findOrCreateProductBySKU(item.sku, {
+            productName: item.name || 'Unknown Product',
+            manufacturer: item.manufacturer || 'Unknown',
+            productCategory: item.category || 'Unknown',
+            fflRequired: item.fflRequired || false,
+            dropShipEligible: true,
+            inHouseOnly: false,
+            distributorPartNumber: item.rsrStockNumber || item.sku,
+            distributor: 'RSR',
+            upcCode: item.upcCode || ''
+          });
+
+          productReferences.push({
+            productId,
+            sku: item.sku,
+            productName: item.name || 'Unknown Product',
+            quantity: item.quantity || 1,
+            unitPrice: item.price || 0,
+            manufacturer: item.manufacturer || 'Unknown',
+            fflRequired: item.fflRequired || false,
+            rsrStockNumber: item.rsrStockNumber || item.sku,
+            upcCode: item.upcCode || ''
+          });
+
+          console.log(`✅ Product ${item.sku} prepared with ID: ${productId}`);
+        }
+
+        // Step 2: Create deal with product references
+        console.log('📊 Creating Zoho deal with product references:', dealName);
+        const dealResult = await zohoService.createOrderDealWithProducts({
           contactId: contactResult.contactId,
           orderNumber: dealName,
           totalAmount: order.total_price,
-          orderItems: zohoOrderItems,
+          productReferences: productReferences,
           membershipTier: customerInfo.membershipTier,
           fflRequired: order.ffl_required || false,
           fflDealerName: fflInfo ? fflInfo.businessName : undefined,
@@ -1621,25 +1648,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Prepare order items for Zoho
-      const zohoOrderItems = orderItems.map((item: any) => ({
-        sku: item.sku || 'UNKNOWN',
-        productName: item.name || 'Unknown Product',
-        quantity: item.quantity || 1,
-        unitPrice: item.price || 0,
-        manufacturer: item.manufacturer || 'Unknown',
-        fflRequired: item.fflRequired || false
-      }));
+      // CRITICAL: Use proper product creation workflow for manual sync
+      // Step 1: Create/Find products in Products module first
+      console.log('🏭 Manual sync: Creating products in Products module first...');
+      const { ZohoProductLookupService } = await import('./services/zoho-product-lookup-service');
+      const productLookupService = new ZohoProductLookupService();
+
+      const productReferences = [];
+      for (const item of orderItems) {
+        console.log(`🔍 Manual sync: Processing product: ${item.name} (SKU: ${item.sku})`);
+        
+        const productId = await productLookupService.findOrCreateProductBySKU(item.sku, {
+          productName: item.name || 'Unknown Product',
+          manufacturer: item.manufacturer || 'Unknown',
+          productCategory: item.category || 'Unknown',
+          fflRequired: item.fflRequired || false,
+          dropShipEligible: true,
+          inHouseOnly: false,
+          distributorPartNumber: item.rsrStockNumber || item.sku,
+          distributor: 'RSR',
+          upcCode: item.upcCode || ''
+        });
+
+        productReferences.push({
+          productId,
+          sku: item.sku,
+          productName: item.name || 'Unknown Product',
+          quantity: item.quantity || 1,
+          unitPrice: item.price || 0,
+          manufacturer: item.manufacturer || 'Unknown',
+          fflRequired: item.fflRequired || false,
+          rsrStockNumber: item.rsrStockNumber || item.sku,
+          upcCode: item.upcCode || ''
+        });
+
+        console.log(`✅ Manual sync: Product ${item.sku} prepared with ID: ${productId}`);
+      }
 
       const dealName = `TGF-ORDER-${order.id}`;
 
-      // Create the deal
-      console.log(`📊 Creating Zoho deal: ${dealName}`);
-      const dealResult = await zohoService.createOrderDeal({
+      // Step 2: Create deal with product references
+      console.log(`📊 Manual sync: Creating Zoho deal with product references: ${dealName}`);
+      const dealResult = await zohoService.createOrderDealWithProducts({
         contactId: contactResult.contactId,
         orderNumber: dealName,
         totalAmount: order.total_price,
-        orderItems: zohoOrderItems,
+        productReferences: productReferences,
         membershipTier: customerInfo.membershipTier,
         fflRequired: order.ffl_required || false,
         fflDealerName: fflInfo ? fflInfo.businessName : undefined,
@@ -1665,7 +1719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dealId: dealResult.dealId,
           dealName: dealName,
           contactId: contactResult.contactId,
-          productsCount: zohoOrderItems.length,
+          productsCount: productReferences.length,
           customerName: customerInfo.name,
           totalAmount: order.total_price
         });
