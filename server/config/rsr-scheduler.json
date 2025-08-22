@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2025-08-22T06:00:00.197Z",
+  "lastUpdated": "2025-08-22T06:15:00.199Z",
   "stats": {
-    "totalRuns": 147,
+    "totalRuns": 148,
     "successfulRuns": 1,
-    "failedRuns": 146,
-    "lastError": "FTP download failed: FTP Connection: 530 Login incorrect."
+    "failedRuns": 147,
+    "lastError": "Quantity download failed: 530 Login incorrect."
   }
 }
