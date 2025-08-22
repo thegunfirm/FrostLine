@@ -336,20 +336,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash password using bcrypt that's already imported at the top
       const passwordHash = await bcrypt.hash(password, 12);
 
-      // Use direct SQL insert to avoid schema mismatch issues
+      // Generate verification token for email verification
+      const verificationToken = generateVerificationToken();
+
+      // Use direct SQL insert to avoid schema mismatch issues - email NOT verified initially
       const result = await db.execute(sql`
-        INSERT INTO users (email, password, first_name, last_name, subscription_tier, email_verified, role)
-        VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, ${membershipTier || 'Bronze'}, ${true}, 'user')
+        INSERT INTO users (email, password, first_name, last_name, subscription_tier, email_verified, email_verification_token, role)
+        VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, ${membershipTier || 'Bronze'}, ${false}, ${verificationToken}, 'user')
         RETURNING id
       `);
 
-      console.log(`✅ User registered successfully: ${email} with ID: ${result.rows[0].id}`);
+      console.log(`✅ User registered: ${email} with ID: ${result.rows[0].id} - sending verification email`);
 
-      res.json({
-        success: true,
-        message: 'Registration successful. You can now log in.',
-        userId: result.rows[0].id
-      });
+      // Send verification email using SendGrid
+      const emailSent = await sendVerificationEmail(email, firstName, verificationToken);
+      
+      if (emailSent) {
+        console.log(`📧 Verification email sent to: ${email}`);
+        res.json({
+          success: true,
+          message: 'Registration successful! Please check your email and click the verification link to complete your account setup.',
+          userId: result.rows[0].id,
+          requiresVerification: true
+        });
+      } else {
+        console.error(`❌ Failed to send verification email to: ${email}`);
+        res.json({
+          success: true,
+          message: 'Registration successful, but we could not send the verification email. Please contact support.',
+          userId: result.rows[0].id,
+          requiresVerification: true,
+          emailError: true
+        });
+      }
 
     } catch (error: any) {
       console.error('Registration error:', error);

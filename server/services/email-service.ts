@@ -41,11 +41,11 @@ export async function sendVerificationEmail(
   firstName: string,
   verificationToken: string
 ): Promise<boolean> {
-  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-    : process.env.NODE_ENV === 'production' 
-      ? 'https://thegunfirm.com' 
-      : 'http://localhost:5000';
+  // Use current Replit domain for verification links
+  const currentDomain = process.env.REPLIT_DEV_DOMAIN || '4f937a25-00c8-498d-9fa5-eb24f01732eb-00-9p4bpqrd7jc1.janeway.replit.dev';
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://thegunfirm.com' 
+    : `https://${currentDomain}`;
   
   const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
   
