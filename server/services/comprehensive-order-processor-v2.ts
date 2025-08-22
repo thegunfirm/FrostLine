@@ -375,6 +375,66 @@ export class ComprehensiveOrderProcessorV2 {
   }
   
   /**
+   * Process order with REAL RSR inventory data only
+   */
+  static async processRealInventoryOrder(): Promise<any> {
+    const orderId = Math.floor(Math.random() * 100000) + 80000;
+    const tgfOrderNumber = `test${String(orderId).padStart(8, '0')}`;
+    
+    const realData: OrderProcessingData = {
+      orderId,
+      tgfOrderNumber,
+      customerInfo: {
+        email: `enhanced_customer_${Date.now()}@gunfirm.local`,
+        firstName: 'Enhanced',
+        lastName: 'Customer',
+        membershipTier: 'Bronze'
+      },
+      orderItems: [
+        {
+          sku: 'COM-PR-45A',
+          name: 'WILSON CQB CMDR 1911 4.25" 45ACP 8RD',
+          price: 4224.99,
+          quantity: 1,
+          fflRequired: true,
+          manufacturer: 'WC',
+          category: 'Handguns',
+          rsrStockNumber: 'COM-PR-45A'
+        },
+        {
+          sku: '05-199',
+          name: 'ALG COMBAT TRIGGER',
+          price: 78.80,
+          quantity: 1,
+          fflRequired: false,
+          manufacturer: 'ALG',
+          category: 'Parts',
+          rsrStockNumber: '05-199'
+        }
+      ],
+      fflInfo: {
+        fflId: 2142,
+        businessName: '"76" ARMS & AMMO LLC',
+        licenseNumber: '6-16-009-01-04754',
+        city: 'RANDOLPH',
+        state: 'NY'
+      },
+      paymentData: {
+        method: 'credit_card',
+        cardNumber: '4111111111111111',
+        amount: 4303.79,
+        result: {
+          transactionId: `enhanced_${Date.now()}`,
+          authCode: 'ENH123',
+          responseCode: '1'
+        }
+      }
+    };
+    
+    return await this.processWithEnhancedLogging(realData);
+  }
+
+  /**
    * Demonstration function with real data
    */
   static async demonstrateWithRealData(): Promise<any> {

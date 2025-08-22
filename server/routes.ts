@@ -1765,31 +1765,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🚀 Processing enhanced order with comprehensive logging...');
       
-      // Create a real order first
+      // Create a real order with REAL RSR inventory
       const testOrderData = {
         userId: 5,
-        totalPrice: '1244.49',
+        totalPrice: '4303.79',
         status: 'pending',
         items: JSON.stringify([
           {
-            productId: 153821,
-            sku: 'O1911C',
-            name: 'Colt 1911 Government .45 ACP 5" Barrel 7-Round',
+            productId: 1,
+            sku: 'COM-PR-45A',
+            name: 'WILSON CQB CMDR 1911 4.25" 45ACP 8RD',
             quantity: 1,
-            price: 1219.99,
+            price: 4224.99,
             fflRequired: true,
-            manufacturer: 'COLT',
+            manufacturer: 'WC',
             category: 'Handguns'
           },
           {
-            productId: 147466,
-            sku: 'J-C7',
-            name: 'SL J-C7 COMP I SPEED LDR S&W J-FRM',
+            productId: 2,
+            sku: '05-199',
+            name: 'ALG COMBAT TRIGGER',
             quantity: 1,
-            price: 24.50,
+            price: 78.80,
             fflRequired: false,
-            manufacturer: 'SL',
-            category: 'Magazines'
+            manufacturer: 'ALG',
+            category: 'Parts'
           }
         ]),
         fflRecipientId: 2142,
@@ -1831,7 +1831,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentData: {
           method: 'credit_card',
           cardNumber: '4111111111111111',
-          amount: 1244.49,
+          amount: 4303.79,
           result: {
             transactionId: `enhanced_${Date.now()}`,
             responseCode: '1',
