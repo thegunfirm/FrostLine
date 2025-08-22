@@ -1353,6 +1353,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const order = await storage.createOrder(orderData);
       console.log('✅ Order created with ID:', order.id);
 
+      // Initialize comprehensive activity logging
+      const { OrderActivityLogger } = await import('./services/order-activity-logger');
+      const processingStartTime = Date.now();
+
+      // Step 1: Log TGF order numbering
+      const tgfOrderNumber = order.order_number || `test${String(order.id).padStart(8, '0')}`;
+      await OrderActivityLogger.logOrderNumbering(order.id, tgfOrderNumber, true, {
+        orderFormat: 'TGF standard format',
+        sequenceNumber: order.id,
+        generatedAt: new Date().toISOString()
+      });
+
       // Automatic Zoho Deal integration for new orders
       try {
         console.log('🔄 Starting automatic Zoho integration for order:', order.id);
@@ -1580,6 +1592,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get user orders error:", error);
       res.status(500).json({ message: "Failed to get orders" });
+    }
+  });
+
+  // Order Activity Logs API endpoints
+  app.get("/api/orders/:id/activity-logs", async (req, res) => {
+    try {
+      const orderId = parseInt(req.params.id);
+      
+      // Verify order exists
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Import and use OrderActivityLogger
+      const { OrderActivityLogger } = await import('./services/order-activity-logger');
+      const logs = await OrderActivityLogger.getOrderLogs(orderId);
+      
+      res.json(logs);
+    } catch (error) {
+      console.error("Get activity logs error:", error);
+      res.status(500).json({ message: "Failed to fetch activity logs" });
+    }
+  });
+
+  app.get("/api/orders/:id/activity-summary", async (req, res) => {
+    try {
+      const orderId = parseInt(req.params.id);
+      
+      // Verify order exists
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Import and use OrderActivityLogger
+      const { OrderActivityLogger } = await import('./services/order-activity-logger');
+      const summary = await OrderActivityLogger.getOrderSummary(orderId);
+      
+      res.json(summary);
+    } catch (error) {
+      console.error("Get activity summary error:", error);
+      res.status(500).json({ message: "Failed to fetch activity summary" });
+    }
+  });
+
+  // Comprehensive logging demonstration endpoint
+  app.post("/api/demo/comprehensive-logging", async (req, res) => {
+    try {
+      console.log('🔍 Starting comprehensive logging demonstration...');
+      
+      // Import and use ComprehensiveOrderProcessor
+      const { ComprehensiveOrderProcessor } = await import('./services/comprehensive-order-processor');
+      const result = await ComprehensiveOrderProcessor.demonstrateWithRealData();
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Comprehensive logging demonstration error:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to run comprehensive logging demonstration",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

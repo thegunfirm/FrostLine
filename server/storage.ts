@@ -18,6 +18,7 @@ import {
   fulfillmentSettings,
   atfDirectoryFiles,
   fflDataSources,
+  orderActivityLogs,
   type User, 
   type InsertUser,
   type Product,
@@ -52,6 +53,8 @@ import {
   type InsertAtfDirectoryFile,
   type FflDataSource,
   type InsertFflDataSource,
+  type OrderActivityLog,
+  type InsertOrderActivityLog,
   tierLabelSettings,
   type TierLabelSetting,
   type InsertTierLabelSetting

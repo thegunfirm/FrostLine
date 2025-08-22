@@ -714,3 +714,67 @@ export const rolePermissions = pgTable('role_permissions', {
 export const insertRolePermissionSchema = createInsertSchema(rolePermissions);
 export type RolePermission = typeof rolePermissions.$inferSelect;
 export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+
+// Order Activity Log - Comprehensive tracking system for all order processing events
+export const orderActivityLogs = pgTable('order_activity_logs', {
+  id: serial('id').primaryKey(),
+  orderId: integer('order_id').notNull().references(() => orders.id),
+  tgfOrderNumber: text('tgf_order_number'), // Track proper TGF order numbering
+  eventType: text('event_type').notNull(), // 'order_numbering', 'inventory_verification', 'ffl_verification', 'contact_creation', 'product_creation', 'deal_creation', 'payment_processing'
+  eventStatus: text('event_status').notNull(), // 'success', 'failed', 'warning', 'pending'
+  eventCategory: text('event_category').notNull(), // 'system', 'zoho', 'payment', 'inventory', 'ffl'
+  description: text('description').notNull(),
+  details: json('details'), // Structured data with specific details for each event type
+  
+  // Inventory tracking
+  inventoryVerified: boolean('inventory_verified').default(false),
+  realInventoryUsed: boolean('real_inventory_used').default(false),
+  inventoryItems: json('inventory_items'), // Array of inventory items processed
+  
+  // FFL tracking
+  fflVerified: boolean('ffl_verified').default(false),
+  realFflUsed: boolean('real_ffl_used').default(false),
+  fflLicense: text('ffl_license'),
+  fflName: text('ffl_name'),
+  
+  // Customer/Contact tracking
+  customerCreated: boolean('customer_created').default(false),
+  zohoContactId: text('zoho_contact_id'),
+  zohoContactStatus: text('zoho_contact_status'), // 'created', 'found_existing', 'failed'
+  
+  // Product module tracking
+  zohoProductsCreated: integer('zoho_products_created').default(0),
+  zohoProductsFound: integer('zoho_products_found').default(0),
+  zohoProductIds: json('zoho_product_ids'), // Array of Zoho Product IDs
+  productProcessingStatus: text('product_processing_status'), // 'completed', 'partial', 'failed'
+  
+  // Deal module tracking
+  zohoDealId: text('zoho_deal_id'),
+  zohoDealStatus: text('zoho_deal_status'), // 'created', 'failed', 'multiple_deals'
+  subformCompleted: boolean('subform_completed').default(false),
+  dealCount: integer('deal_count').default(0), // Track multiple deals for different shipping outcomes
+  shippingOutcomes: json('shipping_outcomes'), // Array of shipping outcomes that generated separate deals
+  
+  // Payment processing tracking
+  paymentMethod: text('payment_method'),
+  paymentStatus: text('payment_status'), // 'sandbox', 'processed', 'failed', 'pending'
+  authorizeNetResult: json('authorize_net_result'), // Authorize.Net response data
+  paymentErrorCode: text('payment_error_code'),
+  paymentErrorMessage: text('payment_error_message'),
+  
+  // App Response field data (what goes into Deal module)
+  appResponseData: json('app_response_data'), // Complete response data that appears in Zoho Deal's APP Response field
+  
+  // System metadata
+  processingTimeMs: integer('processing_time_ms'), // How long this event took to process
+  retryCount: integer('retry_count').default(0),
+  lastRetryAt: timestamp('last_retry_at'),
+  errorTrace: text('error_trace'), // Stack trace for debugging failures
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const insertOrderActivityLogSchema = createInsertSchema(orderActivityLogs);
+export type OrderActivityLog = typeof orderActivityLogs.$inferSelect;
+export type InsertOrderActivityLog = z.infer<typeof insertOrderActivityLogSchema>;
