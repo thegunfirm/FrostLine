@@ -19,13 +19,43 @@ export interface CompleteDealFieldMapping {
   Carrier?: string;
   Tracking_Number?: string;
   Estimated_Ship_Date?: string;
+  Distributor_Order_Number?: string;
   
   // Timestamps
   Submitted: string;
   APP_Confirmed?: string;
   Last_Distributor_Update?: string;
   
-  // Standard Zoho Fields
+  // Standard Zoho Deal Management Fields
+  Deal_Owner?: string;
+  Account_Name?: string;
+  Contact_Name?: string;
+  Type?: string;
+  Next_Step?: string;
+  Lead_Source?: string;
+  
+  // Sales Pipeline Fields
+  Closing_Date?: string;
+  Pipeline?: string;
+  Stage?: string;
+  Probability?: number;
+  Expected_Revenue?: number;
+  Campaign_Source?: string;
+  
+  // Extended Order Management Fields
+  Conversion_Channel?: string;
+  Confirmed?: string;
+  Hold_Type?: string;
+  Hold_Started_At?: string;
+  Hold_Cleared_At?: string;
+  Return_Status?: string;
+  Consignee_Type?: string;
+  
+  // System Fields
+  Modified_By?: string;
+  Created_By?: string;
+  
+  // Financial Fields
   Amount: number;
   Description?: string;
   
@@ -100,13 +130,43 @@ export class ComprehensiveDealFieldMapper {
       Carrier: undefined, // Will be set when order ships
       Tracking_Number: undefined, // Will be set when order ships
       Estimated_Ship_Date: this.calculateEstimatedShipDate(orderData.shippingOutcome),
+      Distributor_Order_Number: `RSR-${orderData.tgfOrderNumber}`,
       
       // Timestamps
       Submitted: timestamp,
       APP_Confirmed: timestamp,
       Last_Distributor_Update: undefined, // Will be set by RSR updates
       
-      // Standard Zoho Fields
+      // Standard Zoho Deal Management Fields  
+      Deal_Owner: 'Webservices App',
+      Account_Name: 'Direct Customer',
+      Contact_Name: `${orderData.customerInfo.firstName} ${orderData.customerInfo.lastName}`,
+      Type: 'E-commerce Order', 
+      Next_Step: 'Process Order',
+      Lead_Source: 'Website',
+      
+      // Sales Pipeline Fields
+      Closing_Date: timestamp.split('T')[0], // Today's date
+      Pipeline: 'E-commerce Sales',
+      Stage: 'Submitted',
+      Probability: 100, // 100% since order is submitted  
+      Expected_Revenue: orderData.totalAmount,
+      Campaign_Source: 'TheGunFirm.com',
+      
+      // Extended Order Management Fields
+      Conversion_Channel: 'Website',
+      Confirmed: 'Yes',
+      Hold_Type: undefined, // Will be set if order goes on hold
+      Hold_Started_At: undefined, // Will be set if order goes on hold
+      Hold_Cleared_At: undefined, // Will be set when hold is cleared
+      Return_Status: undefined, // Will be set for returns
+      Consignee_Type: this.mapConsignee(orderData.shippingOutcome, orderData.fflInfo),
+      
+      // System Fields
+      Modified_By: 'Webservices App',
+      Created_By: 'Webservices App',
+      
+      // Financial Fields
       Amount: orderData.totalAmount,
       Description: this.generateOrderDescription(orderData),
       
