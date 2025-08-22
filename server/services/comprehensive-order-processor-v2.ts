@@ -1,4 +1,5 @@
 import { EnhancedOrderActivityLogger, type ContactCreationResult, type ProductCreationResult, type DealCreationResult, type CreditCardErrorResult } from './enhanced-order-activity-logger';
+import { ComprehensiveDealFieldMapper, type OrderDataForMapping } from './comprehensive-deal-field-mapper';
 
 export interface OrderProcessingData {
   orderId: number;
@@ -219,7 +220,7 @@ export class ComprehensiveOrderProcessorV2 {
   }
   
   /**
-   * Process and log deal creation with complete subforms
+   * Process and log deal creation with complete subforms and comprehensive field mapping
    */
   private static async processDealCreation(data: OrderProcessingData): Promise<void> {
     // Determine shipping outcomes
@@ -232,6 +233,7 @@ export class ComprehensiveOrderProcessorV2 {
       shippingOutcome: 'direct_to_customer' | 'drop_ship_ffl' | 'in_house_ffl';
       subformComplete: boolean;
       productCount: number;
+      comprehensiveFields?: any;
       products: Array<{
         sku: string;
         quantity: number;
@@ -250,6 +252,7 @@ export class ComprehensiveOrderProcessorV2 {
         shippingOutcome: 'drop_ship_ffl' as const,
         subformComplete: true,
         productCount: firearmsItems.length,
+        comprehensiveFields: this.generateComprehensiveDealFields(data, 'drop_ship_ffl', firearmsItems),
         products: firearmsItems.map(item => ({
           sku: item.sku,
           quantity: item.quantity,
@@ -269,6 +272,7 @@ export class ComprehensiveOrderProcessorV2 {
         shippingOutcome: 'direct_to_customer' as const,
         subformComplete: true,
         productCount: accessoryItems.length,
+        comprehensiveFields: this.generateComprehensiveDealFields(data, 'direct_to_customer', accessoryItems),
         products: accessoryItems.map(item => ({
           sku: item.sku,
           quantity: item.quantity,
@@ -302,10 +306,18 @@ export class ComprehensiveOrderProcessorV2 {
     }
     
     const dealResult: DealCreationResult = {
-      deals,
       totalDeals: deals.length,
-      allSubformsComplete: true,
-      shippingOutcomes
+      allSubformsComplete: deals.every(deal => deal.subformComplete),
+      shippingOutcomes,
+      dealBreakdown: deals.map(deal => ({
+        dealId: deal.dealId,
+        dealName: deal.dealName,
+        shippingOutcome: deal.shippingOutcome,
+        subformComplete: deal.subformComplete,
+        productCount: deal.productCount,
+        comprehensiveFields: deal.comprehensiveFields, // Include comprehensive fields
+        products: deal.products
+      }))
     };
     
     await EnhancedOrderActivityLogger.logDealCreation(
@@ -420,5 +432,26 @@ export class ComprehensiveOrderProcessorV2 {
     };
     
     return await this.processWithEnhancedLogging(demoData);
+  }
+
+  /**
+   * Generate comprehensive deal fields for Zoho integration
+   */
+  private static generateComprehensiveDealFields(
+    data: OrderProcessingData, 
+    shippingOutcome: 'direct_to_customer' | 'drop_ship_ffl' | 'in_house_ffl',
+    items: any[]
+  ): any {
+    const orderDataForMapping: OrderDataForMapping = {
+      orderId: data.orderId,
+      tgfOrderNumber: data.tgfOrderNumber,
+      orderItems: items,
+      customerInfo: data.customerInfo,
+      fflInfo: data.fflInfo,
+      shippingOutcome,
+      totalAmount: items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    };
+
+    return ComprehensiveDealFieldMapper.mapOrderToDealFields(orderDataForMapping);
   }
 }

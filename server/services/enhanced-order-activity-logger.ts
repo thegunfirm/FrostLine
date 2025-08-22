@@ -38,12 +38,16 @@ export interface ProductCreationResult {
 }
 
 export interface DealCreationResult {
-  deals: Array<{
+  totalDeals: number;
+  allSubformsComplete: boolean;
+  shippingOutcomes: string[];
+  dealBreakdown: Array<{
     dealId: string;
     dealName: string;
     shippingOutcome: 'direct_to_customer' | 'drop_ship_ffl' | 'in_house_ffl';
     subformComplete: boolean;
     productCount: number;
+    comprehensiveFields?: any; // Comprehensive Deal fields from ComprehensiveDealFieldMapper
     products: Array<{
       sku: string;
       quantity: number;
@@ -51,9 +55,6 @@ export interface DealCreationResult {
       totalPrice: number;
     }>;
   }>;
-  totalDeals: number;
-  allSubformsComplete: boolean;
-  shippingOutcomes: string[];
 }
 
 export interface CreditCardErrorResult {
@@ -257,12 +258,13 @@ export class EnhancedOrderActivityLogger {
       allSubformsComplete: dealResult.allSubformsComplete,
       shippingOutcomes: dealResult.shippingOutcomes,
       multipleShippingOutcomes: dealResult.shippingOutcomes.length > 1,
-      dealBreakdown: dealResult.deals.map(deal => ({
+      dealBreakdown: dealResult.dealBreakdown.map(deal => ({
         dealId: deal.dealId,
         dealName: deal.dealName,
         shippingOutcome: deal.shippingOutcome,
         subformComplete: deal.subformComplete,
         productCount: deal.productCount,
+        comprehensiveFields: deal.comprehensiveFields, // Include comprehensive fields
         products: deal.products
       })),
       processingTime: new Date().toISOString()
