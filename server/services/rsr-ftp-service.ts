@@ -37,7 +37,7 @@ export class RSRFTPService {
       password: process.env.RSR_PASSWORD || '',
       secure: true,
       port: 2222, // RSR uses port 2222 for FTPS
-      downloadPath: '/reports/',
+      downloadPath: '/ftpdownloads/',
       files: {
         inventory: 'rsrinventory-new.txt',
         quantities: 'IM-QTY-CSV.csv',
