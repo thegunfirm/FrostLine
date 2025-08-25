@@ -49,7 +49,7 @@ export default function ImageTest() {
             <div key={item.name} className="bg-card rounded-lg p-4 shadow-md">
               <div className="aspect-square bg-muted rounded-lg mb-4 overflow-hidden">
                 <img
-                  src={`/api/rsr-image/${item.name}?size=${selectedSize}`}
+                  src={`/api/image/${item.name}?size=${selectedSize}`}
                   alt={item.title}
                   className="w-full h-full object-cover"
                   onLoad={() => console.log(`✅ Loaded: ${item.name} (${selectedSize})`)}
@@ -109,7 +109,7 @@ export default function ImageTest() {
               <div>
                 <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">API Endpoint:</h3>
                 <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">
-                  /api/rsr-image/:imageName?size=standard
+                  /api/image/:imageName?size=standard
                 </code>
               </div>
               <div>

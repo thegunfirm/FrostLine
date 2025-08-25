@@ -989,12 +989,11 @@ export default function ProductDetail() {
                     <CardContent className="p-4">
                       <div className="aspect-[5/4] bg-gray-100 rounded-lg mb-3">
                         <img
-                          src={`/api/rsr-image/${related.sku}`}
+                          src={`/api/image/${related.sku}`}
                           alt={related.name}
                           className="w-full h-full object-contain transition-opacity duration-300"
                           onError={(e) => {
                             // Use fallback logo for missing RSR images
-                            console.log('Related product RSR image failed, using fallback:', fallbackImage);
                             e.currentTarget.src = fallbackImage;
                             e.currentTarget.onerror = null; // Prevent infinite loop
                           }}

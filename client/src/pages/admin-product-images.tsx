@@ -207,7 +207,7 @@ export default function AdminProductImages() {
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <p className="text-sm text-gray-600 mb-2">Current RSR Image:</p>
                     <img 
-                      src={`/api/rsr-image/${selectedSku}?angle=1`}
+                      src={`/api/image/${selectedSku}?angle=1`}
                       alt={`RSR image for ${selectedSku}`}
                       className="mx-auto max-w-xs border border-gray-200 rounded"
                       onError={(e) => {
@@ -226,7 +226,7 @@ export default function AdminProductImages() {
                           alt={`${image.productSku} - Angle ${image.angle}`}
                           className="w-full h-full object-contain bg-gray-50"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = `/api/rsr-image/${image.productSku}?angle=${image.angle}`;
+                            (e.target as HTMLImageElement).src = `/api/image/${image.productSku}?angle=${image.angle}`;
                           }}
                         />
                         <Badge className="absolute top-2 right-2">
