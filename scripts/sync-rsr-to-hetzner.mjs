@@ -9,20 +9,6 @@ const {
 } = process.env;
 
 const s3 = new S3Client({
-  region
-
-cat > scripts/sync-rsr-to-hetzner.mjs <<'EOF'
-import ftp from "basic-ftp";
-import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
-import mime from "mime";
-
-const {
-  RSR_FTP_HOST, RSR_FTP_USER, RSR_FTP_PASS, RSR_FTP_PORT,
-  HETZNER_S3_ENDPOINT, HETZNER_S3_REGION, HETZNER_S3_BUCKET,
-  HETZNER_S3_ACCESS_KEY, HETZNER_S3_SECRET_KEY
-} = process.env;
-
-const s3 = new S3Client({
   region: HETZNER_S3_REGION,
   endpoint: HETZNER_S3_ENDPOINT,
   forcePathStyle: true,
@@ -42,31 +28,30 @@ async function objectExists(Key) {
 }
 
 async function uploadBuffer(buf, Key) {
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: HETZNER_S3_BUCKET,
-      Key,
-      Body: buf,
-      ContentType: mime.getType(Key) || "application/octet-stream",
-      CacheControl: "public, max-age=31536000, immutable",
-      ACL: "public-read",
-    })
-  );
+  await s3.send(new PutObjectCommand({
+    Bucket: HETZNER_S3_BUCKET,
+    Key,
+    Body: buf,
+    ContentType: mime.getType(Key) || "application/octet-stream",
+    CacheControl: "public, max-age=31536000, immutable",
+    ACL: "public-read",
+  }));
 }
 
 async function syncDir(client, remoteDir, prefix) {
   await client.cd(remoteDir);
   const list = await client.list();
-  const files = list.filter((e) => e.isFile);
+  const files = list.filter(e => e.isFile);
 
   for (const f of files) {
-    const filename = f.name;
-    const key = `${prefix}/${filename}`;
+    const filename = f.name;               // e.g., AAC17-22G3_1.jpg
+    const key = `${prefix}/${filename}`;   // e.g., rsr/standard/AAC17-22G3_1.jpg
     if (await objectExists(key)) continue;
 
     const chunks = [];
     await client.downloadTo((chunk) => chunks.push(chunk), filename);
     const buf = Buffer.concat(chunks);
+
     await uploadBuffer(buf, key);
     console.log("Uploaded:", key);
   }
@@ -98,7 +83,4 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main().catch((e) => { console.error(e); process.exit(1); });
