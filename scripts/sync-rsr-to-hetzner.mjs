@@ -62,7 +62,7 @@ async function main() {
   const client = new ftp.Client(20000);
   client.ftp.verbose = false;
 
-  const port = Number(RSR_FTP_PORT || 21);
+  const port = Number(RSR_FTP_PORT || 990);
   console.log(`Connecting FTPS ${RSR_FTP_HOST}:${port}`);
 
   try {
@@ -71,7 +71,7 @@ async function main() {
       port,
       user: RSR_FTP_USER,
       password: RSR_FTP_PASS,
-      secure: true, // explicit TLS (FTPS)
+      secure: "implicit", // explicit TLS (FTPS)
       secureOptions: {
         servername: RSR_FTP_HOST,
         minVersion: "TLSv1.2",
