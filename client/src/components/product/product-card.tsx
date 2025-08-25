@@ -26,7 +26,21 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
   
   // Use RSR image service for product images - match product detail page logic exactly
   const getImageUrl = () => {
+    // Match the exact same field priority as product detail page: rsrStockNumber || sku
     const imageKey = product?.rsrStockNumber || product?.sku;
+    
+    // Debug logging to understand the difference
+    if (product?.name?.toLowerCase().includes('glock')) {
+      console.log('🔍 Grid Glock product image debug:', {
+        productName: product.name,
+        rsrStockNumber: product.rsrStockNumber,
+        stockNumber: product.stockNumber,
+        sku: product.sku,
+        finalImageKey: imageKey,
+        imageUrl: imageKey ? `/api/rsr-image/${imageKey}?angle=1` : fallbackImage
+      });
+    }
+    
     if (!imageKey) return fallbackImage;
     return `/api/rsr-image/${imageKey}?angle=1`;
   };
