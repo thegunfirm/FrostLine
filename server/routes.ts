@@ -5481,9 +5481,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const searchResults = await response.json();
 
-      // Filter out unwanted brands from handgun category browsing first page
-      if (cleanedFilters.category === "Handguns" && (!searchQuery || searchQuery.trim() === '') && page === 0) {
-        console.log(`🔍 Getting 100 results to properly filter handgun brands...`);
+      // Apply stock-based sorting to all category browsing first page
+      if ((cleanedFilters.category || cleanedFilters.productType) && (!searchQuery || searchQuery.trim() === '') && page === 0) {
+        console.log(`🔍 Getting 100 results to apply inventory-based sorting for ${cleanedFilters.category || cleanedFilters.productType}...`);
         
         // Get more results to find popular brands
         const expandedParams = { ...searchParams, hitsPerPage: 100 };
@@ -5502,7 +5502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const allHits = expandedResults.hits || [];
           console.log(`📈 Got ${allHits.length} results to filter from`);
           
-          // Filter out unwanted brands
+          // Filter out unwanted brands (apply to all categories)
           const unwantedBrands = ['ZENITH', 'MKS'];
           const wantedHits = allHits.filter(hit => !unwantedBrands.includes(hit.manufacturer));
           
