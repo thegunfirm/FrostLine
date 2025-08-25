@@ -5,9 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Development Banner -->
+    <div id="dev-banner" style="background: linear-gradient(90deg, #FF6B6B, #4ECDC4); color: white; padding: 8px 16px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; font-weight: 600; position: fixed; top: 0; left: 0; right: 0; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      🔧 Development Mode - TheGunFirm.com
+    </div>
+    <div id="root" style="margin-top: 40px;"></div>
     <script type="module" src="/src/main.tsx"></script>
     <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
     <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+    <script>
+      // Hide our banner if Replit's loads
+      setTimeout(() => {
+        if (document.querySelector('[data-replit-banner]')) {
+          const devBanner = document.getElementById('dev-banner');
+          if (devBanner) devBanner.style.display = 'none';
+          document.getElementById('root').style.marginTop = '0';
+        }
+      }, 1000);
+    </script>
   </body>
 </html>
