@@ -7,6 +7,7 @@ import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import { insertUserSchema, insertProductSchema, insertOrderSchema, type InsertProduct, type Product, tierPricingRules, products, heroCarouselSlides, categoryRibbons, adminSettings, systemSettings, membershipTierSettings, type User, type FFL, ffls, orders, carts, checkoutSettings, fulfillmentSettings, users } from "@shared/schema";
 import { pricingEngine } from "./services/pricing-engine";
+import { resolveImageUrl } from "../lib/imageResolver";
 import { db } from "./db";
 import { sql, eq, and, ne, inArray, desc, isNotNull } from "drizzle-orm";
 import { z } from "zod";
@@ -4173,8 +4174,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // RSR Product Image Service - Authentic RSR Image Access with Custom Upload Override
-  // Enhanced: July 24, 2025 - Custom image management support added
+  // RSR Product Image Service - Enhanced with Hetzner Object Storage
+  // Enhanced: August 25, 2025 - Added Hetzner Object Storage integration
   // Multi-angle support, proper authentication, RSR domain handling
   app.get("/api/rsr-image/:imageName", async (req, res) => {
     try {
@@ -4211,7 +4212,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.send(imageBuffer);
         }
       } catch (customError) {
-        console.log(`No custom image found for ${imageName} angle ${imageAngle}, using RSR`);
+        console.log(`No custom image found for ${imageName} angle ${imageAngle}, checking bucket then RSR`);
+      }
+      
+      // Check if image exists in our Hetzner Object Storage bucket
+      try {
+        const originalFilename = `${imageName}_${imageAngle || 1}.jpg`;
+        const resolvedUrl = await resolveImageUrl(originalFilename);
+        
+        if (resolvedUrl !== originalFilename && resolvedUrl.includes(process.env.IMAGE_BASE_URL || '')) {
+          // Image exists in bucket, redirect to it
+          console.log(`✓ Image found in bucket, redirecting to: ${resolvedUrl}`);
+          return res.redirect(302, resolvedUrl);
+        }
+      } catch (bucketError) {
+        console.log(`No bucket image found for ${imageName} angle ${imageAngle}, using RSR`);
       }
       
       let rsrImageUrl = '';
