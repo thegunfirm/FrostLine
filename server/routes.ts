@@ -5406,40 +5406,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Boost popular handgun manufacturers and calibers in handgun searches
       if (cleanedFilters.category === "Handguns" || cleanedFilters.productType === "handgun" || cleanedFilters.departmentNumber === "01") {
         searchParams.optionalFilters = [
-          "manufacturer:GLOCK<score=100>",
-          "manufacturer:TAG<score=90>",        // Smith & Wesson appears as "TAG"
-          "manufacturer:SIG<score=85>",
-          "manufacturer:SURE<score=80>",       // Springfield appears as "SURE"
-          "manufacturer:RUGER<score=75>",
-          "manufacturer:COLT<score=70>",
-          "manufacturer:KIMBER<score=65>",
-          "manufacturer:BERETTA<score=60>",    // Fixed spelling
-          "manufacturer:TAURUS<score=55>",
-          "manufacturer:WALTHER<score=50>",    // Fixed spelling
-          "caliber:9mm<score=120>",
-          "caliber:45 ACP<score=70>",
-          "caliber:380 ACP<score=65>",
-          "caliber:357 Magnum<score=60>",
-          "caliber:40 S&W<score=55>",
-          "caliber:22 LR<score=50>"
+          "manufacturer:GLOCK<score=200>",      // Top handgun brand
+          "manufacturer:SPGFLD<score=190>",     // Springfield Armory (most products in DB)
+          "manufacturer:SIG<score=180>",        // Sig Sauer
+          "manufacturer:FUSION<score=50>",      // Lower priority, but exists in DB
+          "caliber:9mm<score=150>",             // Most popular caliber
+          "caliber:45 ACP<score=120>",
+          "caliber:380 ACP<score=110>",
+          "caliber:357 Magnum<score=100>",
+          "caliber:40 S&W<score=95>",
+          "caliber:22 LR<score=90>"
         ];
       }
       
-      // Add rifle popularity boosts
+      // Add rifle popularity boosts based on actual DB data
       if (cleanedFilters.category === "Rifles" || cleanedFilters.productType === "rifle" || cleanedFilters.departmentNumber === "02") {
         searchParams.optionalFilters = [
-          "manufacturer:REMINGTON<score=85>",
-          "manufacturer:WINCHESTER<score=80>", 
-          "manufacturer:RUGER<score=75>",
-          "manufacturer:SAVAGE<score=70>",
-          "manufacturer:DANIEL<score=80>", // Daniel Defense
-          "manufacturer:BCM<score=75>",    // Bravo Company
-          "manufacturer:COLT<score=85>",   // AR-15s
-          "manufacturer:SMITH<score=80>",  // S&W rifles
-          "caliber:5.56<score=100>",       // AR-15 caliber
-          "caliber:223<score=95>",         // Common rifle caliber
-          "caliber:308<score=80>",         // Popular hunting caliber
-          "caliber:22 LR<score=90>"        // Popular training caliber
+          "manufacturer:SIG<score=200>",        // Has 6 rifles, popular brand
+          "manufacturer:IWI<score=180>",        // Most rifles in DB (12)
+          "manufacturer:SOLGW<score=170>",      // 9 rifles in DB
+          "manufacturer:SANTAN<score=160>",     // 6 rifles in DB
+          "caliber:5.56<score=150>",            // AR-15 caliber
+          "caliber:223<score=140>",             // Common rifle caliber
+          "caliber:308<score=130>",             // Popular hunting caliber
+          "caliber:22 LR<score=120>"            // Popular training caliber
         ];
       }
       
