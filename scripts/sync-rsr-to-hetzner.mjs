@@ -44,7 +44,7 @@ async function retry(fn, tries = 3, delayMs = 1500) {
 async function syncDir(client, remoteDir, prefix) {
   await client.cd(remoteDir);
   const list = await retry(() => client.list());
-  const files = list.filter(e => e.isFile);
+  const files = list.filter(e => e.isFile && e.name.toLowerCase().includes('.jpg'));
 
   let uploaded = 0, skipped = 0;
   for (const f of files) {
@@ -54,12 +54,104 @@ async function syncDir(client, remoteDir, prefix) {
 
     const chunks = [];
     await retry(() => client.downloadTo((c) => chunks.push(c), filename));
-    await uploadBuffer(Buffer.concat(chunks), key);
+    const buffer = Buffer.concat(chunks);
+    await uploadBuffer(buffer, key);
     uploaded++;
     console.log("Uploaded:", key);
   }
   await client.cdup();
   return { uploaded, skipped, total: files.length };
+}
+
+async function syncManufacturerDir(client, remoteDir, prefix) {
+  await client.cd(remoteDir);
+  const mfgList = await retry(() => client.list());
+  const mfgDirs = mfgList.filter(e => e.isDirectory);
+
+  let totalUploaded = 0, totalSkipped = 0, totalFiles = 0;
+  
+  for (const mfgDir of mfgDirs) {
+    try {
+      await client.cd(mfgDir.name);
+      const brandList = await retry(() => client.list());
+      const brandDirs = brandList.filter(e => e.isDirectory);
+      
+      for (const brandDir of brandDirs) {
+        try {
+          await client.cd(brandDir.name);
+          const files = await retry(() => client.list());
+          const jpgFiles = files.filter(f => f.isFile && f.name.toLowerCase().includes('.jpg'));
+          
+          for (const file of jpgFiles) {
+            const key = `${prefix}/${mfgDir.name}/${brandDir.name}/${file.name}`;
+            if (await objectExists(key)) { 
+              totalSkipped++; 
+              continue; 
+            }
+            
+            const chunks = [];
+            await retry(() => client.downloadTo((c) => chunks.push(c), file.name));
+            const buffer = Buffer.concat(chunks);
+            await uploadBuffer(buffer, key);
+            totalUploaded++;
+            console.log("Uploaded:", key);
+          }
+          
+          totalFiles += jpgFiles.length;
+          await client.cdup();
+        } catch (e) {
+          console.log(`Error accessing brand ${brandDir.name}:`, e.message);
+        }
+      }
+      
+      await client.cdup();
+    } catch (e) {
+      console.log(`Error accessing manufacturer ${mfgDir.name}:`, e.message);
+    }
+  }
+  
+  await client.cdup();
+  return { uploaded: totalUploaded, skipped: totalSkipped, total: totalFiles };
+}
+
+async function syncRSRNumberDir(client, remoteDir, prefix, maxDirs = 5) {
+  await client.cd(remoteDir);
+  const letterDirs = await retry(() => client.list());
+  const dirs = letterDirs.filter(e => e.isDirectory).slice(0, maxDirs);
+
+  let totalUploaded = 0, totalSkipped = 0, totalFiles = 0;
+  
+  for (const letterDir of dirs) {
+    try {
+      console.log(`Processing RSR directory: ${letterDir.name}/`);
+      await client.cd(letterDir.name);
+      const files = await retry(() => client.list());
+      const jpgFiles = files.filter(f => f.isFile && f.name.toLowerCase().includes('.jpg'));
+      
+      for (const file of jpgFiles) {
+        const key = `${prefix}/${letterDir.name}/${file.name}`;
+        if (await objectExists(key)) { 
+          totalSkipped++; 
+          continue; 
+        }
+        
+        const chunks = [];
+        await retry(() => client.downloadTo((c) => chunks.push(c), file.name));
+        const buffer = Buffer.concat(chunks);
+        await uploadBuffer(buffer, key);
+        totalUploaded++;
+        console.log("Uploaded:", key);
+      }
+      
+      totalFiles += jpgFiles.length;
+      await client.cdup();
+    } catch (e) {
+      console.log(`Error accessing RSR directory ${letterDir.name}:`, e.message);
+    }
+  }
+  
+  await client.cdup();
+  return { uploaded: totalUploaded, skipped: totalSkipped, total: totalFiles };
 }
 
 async function main() {
@@ -85,12 +177,30 @@ async function main() {
       passive: true,
     });
 
-    const a = await syncDir(client, "/ftp_images/new_images", "rsr/standard");
-    // const b = await syncDir(client, "/ftp_highres_images", "rsr/highres"); // enable later
+    // Sync all image sources
+    console.log("🚀 Starting comprehensive image sync...");
+    
+    const results = [];
+    
+    // 1. New images (standard resolution)
+    console.log("📁 Syncing new images (standard)...");
+    results.push(await syncDir(client, "/ftp_images/new_images", "rsr/standard"));
+    
+    // 2. New images (high resolution)  
+    console.log("📁 Syncing new images (high-res)...");
+    results.push(await syncDir(client, "/ftp_highres_images/new_images", "rsr/highres"));
+    
+    // 3. Manufacturer organized images
+    console.log("📁 Syncing manufacturer images...");
+    results.push(await syncManufacturerDir(client, "/ftp_images/manufacturers", "rsr/manufacturers"));
+    
+    // 4. RSR number organized images (sample first - this is huge!)
+    console.log("📁 Syncing RSR number images (first 5 directories)...");
+    results.push(await syncRSRNumberDir(client, "/ftp_images/rsr_number", "rsr/products", 5));
 
-    const uploaded = a.uploaded /* + (b?.uploaded||0) */;
-    const skipped  = a.skipped  /* + (b?.skipped||0)  */;
-    const total    = a.total    /* + (b?.total||0)    */;
+    const uploaded = results.reduce((sum, r) => sum + r.uploaded, 0);
+    const skipped = results.reduce((sum, r) => sum + r.skipped, 0);
+    const total = results.reduce((sum, r) => sum + r.total, 0);
 
     console.log(`[summary] uploaded=${uploaded} skipped=${skipped} seen=${total}`);
   } finally {
