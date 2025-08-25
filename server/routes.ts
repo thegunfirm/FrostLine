@@ -9483,6 +9483,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dealerCasePrice: parseFloat(product.pricePlatinum || '0')
         },
         images: product.images || [],
+        // Sophisticated filtering fields
+        caliber: product.caliber || null,
+        capacity: product.capacity || null,
+        actionType: product.actionType || null,
+        barrelLength: product.barrelLength || null,
+        finish: product.finish || null,
+        frameSize: product.frameSize || null,
+        sightType: product.sightType || null,
+        fflRequired: product.requiresFFL || false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         // Additional search fields
