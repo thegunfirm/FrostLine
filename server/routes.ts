@@ -5391,7 +5391,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'inStock', 'caliber', 'capacity', 'barrelLength', 'finish', 'frameSize',
           'actionType', 'sightType', 'tags', 'newItem', 'internalSpecial',
           'retailPrice', 'retailMap', 'msrp', 'dealerPrice', 'price', 'fflRequired',
-          'mpn', 'upc', 'weight', 'dropShippable'
+          'mpn', 'upc', 'weight', 'dropShippable', 'popularityScore'
         ]
       };
       
@@ -5406,22 +5406,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Boost popular handgun manufacturers and calibers in handgun searches
       if (cleanedFilters.category === "Handguns" || cleanedFilters.productType === "handgun" || cleanedFilters.departmentNumber === "01") {
         searchParams.optionalFilters = [
-          "manufacturerName:GLOCK<score=100>",
-          "manufacturerName:S&W<score=90>",
-          "manufacturerName:SIG<score=85>",
-          "manufacturerName:SPGFLD<score=80>",
-          "manufacturerName:RUGER<score=75>",
-          "manufacturerName:COLT<score=70>",
-          "manufacturerName:KIMBER<score=65>",
-          "manufacturerName:BERETA<score=60>",
-          "manufacturerName:TAURUS<score=55>",
-          "manufacturerName:WALTHR<score=50>",
+          "manufacturer:GLOCK<score=100>",
+          "manufacturer:TAG<score=90>",        // Smith & Wesson appears as "TAG"
+          "manufacturer:SIG<score=85>",
+          "manufacturer:SURE<score=80>",       // Springfield appears as "SURE"
+          "manufacturer:RUGER<score=75>",
+          "manufacturer:COLT<score=70>",
+          "manufacturer:KIMBER<score=65>",
+          "manufacturer:BERETTA<score=60>",    // Fixed spelling
+          "manufacturer:TAURUS<score=55>",
+          "manufacturer:WALTHER<score=50>",    // Fixed spelling
           "caliber:9mm<score=120>",
           "caliber:45 ACP<score=70>",
           "caliber:380 ACP<score=65>",
           "caliber:357 Magnum<score=60>",
           "caliber:40 S&W<score=55>",
           "caliber:22 LR<score=50>"
+        ];
+      }
+      
+      // Add rifle popularity boosts
+      if (cleanedFilters.category === "Rifles" || cleanedFilters.productType === "rifle" || cleanedFilters.departmentNumber === "02") {
+        searchParams.optionalFilters = [
+          "manufacturer:REMINGTON<score=85>",
+          "manufacturer:WINCHESTER<score=80>", 
+          "manufacturer:RUGER<score=75>",
+          "manufacturer:SAVAGE<score=70>",
+          "manufacturer:DANIEL<score=80>", // Daniel Defense
+          "manufacturer:BCM<score=75>",    // Bravo Company
+          "manufacturer:COLT<score=85>",   // AR-15s
+          "manufacturer:SMITH<score=80>",  // S&W rifles
+          "caliber:5.56<score=100>",       // AR-15 caliber
+          "caliber:223<score=95>",         // Common rifle caliber
+          "caliber:308<score=80>",         // Popular hunting caliber
+          "caliber:22 LR<score=90>"        // Popular training caliber
         ];
       }
       
