@@ -1,0 +1,219 @@
+DEV BRIEF — RSR Images via Hetzner Object Storage (Adapter + Sync)
+Goals
+
+Stop hotlinking RSR images; host them in our Hetzner Object Storage bucket.
+
+Do not rewrite DB logic. Add a URL resolver adapter that swaps to bucket URLs if present, else falls back to the original URL.
+
+Add a one-time/recurring FTP→bucket sync for ftp_images/ (standard) and later ftp_highres_images/.
+
+ENV (Replit → Secrets)
+# RSR FTP
+RSR_FTP_HOST=ftp.rsrgroup.com
+RSR_FTP_USER=63824
+RSR_FTP_PASS=********
+
+# Hetzner Object Storage (S3-compatible)
+HETZNER_S3_ENDPOINT=https://<region>.your-objectstorage.com   # e.g., https://fsn1.your-objectstorage.com
+HETZNER_S3_REGION=<region>                                    # fsn1 | nbg1 | hel1
+HETZNER_S3_BUCKET=<bucket>                                    # e.g., tgf-images
+HETZNER_S3_ACCESS_KEY=*****
+HETZNER_S3_SECRET_KEY=*****
+
+# Public base URL for reads
+IMAGE_BASE_URL=https://<bucket>.<region>.your-objectstorage.com
+
+# Feature flag to enable adapter
+USE_BUCKET_IMAGES=true
+
+Install (Replit Shell)
+npm i @aws-sdk/client-s3 basic-ftp mime
+
+Add: S3 client
+
+File: lib/s3.ts
+
+import { S3Client } from "@aws-sdk/client-s3";
+
+export const s3 = new S3Client({
+  region: process.env.HETZNER_S3_REGION,
+  endpoint: process.env.HETZNER_S3_ENDPOINT,
+  forcePathStyle: true,
+  credentials: {
+    accessKeyId: process.env.HETZNER_S3_ACCESS_KEY!,
+    secretAccessKey: process.env.HETZNER_S3_SECRET_KEY!,
+  },
+});
+
+Add: Image URL resolver adapter
+
+File: lib/imageResolver.ts
+
+import { s3 } from "./s3";
+import { HeadObjectCommand } from "@aws-sdk/client-s3";
+
+const BUCKET = process.env.HETZNER_S3_BUCKET!;
+const BASE = process.env.IMAGE_BASE_URL!;
+const USE_BUCKET = process.env.USE_BUCKET_IMAGES === "true";
+
+// Map current RSR-style URLs/filenames → bucket key (no DB change)
+export function mapToBucketKey(input: string): string | null {
+  // Matches: AAC17-22G3_1.jpg (from URL or filename)
+  const m = input.match(/([A-Z0-9-]+)_(\d+)\.(jpg|jpeg|png|webp)$/i);
+  if (!m) return null;
+  const [, stock, idx, ext] = m;
+  return `rsr/standard/${stock}_${idx}.${ext.toLowerCase()}`;
+}
+
+async function exists(Key: string): Promise<boolean> {
+  try {
+    await s3.send(new HeadObjectCommand({ Bucket: BUCKET, Key }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Returns a safe URL: bucket URL if present; else original */
+export async function resolveImageUrl(originalUrl: string): Promise<string> {
+  if (!USE_BUCKET) return originalUrl;
+  const key = mapToBucketKey(originalUrl);
+  if (!key) return originalUrl;
+  if (await exists(key)) return `${BASE}/${key}`;
+  return originalUrl;
+}
+
+Wire the adapter (minimal touches)
+
+Where: Wherever you currently output image URLs for:
+
+Product grid primary image
+
+Product page gallery images (3) + high-res
+
+Example: services/products.ts
+
+import { resolveImageUrl } from "../lib/imageResolver";
+
+export async function decorateProductImages(p: any) {
+  // assumes p.imageUrls is an array of strings you already build
+  const resolved = await Promise.all(p.imageUrls.map(u => resolveImageUrl(u)));
+  return { ...p, imageUrls: resolved };
+}
+
+
+If URLs are built in React components, call resolveImageUrl(url) in the data layer (server-side). Keep UI/components unchanged.
+
+Rollout control: set USE_BUCKET_IMAGES=false to instantly revert to original URLs.
+
+Add: FTP → bucket sync (streaming, skips existing)
+
+File: scripts/sync-rsr-to-hetzner.mjs
+
+import ftp from "basic-ftp";
+import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import mime from "mime";
+
+const {
+  RSR_FTP_HOST, RSR_FTP_USER, RSR_FTP_PASS,
+  HETZNER_S3_ENDPOINT, HETZNER_S3_REGION, HETZNER_S3_BUCKET,
+  HETZNER_S3_ACCESS_KEY, HETZNER_S3_SECRET_KEY
+} = process.env;
+
+const s3 = new S3Client({
+  region: HETZNER_S3_REGION,
+  endpoint: HETZNER_S3_ENDPOINT,
+  forcePathStyle: true,
+  credentials: { accessKeyId: HETZNER_S3_ACCESS_KEY, secretAccessKey: HETZNER_S3_SECRET_KEY }
+});
+
+async function objectExists(Key) {
+  try { await s3.send(new HeadObjectCommand({ Bucket: HETZNER_S3_BUCKET, Key })); return true; }
+  catch { return false; }
+}
+
+async function uploadBuffer(buf, Key) {
+  await s3.send(new PutObjectCommand({
+    Bucket: HETZNER_S3_BUCKET,
+    Key,
+    Body: buf,
+    ContentType: mime.getType(Key) || "application/octet-stream",
+    CacheControl: "public, max-age=31536000, immutable",
+    ACL: "public-read"
+  }));
+}
+
+async function syncDir(client, remoteDir, prefix) {
+  await client.cd(remoteDir);
+  const list = await client.list();
+  const files = list.filter(e => e.isFile);
+
+  // modest concurrency
+  const chunks = 4;
+  async function worker(ix) {
+    for (let i = ix; i < files.length; i += chunks) {
+      const f = files[i];
+      const filename = f.name; // AAC17-22G3_1.jpg
+      const key = `${prefix}/${filename}`;
+      if (await objectExists(key)) continue;
+
+      const w = await client.downloadTo(Buffer.alloc(f.size || 0), filename).catch(async () => {
+        // fallback: fetch into memory if size unknown
+        const data = [];
+        await client.downloadTo((chunk) => data.push(chunk), filename);
+        return Buffer.concat(data);
+      });
+      const buf = Buffer.isBuffer(w) ? w : Buffer.from(w); // normalize
+      await uploadBuffer(buf, key);
+      console.log("Uploaded:", key);
+    }
+  }
+  await Promise.all([...Array(chunks)].map((_, i) => worker(i)));
+  await client.cdup();
+}
+
+async function main() {
+  const client = new ftp.Client(10000);
+  client.ftp.verbose = false;
+  try {
+    await client.access({ host: RSR_FTP_HOST, user: RSR_FTP_USER, password: RSR_FTP_PASS, secure: false });
+    await syncDir(client, "/ftp_images", "rsr/standard");
+    // Later: high-res
+    // await syncDir(client, "/ftp_highres_images", "rsr/highres");
+  } finally {
+    client.close();
+  }
+}
+
+main().catch(e => { console.error(e); process.exit(1); });
+
+
+Run once (or via cron):
+
+node scripts/sync-rsr-to-hetzner.mjs
+
+
+This fills the bucket at:
+<IMAGE_BASE_URL>/rsr/standard/AAC17-22G3_1.jpg
+
+(Optional) No-code UI change: local path alias
+
+If you prefer to avoid touching data code, route all RSR images through a local path and rewrite to the bucket (fallback to original only if needed). Example for Next.js: add /img/rsr/:file* and map to ${IMAGE_BASE_URL}/rsr/standard/:file*.
+
+Acceptance Criteria
+
+With USE_BUCKET_IMAGES=true, product grid + product page still render; any image present in the bucket loads from IMAGE_BASE_URL, others fall back to RSR (temporary).
+
+Running the sync script populates rsr/standard/* keys and subsequent page loads automatically switch to bucket URLs (no DB changes).
+
+All uploaded objects have Cache-Control: public, max-age=31536000, immutable.
+
+No direct references to img.rsrgroup.com remain in the final rendered HTML when the corresponding file exists in the bucket.
+
+Notes
+
+Speed now: We’re not generating thumbnails/variants yet; that can happen later behind the same adapter.
+
+This approach is compliant with RSR’s T&Cs (you’re serving from your own storage), and safe (feature-flagged rollback).
+
+Long-term, we’ll extend mapToBucketKey() to your canonical structure (products/{sku}/{hash}/v/{profile}.ext) without any UI changes.
