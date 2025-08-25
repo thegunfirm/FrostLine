@@ -5447,9 +5447,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           title: hit.name || hit.title,
           description: hit.description || hit.fullDescription,
           sku: hit.objectID || hit.sku,
-          rsrStockNumber: hit.rsrStockNumber || null,
+          rsrStockNumber: hit.rsrStockNumber || hit.stockNumber || hit.objectID,
+          stockNumber: hit.stockNumber || hit.rsrStockNumber || hit.objectID,
           manufacturer: hit.manufacturer || hit.manufacturerName || 'UNKNOWN',
           categoryName: hit.categoryName || hit.category,
+          // Extract individual pricing tiers for frontend compatibility  
+          priceBronze: String(hit.tierPricing?.bronze?.dealerPrice || "0.00"),
+          priceGold: String(hit.tierPricing?.gold?.dealerPrice || "0.00"),
+          pricePlatinum: String(hit.tierPricing?.platinum?.dealerPrice || "0.00"),
           tierPricing: hit.tierPricing || {
             bronze: hit.retailPrice || hit.price,
             gold: hit.dealerPrice || hit.price,
@@ -5460,16 +5465,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             allocated: hit.allocated || false
           },
           images: hit.images || [{
-            image: `/api/rsr-image/${hit.stockNumber || hit.sku}`,
+            image: `/api/rsr-image/${hit.stockNumber || hit.rsrStockNumber || hit.objectID}`,
             id: hit.objectID
           }],
           inStock: hit.inStock || false,
           distributor: hit.distributor || "RSR",
           caliber: hit.caliber,
           capacity: hit.capacity,
-          price: hit.tierPricing?.platinum || hit.dealerPrice || hit.price,
+          price: hit.tierPricing?.platinum?.dealerPrice || hit.dealerPrice || hit.price,
           name: hit.name,
-          stockNumber: hit.stockNumber || hit.sku,
           weight: hit.weight,
           mpn: hit.mpn,
           upc: hit.upc,
