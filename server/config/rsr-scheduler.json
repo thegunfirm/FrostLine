@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2025-08-25T07:00:00.487Z",
+  "lastUpdated": "2025-08-25T08:00:00.738Z",
   "stats": {
-    "totalRuns": 215,
+    "totalRuns": 220,
     "successfulRuns": 1,
-    "failedRuns": 214,
-    "lastError": "Quantity download failed: 550 /reports/IM-QTY-CSV.csv: No such file or directory"
+    "failedRuns": 219,
+    "lastError": "Quantity download failed: Client network socket disconnected before secure TLS connection was established (data socket)"
   }
 }
