@@ -1,0 +1,147 @@
+Replit, set “Algolia as code” in this repo and wire it into our GitHub deploy. Do everything below exactly, using these paths.
+
+GOAL
+- All Algolia settings/rules/synonyms live in the repo.
+- A script can EXPORT the current live config into those files.
+- GitHub Actions APPLY the repo config on deploy.
+- Storefront never sees admin keys (only search-only).
+
+PREREQS (I will set these as Replit Secrets before you run anything)
+- ALGOLIA_APP_ID
+- ALGOLIA_ADMIN_KEY
+- ALGOLIA_INDEX  (e.g., tgf_catalog_prod)
+
+A) INSTALL DEP
+1) Run: npm i algoliasearch
+
+B) ADD EXPORT SCRIPT (captures live Algolia → repo)
+- Create file: services/inventory/scripts/exportAlgoliaConfig.mjs
+- Contents:
+----------------
+import algoliasearch from 'algoliasearch';
+import { writeFile, mkdir } from 'node:fs/promises';
+
+const appId = process.env.ALGOLIA_APP_ID;
+const adminKey = process.env.ALGOLIA_ADMIN_KEY;
+const indexName = process.env.ALGOLIA_INDEX;
+
+if (!appId || !adminKey || !indexName) {
+  console.error('Missing ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY, or ALGOLIA_INDEX');
+  process.exit(1);
+}
+
+const client = algoliasearch(appId, adminKey);
+const index = client.initIndex(indexName);
+
+// Export settings, rules, synonyms from the live index into versioned files
+const [settings, rulesRes, synsRes] = await Promise.all([
+  index.getSettings(),
+  index.searchRules('', { hitsPerPage: 1000 }),
+  index.searchSynonyms('', { hitsPerPage: 1000 }),
+]);
+
+await mkdir('services/inventory/algolia/catalog', { recursive: true });
+await writeFile('services/inventory/algolia/catalog/settings.json', JSON.stringify(settings, null, 2));
+await writeFile('services/inventory/algolia/catalog/rules.json', JSON.stringify(rulesRes.hits ?? [], null, 2));
+await writeFile('services/inventory/algolia/catalog/synonyms.json', JSON.stringify(synsRes.hits ?? [], null, 2));
+
+console.log('✅ Exported Algolia config to services/inventory/algolia/catalog/*');
+----------------
+
+C) (OPTIONAL) ADD LOCAL APPLY SCRIPT (kept for dev-use; CI uses cURL)
+- Create file: services/inventory/scripts/applyAlgoliaConfig.mjs
+- Contents:
+----------------
+import { readFile } from 'node:fs/promises';
+
+const appId = process.env.ALGOLIA_APP_ID;
+const adminKey = process.env.ALGOLIA_ADMIN_KEY;
+const indexName = process.env.ALGOLIA_INDEX;
+
+if (!appId || !adminKey || !indexName) {
+  console.error('Missing ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY, or ALGOLIA_INDEX');
+  process.exit(1);
+}
+
+const settings = await readFile('services/inventory/algolia/catalog/settings.json', 'utf8');
+const rules = await readFile('services/inventory/algolia/catalog/rules.json', 'utf8');
+const synonyms = await readFile('services/inventory/algolia/catalog/synonyms.json', 'utf8');
+
+const base = `https://${appId}-dsn.algolia.net/1/indexes/${encodeURIComponent(indexName)}`;
+const headers = [
+  '-H', `X-Algolia-Application-Id: ${appId}`,
+  '-H', `X-Algolia-API-Key: ${adminKey}`,
+  '-H', 'Content-Type: application/json'
+];
+
+const { execFileSync } = await import('node:child_process');
+
+execFileSync('curl', ['-sS', '-X', 'PUT', ...headers, `${base}/settings`, '--data-binary', settings], { stdio: 'inherit' });
+execFileSync('curl', ['-sS', '-X', 'POST', ...headers, `${base}/rules/batch`, '--data-binary', rules], { stdio: 'inherit' });
+execFileSync('curl', ['-sS', '-X', 'POST', ...headers, `${base}/synonyms/batch`, '--data-binary', synonyms], { stdio: 'inherit' });
+
+console.log('✅ Applied repo Algolia config to live index');
+----------------
+
+D) GITHUB ACTION TO ENFORCE/APPLY ON DEPLOY
+- Create file: .github/workflows/deploy-inventory.yml
+- Contents:
+----------------
+name: deploy-inventory
+
+on:
+  push:
+    branches: [prod]
+    paths:
+      - 'services/inventory/**'
+      - '.github/workflows/deploy-inventory.yml'
+  workflow_dispatch:
+
+jobs:
+  apply-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Guardrail: fail if required config files are missing
+      - name: Verify Algolia config files exist
+        run: |
+          test -s services/inventory/algolia/catalog/settings.json
+          test -s services/inventory/algolia/catalog/rules.json
+          test -s services/inventory/algolia/catalog/synonyms.json
+
+      # Apply settings/rules/synonyms from repo to target index
+      - name: Apply Algolia config
+        env:
+          ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
+          ALGOLIA_ADMIN_KEY: ${{ secrets.ALGOLIA_ADMIN_KEY }}
+          ALGOLIA_INDEX: ${{ secrets.ALGOLIA_INDEX }}
+        run: |
+          BASE="https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/${ALGOLIA_INDEX}"
+          HDRS=(-H "X-Algolia-Application-Id: ${ALGOLIA_APP_ID}" -H "X-Algolia-API-Key: ${ALGOLIA_ADMIN_KEY}" -H "Content-Type: application/json")
+
+          curl -sS -X PUT  "${HDRS[@]}" "$BASE/settings"        --data-binary @services/inventory/algolia/catalog/settings.json
+          curl -sS -X POST "${HDRS[@]}" "$BASE/rules/batch"     --data-binary @services/inventory/algolia/catalog/rules.json
+          curl -sS -X POST "${HDRS[@]}" "$BASE/synonyms/batch"  --data-binary @services/inventory/algolia/catalog/synonyms.json
+
+      # TODO: add your existing inventory deploy step(s) here
+      - name: Deploy inventory
+        run: |
+          echo "Deploying inventory service..."
+          # ssh / docker / coolify / etc.
+----------------
+
+E) FIRST RUN (EXPORT → COMMIT)
+1) Ensure Replit Secrets are set: ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY, ALGOLIA_INDEX.
+2) Run: node services/inventory/scripts/exportAlgoliaConfig.mjs
+3) git add services/inventory/algolia/catalog/*.json
+4) git commit -m "chore(algolia): snapshot live settings/rules/synonyms"
+5) git push
+
+F) PROMOTE
+- Open GitHub → run the deploy-inventory workflow on branch prod (or merge to prod).
+- From now on, Algolia config is “in stone”: exports live here; deploys apply from here.
+
+IMPORTANT
+- Never put ALGOLIA_ADMIN_KEY in frontend. Storefront only uses secured search-only keys.
+- For future tweaks: change JSON in repo (or export again), commit, promote.

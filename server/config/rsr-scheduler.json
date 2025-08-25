@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2025-08-25T18:30:00.405Z",
+  "lastUpdated": "2025-08-25T20:37:39.373Z",
   "stats": {
-    "totalRuns": 233,
+    "totalRuns": 237,
     "successfulRuns": 1,
-    "failedRuns": 232,
-    "lastError": "Quantity download failed: Client network socket disconnected before secure TLS connection was established (data socket)"
+    "failedRuns": 233,
+    "lastError": "Cannot read properties of undefined (reading 'updated')"
   }
 }
