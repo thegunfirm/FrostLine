@@ -1,6 +1,7 @@
 import ftp from "basic-ftp";
 import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import mime from "mime";
+import { Writable } from "stream";
 
 const {
   RSR_FTP_HOST, RSR_FTP_USER, RSR_FTP_PASS,
@@ -36,27 +37,33 @@ async function syncDir(client, remoteDir, prefix) {
   const list = await client.list();
   const files = list.filter(e => e.isFile);
 
-  // modest concurrency
-  const chunks = 4;
-  async function worker(ix) {
-    for (let i = ix; i < files.length; i += chunks) {
-      const f = files[i];
-      const filename = f.name; // AAC17-22G3_1.jpg
-      const key = `${prefix}/${filename}`;
-      if (await objectExists(key)) continue;
+  // Sequential processing to avoid FTP client issues
+  for (const f of files) {
+    const filename = f.name; // AAC17-22G3_1.jpg
+    const key = `${prefix}/${filename}`;
+    if (await objectExists(key)) {
+      console.log("Skipped (exists):", key);
+      continue;
+    }
 
-      const w = await client.downloadTo(Buffer.alloc(f.size || 0), filename).catch(async () => {
-        // fallback: fetch into memory if size unknown
-        const data = [];
-        await client.downloadTo((chunk) => data.push(chunk), filename);
-        return Buffer.concat(data);
+    try {
+      // Download file to memory using proper stream
+      const chunks = [];
+      const writeStream = new Writable({
+        write(chunk, encoding, callback) {
+          chunks.push(chunk);
+          callback();
+        }
       });
-      const buf = Buffer.isBuffer(w) ? w : Buffer.from(w); // normalize
+      
+      await client.downloadTo(writeStream, filename);
+      const buf = Buffer.concat(chunks);
       await uploadBuffer(buf, key);
-      console.log("Uploaded:", key);
+      console.log("Uploaded:", key, `(${Math.round(buf.length/1024)}KB)`);
+    } catch (error) {
+      console.error("Failed to sync:", filename, error.message);
     }
   }
-  await Promise.all([...Array(chunks)].map((_, i) => worker(i)));
   await client.cdup();
 }
 
@@ -74,7 +81,7 @@ async function main() {
         rejectUnauthorized: false
       }
     });
-    await syncDir(client, "/ftp_images", "rsr/standard");
+    await syncDir(client, "/ftp_images/new_images", "rsr/standard");
     // Later: high-res
     // await syncDir(client, "/ftp_highres_images", "rsr/highres");
   } finally {
