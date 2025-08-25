@@ -217,13 +217,13 @@ export default function ProductDetail() {
   const getImageUrl = (angle: number = 1) => {
     const imageKey = product?.rsrStockNumber || product?.sku;
     if (!imageKey) return fallbackImage;
-    return `/api/rsr-image/${imageKey}?angle=${angle}`;
+    return `/api/image/${imageKey}?angle=${angle}`;
   };
 
   const getThumbnailUrl = (angle: number = 1) => {
     const imageKey = product?.rsrStockNumber || product?.sku;
     if (!imageKey) return fallbackImage;
-    return `/api/rsr-image/${imageKey}?angle=${angle}&size=thumbnail`;
+    return `/api/image/${imageKey}?angle=${angle}&size=thumbnail`;
   };
 
   // Image loading state management
@@ -289,7 +289,7 @@ export default function ProductDetail() {
       productId: product.id,
       productSku: product.sku,
       productName: product.name,
-      productImage: (product.rsrStockNumber || product.sku) ? `/api/rsr-image/${product.rsrStockNumber || product.sku}` : "/fallback-logo.png",
+      productImage: (product.rsrStockNumber || product.sku) ? `/api/image/${product.rsrStockNumber || product.sku}` : "/fallback-logo.png",
       quantity: quantity,
       price: currentPrice, // Use tier-appropriate pricing
       priceBronze: parseFloat(product.priceBronze || "0"),
@@ -466,7 +466,7 @@ export default function ProductDetail() {
                     </div>
                     <div className="p-4">
                       <img
-                        src={`/api/rsr-image/${product.rsrStockNumber || product.sku}?angle=${currentAngle}&size=highres`}
+                        src={`/api/image/${product.rsrStockNumber || product.sku}?angle=${currentAngle}&size=highres`}
                         alt={`${product.name} - High Resolution View ${currentAngle}`}
                         className="max-w-full max-h-[70vh] object-contain mx-auto"
                       />

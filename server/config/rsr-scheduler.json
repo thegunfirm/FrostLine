@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2025-08-25T16:00:00.493Z",
+  "lastUpdated": "2025-08-25T16:15:00.451Z",
   "stats": {
-    "totalRuns": 223,
+    "totalRuns": 224,
     "successfulRuns": 1,
-    "failedRuns": 222,
-    "lastError": "FTP download failed: rsrinventory-new.txt: Client network socket disconnected before secure TLS connection was established (data socket), IM-QTY-CSV.csv: Client is closed because Client network socket disconnected before secure TLS connection was established (data socket), attributes-all.txt: Client is closed because Client network socket disconnected before secure TLS connection was established (data socket), rsrdeletedinv.txt: Client is closed because Client network socket disconnected before secure TLS connection was established (data socket), rsr-ship-restrictions.txt: Client is closed because Client network socket disconnected before secure TLS connection was established (data socket)"
+    "failedRuns": 223,
+    "lastError": "Quantity download failed: 550 /reports/IM-QTY-CSV.csv: No such file or directory"
   }
 }

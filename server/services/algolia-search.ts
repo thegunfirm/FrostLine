@@ -486,7 +486,7 @@ class AlgoliaSearchService {
       inStock: dbProduct.inStock,
       inventoryQuantity: dbProduct.stockQuantity || 0,
       images: dbProduct.rsrStockNumber ? [{
-        image: `/api/rsr-image/${dbProduct.rsrStockNumber}`,
+        image: `/api/image/${dbProduct.rsrStockNumber}`,
         id: dbProduct.rsrStockNumber
       }] : [],
       fflRequired: dbProduct.requiresFFL,

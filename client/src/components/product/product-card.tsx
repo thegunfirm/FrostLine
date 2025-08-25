@@ -42,7 +42,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
     }
     
     if (!imageKey) return fallbackImage;
-    return `/api/rsr-image/${imageKey}?angle=1`;
+    return `/api/image/${imageKey}?angle=1`;
   };
   
   const imageUrl = getImageUrl();

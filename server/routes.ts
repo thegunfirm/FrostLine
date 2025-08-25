@@ -4181,7 +4181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // RSR Product Image Service - Enhanced with Hetzner Object Storage
   // Enhanced: August 25, 2025 - Added Hetzner Object Storage integration
   // Multi-angle support, proper authentication, RSR domain handling
-  app.get("/api/rsr-image/:imageName", async (req, res) => {
+  app.get("/api/image/:imageName", async (req, res) => {
     try {
       const imageName = req.params.imageName;
       const { size = 'standard', angle = '1', view } = req.query;
@@ -5484,7 +5484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             allocated: hit.allocated || false
           },
           images: hit.images || [{
-            image: `/api/rsr-image/${hit.stockNumber || hit.rsrStockNumber || hit.objectID}`,
+            image: `/api/image/${hit.stockNumber || hit.rsrStockNumber || hit.objectID}`,
             id: hit.objectID
           }],
           inStock: hit.inStock || false,
