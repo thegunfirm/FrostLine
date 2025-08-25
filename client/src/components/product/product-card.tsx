@@ -12,6 +12,18 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCardProps) {
+  // Fetch actual product data from database (same source as product detail page)
+  const productId = product.sku || product.id;
+  const { data: dbProduct } = useQuery({
+    queryKey: ['product', productId],
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/products/${productId}`);
+      return response.json() as Promise<Product>;
+    },
+    enabled: !!productId,
+    staleTime: 30 * 1000, // 30 seconds - same as product detail page
+  });
+
   // Fetch dynamic fallback image from CMS
   const { data: fallbackImageSetting } = useQuery({
     queryKey: ["/api/admin/fallback-image"],
@@ -24,15 +36,15 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
 
   const fallbackImage = fallbackImageSetting?.value || "/fallback-logo.png";
   
-  // Use RSR image service for product images - EXACT same logic as product detail page
+  // Use EXACT same image logic as product detail page
   const getImageUrl = () => {
-    const imageKey = product?.rsrStockNumber || product?.sku;
+    const imageKey = dbProduct?.rsrStockNumber || dbProduct?.sku;
     if (!imageKey) return fallbackImage;
     return `/api/image/${imageKey}?angle=1`;
   };
   
   const imageUrl = getImageUrl();
-  const altText = product.name || 'Product Image';
+  const altText = (dbProduct?.name || product.name) || 'Product Image';
 
 
 
