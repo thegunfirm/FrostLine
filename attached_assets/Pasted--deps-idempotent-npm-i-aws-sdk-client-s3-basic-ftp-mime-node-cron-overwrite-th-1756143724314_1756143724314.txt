@@ -1,0 +1,140 @@
+# --- deps (idempotent) ---
+npm i @aws-sdk/client-s3 basic-ftp mime node-cron
+
+# --- overwrite the sync script: explicit FTPS :2222 + retries + summary ---
+mkdir -p scripts
+cat > scripts/sync-rsr-to-hetzner.mjs <<'EOF'
+import ftp from "basic-ftp";
+import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import mime from "mime";
+
+const {
+  RSR_FTP_HOST, RSR_FTP_USER, RSR_FTP_PASS, RSR_FTP_PORT,
+  HETZNER_S3_ENDPOINT, HETZNER_S3_REGION, HETZNER_S3_BUCKET,
+  HETZNER_S3_ACCESS_KEY, HETZNER_S3_SECRET_KEY
+} = process.env;
+
+// ---- S3 client ----
+const s3 = new S3Client({
+  region: HETZNER_S3_REGION,
+  endpoint: HETZNER_S3_ENDPOINT,
+  forcePathStyle: true,
+  credentials: { accessKeyId: HETZNER_S3_ACCESS_KEY, secretAccessKey: HETZNER_S3_SECRET_KEY },
+});
+
+async function objectExists(Key) {
+  try { await s3.send(new HeadObjectCommand({ Bucket: HETZNER_S3_BUCKET, Key })); return true; }
+  catch { return false; }
+}
+
+async function uploadBuffer(buf, Key) {
+  await s3.send(new PutObjectCommand({
+    Bucket: HETZNER_S3_BUCKET,
+    Key,
+    Body: buf,
+    ContentType: mime.getType(Key) || "application/octet-stream",
+    CacheControl: "public, max-age=31536000, immutable",
+    ACL: "public-read",
+  }));
+}
+
+async function retry(fn, tries = 3, delayMs = 1500) {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    try { return await fn(); }
+    catch (e) { last = e; if (i < tries - 1) await new Promise(r => setTimeout(r, delayMs)); }
+  }
+  throw last;
+}
+
+async function syncDir(client, remoteDir, prefix) {
+  await client.cd(remoteDir);
+  const list = await retry(() => client.list());
+  const files = list.filter(e => e.isFile);
+
+  let uploaded = 0, skipped = 0;
+  for (const f of files) {
+    const filename = f.name;              // e.g., AAC17-22G3_1.jpg
+    const key = `${prefix}/${filename}`;  // e.g., rsr/standard/AAC17-22G3_1.jpg
+    if (await objectExists(key)) { skipped++; continue; }
+
+    const chunks = [];
+    await retry(() => client.downloadTo((c) => chunks.push(c), filename));
+    await uploadBuffer(Buffer.concat(chunks), key);
+    uploaded++;
+    console.log("Uploaded:", key);
+  }
+  await client.cdup();
+  return { uploaded, skipped, total: files.length };
+}
+
+async function main() {
+  const client = new ftp.Client(25000);
+  client.ftp.verbose = false;
+  client.ftp.useEPSV = true;
+
+  const port = Number(RSR_FTP_PORT || 2222);
+  console.log(`Connecting FTPS (explicit) ${RSR_FTP_HOST}:${port}`);
+
+  try {
+    await client.access({
+      host: RSR_FTP_HOST,          // ftps.rsrgroup.com
+      port,                        // 2222
+      user: RSR_FTP_USER,          // RSR account number
+      password: RSR_FTP_PASS,      // FTPS password
+      secure: true,                // explicit FTPS
+      secureOptions: {
+        servername: RSR_FTP_HOST,
+        minVersion: "TLSv1.2",
+        rejectUnauthorized: false,
+      },
+      passive: true,
+    });
+
+    const a = await syncDir(client, "/ftp_images", "rsr/standard");
+    // const b = await syncDir(client, "/ftp_highres_images", "rsr/highres"); // enable later
+
+    const uploaded = a.uploaded /* + (b?.uploaded||0) */;
+    const skipped  = a.skipped  /* + (b?.skipped||0)  */;
+    const total    = a.total    /* + (b?.total||0)    */;
+
+    console.log(`[summary] uploaded=${uploaded} skipped=${skipped} seen=${total}`);
+  } finally {
+    client.close();
+  }
+}
+
+main().catch((e) => { console.error(e); process.exit(1); });
+EOF
+
+# --- cron worker (runs every 15 min) ---
+mkdir -p server
+cat > server/rsr-cron.js <<'EOF'
+// server/rsr-cron.js — run sync every 15 minutes, avoid overlap
+const cron = require('node-cron');
+const { exec } = require('child_process');
+
+let running = false;
+function runSync() {
+  if (running) { console.log('[rsr-cron] Previous sync running, skip'); return; }
+  running = true;
+  console.log('[rsr-cron] Starting sync…');
+  const child = exec('node scripts/sync-rsr-to-hetzner.mjs', { env: process.env });
+  child.stdout.on('data', d => process.stdout.write(`[rsr-sync] ${d}`));
+  child.stderr.on('data', d => process.stderr.write(`[rsr-sync] ${d}`));
+  child.on('exit', code => { console.log(`[rsr-cron] Done (code ${code})`); running = false; });
+}
+runSync();                                      // once at boot
+cron.schedule('*/15 * * * *', runSync, { timezone: 'UTC' }); // then every 15 min
+EOF
+
+# --- ensure cron loads on server boot (TypeScript entry: server/routes.ts) ---
+grep -q 'rsr-cron' server/routes.ts || sed -i '1i\// @ts-ignore\nrequire("./rsr-cron");' server/routes.ts
+
+# --- commit & push ---
+git add scripts/sync-rsr-to-hetzner.mjs server/rsr-cron.js server/routes.ts
+git commit -m "RSR FTPS 2222: explicit TLS + cron + summary logs"
+git push origin main
+
+# --- quick test (should print connection + uploaded/summary) ---
+node scripts/sync-rsr-to-hetzner.mjs

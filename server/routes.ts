@@ -5505,16 +5505,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Filter out unwanted brands
           const unwantedBrands = ['ZENITH', 'MKS'];
           const wantedHits = allHits.filter(hit => !unwantedBrands.includes(hit.manufacturer));
-          const unwantedHits = allHits.filter(hit => unwantedBrands.includes(hit.manufacturer));
           
-          console.log(`📊 Found ${wantedHits.length} wanted brands, ${unwantedHits.length} unwanted`);
+          console.log(`📊 Found ${wantedHits.length} wanted brands before stock-based sorting`);
           
-          // Return wanted brands first, then unwanted if needed
-          const finalResults = wantedHits.slice(0, hitsPerPage);
+          // Stock-based priority sorting
+          const stockSortedHits = wantedHits.sort((a, b) => {
+            // Priority 1: In-stock vs out-of-stock (boolean inStock field)
+            const aInStock = a.inStock || a.inventoryQuantity > 0;
+            const bInStock = b.inStock || b.inventoryQuantity > 0;
+            if (aInStock !== bInStock) return bInStock ? 1 : -1;
+            
+            // Priority 2: Higher inventory quantity
+            const aQty = parseInt(a.inventoryQuantity) || 0;
+            const bQty = parseInt(b.inventoryQuantity) || 0;
+            if (aQty !== bQty) return bQty - aQty; // Higher quantity first
+            
+            // Priority 3: New items get boost (if newItem field exists)
+            const aNew = a.newItem || false;
+            const bNew = b.newItem || false;
+            if (aNew !== bNew) return bNew ? 1 : -1;
+            
+            // Priority 4: Maintain original Algolia relevance order
+            return 0;
+          });
+          
+          console.log(`📈 Stock-based sorting complete - top 3: ${stockSortedHits.slice(0, 3).map(h => `${h.manufacturer} (${h.inventoryQuantity || 0} in stock)`).join(', ')}`);
+          
+          // Return stock-prioritized results
+          const finalResults = stockSortedHits.slice(0, hitsPerPage);
           searchResults.hits = finalResults;
           searchResults.nbHits = expandedResults.nbHits;
           
-          console.log(`✅ Returning ${finalResults.length} results with popular brands prioritized`);
+          console.log(`✅ Returning ${finalResults.length} results prioritized by stock levels`);
         }
       }
 
