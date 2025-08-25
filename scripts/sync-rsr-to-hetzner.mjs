@@ -12,19 +12,12 @@ const s3 = new S3Client({
   region: HETZNER_S3_REGION,
   endpoint: HETZNER_S3_ENDPOINT,
   forcePathStyle: true,
-  credentials: {
-    accessKeyId: HETZNER_S3_ACCESS_KEY,
-    secretAccessKey: HETZNER_S3_SECRET_KEY,
-  },
+  credentials: { accessKeyId: HETZNER_S3_ACCESS_KEY, secretAccessKey: HETZNER_S3_SECRET_KEY },
 });
 
 async function objectExists(Key) {
-  try {
-    await s3.send(new HeadObjectCommand({ Bucket: HETZNER_S3_BUCKET, Key }));
-    return true;
-  } catch {
-    return false;
-  }
+  try { await s3.send(new HeadObjectCommand({ Bucket: HETZNER_S3_BUCKET, Key })); return true; }
+  catch { return false; }
 }
 
 async function uploadBuffer(buf, Key) {
@@ -40,7 +33,14 @@ async function uploadBuffer(buf, Key) {
 
 async function syncDir(client, remoteDir, prefix) {
   await client.cd(remoteDir);
-  const list = await client.list();
+
+  // small retry helper for LIST/download
+  async function retry(fn, tries = 3) {
+    let last; for (let i = 0; i < tries; i++) { try { return await fn(); } catch (e) { last = e; await new Promise(r => setTimeout(r, 1500)); } }
+    throw last;
+  }
+
+  const list = await retry(() => client.list());
   const files = list.filter(e => e.isFile);
 
   for (const f of files) {
@@ -49,9 +49,8 @@ async function syncDir(client, remoteDir, prefix) {
     if (await objectExists(key)) continue;
 
     const chunks = [];
-    await client.downloadTo((chunk) => chunks.push(chunk), filename);
+    await retry(() => client.downloadTo((c) => chunks.push(c), filename));
     const buf = Buffer.concat(chunks);
-
     await uploadBuffer(buf, key);
     console.log("Uploaded:", key);
   }
@@ -60,11 +59,11 @@ async function syncDir(client, remoteDir, prefix) {
 }
 
 async function main() {
-  const client = new ftp.Client(15000);
+  const client = new ftp.Client(20000);
   client.ftp.verbose = false;
 
   const port = Number(RSR_FTP_PORT || 21);
-  console.log(`Connecting FTP ${RSR_FTP_HOST}:${port}`);
+  console.log(`Connecting FTPS ${RSR_FTP_HOST}:${port}`);
 
   try {
     await client.access({
@@ -72,11 +71,17 @@ async function main() {
       port,
       user: RSR_FTP_USER,
       password: RSR_FTP_PASS,
-      secure: false,
+      secure: true, // explicit TLS (FTPS)
+      secureOptions: {
+        servername: RSR_FTP_HOST,
+        minVersion: "TLSv1.2",
+        rejectUnauthorized: false, // tolerate odd cert chains
+      },
       passive: true,
     });
 
     await syncDir(client, "/ftp_images", "rsr/standard");
+    // enable later if needed:
     // await syncDir(client, "/ftp_highres_images", "rsr/highres");
   } finally {
     client.close();
