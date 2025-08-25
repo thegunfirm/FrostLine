@@ -8,6 +8,7 @@ const {
   HETZNER_S3_ACCESS_KEY, HETZNER_S3_SECRET_KEY
 } = process.env;
 
+// ---- S3 client ----
 const s3 = new S3Client({
   region: HETZNER_S3_REGION,
   endpoint: HETZNER_S3_ENDPOINT,
@@ -31,58 +32,67 @@ async function uploadBuffer(buf, Key) {
   }));
 }
 
+async function retry(fn, tries = 3, delayMs = 1500) {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    try { return await fn(); }
+    catch (e) { last = e; if (i < tries - 1) await new Promise(r => setTimeout(r, delayMs)); }
+  }
+  throw last;
+}
+
 async function syncDir(client, remoteDir, prefix) {
   await client.cd(remoteDir);
-
-  // small retry helper for LIST/download
-  async function retry(fn, tries = 3) {
-    let last; for (let i = 0; i < tries; i++) { try { return await fn(); } catch (e) { last = e; await new Promise(r => setTimeout(r, 1500)); } }
-    throw last;
-  }
-
   const list = await retry(() => client.list());
   const files = list.filter(e => e.isFile);
 
+  let uploaded = 0, skipped = 0;
   for (const f of files) {
-    const filename = f.name;               // e.g., AAC17-22G3_1.jpg
-    const key = `${prefix}/${filename}`;   // e.g., rsr/standard/AAC17-22G3_1.jpg
-    if (await objectExists(key)) continue;
+    const filename = f.name;              // e.g., AAC17-22G3_1.jpg
+    const key = `${prefix}/${filename}`;  // e.g., rsr/standard/AAC17-22G3_1.jpg
+    if (await objectExists(key)) { skipped++; continue; }
 
     const chunks = [];
     await retry(() => client.downloadTo((c) => chunks.push(c), filename));
-    const buf = Buffer.concat(chunks);
-    await uploadBuffer(buf, key);
+    await uploadBuffer(Buffer.concat(chunks), key);
+    uploaded++;
     console.log("Uploaded:", key);
   }
-
   await client.cdup();
+  return { uploaded, skipped, total: files.length };
 }
 
 async function main() {
-  const client = new ftp.Client(20000);
+  const client = new ftp.Client(25000);
   client.ftp.verbose = false;
+  client.ftp.useEPSV = true;
 
-  const port = Number(RSR_FTP_PORT || 990);
-  console.log(`Connecting FTPS ${RSR_FTP_HOST}:${port}`);
+  const port = Number(RSR_FTP_PORT || 2222);
+  console.log(`Connecting FTPS (explicit) ${RSR_FTP_HOST}:${port}`);
 
   try {
     await client.access({
-      host: RSR_FTP_HOST,
-      port,
-      user: RSR_FTP_USER,
-      password: RSR_FTP_PASS,
-      secure: "implicit", // explicit TLS (FTPS)
+      host: RSR_FTP_HOST,          // ftps.rsrgroup.com
+      port,                        // 2222
+      user: RSR_FTP_USER,          // RSR account number
+      password: RSR_FTP_PASS,      // FTPS password
+      secure: true,                // explicit FTPS
       secureOptions: {
         servername: RSR_FTP_HOST,
         minVersion: "TLSv1.2",
-        rejectUnauthorized: false, // tolerate odd cert chains
+        rejectUnauthorized: false,
       },
       passive: true,
     });
 
-    await syncDir(client, "/ftp_images", "rsr/standard");
-    // enable later if needed:
-    // await syncDir(client, "/ftp_highres_images", "rsr/highres");
+    const a = await syncDir(client, "/ftp_images", "rsr/standard");
+    // const b = await syncDir(client, "/ftp_highres_images", "rsr/highres"); // enable later
+
+    const uploaded = a.uploaded /* + (b?.uploaded||0) */;
+    const skipped  = a.skipped  /* + (b?.skipped||0)  */;
+    const total    = a.total    /* + (b?.total||0)    */;
+
+    console.log(`[summary] uploaded=${uploaded} skipped=${skipped} seen=${total}`);
   } finally {
     client.close();
   }
