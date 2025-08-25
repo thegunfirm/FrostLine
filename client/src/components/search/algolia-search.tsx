@@ -33,6 +33,10 @@ interface SearchResult {
   rsrStockNumber?: string;
   upc?: string;
   mpn?: string;
+  // Flat price fields provided by server transformation
+  priceBronze?: string;
+  priceGold?: string;
+  pricePlatinum?: string;
   // Simplified tier pricing structure that matches API response
   tierPricing?: {
     bronze?: number;
@@ -112,6 +116,10 @@ interface SuggestionItem {
   stockNumber: string;
   inventoryQuantity: number;
   inStock: boolean;
+  // Flat price fields provided by server transformation
+  priceBronze?: string;
+  priceGold?: string;
+  pricePlatinum?: string;
   tierPricing: {
     bronze: number;
     gold: number;
@@ -914,9 +922,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
               priceWholesale: hit.tierPricing?.platinum?.toString() || '0',
               priceMAP: hit.tierPricing?.gold?.toString() || '0',
               priceMSRP: hit.tierPricing?.bronze?.toString() || '0',
-              priceBronze: hit.tierPricing?.bronze?.toString() || '0',
-              priceGold: hit.tierPricing?.gold?.toString() || '0',
-              pricePlatinum: hit.tierPricing?.platinum?.toString() || '0',
+              priceBronze: hit.priceBronze || '0',
+              priceGold: hit.priceGold || '0',
+              pricePlatinum: hit.pricePlatinum || '0',
               stockQuantity: hit.inventoryQuantity || 0,
               allocated: 'N',
               requiresFFL: hit.fflRequired || false,
@@ -1030,9 +1038,9 @@ export function AlgoliaSearch({ initialQuery = "", initialCategory = "", initial
                   priceWholesale: item.tierPricing?.platinum?.toString() || '0',
                   priceMAP: item.tierPricing?.gold?.toString() || '0',
                   priceMSRP: item.tierPricing?.bronze?.toString() || '0',
-                  priceBronze: item.tierPricing?.bronze?.toString() || '0',
-                  priceGold: item.tierPricing?.gold?.toString() || '0',
-                  pricePlatinum: item.tierPricing?.platinum?.toString() || '0',
+                  priceBronze: item.priceBronze || '0',
+                  priceGold: item.priceGold || '0',
+                  pricePlatinum: item.pricePlatinum || '0',
                   stockQuantity: item.inventoryQuantity || 0,
                   allocated: 'N',
                   requiresFFL: false,
