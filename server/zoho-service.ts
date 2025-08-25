@@ -504,6 +504,57 @@ export class ZohoService {
   }
 
   /**
+   * Generic method to make Zoho API requests (compatibility method)
+   */
+  async makeZohoRequest(options: { method: string; endpoint: string; data?: any }): Promise<any> {
+    const { method, endpoint, data } = options;
+    return await this.makeAPIRequest(endpoint, method as any, data);
+  }
+
+  /**
+   * Find or create contact (compatibility method)
+   */
+  async findOrCreateContact(contactData: { email: string; firstName: string; lastName: string }): Promise<{ success: boolean; contactId?: string; error?: string }> {
+    try {
+      // First try to find existing contact
+      const searchCriteria = `Email:equals:${contactData.email}`;
+      const existingContacts = await this.searchRecords('Contacts', searchCriteria);
+      
+      if (existingContacts.data && existingContacts.data.length > 0) {
+        return {
+          success: true,
+          contactId: existingContacts.data[0].id
+        };
+      }
+      
+      // Create new contact if not found
+      const newContact = await this.createContact({
+        Email: contactData.email,
+        First_Name: contactData.firstName,
+        Last_Name: contactData.lastName
+      });
+      
+      if (newContact && newContact.id) {
+        return {
+          success: true,
+          contactId: newContact.id
+        };
+      }
+      
+      return {
+        success: false,
+        error: 'Failed to create contact'
+      };
+    } catch (error: any) {
+      console.error('Error in findOrCreateContact:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
    * Create a new contact in Zoho CRM
    */
   async createContact(contactData: any): Promise<any> {
@@ -538,7 +589,7 @@ export class ZohoService {
         }
         throw new Error('Failed to create contact in Zoho - no success status returned');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Zoho Contact creation error:', error);
       if (error.response && error.response.data) {
         console.error('❌ Zoho API Error Response:', JSON.stringify(error.response.data, null, 2));
@@ -610,24 +661,7 @@ export class ZohoService {
     }
   }
 
-  /**
-   * Create a record in any Zoho CRM module
-   */
-  async createRecord(module: string, recordData: any): Promise<any> {
-    try {
-      console.log(`📝 Creating ${module} record with data:`, JSON.stringify(recordData, null, 2));
-      
-      const response = await this.makeAPIRequest(module, 'POST', {
-        data: [recordData]
-      });
-
-      console.log(`✅ ${module} creation response:`, JSON.stringify(response, null, 2));
-      return response;
-    } catch (error: any) {
-      console.error(`❌ Error creating ${module} record:`, error);
-      throw error;
-    }
-  }
+  // Removed duplicate createRecord method - using the one below with better implementation
 
   /**
    * Get field metadata for a Zoho module (Field Discovery)
@@ -1220,7 +1254,7 @@ export class ZohoService {
           console.log(`✅ SUCCESS: Found ${subformData.length} products in subform (expected ${expectedProductCount})`);
           
           // Log each product for confirmation
-          subformData.forEach((product, index) => {
+          subformData.forEach((product: any, index: number) => {
             console.log(`  ${index + 1}. ${product.Product_Name || product.product?.Product_Name} (${product.Product_Code || product.product?.Product_Code})`);
             console.log(`     Qty: ${product.Quantity || product.quantity}, Price: $${product.Unit_Price || product.unit_price || product.list_price}`);
             console.log(`     RSR: ${product.Distributor_Part_Number}, FFL: ${product.FFL_Required}`);

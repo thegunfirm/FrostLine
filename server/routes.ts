@@ -1499,7 +1499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const processingStartTime = Date.now();
 
       // Step 1: Log TGF order numbering
-      const tgfOrderNumber = order.order_number || `test${String(order.id).padStart(8, '0')}`;
+      const tgfOrderNumber = order.rsrOrderNumber || `test${String(order.id).padStart(8, '0')}`;
       await OrderActivityLogger.logOrderNumbering(order.id, tgfOrderNumber, true, {
         orderFormat: 'TGF standard format',
         sequenceNumber: order.id,
@@ -1517,10 +1517,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           firstName: users.firstName,
           lastName: users.lastName,
           subscriptionTier: users.subscriptionTier
-        }).from(users).where(eq(users.id, order.user_id)).limit(1);
+        }).from(users).where(eq(users.id, order.userId)).limit(1);
         
         if (!customer.length) {
-          throw new Error(`Customer not found for user_id: ${order.user_id}`);
+          throw new Error(`Customer not found for userId: ${order.userId}`);
         }
 
         const customerInfo = {
@@ -1534,12 +1534,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Get FFL dealer info if needed
         let fflInfo = null;
-        if (order.ffl_dealer_id) {
-          const fflResult = await db.select().from(ffls).where(eq(ffls.license_number, order.ffl_dealer_id)).limit(1);
+        if (order.fflDealerId) {
+          const fflResult = await db.select().from(ffls).where(eq(ffls.licenseNumber, order.fflDealerId)).limit(1);
           if (fflResult.length) {
             fflInfo = {
-              license: fflResult[0].license_number,
-              businessName: fflResult[0].business_name,
+              license: fflResult[0].licenseNumber,
+              businessName: fflResult[0].businessName,
               address: fflResult[0].address
             };
           }
@@ -1640,21 +1640,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const dealResult = await zohoService.createOrderDealWithProducts({
           contactId: contactResult.contactId,
           orderNumber: dealName,
-          totalAmount: order.total_price,
+          totalAmount: order.totalPrice,
           productReferences: productReferences,
           membershipTier: customerInfo.membershipTier,
-          fflRequired: order.ffl_required || false,
+          fflRequired: order.fflRequired || false,
           fflDealerName: fflInfo ? fflInfo.businessName : undefined,
           orderStatus: 'Confirmed',
           systemFields: {
             TGF_Order_Number: tgfOrderNumber, // Use proper TGF format instead of raw ID
             Customer_Name: customerInfo.name,
             Customer_Email: customerInfo.email,
-            Payment_Method: order.payment_method || 'Credit Card',
+            Payment_Method: order.paymentMethod || 'Credit Card',
             FFL_Dealer: fflInfo ? fflInfo.businessName : null,
             FFL_License: fflInfo ? fflInfo.license : null,
-            Order_Date: order.order_date,
-            Authorize_Net_Transaction_ID: order.authorize_net_transaction_id
+            Order_Date: order.orderDate,
+            Authorize_Net_Transaction_ID: order.authorizeNetTransactionId
           }
         });
         
@@ -1718,7 +1718,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { ComprehensiveOrderProcessor } = await import('./services/comprehensive-order-processor');
       const processingData = {
         orderId: order.id,
-        tgfOrderNumber: order.order_number || `test${String(order.id).padStart(8, '0')}`,
+        tgfOrderNumber: order.rsrOrderNumber || `test${String(order.id).padStart(8, '0')}`,
         orderItems: Array.isArray(order.items) ? order.items : 
                     (typeof order.items === 'string' ? JSON.parse(order.items) : []),
         customerInfo: {
@@ -1727,8 +1727,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName: 'ToEnd',
           membershipTier: 'Bronze'
         },
-        fflInfo: order.ffl_dealer_id ? {
-          license: order.ffl_dealer_id,
+        fflInfo: order.fflDealerId ? {
+          license: order.fflDealerId,
           businessName: 'Test FFL Business',
           address: { address1: 'Test Address' }
         } : undefined,
@@ -2144,12 +2144,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Get FFL dealer info if needed
         let fflInfo = null;
-        if (order.ffl_dealer_id) {
-          const fflResult = await db.select().from(ffls).where(eq(ffls.license_number, order.ffl_dealer_id)).limit(1);
+        if (order.fflDealerId) {
+          const fflResult = await db.select().from(ffls).where(eq(ffls.licenseNumber, order.fflDealerId)).limit(1);
           if (fflResult.length) {
             fflInfo = {
-              license: fflResult[0].license_number,
-              businessName: fflResult[0].business_name,
+              license: fflResult[0].licenseNumber,
+              businessName: fflResult[0].businessName,
               address: fflResult[0].address
             };
           }
@@ -2255,21 +2255,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const dealResult = await zohoService.createOrderDealWithProducts({
           contactId: contactResult.contactId,
           orderNumber: dealName,
-          totalAmount: order.total_price,
+          totalAmount: order.totalPrice,
           productReferences: productReferences,
           membershipTier: customerInfo.membershipTier,
-          fflRequired: order.ffl_required || false,
+          fflRequired: order.fflRequired || false,
           fflDealerName: fflInfo ? fflInfo.businessName : undefined,
           orderStatus: 'Confirmed',
           systemFields: {
             TGF_Order_Number: tgfOrderNumber, // Use proper TGF format instead of raw ID
             Customer_Name: customerInfo.name,
             Customer_Email: customerInfo.email,
-            Payment_Method: order.payment_method || 'Credit Card',
+            Payment_Method: order.paymentMethod || 'Credit Card',
             FFL_Dealer: fflInfo ? fflInfo.businessName : null,
             FFL_License: fflInfo ? fflInfo.license : null,
-            Order_Date: order.order_date,
-            Authorize_Net_Transaction_ID: order.authorize_net_transaction_id
+            Order_Date: order.orderDate,
+            Authorize_Net_Transaction_ID: order.authorizeNetTransactionId
           }
         });
         
@@ -2342,7 +2342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: users.firstName,
         lastName: users.lastName,
         subscriptionTier: users.subscriptionTier
-      }).from(users).where(eq(users.id, order.user_id)).limit(1);
+      }).from(users).where(eq(users.id, order.userId)).limit(1);
       
       if (!customer.length) {
         return res.status(400).json({ 
@@ -2361,12 +2361,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get FFL info if needed
       let fflInfo = null;
-      if (order.ffl_dealer_id) {
-        const fflResult = await db.select().from(ffls).where(eq(ffls.license_number, order.ffl_dealer_id)).limit(1);
+      if (order.fflDealerId) {
+        const fflResult = await db.select().from(ffls).where(eq(ffls.licenseNumber, order.fflDealerId)).limit(1);
         if (fflResult.length) {
           fflInfo = {
-            license: fflResult[0].license_number,
-            businessName: fflResult[0].business_name,
+            license: fflResult[0].licenseNumber,
+            businessName: fflResult[0].businessName,
             address: fflResult[0].address
           };
         }
@@ -2457,21 +2457,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dealResult = await zohoService.createOrderDealWithProducts({
         contactId: contactResult.contactId,
         orderNumber: dealName,
-        totalAmount: order.total_price,
+        totalAmount: order.totalPrice,
         productReferences: productReferences,
         membershipTier: customerInfo.membershipTier,
-        fflRequired: order.ffl_required || false,
+        fflRequired: order.fflRequired || false,
         fflDealerName: fflInfo ? fflInfo.businessName : undefined,
         orderStatus: 'Confirmed',
         systemFields: {
           TGF_Order_Number: order.id.toString(),
           Customer_Name: customerInfo.name,
           Customer_Email: customerInfo.email,
-          Payment_Method: order.payment_method || 'Credit Card',
+          Payment_Method: order.paymentMethod || 'Credit Card',
           FFL_Dealer: fflInfo ? fflInfo.businessName : null,
           FFL_License: fflInfo ? fflInfo.license : null,
-          Order_Date: order.order_date,
-          Authorize_Net_Transaction_ID: order.authorize_net_transaction_id
+          Order_Date: order.orderDate,
+          Authorize_Net_Transaction_ID: order.authorizeNetTransactionId
         }
       });
 
@@ -2486,7 +2486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           contactId: contactResult.contactId,
           productsCount: productReferences.length,
           customerName: customerInfo.name,
-          totalAmount: order.total_price
+          totalAmount: order.totalPrice
         });
       } else {
         console.error(`❌ Manual sync failed for Order ${orderId}:`, dealResult.error);
