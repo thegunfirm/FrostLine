@@ -85,7 +85,7 @@ async function main() {
       passive: true,
     });
 
-    const a = await syncDir(client, "/ftp_images/new_images", "rsr/standard");
+    const a = await syncDir(client, "/ftp_images", "rsr/standard");
     // const b = await syncDir(client, "/ftp_highres_images", "rsr/highres"); // enable later
 
     const uploaded = a.uploaded /* + (b?.uploaded||0) */;
