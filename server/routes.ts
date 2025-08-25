@@ -4275,52 +4275,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Trying RSR image from: ${rsrImageUrl}`);
       
       try {
-        // Try RSR's CDN first - no authentication needed
-        let response;
-        try {
-          response = await axios.get(rsrImageUrl, {
-            responseType: "arraybuffer",
-            timeout: 5000,
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-          });
-          
-          // Check if we got a valid JPEG image from CDN
-          const firstBytes = Buffer.from(response.data).slice(0, 3);
-          const isJpeg = firstBytes[0] === 0xFF && firstBytes[1] === 0xD8 && firstBytes[2] === 0xFF;
-          
-          if (isJpeg && response.data.length > 1000) {
-            console.log(`✓ RSR CDN image loaded: ${imageName}_${imageNumber}.jpg (${response.data.length} bytes)`);
-            // Return CDN image immediately if it's valid
-            res.set({
-              'Content-Type': 'image/jpeg',
-              'Cache-Control': 'public, max-age=86400',
-              'Content-Length': response.data.length.toString(),
-              'X-Image-Source': 'rsr-cdn'
-            });
-            return res.send(response.data);
-          } else {
-            console.log(`CDN returned invalid response, trying authenticated methods`);
-          }
-        } catch (cdnError) {
-          console.log(`CDN failed for ${imageName}_${imageNumber}.jpg, using fallback`);
-          throw new Error('RSR CDN image not available, using fallback');
-        }
+        // Try authenticated RSR access with proper session handling
+        console.log(`🔐 Attempting authenticated RSR image access for ${imageName}_${imageNumber}.jpg`);
         
-        if (response.status === 200 && response.data && response.data.length > 0) {
-          const imageBuffer = response.data;
-          
-          // Set proper caching headers
+        // Use RSR session manager with sophisticated age verification bypass
+        console.log(`🔓 Using RSR session manager for authenticated image access`);
+        const imageBuffer = await rsrSessionManager.downloadImage(rsrImageUrl);
+        
+        if (imageBuffer && imageBuffer.length > 1000) {
+          console.log(`✅ RSR authenticated image loaded: ${imageName}_${imageNumber}.jpg (${imageBuffer.length} bytes)`);
           res.set({
             'Content-Type': 'image/jpeg',
-            'Cache-Control': 'public, max-age=86400', // 24 hours
+            'Cache-Control': 'public, max-age=86400',
             'Content-Length': imageBuffer.length.toString(),
-            'X-Image-Source': 'rsr-direct'
+            'X-Image-Source': 'rsr-authenticated'
           });
-          
           return res.send(imageBuffer);
         }
+        
+        console.log(`🚫 RSR session manager returned invalid or empty image`);
+        throw new Error('RSR authenticated image download failed');
       } catch (rsrError: any) {
         console.log(`❌ RSR image failed for ${imageName}: ${rsrError.message}`);
       }
