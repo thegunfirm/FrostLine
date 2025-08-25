@@ -1,6 +1,6 @@
 // server/rsr-cron.js — run sync every 15 minutes, avoid overlap
-const cron = require('node-cron');
-const { exec } = require('child_process');
+import cron from 'node-cron';
+import { exec } from 'child_process';
 
 let running = false;
 function runSync() {
