@@ -5120,7 +5120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       if (cleanedFilters.manufacturer) {
-        algoliaFilters.push(`manufacturerName:"${cleanedFilters.manufacturer}"`);
+        algoliaFilters.push(`manufacturer:"${cleanedFilters.manufacturer}"`);
       }
       if (cleanedFilters.inStock) {
         algoliaFilters.push('inStock:true');
@@ -5376,7 +5376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         page: page || 0,
         attributesToRetrieve: [
           'objectID', 'name', 'description', 'stockNumber', 'rsrStockNumber', 
-          'manufacturerName', 'categoryName', 'tierPricing', 'inventoryQuantity', 
+          'manufacturer', 'categoryName', 'tierPricing', 'inventoryQuantity', 
           'inStock', 'caliber', 'capacity', 'barrelLength', 'finish', 'frameSize',
           'actionType', 'sightType', 'tags', 'newItem', 'internalSpecial',
           'retailPrice', 'retailMap', 'msrp', 'dealerPrice', 'price', 'fflRequired',
@@ -9465,10 +9465,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const algoliaObjects = allProducts.map(product => ({
         objectID: product.sku,
         title: product.name,
+        name: product.name,
         description: product.description,
         sku: product.sku,
         upc: product.upcCode || '',
-        manufacturerName: product.manufacturer || '',
+        manufacturer: product.manufacturer || '',
         categoryName: product.category || '',
         subcategoryName: product.category || '', // Use same as category for now
         inventory: {
