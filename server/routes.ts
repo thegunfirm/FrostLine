@@ -5405,31 +5405,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Boost popular handgun manufacturers and calibers in handgun searches
       if (cleanedFilters.category === "Handguns" || cleanedFilters.productType === "handgun" || cleanedFilters.departmentNumber === "01") {
+        // Force minimal query to trigger boosts when browsing category
+        if (!searchQuery || searchQuery.trim() === '') {
+          searchParams.query = '*';  // Wildcard query to trigger optionalFilters
+        }
+        
         searchParams.optionalFilters = [
-          "manufacturer:GLOCK<score=200>",      // Top handgun brand
-          "manufacturer:SPGFLD<score=190>",     // Springfield Armory (most products in DB)
-          "manufacturer:SIG<score=180>",        // Sig Sauer
-          "manufacturer:FUSION<score=50>",      // Lower priority, but exists in DB
-          "caliber:9mm<score=150>",             // Most popular caliber
-          "caliber:45 ACP<score=120>",
-          "caliber:380 ACP<score=110>",
-          "caliber:357 Magnum<score=100>",
-          "caliber:40 S&W<score=95>",
-          "caliber:22 LR<score=90>"
+          "manufacturer:GLOCK<score=1000>",     // Top handgun brand - massive boost
+          "manufacturer:SPGFLD<score=950>",     // Springfield Armory (most products in DB)
+          "manufacturer:SIG<score=900>",        // Sig Sauer
+          "manufacturer:FUSION<score=100>",     // Lower priority, but exists in DB
+          "caliber:9mm<score=500>",             // Most popular caliber - high boost
+          "caliber:45 ACP<score=400>",
+          "caliber:380 ACP<score=350>",
+          "caliber:357 Magnum<score=300>",
+          "caliber:40 S&W<score=250>",
+          "caliber:22 LR<score=200>"
         ];
       }
       
       // Add rifle popularity boosts based on actual DB data
       if (cleanedFilters.category === "Rifles" || cleanedFilters.productType === "rifle" || cleanedFilters.departmentNumber === "02") {
+        // Force minimal query to trigger boosts when browsing category
+        if (!searchQuery || searchQuery.trim() === '') {
+          searchParams.query = '*';  // Wildcard query to trigger optionalFilters
+        }
+        
         searchParams.optionalFilters = [
-          "manufacturer:SIG<score=200>",        // Has 6 rifles, popular brand
-          "manufacturer:IWI<score=180>",        // Most rifles in DB (12)
-          "manufacturer:SOLGW<score=170>",      // 9 rifles in DB
-          "manufacturer:SANTAN<score=160>",     // 6 rifles in DB
-          "caliber:5.56<score=150>",            // AR-15 caliber
-          "caliber:223<score=140>",             // Common rifle caliber
-          "caliber:308<score=130>",             // Popular hunting caliber
-          "caliber:22 LR<score=120>"            // Popular training caliber
+          "manufacturer:SIG<score=1000>",       // Has 6 rifles, popular brand - massive boost
+          "manufacturer:IWI<score=950>",        // Most rifles in DB (12)
+          "manufacturer:SOLGW<score=900>",      // 9 rifles in DB
+          "manufacturer:SANTAN<score=850>",     // 6 rifles in DB
+          "caliber:5.56<score=500>",            // AR-15 caliber - high boost
+          "caliber:223<score=450>",             // Common rifle caliber
+          "caliber:308<score=400>",             // Popular hunting caliber
+          "caliber:22 LR<score=350>"            // Popular training caliber
         ];
       }
       
