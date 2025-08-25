@@ -5442,7 +5442,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Transform search results to match frontend expectations
       const transformedResults = {
         ...searchResults,
-        hits: searchResults.hits.map((hit: any) => ({
+        hits: searchResults.hits.map((hit: any) => {
+          // Extract pricing from tierPricing structure
+          const tierPricing = hit.tierPricing || {};
+          const bronzePrice = tierPricing.bronze?.dealerPrice || 0;
+          const goldPrice = tierPricing.gold?.dealerPrice || 0;
+          const platinumPrice = tierPricing.platinum?.dealerPrice || 0;
+          
+          return {
           objectID: hit.objectID,
           title: hit.name || hit.title,
           description: hit.description || hit.fullDescription,
@@ -5452,9 +5459,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           manufacturer: hit.manufacturer || hit.manufacturerName || 'UNKNOWN',
           categoryName: hit.categoryName || hit.category,
           // Extract individual pricing tiers for frontend compatibility  
-          priceBronze: String(hit.tierPricing?.bronze?.dealerPrice || "0.00"),
-          priceGold: String(hit.tierPricing?.gold?.dealerPrice || "0.00"),
-          pricePlatinum: String(hit.tierPricing?.platinum?.dealerPrice || "0.00"),
+          priceBronze: bronzePrice.toString(),
+          priceGold: goldPrice.toString(),
+          pricePlatinum: platinumPrice.toString(),
           tierPricing: hit.tierPricing || {
             bronze: hit.retailPrice || hit.price,
             gold: hit.dealerPrice || hit.price,
@@ -5486,7 +5493,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           newItem: hit.newItem,
           internalSpecial: hit.internalSpecial,
           dropShippable: hit.dropShippable
-        }))
+          };
+        })
       };
 
       res.json(transformedResults);
