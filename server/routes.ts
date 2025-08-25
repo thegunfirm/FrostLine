@@ -5416,7 +5416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             "manufacturer:FUSION<score=15000>",   // High boost for existing brand
             "manufacturer:ZENITH<score=-10000>",  // Massive negative boost for ZENITH
             "manufacturer:MKS<score=-8000>",      // Large negative boost for Hi-Point/MKS
-            "caliber:9mm<score=5000>",            // Large boost for popular caliber
+            "caliber:9mm<score=60000>",           // HIGHEST PRIORITY - 9mm handguns first
             "caliber:45 ACP<score=4000>",
             "caliber:40 S&W<score=3000>"
           ];
