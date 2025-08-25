@@ -26,9 +26,20 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
   
   // Use RSR image service for product images - match product detail page logic exactly
   const getImageUrl = () => {
-    // Match the exact same field priority as product detail page: rsrStockNumber || sku
-    const imageKey = product?.rsrStockNumber || product?.sku;
+    // Debug the product fields to understand the difference
+    if (product?.name?.toLowerCase().includes('glock') || product?.name?.toLowerCase().includes('43x')) {
+      console.log('🔍 Product Card Debug:', {
+        name: product.name,
+        sku: product.sku,
+        rsrStockNumber: product.rsrStockNumber,
+        stockNumber: product.stockNumber,
+        id: product.id,
+        allFields: Object.keys(product || {})
+      });
+    }
     
+    // Try different field combinations to match the product page
+    const imageKey = product?.rsrStockNumber || product?.stockNumber || product?.sku || product?.id;
     
     if (!imageKey) return fallbackImage;
     return `/api/image/${imageKey}?angle=1`;
