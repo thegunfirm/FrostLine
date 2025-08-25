@@ -5511,13 +5511,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Stock-based priority sorting
           const stockSortedHits = wantedHits.sort((a, b) => {
             // Priority 1: In-stock vs out-of-stock (boolean inStock field)
-            const aInStock = a.inStock || a.inventoryQuantity > 0;
-            const bInStock = b.inStock || b.inventoryQuantity > 0;
+            const aInStock = a.inStock || (a.inventory?.onHand > 0) || a.inventoryQuantity > 0;
+            const bInStock = b.inStock || (b.inventory?.onHand > 0) || b.inventoryQuantity > 0;
             if (aInStock !== bInStock) return bInStock ? 1 : -1;
             
-            // Priority 2: Higher inventory quantity
-            const aQty = parseInt(a.inventoryQuantity) || 0;
-            const bQty = parseInt(b.inventoryQuantity) || 0;
+            // Priority 2: Higher inventory quantity (use nested inventory.onHand as primary source)
+            const aQty = parseInt(a.inventory?.onHand) || parseInt(a.inventoryQuantity) || 0;
+            const bQty = parseInt(b.inventory?.onHand) || parseInt(b.inventoryQuantity) || 0;
             if (aQty !== bQty) return bQty - aQty; // Higher quantity first
             
             // Priority 3: New items get boost (if newItem field exists)
@@ -5529,7 +5529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return 0;
           });
           
-          console.log(`📈 Stock-based sorting complete - top 3: ${stockSortedHits.slice(0, 3).map(h => `${h.manufacturer} (${h.inventoryQuantity || 0} in stock)`).join(', ')}`);
+          console.log(`📈 Stock-based sorting complete - top 3: ${stockSortedHits.slice(0, 3).map(h => `${h.manufacturer} (${h.inventory?.onHand || h.inventoryQuantity || 0} in stock)`).join(', ')}`);
           
           // Return stock-prioritized results
           const finalResults = stockSortedHits.slice(0, hitsPerPage);
@@ -9568,7 +9568,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔄 Starting complete Algolia sync from database...');
       
       // Get all products from database (no limit)
-      const allProducts = await db.select().from(products).where(isNotNull(products.departmentNumber));
+      const allProducts = await db.select().from(products);
       console.log(`📦 Found ${allProducts.length} products in database`);
       
       if (allProducts.length === 0) {
@@ -9576,7 +9576,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Convert database products to Algolia format
-      const algoliaObjects = allProducts.map(product => ({
+      const algoliaObjects = allProducts.map(product => {
+        // Debug log for inventory products
+        if (product.sku === 'XM193F' || product.stockQuantity > 0) {
+          console.log(`🔍 Debug ${product.sku}: stockQuantity=${product.stockQuantity}, type=${typeof product.stockQuantity}`);
+        }
+        return {
         objectID: product.sku,
         title: product.name,
         name: product.name,
@@ -9586,6 +9591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         manufacturer: product.manufacturer || '',
         categoryName: product.category || '',
         subcategoryName: product.category || '', // Use same as category for now
+        inventoryQuantity: product.stockQuantity || 0,
         inventory: {
           onHand: product.stockQuantity || 0,
           allocated: product.allocated === 'Y',
@@ -9612,7 +9618,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Additional search fields
         departmentNumber: product.departmentNumber,
         inStock: product.inStock || false
-      }));
+        };
+      });
 
       console.log(`🔄 Uploading ${algoliaObjects.length} products to Algolia in batches...`);
 
