@@ -29,17 +29,6 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
     // Match the exact same field priority as product detail page: rsrStockNumber || sku
     const imageKey = product?.rsrStockNumber || product?.sku;
     
-    // Debug logging to understand the difference
-    if (product?.name?.toLowerCase().includes('glock')) {
-      console.log('🔍 Grid Glock product image debug:', {
-        productName: product.name,
-        rsrStockNumber: product.rsrStockNumber,
-        stockNumber: product.stockNumber,
-        sku: product.sku,
-        finalImageKey: imageKey,
-        imageUrl: imageKey ? `/api/rsr-image/${imageKey}?angle=1` : fallbackImage
-      });
-    }
     
     if (!imageKey) return fallbackImage;
     return `/api/image/${imageKey}?angle=1`;
@@ -60,16 +49,10 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
               alt={altText}
               className="w-full h-auto object-contain transition-opacity duration-300 max-w-full"
               onError={(e) => {
-                // Debug logging for image load failures
-                console.log('Image load error:', e.currentTarget.src, 'Status:', e.type);
                 if (e.currentTarget.src !== fallbackImage) {
-                  console.log('RSR image failed, using fallback:', fallbackImage);
                   e.currentTarget.src = fallbackImage;
                   e.currentTarget.onerror = null; // Prevent infinite loop
                 }
-              }}
-              onLoad={(e) => {
-                console.log('Image loaded successfully:', e.currentTarget.src);
               }}
             />
           </div>
