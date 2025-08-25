@@ -24,11 +24,11 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
 
   const fallbackImage = fallbackImageSetting?.value || "/fallback-logo.png";
   
-  // Use RSR image service for product images - match product detail page logic
+  // Use RSR image service for product images - match product detail page logic exactly
   const getImageUrl = () => {
     const imageKey = product?.rsrStockNumber || product?.sku;
     if (!imageKey) return fallbackImage;
-    return `/api/rsr-image/${imageKey}`;
+    return `/api/rsr-image/${imageKey}?angle=1`;
   };
   
   const imageUrl = getImageUrl();
