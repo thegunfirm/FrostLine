@@ -274,6 +274,7 @@ class AlgoliaSearchService {
         'filterOnly(tags)'
       ],
       customRanking: [
+        'desc(popularityScore)', // Boost popular handguns and rifles first
         'desc(isCompleteFirearm)',
         'desc(inStock)',
         'desc(newItem)',
@@ -446,6 +447,79 @@ class AlgoliaSearchService {
     }
   }
 
+  // Calculate popularity score for handguns and rifles
+  private getPopularityScore(product: any): number {
+    const name = (product.name || '').toLowerCase();
+    const manufacturer = (product.manufacturer || '').toLowerCase();
+    const category = (product.category || '').toLowerCase();
+    
+    let popularityScore = 0;
+    
+    // Popular Handgun Brands & Models
+    if (category.includes('handgun') || name.includes('pistol')) {
+      if (manufacturer.includes('glock') || name.includes('glock')) {
+        popularityScore += 100; // Glock is extremely popular
+      }
+      if (manufacturer.includes('smith') || manufacturer.includes('wesson') || name.includes('smith')) {
+        popularityScore += 90; // S&W very popular
+      }
+      if (manufacturer.includes('sig') || name.includes('sig sauer')) {
+        popularityScore += 85; // Sig Sauer very popular
+      }
+      if (manufacturer.includes('ruger') || name.includes('ruger')) {
+        popularityScore += 80; // Ruger popular
+      }
+      if (manufacturer.includes('springfield') || name.includes('springfield')) {
+        popularityScore += 75; // Springfield popular
+      }
+      if (manufacturer.includes('cz') || name.includes('cz')) {
+        popularityScore += 70; // CZ popular
+      }
+      if (name.includes('1911') || name.includes('m1911')) {
+        popularityScore += 85; // 1911 platform very popular
+      }
+      if (name.includes('p320') || name.includes('p365')) {
+        popularityScore += 90; // Popular Sig models
+      }
+      if (name.includes('g19') || name.includes('g17') || name.includes('g43')) {
+        popularityScore += 95; // Popular Glock models
+      }
+    }
+    
+    // Popular Rifle Brands & Models  
+    if (category.includes('rifle') || name.includes('rifle')) {
+      if (name.includes('ar-15') || name.includes('ar15') || name.includes('m4')) {
+        popularityScore += 100; // AR-15 platform extremely popular
+      }
+      if (manufacturer.includes('remington') || name.includes('remington')) {
+        popularityScore += 85; // Remington very popular
+      }
+      if (manufacturer.includes('winchester') || name.includes('winchester')) {
+        popularityScore += 80; // Winchester popular
+      }
+      if (manufacturer.includes('ruger') || name.includes('ruger')) {
+        popularityScore += 75; // Ruger popular
+      }
+      if (manufacturer.includes('savage') || name.includes('savage')) {
+        popularityScore += 70; // Savage popular
+      }
+      if (name.includes('model 700') || name.includes('700')) {
+        popularityScore += 85; // Popular Remington model
+      }
+      if (name.includes('10/22') || name.includes('1022')) {
+        popularityScore += 90; // Very popular Ruger model
+      }
+      if (manufacturer.includes('daniel defense') || name.includes('daniel defense')) {
+        popularityScore += 80; // Premium AR manufacturer
+      }
+      if (manufacturer.includes('bcm') || name.includes('bravo company')) {
+        popularityScore += 75; // Quality AR manufacturer
+      }
+    }
+    
+    return popularityScore;
+  }
+
   // Convert database product to Algolia format (with corrected field mapping)
   private dbToAlgoliaProduct(dbProduct: any): any {
     // Build searchable text including BOTH SKU and manufacturer part number
@@ -458,6 +532,9 @@ class AlgoliaSearchService {
       dbProduct.upcCode,
       dbProduct.category
     ].filter(Boolean).join(' ');
+    
+    // Calculate popularity score for ranking boost
+    const popularityScore = this.getPopularityScore(dbProduct);
 
     return {
       objectID: dbProduct.sku || dbProduct.id, // Use SKU as primary ID for database products
@@ -499,6 +576,7 @@ class AlgoliaSearchService {
       sightType: dbProduct.sightType,
       newItem: dbProduct.newItem || false,
       dropShippable: dbProduct.dropShippable !== false,
+      popularityScore, // Add popularity boost for ranking
       searchableText, // Enhanced searchable text with both SKU and MPN
       tags: this.generateTags(dbProduct)
     };
