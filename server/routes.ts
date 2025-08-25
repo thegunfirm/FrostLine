@@ -5438,18 +5438,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const searchResults = await response.json();
-      
-      // Debug: Log raw Algolia response
-      console.log('RAW ALGOLIA HIT:', JSON.stringify(searchResults.hits[0], null, 2));
 
       // Transform search results to match frontend expectations
       const transformedResults = {
         ...searchResults,
         hits: searchResults.hits.map((hit: any) => {
-          // Temporary hardcoded fix to verify frontend works
-          const bronzePrice = 557.99;
-          const goldPrice = 523.99;
-          const platinumPrice = 462.99;
+          // Extract pricing from price structure (simplified from Algolia)
+          const tierPricing = hit.tierPricing || {};
+          const priceObj = hit.price || {};
+          const bronzePrice = priceObj.dealerPrice || tierPricing.bronze?.dealerPrice || 0;
+          const goldPrice = priceObj.dealerPrice || tierPricing.gold?.dealerPrice || 0;
+          const platinumPrice = priceObj.dealerPrice || tierPricing.platinum?.dealerPrice || 0;
           
           return {
           objectID: hit.objectID,
