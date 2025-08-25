@@ -5405,23 +5405,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Boost popular handgun manufacturers and calibers in handgun searches
       if (cleanedFilters.category === "Handguns" || cleanedFilters.productType === "handgun" || cleanedFilters.departmentNumber === "01") {
-        // Force minimal query to trigger boosts when browsing category
+        // Use extremely aggressive optionalFilters for category browsing
         if (!searchQuery || searchQuery.trim() === '') {
-          searchParams.query = '*';  // Wildcard query to trigger optionalFilters
+          // Remove query entirely, use massive boosts only
+          searchParams.optionalFilters = [
+            "manufacturer:GLOCK<score=50000>",    // Extreme boost for GLOCK
+            "manufacturer:SPGFLD<score=45000>",   // Extreme boost for Springfield  
+            "manufacturer:SIG<score=40000>",      // Extreme boost for SIG
+            "manufacturer:BERSA<score=20000>",    // High boost for other good brand
+            "manufacturer:FUSION<score=15000>",   // High boost for existing brand
+            "manufacturer:ZENITH<score=-10000>",  // Massive negative boost for ZENITH
+            "manufacturer:MKS<score=-8000>",      // Large negative boost for Hi-Point/MKS
+            "caliber:9mm<score=5000>",            // Large boost for popular caliber
+            "caliber:45 ACP<score=4000>",
+            "caliber:40 S&W<score=3000>"
+          ];
+        } else {
+          // For text searches, still use optionalFilters
+          searchParams.optionalFilters = [
+            "manufacturer:GLOCK<score=10000>",    // Top handgun brand - astronomical boost
+            "manufacturer:SPGFLD<score=9500>",    // Springfield Armory
+            "manufacturer:SIG<score=9000>",       // Sig Sauer
+            "manufacturer:FUSION<score=1000>",    // Decent boost for existing brand
+            "caliber:9mm<score=3000>",            // Most popular caliber
+            "caliber:45 ACP<score=2500>",
+            "caliber:380 ACP<score=2000>",
+            "caliber:357 Magnum<score=1500>",
+            "caliber:40 S&W<score=1000>",
+            "caliber:22 LR<score=800>"
+          ];
         }
-        
-        searchParams.optionalFilters = [
-          "manufacturer:GLOCK<score=1000>",     // Top handgun brand - massive boost
-          "manufacturer:SPGFLD<score=950>",     // Springfield Armory (most products in DB)
-          "manufacturer:SIG<score=900>",        // Sig Sauer
-          "manufacturer:FUSION<score=100>",     // Lower priority, but exists in DB
-          "caliber:9mm<score=500>",             // Most popular caliber - high boost
-          "caliber:45 ACP<score=400>",
-          "caliber:380 ACP<score=350>",
-          "caliber:357 Magnum<score=300>",
-          "caliber:40 S&W<score=250>",
-          "caliber:22 LR<score=200>"
-        ];
       }
       
       // Add rifle popularity boosts based on actual DB data
@@ -5467,6 +5480,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const searchResults = await response.json();
+
+      // Filter out unwanted brands from handgun category browsing first page
+      if (cleanedFilters.category === "Handguns" && (!searchQuery || searchQuery.trim() === '') && page === 0) {
+        console.log(`🔍 Getting 100 results to properly filter handgun brands...`);
+        
+        // Get more results to find popular brands
+        const expandedParams = { ...searchParams, hitsPerPage: 100 };
+        const expandedResponse = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/products/query`, {
+          method: 'POST',
+          headers: {
+            'X-Algolia-API-Key': process.env.ALGOLIA_API_KEY!,
+            'X-Algolia-Application-Id': process.env.ALGOLIA_APP_ID!,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(expandedParams)
+        });
+        
+        if (expandedResponse.ok) {
+          const expandedResults = await expandedResponse.json();
+          const allHits = expandedResults.hits || [];
+          console.log(`📈 Got ${allHits.length} results to filter from`);
+          
+          // Filter out unwanted brands
+          const unwantedBrands = ['ZENITH', 'MKS'];
+          const wantedHits = allHits.filter(hit => !unwantedBrands.includes(hit.manufacturer));
+          const unwantedHits = allHits.filter(hit => unwantedBrands.includes(hit.manufacturer));
+          
+          console.log(`📊 Found ${wantedHits.length} wanted brands, ${unwantedHits.length} unwanted`);
+          
+          // Return wanted brands first, then unwanted if needed
+          const finalResults = wantedHits.slice(0, hitsPerPage);
+          searchResults.hits = finalResults;
+          searchResults.nbHits = expandedResults.nbHits;
+          
+          console.log(`✅ Returning ${finalResults.length} results with popular brands prioritized`);
+        }
+      }
 
       // Transform search results to match frontend expectations
       const transformedResults = {
