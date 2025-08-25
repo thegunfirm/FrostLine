@@ -64,7 +64,16 @@ async function main() {
   const client = new ftp.Client(10000);
   client.ftp.verbose = false;
   try {
-    await client.access({ host: RSR_FTP_HOST, user: RSR_FTP_USER, password: RSR_FTP_PASS, secure: false });
+    await client.access({ 
+      host: RSR_FTP_HOST, 
+      port: 2222, 
+      user: RSR_FTP_USER, 
+      password: RSR_FTP_PASS, 
+      secure: true,
+      secureOptions: {
+        rejectUnauthorized: false
+      }
+    });
     await syncDir(client, "/ftp_images", "rsr/standard");
     // Later: high-res
     // await syncDir(client, "/ftp_highres_images", "rsr/highres");
