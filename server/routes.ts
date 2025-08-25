@@ -8,6 +8,8 @@ import bcrypt from "bcrypt";
 import { insertUserSchema, insertProductSchema, insertOrderSchema, type InsertProduct, type Product, tierPricingRules, products, heroCarouselSlides, categoryRibbons, adminSettings, systemSettings, membershipTierSettings, type User, type FFL, ffls, orders, carts, checkoutSettings, fulfillmentSettings, users } from "@shared/schema";
 import { pricingEngine } from "./services/pricing-engine";
 import { resolveImageUrl } from "../lib/imageResolver";
+import { s3 } from "../lib/s3";
+import { HeadObjectCommand } from "@aws-sdk/client-s3";
 import { db } from "./db";
 import { sql, eq, and, ne, inArray, desc, isNotNull } from "drizzle-orm";
 import { z } from "zod";
@@ -4216,17 +4218,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if image exists in our Hetzner Object Storage bucket
-      try {
-        const originalFilename = `${imageName}_${imageAngle || 1}.jpg`;
-        const resolvedUrl = await resolveImageUrl(originalFilename);
-        
-        if (resolvedUrl !== originalFilename && resolvedUrl.includes(process.env.IMAGE_BASE_URL || '')) {
-          // Image exists in bucket, redirect to it
-          console.log(`✓ Image found in bucket, redirecting to: ${resolvedUrl}`);
-          return res.redirect(302, resolvedUrl);
+      const useBucket = process.env.USE_BUCKET_IMAGES?.trim().toLowerCase().includes('true');
+      console.log(`📦 Bucket check: USE_BUCKET_IMAGES="${process.env.USE_BUCKET_IMAGES}" -> ${useBucket}`);
+      
+      if (useBucket) {
+        try {
+          const originalFilename = `${imageName}_${imageAngle || 1}.jpg`;
+          console.log(`🔍 Checking bucket for: ${originalFilename}`);
+          
+          // Direct S3 check
+          const bucketKey = `rsr/standard/${originalFilename}`;
+          console.log(`🗂️  Bucket key: ${bucketKey}`);
+          
+          try {
+            await s3.send(new HeadObjectCommand({
+              Bucket: process.env.HETZNER_S3_BUCKET!,
+              Key: bucketKey
+            }));
+            
+            const bucketUrl = `https://${process.env.IMAGE_BASE_URL}/${bucketKey}`;
+            console.log(`✅ IMAGE FOUND IN BUCKET! Redirecting to: ${bucketUrl}`);
+            return res.redirect(302, bucketUrl);
+          } catch (s3Error: any) {
+            console.log(`❌ S3 HeadObject failed for ${bucketKey}:`, s3Error.name, s3Error.message);
+          }
+        } catch (bucketError) {
+          console.log(`🚫 Bucket check error:`, bucketError);
         }
-      } catch (bucketError) {
-        console.log(`No bucket image found for ${imageName} angle ${imageAngle}, using RSR`);
+      } else {
+        console.log(`📦 Bucket images disabled (USE_BUCKET_IMAGES: ${process.env.USE_BUCKET_IMAGES})`);
       }
       
       let rsrImageUrl = '';
