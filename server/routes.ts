@@ -5091,7 +5091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (cleanedFilters.productType === "parts") {
           algoliaFilters.push(`categoryName:"Parts"`);
         } else if (cleanedFilters.productType === "nfa") {
-          algoliaFilters.push(`categoryName:"NFA"`);
+          algoliaFilters.push(`categoryName:"NFA Products"`);
         } else if (cleanedFilters.productType === "magazines") {
           algoliaFilters.push(`categoryName:"Magazines"`);
         } else if (cleanedFilters.productType === "uppers") {
