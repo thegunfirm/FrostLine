@@ -1,0 +1,1 @@
+Frozen: customer pages and PUBLIC APIs listed in FREEZE-PUBLIC.txt. New backend-only endpoints under /api are OK (prefer /api/admin).
