@@ -1,59 +1,101 @@
-name: Deploy (main)
+name: Deploy
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  DEPLOY_SSH_USER:         ${{ secrets.SSH_USER }}
+  DEPLOY_SSH_HOST:         ${{ secrets.SSH_HOST }}
+  DEPLOY_SSH_PORT:         ${{ secrets.SSH_PORT }}
+  DEPLOY_APP_PATH:         ${{ secrets.APP_PATH }}
+  PM2_APP:                 ${{ secrets.PM2_APP }}
+  # Optional build/runtime envs passed through to the remote build
+  CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
+  CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+  CF_API_TOKEN:            ${{ secrets.CF_API_TOKEN }}
+  CF_ZONE_ID:              ${{ secrets.CF_ZONE_ID }}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      # Write SSH key from secret to a file and lock perms
-      - name: Prepare SSH key
+    steps:
+      - name: Checkout (main)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare SSH key (exact newline-preserving heredoc)
+        shell: bash
         run: |
           mkdir -p ~/.ssh
-          echo "${SSH_KEY}" > ~/.ssh/frostline_key
+          umask 077
+          cat > ~/.ssh/frostline_key <<'KEYEOF'
+${{ secrets.SSH_KEY }}
+KEYEOF
           chmod 600 ~/.ssh/frostline_key
-        env:
-          SSH_KEY: ${{ secrets.SSH_KEY }}
+          ls -l ~/.ssh/frostline_key
 
-      - name: Deploy to Frostline server
-        env:
-          SSH_USER: ${{ secrets.SSH_USER }}        # e.g., root
-          SSH_HOST: ${{ secrets.SSH_HOST }}        # e.g., 5.78.137.95
-          SSH_PORT: ${{ secrets.SSH_PORT }}        # e.g., 22
-          APP_PATH: ${{ secrets.APP_PATH }}        # e.g., /var/www/frostline
-          PM2_APP:  ${{ secrets.PM2_APP }}         # e.g., frostline
-          GIT_URL:  ${{ secrets.GIT_URL }}         # e.g., https://github.com/thegunfirm/FrostLine.git
+      - name: Trust remote host key
+        shell: bash
         run: |
-          set -e
-          echo "Deploying to $SSH_USER@$SSH_HOST:${SSH_PORT:-22} ..."
-          ssh -i ~/.ssh/frostline_key -o StrictHostKeyChecking=no -p "${SSH_PORT:-22}" "$SSH_USER@$SSH_HOST" bash -s << 'EOSH'
-          set -e
-          mkdir -p "$APP_PATH"
-          if [ ! -d "$APP_PATH/.git" ]; then
-            git clone "$GIT_URL" "$APP_PATH"
-          fi
-          cd "$APP_PATH"
-          git pull --ff-only || true
+          : "${DEPLOY_SSH_HOST:?missing}"; : "${DEPLOY_SSH_PORT:?missing}"
+          ssh-keyscan -p "$DEPLOY_SSH_PORT" "$DEPLOY_SSH_HOST" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
-          # Install Node.js if missing
-          if ! command -v node >/dev/null 2>&1; then
-            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-            apt-get install -y nodejs
-          fi
+      - name: Sync files to server (rsync over SSH)
+        shell: bash
+        run: |
+          : "${DEPLOY_SSH_USER:?missing}"; : "${DEPLOY_SSH_HOST:?missing}"; : "${DEPLOY_SSH_PORT:?missing}"; : "${DEPLOY_APP_PATH:?missing}"
+          RSYNC_SSH="ssh -i ~/.ssh/frostline_key -p $DEPLOY_SSH_PORT -o StrictHostKeyChecking=yes"
+          # Adjust excludes as needed
+          rsync -az --delete \
+            --exclude ".git/" \
+            --exclude ".github/" \
+            --exclude "node_modules/" \
+            --exclude "*.log" \
+            -e "$RSYNC_SSH" ./ "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST:$DEPLOY_APP_PATH/"
 
-          npm ci --omit=dev
-          npm run build
+      - name: Remote build & restart with PM2
+        shell: bash
+        run: |
+          : "${DEPLOY_SSH_USER:?missing}"; : "${DEPLOY_SSH_HOST:?missing}"; : "${DEPLOY_SSH_PORT:?missing}"; : "${DEPLOY_APP_PATH:?missing}"; : "${PM2_APP:?missing}"
+          SSH="ssh -i ~/.ssh/frostline_key -p $DEPLOY_SSH_PORT -o StrictHostKeyChecking=yes $DEPLOY_SSH_USER@$DEPLOY_SSH_HOST"
+          $SSH /bin/bash -lc '
+            set -euo pipefail
+            cd "'"$DEPLOY_APP_PATH"'"
 
-          # Install PM2 if missing, then reload/start app
-          if ! command -v pm2 >/dev/null 2>&1; then
-            npm install -g pm2
-          fi
-          pm2 describe "$PM2_APP" >/dev/null 2>&1 && pm2 reload "$PM2_APP" || pm2 start dist/index.js --name "$PM2_APP"
-          pm2 save
-          EOSH
+            echo "[Deploy] Node & npm versions:"
+            command -v node && node -v || true
+            command -v npm && npm -v || true
+
+            echo "[Deploy] Installing dependencies…"
+            # Use npm ci for deterministic installs; drop --omit=dev if your build needs devDeps
+            npm ci
+
+            echo "[Deploy] Building…"
+            # Export any envs your build/runtime expects
+            export CF_ACCESS_CLIENT_ID="'"$CF_ACCESS_CLIENT_ID"'"
+            export CF_ACCESS_CLIENT_SECRET="'"$CF_ACCESS_CLIENT_SECRET"'"
+            export CF_API_TOKEN="'"$CF_API_TOKEN"'"
+            export CF_ZONE_ID="'"$CF_ZONE_ID"'"
+            npm run build
+
+            echo "[Deploy] Reloading PM2 app…"
+            if pm2 status "'"$PM2_APP"'" >/dev/null 2>&1; then
+              pm2 reload "'"$PM2_APP"'"
+            else
+              # Adjust the start script/entry if different (e.g., "dist/index.js")
+              pm2 start dist/index.js --name "'"$PM2_APP"'"
+            fi
+            pm2 save
+          '
