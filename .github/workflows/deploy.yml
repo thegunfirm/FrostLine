@@ -13,6 +13,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  DEPLOY_SSH_USER:         ${{ secrets.SSH_USER }}
+  DEPLOY_SSH_HOST:         ${{ secrets.SSH_HOST }}
+  DEPLOY_SSH_PORT:         ${{ secrets.SSH_PORT }}
   DEPLOY_APP_PATH:         ${{ secrets.APP_PATH }}
   PM2_APP:                 ${{ secrets.PM2_APP }}
   CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
@@ -35,29 +38,30 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      - name: Trust server host key (IPv4)
+      - name: Trust server host key
         shell: bash
         run: |
           set -euo pipefail
-          ssh-keyscan -4 -p 22 5.78.137.95 >> ~/.ssh/known_hosts
+          : "${DEPLOY_SSH_HOST:?}"; : "${DEPLOY_SSH_PORT:?}"
+          ssh-keyscan -p "$DEPLOY_SSH_PORT" "$DEPLOY_SSH_HOST" >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Connectivity test (root@5.78.137.95)
+      - name: Connectivity test
         shell: bash
         run: |
           set -euo pipefail
-          ssh -4 -p 22 \
-            -o StrictHostKeyChecking=yes \
+          ssh -4 \
+            -o StrictHostKeyChecking=no \
             -o PreferredAuthentications=publickey \
             -o BatchMode=yes \
-            root@5.78.137.95 'echo OK $(hostname); whoami'
+            -p "$DEPLOY_SSH_PORT" "${DEPLOY_SSH_USER}@${DEPLOY_SSH_HOST}" 'echo OK $(hostname); whoami'
 
       - name: Bootstrap server (Node 20, PM2, tools) and ensure path
         shell: bash
         run: |
           set -euo pipefail
-          : "${DEPLOY_APP_PATH:?missing}"
-          ssh -4 -p 22 -o StrictHostKeyChecking=yes root@5.78.137.95 /bin/bash -lc '
+          : "${DEPLOY_APP_PATH:?}"
+          ssh -4 -p "$DEPLOY_SSH_PORT" -o StrictHostKeyChecking=yes "${DEPLOY_SSH_USER}@${DEPLOY_SSH_HOST}" /bin/bash -lc '
             set -e
             export DEBIAN_FRONTEND=noninteractive
             apt-get update -y
@@ -70,34 +74,33 @@ jobs:
               npm i -g pm2
             fi
             mkdir -p "'"$DEPLOY_APP_PATH"'"
-            echo "[Versions]"; node -v; npm -v; pm2 -v
+            node -v; npm -v; pm2 -v
           '
 
       - name: Sync files to server (rsync over SSH)
         shell: bash
         run: |
           set -euo pipefail
-          : "${DEPLOY_APP_PATH:?missing}"
+          : "${DEPLOY_APP_PATH:?}"
           rsync -az --delete \
-            --rsh="ssh -4 -p 22 -o StrictHostKeyChecking=yes -o PreferredAuthentications=publickey -o BatchMode=yes" \
+            --rsh="ssh -4 -p $DEPLOY_SSH_PORT -o StrictHostKeyChecking=yes -o PreferredAuthentications=publickey -o BatchMode=yes" \
             --exclude ".git/" \
             --exclude ".github/" \
             --exclude "node_modules/" \
             --exclude "*.log" \
-            ./ root@5.78.137.95:"$DEPLOY_APP_PATH/"
+            ./ "${DEPLOY_SSH_USER}@${DEPLOY_SSH_HOST}:${DEPLOY_APP_PATH}/"
 
       - name: Remote build & restart with PM2
         shell: bash
         run: |
           set -euo pipefail
-          : "${DEPLOY_APP_PATH:?missing}"
-          ssh -4 -p 22 -o StrictHostKeyChecking=yes root@5.78.137.95 /bin/bash -lc '
+          : "${DEPLOY_APP_PATH:?}"
+          ssh -4 -p "$DEPLOY_SSH_PORT" -o StrictHostKeyChecking=yes "${DEPLOY_SSH_USER}@${DEPLOY_SSH_HOST}" /bin/bash -lc '
             set -euo pipefail
             cd "'"$DEPLOY_APP_PATH"'"
 
             export NPM_CONFIG_FUND=false NPM_CONFIG_AUDIT=false
-            command -v node && node -v || true
-            command -v npm && npm -v || true
+            node -v; npm -v || true
 
             npm ci
             export CF_ACCESS_CLIENT_ID="'"$CF_ACCESS_CLIENT_ID"'"
@@ -112,7 +115,6 @@ jobs:
             else
               pm2 start dist/index.js --name "$APP_NAME"
             fi
-            # make PM2 restart on reboot
             pm2 save
-            pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
+            pm2 startup systemd -u $(whoami) --hp "$HOME" >/dev/null 2>&1 || true
           '
