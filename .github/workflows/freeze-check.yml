@@ -1,0 +1,74 @@
+name: Freeze Check
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  freeze-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: List changed files
+        id: changes
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          git diff --name-only origin/${{ github.base_ref }}... > changed.txt
+          echo "Changed files:"
+          cat changed.txt
+
+      - name: Fail if frozen page files changed
+        run: |
+          FROZEN_PAGES=$(cat <<'EOF'
+client/src/pages/home.tsx
+client/src/pages/products.tsx
+client/src/pages/cart.tsx
+client/src/pages/ffl-selection.tsx
+client/src/pages/shipping.tsx
+client/src/pages/billing.tsx
+client/src/pages/payment.tsx
+client/src/pages/order-confirmation.tsx
+client/src/pages/account.tsx
+EOF
+)
+          echo "$FROZEN_PAGES" > frozen_pages.txt
+          if grep -Fxf frozen_pages.txt changed.txt; then
+            echo "❌ Frozen customer UI files were modified."
+            grep -Fxf frozen_pages.txt changed.txt || true
+            exit 1
+          else
+            echo "✅ No frozen page file changes."
+          fi
+
+      - name: If server/routes.ts changed, ensure frozen APIs untouched
+        run: |
+          # if server/routes.ts isn't changed, we're done
+          if ! grep -Fxq "server/routes.ts" changed.txt; then
+            echo "server/routes.ts not changed."
+            exit 0
+          fi
+
+          echo "server/routes.ts changed; scanning diff for frozen API routes..."
+          # unified diff (no context) to catch exact lines touched
+          git diff -U0 origin/${{ github.base_ref }}... -- server/routes.ts > routes.diff
+
+          # Pull the frozen public API routes from the repo list
+          if [ ! -f FREEZE-PUBLIC.txt ]; then
+            echo "FREEZE-PUBLIC.txt not found — cannot validate."
+            exit 1
+          fi
+
+          # Grep the diff for any frozen route strings
+          if grep -Ff FREEZE-PUBLIC.txt routes.diff; then
+            echo "❌ Diff touches frozen public API routes defined in FREEZE-PUBLIC.txt"
+            exit 1
+          else
+            echo "✅ server/routes.ts changes do not modify frozen public API routes."
+          fi
