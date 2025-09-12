@@ -1,0 +1,43 @@
+name: Deploy (main)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Frostline server
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          APP_PATH: ${{ secrets.APP_PATH }}   # e.g. /var/www/frostline
+          PM2_APP:  ${{ secrets.PM2_APP }}    # e.g. frostline
+        run: |
+          set -e
+          ssh -o StrictHostKeyChecking=no -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" bash -s << 'EOSH'
+          set -e
+          # Ensure app directory exists and repo is present
+          mkdir -p "$APP_PATH"
+          if [ ! -d "$APP_PATH/.git" ]; then
+            # First-time clone (expects your repo URL in $GIT_URL secret if you prefer, or set once on the box)
+            if [ -n "$GIT_URL" ]; then
+              git clone "$GIT_URL" "$APP_PATH"
+            fi
+          fi
+          cd "$APP_PATH"
+
+          # Pull latest and build
+          git pull --ff-only || true
+          command -v node >/dev/null 2>&1 || curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs
+          npm ci --omit=dev
+          npm run build
+
+          # Run (or reload) with PM2
+          command -v pm2 >/dev/null 2>&1 || sudo npm i -g pm2
+          pm2 describe "$PM2_APP" >/dev/null 2>&1 && pm2 reload "$PM2_APP" || pm2 start dist/index.js --name "$PM2_APP"
+          pm2 save
+          EOSH
