@@ -45,63 +45,40 @@ jobs:
           echo "== Agent keys (SHA256) ==" && ssh-add -l -E sha256 || true
           echo "== Agent public key ==" && ssh-add -L || true
 
-      - name: Trust remote host key (host + IPv4)
+      - name: Trust remote host key
         shell: bash
         run: |
           set -euo pipefail
           : "${DEPLOY_SSH_HOST:?missing}"; : "${DEPLOY_SSH_PORT:?missing}"
           ssh-keyscan -p "$DEPLOY_SSH_PORT" "$DEPLOY_SSH_HOST" >> ~/.ssh/known_hosts
-          ssh-keyscan -p 22 5.78.137.95 >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Connectivity test (hardcoded IPv4)
+      - name: Connectivity test
         shell: bash
         run: |
           set -euo pipefail
-          ssh -vvv -4 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
-            -p 22 "${DEPLOY_SSH_USER}@5.78.137.95" 'echo OK $(hostname); whoami'
+          ssh -vvv -4 \
+            -o StrictHostKeyChecking=no \
+            -o PreferredAuthentications=publickey \
+            -o BatchMode=yes \
+            -p "$DEPLOY_SSH_PORT" "${DEPLOY_SSH_USER}@${DEPLOY_SSH_HOST}" 'echo OK $(hostname); whoami'
 
-      - name: Sync files to server (rsync over SSH, IPv4)
+      - name: Sync files to server (rsync over SSH)
         shell: bash
         run: |
           set -euo pipefail
           : "${DEPLOY_SSH_USER:?missing}"; : "${DEPLOY_SSH_HOST:?missing}"; : "${DEPLOY_SSH_PORT:?missing}"; : "${DEPLOY_APP_PATH:?missing}"
           rsync -az --delete \
-            --rsh="ssh -4 -p $DEPLOY_SSH_PORT -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes" \
+            --rsh="ssh -4 -p $DEPLOY_SSH_PORT -o StrictHostKeyChecking=yes -o PreferredAuthentications=publickey -o BatchMode=yes" \
             --exclude ".git/" \
             --exclude ".github/" \
             --exclude "node_modules/" \
             --exclude "*.log" \
             ./ "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST:$DEPLOY_APP_PATH/"
 
-      - name: Remote build & restart with PM2 (IPv4)
+      - name: Remote build & restart with PM2
         shell: bash
         run: |
           set -euo pipefail
           : "${DEPLOY_SSH_USER:?missing}"; : "${DEPLOY_SSH_HOST:?missing}"; : "${DEPLOY_SSH_PORT:?missing}"; : "${DEPLOY_APP_PATH:?missing}"; : "${PM2_APP:?missing}"
-          ssh -4 -p "$DEPLOY_SSH_PORT" -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST" /bin/bash -lc '
-            set -euo pipefail
-            cd "'"$DEPLOY_APP_PATH"'"
-
-            echo "[Deploy] Node & npm versions:"
-            command -v node && node -v || true
-            command -v npm && npm -v || true
-
-            echo "[Deploy] Installing dependencies…"
-            npm ci
-
-            echo "[Deploy] Building…"
-            export CF_ACCESS_CLIENT_ID="'"$CF_ACCESS_CLIENT_ID"'"
-            export CF_ACCESS_CLIENT_SECRET="'"$CF_ACCESS_CLIENT_SECRET"'"
-            export CF_API_TOKEN="'"$CF_API_TOKEN"'"
-            export CF_ZONE_ID="'"$CF_ZONE_ID"'"
-            npm run build
-
-            echo "[Deploy] Reloading PM2 app…"
-            if pm2 status "'"$PM2_APP"'" >/dev/null 2>&1; then
-              pm2 reload "'"$PM2_APP"'"
-            else
-              pm2 start dist/index.js --name "'"$PM2_APP"'"
-            fi
-            pm2 save
-          '
+          ssh -4 \
