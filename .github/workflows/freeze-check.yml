@@ -1,27 +1,18 @@
 name: Freeze Check
-
 on:
-  pull_request:
-    branches: [ main ]
-
-permissions:
-  contents: read
-  pull-requests: read
-
+  pull_request: { branches: [ main ] }
+permissions: { contents: read, pull-requests: read }
 jobs:
   freeze-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
+        with: { fetch-depth: 0 }
       - name: List changed files
         run: |
           git fetch origin ${{ github.base_ref }} --depth=1
           git diff --name-only origin/${{ github.base_ref }}... > changed.txt
           echo "Changed files:" && cat changed.txt
-
       - name: Fail if frozen page files changed
         run: |
           printf "%s\n" \
@@ -35,32 +26,21 @@ jobs:
             "client/src/pages/order-confirmation.tsx" \
             "client/src/pages/account.tsx" \
             > frozen_pages.txt
-
           if grep -Fxf frozen_pages.txt changed.txt >/dev/null 2>&1; then
             echo "❌ Frozen customer UI files were modified:"
             grep -Fxf frozen_pages.txt changed.txt || true
             exit 1
           fi
           echo "✅ No frozen page file changes."
-
       - name: If server/routes.ts changed, ensure frozen APIs untouched
         run: |
           if ! grep -Fxq "server/routes.ts" changed.txt; then
-            echo "server/routes.ts not changed."
-            exit 0
-          fi
-
-          echo "server/routes.ts changed; scanning diff for frozen public API routes…"
+            echo "server/routes.ts not changed."; exit 0; fi
           git diff -U0 origin/${{ github.base_ref }}... -- server/routes.ts > routes.diff
-
-          # ensure list exists
           test -f FREEZE-PUBLIC.txt || { echo "FREEZE-PUBLIC.txt missing"; exit 1; }
-
-          # Look only at changed lines (+) for any frozen route strings
           if grep '^+' routes.diff | grep -Ff FREEZE-PUBLIC.txt >/dev/null 2>&1; then
             echo "❌ Diff touches frozen public API routes from FREEZE-PUBLIC.txt"
             grep '^+' routes.diff | grep -Ff FREEZE-PUBLIC.txt || true
             exit 1
           fi
-
           echo "✅ Frozen public API routes were not modified."
