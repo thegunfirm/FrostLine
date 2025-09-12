@@ -13,15 +13,13 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DEPLOY_SSH_USER:         ${{ secrets.SSH_USER }}
-  DEPLOY_SSH_HOST:         ${{ secrets.SSH_HOST }}
-  DEPLOY_SSH_PORT:         ${{ secrets.SSH_PORT }}
-  DEPLOY_APP_PATH:         ${{ secrets.APP_PATH }}
-  PM2_APP:                 ${{ secrets.PM2_APP }}
-  CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
-  CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-  CF_API_TOKEN:            ${{ secrets.CF_API_TOKEN }}
-  CF_ZONE_ID:              ${{ secrets.CF_ZONE_ID }}
+  SSH_USER: ${{ secrets.SSH_USER }}
+  SSH_HOST: ${{ secrets.SSH_HOST }}
+  SSH_PORT: ${{ secrets.SSH_PORT }}
+  # Hardcode the target path (no secret needed):
+  APP_PATH: /var/www/frostline
+  # Optional: if not set, we default to "frostline" during restart
+  PM2_APP: ${{ secrets.PM2_APP }}
 
 jobs:
   deploy:
@@ -41,27 +39,22 @@ jobs:
       - name: Trust server host key
         shell: bash
         run: |
-          set -euo pipefail
-          : "${DEPLOY_SSH_HOST:?}"; : "${DEPLOY_SSH_PORT:?}"
-          ssh-keyscan -p "$DEPLOY_SSH_PORT" "$DEPLOY_SSH_HOST" >> ~/.ssh/known_hosts
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
       - name: Connectivity test
         shell: bash
         run: |
-          set -euo pipefail
-          ssh -4 \
-            -o StrictHostKeyChecking=no \
+          ssh -4 -p "$SSH_PORT" \
+            -o StrictHostKeyChecking=yes \
             -o PreferredAuthentications=publickey \
             -o BatchMode=yes \
-            -p "$DEPLOY_SSH_PORT" "${DEPLOY_SSH_USER}@${DEPLOY_SSH_HOST}" 'echo OK $(hostname); whoami'
+            "$SSH_USER@$SSH_HOST" 'echo OK $(hostname); whoami'
 
       - name: Bootstrap server (Node 20, PM2, tools) and ensure path
         shell: bash
         run: |
-          set -euo pipefail
-          : "${DEPLOY_APP_PATH:?}"
-          ssh -4 -p "$DEPLOY_SSH_PORT" -o StrictHostKeyChecking=yes "${DEPLOY_SSH_USER}@${DEPLOY_SSH_HOST}" /bin/bash -lc '
+          ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" /bin/bash -lc '
             set -e
             export DEBIAN_FRONTEND=noninteractive
             apt-get update -y
@@ -73,43 +66,28 @@ jobs:
             if ! command -v pm2 >/dev/null 2>&1; then
               npm i -g pm2
             fi
-            mkdir -p "'"$DEPLOY_APP_PATH"'"
+            mkdir -p "'"$APP_PATH"'"
             node -v; npm -v; pm2 -v
           '
 
-      - name: Sync files to server (rsync over SSH)
+      - name: Sync files to server
         shell: bash
         run: |
-          set -euo pipefail
-          : "${DEPLOY_APP_PATH:?}"
           rsync -az --delete \
-            --rsh="ssh -4 -p $DEPLOY_SSH_PORT -o StrictHostKeyChecking=yes -o PreferredAuthentications=publickey -o BatchMode=yes" \
-            --exclude ".git/" \
-            --exclude ".github/" \
-            --exclude "node_modules/" \
-            --exclude "*.log" \
-            ./ "${DEPLOY_SSH_USER}@${DEPLOY_SSH_HOST}:${DEPLOY_APP_PATH}/"
+            --rsh="ssh -4 -p $SSH_PORT -o StrictHostKeyChecking=yes -o PreferredAuthentications=publickey -o BatchMode=yes" \
+            --exclude ".git/" --exclude ".github/" --exclude "node_modules/" --exclude "*.log" \
+            ./ "$SSH_USER@$SSH_HOST:$APP_PATH/"
 
-      - name: Remote build & restart with PM2
+      - name: Build & restart with PM2
         shell: bash
         run: |
-          set -euo pipefail
-          : "${DEPLOY_APP_PATH:?}"
-          ssh -4 -p "$DEPLOY_SSH_PORT" -o StrictHostKeyChecking=yes "${DEPLOY_SSH_USER}@${DEPLOY_SSH_HOST}" /bin/bash -lc '
-            set -euo pipefail
-            cd "'"$DEPLOY_APP_PATH"'"
-
+          ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" /bin/bash -lc '
+            set -e
+            cd "'"$APP_PATH"'"
             export NPM_CONFIG_FUND=false NPM_CONFIG_AUDIT=false
-            node -v; npm -v || true
-
             npm ci
-            export CF_ACCESS_CLIENT_ID="'"$CF_ACCESS_CLIENT_ID"'"
-            export CF_ACCESS_CLIENT_SECRET="'"$CF_ACCESS_CLIENT_SECRET"'"
-            export CF_API_TOKEN="'"$CF_API_TOKEN"'"
-            export CF_ZONE_ID="'"$CF_ZONE_ID"'"
             npm run build
-
-            APP_NAME="${PM2_APP:-frostline}"
+            APP_NAME="'"${PM2_APP:-frostline}"'"
             if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
               pm2 reload "$APP_NAME"
             else
