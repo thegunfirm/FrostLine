@@ -1,0 +1,39 @@
+name: Automerge replit-dev to main
+on:
+  push: { branches: [ replit-dev ] }
+permissions: { contents: write, pull-requests: write }
+jobs:
+  automerge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const head = 'replit-dev', base = 'main';
+            const prs = (await github.rest.pulls.list({ owner, repo, state: 'open', head: `${owner}:${head}`, base })).data;
+            if (!prs[0]) {
+              await github.rest.pulls.create({ owner, repo, head, base, title: 'Auto PR: replit-dev → main' });
+            }
+      - name: Merge when checks pass
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const head = 'replit-dev', base = 'main';
+            const sleep = ms => new Promise(r => setTimeout(r, ms));
+            let tries = 60;
+            while (tries--) {
+              const branch = (await github.rest.repos.getBranch({ owner, repo, branch: head })).data;
+              const sha = branch.commit.sha;
+              const checks = await github.rest.checks.listForRef({ owner, repo, ref: sha });
+              const failed = checks.data.check_runs.some(cr => cr.conclusion === 'failure');
+              const allGreen = checks.data.total_count === 0 || checks.data.check_runs.every(cr => cr.conclusion === 'success');
+              if (failed) throw new Error('A required check failed.');
+              if (allGreen) break;
+              await sleep(10000);
+            }
+            const prs = (await github.rest.pulls.list({ owner, repo, state: 'open', head: `${owner}:${head}`, base })).data;
+            if (!prs[0]) throw new Error('PR not found.');
+            await github.rest.pulls.merge({ owner, repo, pull_number: prs[0].number, merge_method: 'squash' });
