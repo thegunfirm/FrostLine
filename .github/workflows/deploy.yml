@@ -35,13 +35,6 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      - name: Debug SSH key being used
-        shell: bash
-        run: |
-          set -euo pipefail
-          ssh-add -l -E sha256 || true
-          ssh-add -L || true
-
       - name: Trust server host key (IPv4)
         shell: bash
         run: |
@@ -54,17 +47,31 @@ jobs:
         run: |
           set -euo pipefail
           ssh -4 -p 22 \
-            -o StrictHostKeyChecking=no \
+            -o StrictHostKeyChecking=yes \
             -o PreferredAuthentications=publickey \
             -o BatchMode=yes \
             root@5.78.137.95 'echo OK $(hostname); whoami'
 
-      - name: Ensure target path exists
+      - name: Bootstrap server (Node 20, PM2, tools) and ensure path
         shell: bash
         run: |
           set -euo pipefail
           : "${DEPLOY_APP_PATH:?missing}"
-          ssh -4 -p 22 -o StrictHostKeyChecking=yes root@5.78.137.95 "mkdir -p '$DEPLOY_APP_PATH'"
+          ssh -4 -p 22 -o StrictHostKeyChecking=yes root@5.78.137.95 /bin/bash -lc '
+            set -e
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update -y
+            apt-get install -y ca-certificates curl gnupg rsync git build-essential python3 pkg-config
+            if ! command -v node >/dev/null 2>&1; then
+              curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+              apt-get install -y nodejs
+            fi
+            if ! command -v pm2 >/dev/null 2>&1; then
+              npm i -g pm2
+            fi
+            mkdir -p "'"$DEPLOY_APP_PATH"'"
+            echo "[Versions]"; node -v; npm -v; pm2 -v
+          '
 
       - name: Sync files to server (rsync over SSH)
         shell: bash
@@ -88,6 +95,7 @@ jobs:
             set -euo pipefail
             cd "'"$DEPLOY_APP_PATH"'"
 
+            export NPM_CONFIG_FUND=false NPM_CONFIG_AUDIT=false
             command -v node && node -v || true
             command -v npm && npm -v || true
 
@@ -99,10 +107,12 @@ jobs:
             npm run build
 
             APP_NAME="${PM2_APP:-frostline}"
-            if pm2 status "$APP_NAME" >/dev/null 2>&1; then
+            if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
               pm2 reload "$APP_NAME"
             else
               pm2 start dist/index.js --name "$APP_NAME"
             fi
+            # make PM2 restart on reboot
             pm2 save
+            pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
           '
