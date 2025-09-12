@@ -12,23 +12,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
+      # Write SSH key from secret to a file and lock perms
+      - name: Prepare SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${SSH_KEY}" > ~/.ssh/frostline_key
+          chmod 600 ~/.ssh/frostline_key
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
 
       - name: Deploy to Frostline server
         env:
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-          APP_PATH: ${{ secrets.APP_PATH }}
-          PM2_APP: ${{ secrets.PM2_APP }}
-          GIT_URL: ${{ secrets.GIT_URL }}
+          SSH_USER: ${{ secrets.SSH_USER }}        # e.g., root
+          SSH_HOST: ${{ secrets.SSH_HOST }}        # e.g., 5.78.137.95
+          SSH_PORT: ${{ secrets.SSH_PORT }}        # e.g., 22
+          APP_PATH: ${{ secrets.APP_PATH }}        # e.g., /var/www/frostline
+          PM2_APP:  ${{ secrets.PM2_APP }}         # e.g., frostline
+          GIT_URL:  ${{ secrets.GIT_URL }}         # e.g., https://github.com/thegunfirm/FrostLine.git
         run: |
           set -e
-          echo "Deploying to $SSH_USER@$SSH_HOST:$SSH_PORT ..."
-          ssh -o StrictHostKeyChecking=no -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" bash -s << 'EOSH'
+          echo "Deploying to $SSH_USER@$SSH_HOST:${SSH_PORT:-22} ..."
+          ssh -i ~/.ssh/frostline_key -o StrictHostKeyChecking=no -p "${SSH_PORT:-22}" "$SSH_USER@$SSH_HOST" bash -s << 'EOSH'
           set -e
           mkdir -p "$APP_PATH"
           if [ ! -d "$APP_PATH/.git" ]; then
