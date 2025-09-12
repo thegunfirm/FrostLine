@@ -33,51 +33,53 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Load your private key into ssh-agent (avoids heredoc/newline issues)
       - name: Use SSH agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      # Show exactly which key is loaded/offered (copy this pubkey to authorized_keys if missing)
       - name: Debug SSH key being used
         shell: bash
         run: |
           set -euo pipefail
-          echo "== Agent keys (SHA256 fingerprints) =="
-          ssh-add -l -E sha256 || true
-          echo "== Agent public key (authorized_keys format) =="
-          ssh-add -L || true
-          echo "== Test SSH with verbose output (will fail if key not installed) =="
-          ssh -vvv -o IdentitiesOnly=yes -p "$DEPLOY_SSH_PORT" "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST" true || true
+          echo "== Agent keys (SHA256) ==" && ssh-add -l -E sha256 || true
+          echo "== Agent public key ==" && ssh-add -L || true
 
-      - name: Trust remote host key
+      - name: Trust remote host key (host + IPv4)
         shell: bash
         run: |
           set -euo pipefail
           : "${DEPLOY_SSH_HOST:?missing}"; : "${DEPLOY_SSH_PORT:?missing}"
           ssh-keyscan -p "$DEPLOY_SSH_PORT" "$DEPLOY_SSH_HOST" >> ~/.ssh/known_hosts
+          ssh-keyscan -p 22 5.78.137.95 >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Sync files to server (rsync over SSH)
+      - name: Connectivity test (hardcoded IPv4)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -vvv -4 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+            -p 22 "${DEPLOY_SSH_USER}@5.78.137.95" 'echo OK $(hostname); whoami'
+
+      - name: Sync files to server (rsync over SSH, IPv4)
         shell: bash
         run: |
           set -euo pipefail
           : "${DEPLOY_SSH_USER:?missing}"; : "${DEPLOY_SSH_HOST:?missing}"; : "${DEPLOY_SSH_PORT:?missing}"; : "${DEPLOY_APP_PATH:?missing}"
           rsync -az --delete \
-            --rsh="ssh -p $DEPLOY_SSH_PORT -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes" \
+            --rsh="ssh -4 -p $DEPLOY_SSH_PORT -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes" \
             --exclude ".git/" \
             --exclude ".github/" \
             --exclude "node_modules/" \
             --exclude "*.log" \
             ./ "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST:$DEPLOY_APP_PATH/"
 
-      - name: Remote build & restart with PM2
+      - name: Remote build & restart with PM2 (IPv4)
         shell: bash
         run: |
           set -euo pipefail
           : "${DEPLOY_SSH_USER:?missing}"; : "${DEPLOY_SSH_HOST:?missing}"; : "${DEPLOY_SSH_PORT:?missing}"; : "${DEPLOY_APP_PATH:?missing}"; : "${PM2_APP:?missing}"
-          ssh -p "$DEPLOY_SSH_PORT" -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST" /bin/bash -lc '
+          ssh -4 -p "$DEPLOY_SSH_PORT" -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST" /bin/bash -lc '
             set -euo pipefail
             cd "'"$DEPLOY_APP_PATH"'"
 
