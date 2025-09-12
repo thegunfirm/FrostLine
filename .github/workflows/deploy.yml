@@ -18,7 +18,6 @@ env:
   DEPLOY_SSH_PORT:         ${{ secrets.SSH_PORT }}
   DEPLOY_APP_PATH:         ${{ secrets.APP_PATH }}
   PM2_APP:                 ${{ secrets.PM2_APP }}
-  # Optional build/runtime envs passed through to the remote build
   CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
   CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
   CF_API_TOKEN:            ${{ secrets.CF_API_TOKEN }}
@@ -34,20 +33,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Prepare SSH key (exact newline-preserving heredoc)
-        shell: bash
-        run: |
-          mkdir -p ~/.ssh
-          umask 077
-          cat > ~/.ssh/frostline_key <<'KEYEOF'
-${{ secrets.SSH_KEY }}
-KEYEOF
-          chmod 600 ~/.ssh/frostline_key
-          ls -l ~/.ssh/frostline_key
+      # Load your private key into ssh-agent (avoids heredoc/newline issues)
+      - name: Use SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
 
       - name: Trust remote host key
         shell: bash
         run: |
+          set -euo pipefail
           : "${DEPLOY_SSH_HOST:?missing}"; : "${DEPLOY_SSH_PORT:?missing}"
           ssh-keyscan -p "$DEPLOY_SSH_PORT" "$DEPLOY_SSH_HOST" >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
@@ -55,22 +50,22 @@ KEYEOF
       - name: Sync files to server (rsync over SSH)
         shell: bash
         run: |
+          set -euo pipefail
           : "${DEPLOY_SSH_USER:?missing}"; : "${DEPLOY_SSH_HOST:?missing}"; : "${DEPLOY_SSH_PORT:?missing}"; : "${DEPLOY_APP_PATH:?missing}"
-          RSYNC_SSH="ssh -i ~/.ssh/frostline_key -p $DEPLOY_SSH_PORT -o StrictHostKeyChecking=yes"
-          # Adjust excludes as needed
           rsync -az --delete \
+            --rsh="ssh -p $DEPLOY_SSH_PORT -o StrictHostKeyChecking=yes" \
             --exclude ".git/" \
             --exclude ".github/" \
             --exclude "node_modules/" \
             --exclude "*.log" \
-            -e "$RSYNC_SSH" ./ "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST:$DEPLOY_APP_PATH/"
+            ./ "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST:$DEPLOY_APP_PATH/"
 
       - name: Remote build & restart with PM2
         shell: bash
         run: |
+          set -euo pipefail
           : "${DEPLOY_SSH_USER:?missing}"; : "${DEPLOY_SSH_HOST:?missing}"; : "${DEPLOY_SSH_PORT:?missing}"; : "${DEPLOY_APP_PATH:?missing}"; : "${PM2_APP:?missing}"
-          SSH="ssh -i ~/.ssh/frostline_key -p $DEPLOY_SSH_PORT -o StrictHostKeyChecking=yes $DEPLOY_SSH_USER@$DEPLOY_SSH_HOST"
-          $SSH /bin/bash -lc '
+          ssh -p "$DEPLOY_SSH_PORT" -o StrictHostKeyChecking=yes "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST" /bin/bash -lc '
             set -euo pipefail
             cd "'"$DEPLOY_APP_PATH"'"
 
@@ -79,11 +74,9 @@ KEYEOF
             command -v npm && npm -v || true
 
             echo "[Deploy] Installing dependencies…"
-            # Use npm ci for deterministic installs; drop --omit=dev if your build needs devDeps
             npm ci
 
             echo "[Deploy] Building…"
-            # Export any envs your build/runtime expects
             export CF_ACCESS_CLIENT_ID="'"$CF_ACCESS_CLIENT_ID"'"
             export CF_ACCESS_CLIENT_SECRET="'"$CF_ACCESS_CLIENT_SECRET"'"
             export CF_API_TOKEN="'"$CF_API_TOKEN"'"
@@ -94,7 +87,6 @@ KEYEOF
             if pm2 status "'"$PM2_APP"'" >/dev/null 2>&1; then
               pm2 reload "'"$PM2_APP"'"
             else
-              # Adjust the start script/entry if different (e.g., "dist/index.js")
               pm2 start dist/index.js --name "'"$PM2_APP"'"
             fi
             pm2 save
