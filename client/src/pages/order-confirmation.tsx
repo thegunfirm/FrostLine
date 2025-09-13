@@ -134,26 +134,30 @@ export default function OrderConfirmation() {
 
   // Transform new API response to legacy format for compatibility
   function transformToLegacyFormat(summary: OrderSummaryResponse): any {
+    // Safe access to totals with fallback
+    const totalAmount = summary.totals?.grand || 0;
+    const totalsData = summary.totals || { grand: 0, tax: 0, shipping: 0, subtotal: 0 };
+    
     return {
       orderNumber: summary.displayNumber,
       tgfOrderNumber: summary.displayNumber,
       orderId: summary.orderId,
       transactionId: summary.orderId, // Use orderId as transaction ID for display
-      amount: summary.totals.grand * 100, // Convert to cents for legacy format
+      amount: totalAmount * 100, // Convert to cents for legacy format
       orderStatus: 'Processing',
-      items: summary.shipments.flatMap(shipment => 
-        shipment.lines.map(line => ({
+      items: summary.shipments?.flatMap(shipment => 
+        shipment.lines?.map(line => ({
           description: `${line.sku} (${shipment.outcome})`,
           name: line.sku,
           quantity: line.qty,
           price: 0, // Pricing not available in summary format
           requiresFFL: shipment.outcome.includes('FFL')
-        }))
-      ),
-      totals: summary.totals,
-      shipments: summary.shipments,
+        })) || []
+      ) || [],
+      totals: totalsData,
+      shipments: summary.shipments || [],
       createdAt: summary.createdAt,
-      hasFirearms: summary.shipments.some(s => s.outcome.includes('FFL'))
+      hasFirearms: summary.shipments?.some(s => s.outcome.includes('FFL')) || false
     };
   }
 
