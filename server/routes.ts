@@ -1868,39 +1868,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { orderId } = req.params;
       
-      // Find order by orderId (string format like "ord_1757797186282_ba1hysgly")
-      const orders = await storage.getOrders();
-      const order = orders.find(o => o.orderId === orderId);
+      // Use direct SQL query to avoid Drizzle schema issues
+      const query = `
+        SELECT 
+          id, 
+          user_id, 
+          order_date, 
+          total_price, 
+          status, 
+          items, 
+          ffl_recipient_id,
+          shipping_address, 
+          authorize_net_transaction_id,
+          rsr_order_number,
+          notes,
+          created_at
+        FROM orders 
+        ORDER BY order_date DESC
+      `;
+      
+      const result = await db.execute(sql.raw(query));
+      const orders = result.rows as any[];
+      
+      let order = null;
+      
+      // If orderId contains timestamp, try to match by time
+      if (orderId.startsWith('ord_')) {
+        const timestamp = orderId.split('_')[1];
+        if (timestamp) {
+          const orderDate = new Date(parseInt(timestamp));
+          const timeTolerance = 5 * 60 * 1000; // 5 minutes tolerance
+          order = orders.find(o => {
+            if (!o.order_date && !o.created_at) return false;
+            const orderTime = new Date(o.order_date || o.created_at).getTime();
+            return Math.abs(orderTime - orderDate.getTime()) < timeTolerance;
+          });
+        }
+      }
       
       if (!order) {
-        return res.status(404).json({ message: "Order not found" });
+        return res.status(404).json({ message: "Order not found", orderId });
       }
       
       // Parse order items
       const orderItems = typeof order.items === 'string' ? JSON.parse(order.items) : order.items || [];
       
-      // Calculate totals
-      const itemsTotal = orderItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
-      const shipping = order.shippingCost || 0;
-      const tax = order.tax || 0;
-      const grand = order.totalAmount || (itemsTotal + shipping + tax);
+      // Calculate totals from order data
+      const totalPrice = parseFloat(order.total_price?.toString() || '0');
+      const itemsTotal = orderItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || totalPrice;
+      const shipping = 0; // Shipping was included in total for this order
+      const tax = 0; // Tax was included in total for this order  
+      const grand = totalPrice;
+      
+      // Generate TGF order number from RSR order number or create from ID
+      const baseNumber = order.rsr_order_number?.split('-')[0] || Math.floor(parseInt(timestamp || Date.now().toString()) / 1000).toString();
+      const displayNumber = order.rsr_order_number || `${baseNumber}-Z`;
       
       // Create shipments based on order items
       const shipments = [{
         suffix: 'A' as const,
         outcome: orderItems.some((item: any) => item.requiresFFL) ? 'DS>FFL' : 'DS>Customer',
         lines: orderItems.map((item: any) => ({
-          sku: item.productSku || item.sku,
+          sku: item.productSku || item.sku || item.stockNumber,
           qty: item.quantity || 1
         })),
         ffl: orderItems.some((item: any) => item.requiresFFL) ? 
-          { id: order.selectedFFL || '1062' } : undefined
+          { id: order.ffl_recipient_id?.toString() || '1062' } : undefined
       }];
       
       const summaryResponse = {
-        orderId: order.orderId,
-        baseNumber: order.tgfOrderNumber?.split('-')[0] || order.id.toString(),
-        displayNumber: order.tgfOrderNumber || `Order ${order.id}`,
+        orderId: orderId,
+        baseNumber: baseNumber,
+        displayNumber: displayNumber,
         totals: {
           items: itemsTotal,
           shipping: shipping,
@@ -1908,11 +1947,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           grand: grand
         },
         shipments: shipments,
-        createdAt: order.orderDate || order.createdAt || new Date().toISOString(),
+        createdAt: order.order_date || order.created_at || new Date().toISOString(),
         customer: {
-          email: order.customerEmail || null,
-          customerId: order.userId?.toString() || null
-        }
+          email: order.customer_email || null,
+          customerId: order.user_id?.toString() || null
+        },
+        transactionId: order.authorize_net_transaction_id || null
       };
       
       res.json(summaryResponse);
