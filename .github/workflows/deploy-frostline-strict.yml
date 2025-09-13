@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy FrostLine (STRICT)
 
 on:
   workflow_dispatch:
@@ -9,22 +9,19 @@ permissions:
   contents: read
 
 concurrency:
-  group: deploy-${{ github.ref_name }}
+  group: deploy-frostline-strict-${{ github.ref_name }}
   cancel-in-progress: true
 
 env:
   SSH_USER: ${{ secrets.SSH_USER }}
   SSH_HOST: ${{ secrets.SSH_HOST }}
   SSH_PORT: ${{ secrets.SSH_PORT }}
-  # Hardcode the target path (no secret needed):
   APP_PATH: /var/www/frostline
-  # Optional: if not set, we default to "frostline" during restart
   PM2_APP: ${{ secrets.PM2_APP }}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout (main)
         uses: actions/checkout@v4
@@ -36,20 +33,17 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Allow explicit override via commit message token
           msg="$(git log -1 --pretty=%B)"
           if grep -q '\[override-freeze\]' <<<"$msg"; then
             echo "[Freeze] override-freeze present; skipping checks."
             exit 0
           fi
 
-          # Compare against main (fallback to parent if shallow)
           git fetch --no-tags --depth=2 origin main || true
           base="$(git merge-base HEAD origin/main 2>/dev/null || echo HEAD^)"
 
           changed="$(git diff --name-only "$base" HEAD || true)"
 
-          # --- Frozen files (no edits allowed without override) ---
           FROZEN_FILES=(
             client/src/pages/home.tsx
             client/src/pages/products.tsx
@@ -68,7 +62,6 @@ jobs:
             fi
           done
 
-          # --- Frozen line ranges in specific files ---
           check_ranges() {
             file="$1"; shift
             diffout="$(git diff --no-color -U0 "$base" HEAD -- "$file" || true)"
@@ -78,7 +71,6 @@ jobs:
                 for(i=1;i<=n;i++){ split(a[i],p,":"); RS[i]=p[1]+0; RE[i]=p[2]+0; }
               }
               /^@@/{
-                # hunk header: @@ -oldStart,oldLen +newStart,newLen @@
                 if (match($0,/^\@\@ [^+]*\+([0-9]+)(,([0-9]+))? /,m)) {
                   ns=m[1]+0; nl=(m[3]==""?1:m[3]+0); ne=ns+nl-1;
                   for(i=1;i<=n;i++){
@@ -97,11 +89,9 @@ jobs:
             fi
           }
 
-          # server/routes.ts frozen segments
           check_ranges server/routes.ts \
             318:937 1231:1366 1933:1933 2719:2758 2943:2983 4351:4351 724:7933 7960:8016
 
-          # server/local-auth-routes.ts single frozen line
           check_ranges server/local-auth-routes.ts 279:279
 
           echo "[Freeze] OK — no frozen areas touched."
@@ -120,10 +110,7 @@ jobs:
       - name: Connectivity test
         shell: bash
         run: |
-          ssh -4 -p "$SSH_PORT" \
-            -o StrictHostKeyChecking=yes \
-            -o PreferredAuthentications=publickey \
-            -o BatchMode=yes \
+          ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes -o PreferredAuthentications=publickey -o BatchMode=yes \
             "$SSH_USER@$SSH_HOST" 'echo OK $(hostname); whoami'
 
       - name: Bootstrap server (Node 20, PM2, tools) and ensure path
