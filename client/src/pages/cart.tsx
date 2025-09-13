@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Minus, Plus, X, ShoppingCart } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 const formatPrice = (price: number | string) => {
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
@@ -14,6 +14,7 @@ const formatPrice = (price: number | string) => {
 export default function CartPage() {
   const { items, removeItem, updateQuantity, getTotalPrice, getItemCount } = useCart();
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
 
   if (items.length === 0) {
     return (
@@ -183,14 +184,22 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                <Link href="/order-summary">
-                  <Button 
-                    className="w-full mt-6 bg-amber-500 hover:bg-amber-600 text-white text-lg py-3"
-                    size="lg"
-                  >
-                    Proceed to Checkout
-                  </Button>
-                </Link>
+                <Button 
+                  className="w-full mt-6 bg-amber-500 hover:bg-amber-600 text-white text-lg py-3"
+                  size="lg"
+                  onClick={() => {
+                    if (user) {
+                      // User is authenticated, proceed to checkout
+                      setLocation('/order-summary');
+                    } else {
+                      // User not authenticated, redirect to login with return URL
+                      setLocation('/login?redirect=' + encodeURIComponent('/order-summary'));
+                    }
+                  }}
+                  data-testid="button-proceed-checkout"
+                >
+                  Proceed to Checkout
+                </Button>
 
                 <div className="mt-4 text-center">
                   <Link href="/">
