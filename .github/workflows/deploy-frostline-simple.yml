@@ -1,0 +1,92 @@
+name: Deploy FrostLine (SIMPLE)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-frostline-simple-${{ github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  SSH_USER: ${{ secrets.SSH_USER }}
+  SSH_HOST: ${{ secrets.SSH_HOST }}
+  SSH_PORT: ${{ secrets.SSH_PORT }}
+  APP_PATH: /var/www/frostline
+  PM2_APP: ${{ secrets.PM2_APP }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (main)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Load SSH key into agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Trust server host key
+        shell: bash
+        run: |
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Connectivity test
+        shell: bash
+        run: |
+          ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes -o PreferredAuthentications=publickey -o BatchMode=yes \
+            "$SSH_USER@$SSH_HOST" 'echo OK $(hostname); whoami'
+
+      - name: Bootstrap server (Node 20, PM2, tools) and ensure path
+        shell: bash
+        run: |
+          ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" /bin/bash -lc '
+            set -e
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update -y
+            apt-get install -y ca-certificates curl gnupg rsync git build-essential python3 pkg-config
+            if ! command -v node >/dev/null 2>&1; then
+              curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+              apt-get install -y nodejs
+            fi
+            if ! command -v pm2 >/dev/null 2>&1; then
+              npm i -g pm2
+            fi
+            mkdir -p "'"$APP_PATH"'"
+            node -v; npm -v; pm2 -v
+          '
+
+      - name: Sync files to server
+        shell: bash
+        run: |
+          rsync -az --delete \
+            --rsh="ssh -4 -p $SSH_PORT -o StrictHostKeyChecking=yes -o PreferredAuthentications=publickey -o BatchMode=yes" \
+            --exclude ".git/" --exclude ".github/" --exclude "node_modules/" --exclude "*.log" \
+            ./ "$SSH_USER@$SSH_HOST:$APP_PATH/"
+
+      - name: Build & restart with PM2
+        shell: bash
+        run: |
+          ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" /bin/bash -lc '
+            set -e
+            cd "'"$APP_PATH"'"
+            export NPM_CONFIG_FUND=false NPM_CONFIG_AUDIT=false
+            npm ci
+            npm run build
+            APP_NAME="'"${PM2_APP:-frostline}"'"
+            if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
+              pm2 reload "$APP_NAME"
+            else
+              pm2 start dist/index.js --name "$APP_NAME"
+            fi
+            pm2 save
+            pm2 startup systemd -u $(whoami) --hp "$HOME" >/dev/null 2>&1 || true
+          '
