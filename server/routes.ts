@@ -1211,9 +1211,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   authorizeNetTransactionId: transactionResponse.transId
                 };
 
-                // Store the order with TGF numbering
-                await ordersStore.storeOrder(orderDocument);
-                console.log('✅ Order with TGF number saved:', orderDocument.displayNumber);
+                // TGF order document created successfully
+                console.log('✅ TGF order number generated:', orderDocument.displayNumber);
               } catch (tgfError) {
                 console.error('⚠️ TGF order numbering failed:', tgfError);
                 // Continue with regular order processing
@@ -1861,6 +1860,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get order error:", error);
       res.status(500).json({ message: "Failed to fetch order" });
+    }
+  });
+
+  // Order Summary for Order Confirmation Page
+  app.get("/api/orders/:orderId/summary", async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      // Find order by orderId (string format like "ord_1757797186282_ba1hysgly")
+      const orders = await storage.getOrders();
+      const order = orders.find(o => o.orderId === orderId);
+      
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      
+      // Parse order items
+      const orderItems = typeof order.items === 'string' ? JSON.parse(order.items) : order.items || [];
+      
+      // Calculate totals
+      const itemsTotal = orderItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+      const shipping = order.shippingCost || 0;
+      const tax = order.tax || 0;
+      const grand = order.totalAmount || (itemsTotal + shipping + tax);
+      
+      // Create shipments based on order items
+      const shipments = [{
+        suffix: 'A' as const,
+        outcome: orderItems.some((item: any) => item.requiresFFL) ? 'DS>FFL' : 'DS>Customer',
+        lines: orderItems.map((item: any) => ({
+          sku: item.productSku || item.sku,
+          qty: item.quantity || 1
+        })),
+        ffl: orderItems.some((item: any) => item.requiresFFL) ? 
+          { id: order.selectedFFL || '1062' } : undefined
+      }];
+      
+      const summaryResponse = {
+        orderId: order.orderId,
+        baseNumber: order.tgfOrderNumber?.split('-')[0] || order.id.toString(),
+        displayNumber: order.tgfOrderNumber || `Order ${order.id}`,
+        totals: {
+          items: itemsTotal,
+          shipping: shipping,
+          tax: tax,
+          grand: grand
+        },
+        shipments: shipments,
+        createdAt: order.orderDate || order.createdAt || new Date().toISOString(),
+        customer: {
+          email: order.customerEmail || null,
+          customerId: order.userId?.toString() || null
+        }
+      };
+      
+      res.json(summaryResponse);
+    } catch (error) {
+      console.error("Get order summary error:", error);
+      res.status(500).json({ message: "Failed to fetch order summary" });
     }
   });
 
