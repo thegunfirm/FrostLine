@@ -1891,10 +1891,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const orders = result.rows as any[];
       
       let order = null;
+      let timestamp = null;
       
       // If orderId contains timestamp, try to match by time
       if (orderId.startsWith('ord_')) {
-        const timestamp = orderId.split('_')[1];
+        timestamp = orderId.split('_')[1];
         if (timestamp) {
           const orderDate = new Date(parseInt(timestamp));
           const timeTolerance = 5 * 60 * 1000; // 5 minutes tolerance
