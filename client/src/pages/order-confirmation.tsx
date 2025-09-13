@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Home, ShoppingBag, Shield } from "lucide-react";
@@ -10,27 +11,79 @@ const formatPrice = (price: number | string) => {
   return `$${numPrice.toFixed(2)}`;
 };
 
+interface OrderSummaryResponse {
+  orderId: string;
+  baseNumber: string;
+  displayNumber: string;
+  totals: {
+    items: number;
+    shipping: number;
+    tax: number;
+    grand: number;
+  };
+  shipments: Array<{
+    suffix?: 'A' | 'B' | 'C' | 'D';
+    outcome: string;
+    lines: Array<{
+      sku: string;
+      qty: number;
+    }>;
+    ffl?: {
+      id: string;
+    };
+  }>;
+  createdAt: string;
+  customer: {
+    email: string | null;
+    customerId: string | null;
+  };
+}
+
 export default function OrderConfirmation() {
   const [, setLocation] = useLocation();
-  const [orderData, setOrderData] = useState<any>(null);
+  const [legacyOrderData, setLegacyOrderData] = useState<any>(null);
+  const searchString = useSearch();
+  
+  // Extract orderId from URL parameters
+  const urlParams = new URLSearchParams(searchString);
+  const orderId = urlParams.get('orderId');
+
+  // Fetch order summary from new API if orderId is present
+  const { 
+    data: orderSummary, 
+    isLoading, 
+    error 
+  } = useQuery<OrderSummaryResponse>({
+    queryKey: ['order-summary', orderId],
+    enabled: !!orderId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   useEffect(() => {
     // Scroll to top when component mounts
     window.scrollTo(0, 0);
     
-    // Get order data from session storage (set during payment success)
-    const storedOrderData = sessionStorage.getItem('lastOrderData');
-    if (storedOrderData) {
-      setOrderData(JSON.parse(storedOrderData));
-      // Clear the data after retrieving it
-      sessionStorage.removeItem('lastOrderData');
-    } else {
-      // If no order data, redirect to home
-      setTimeout(() => setLocation('/'), 3000);
+    // If no orderId, try to get legacy data from session storage
+    if (!orderId) {
+      const storedOrderData = sessionStorage.getItem('lastOrderData');
+      if (storedOrderData) {
+        setLegacyOrderData(JSON.parse(storedOrderData));
+        // Clear the data after retrieving it
+        sessionStorage.removeItem('lastOrderData');
+      } else {
+        // If no order data at all, redirect to home
+        setTimeout(() => setLocation('/'), 3000);
+      }
     }
-  }, [setLocation]);
+  }, [orderId, setLocation]);
 
-  if (!orderData) {
+  // Handle loading states
+  const isLoadingOrderData = orderId && isLoading;
+  const hasNewOrderData = orderId && orderSummary && !error;
+  const hasLegacyOrderData = !orderId && legacyOrderData;
+  const hasNoOrderData = !isLoadingOrderData && !hasNewOrderData && !hasLegacyOrderData;
+
+  if (isLoadingOrderData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="max-w-md mx-auto text-center">
@@ -42,6 +95,66 @@ export default function OrderConfirmation() {
         </Card>
       </div>
     );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-md mx-auto text-center">
+          <CardContent className="pt-8">
+            <CheckCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Order Not Found</h2>
+            <p className="text-gray-600 mb-4">We couldn't find your order details. Please check your order ID or contact support.</p>
+            <Button onClick={() => setLocation('/')} className="bg-green-600 hover:bg-green-700">
+              <Home className="w-4 h-4 mr-2" />
+              Return to Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (hasNoOrderData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-md mx-auto text-center">
+          <CardContent className="pt-8">
+            <div className="w-16 h-16 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mx-auto mb-4"></div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Loading Order Details...</h2>
+            <p className="text-gray-600">Please wait while we retrieve your order information.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Use new API data if available, otherwise fall back to legacy data
+  const orderData = hasNewOrderData ? transformToLegacyFormat(orderSummary) : legacyOrderData;
+
+  // Transform new API response to legacy format for compatibility
+  function transformToLegacyFormat(summary: OrderSummaryResponse): any {
+    return {
+      orderNumber: summary.displayNumber,
+      tgfOrderNumber: summary.displayNumber,
+      orderId: summary.orderId,
+      transactionId: summary.orderId, // Use orderId as transaction ID for display
+      amount: summary.totals.grand * 100, // Convert to cents for legacy format
+      orderStatus: 'Processing',
+      items: summary.shipments.flatMap(shipment => 
+        shipment.lines.map(line => ({
+          description: `${line.sku} (${shipment.outcome})`,
+          name: line.sku,
+          quantity: line.qty,
+          price: 0, // Pricing not available in summary format
+          requiresFFL: shipment.outcome.includes('FFL')
+        }))
+      ),
+      totals: summary.totals,
+      shipments: summary.shipments,
+      createdAt: summary.createdAt,
+      hasFirearms: summary.shipments.some(s => s.outcome.includes('FFL'))
+    };
   }
 
   return (
