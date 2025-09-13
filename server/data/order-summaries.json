@@ -1,1 +1,70 @@
-{}
+{
+  "ord_1757792125747_qbcg2beea": {
+    "orderId": "ord_1757792125747_qbcg2beea",
+    "baseNumber": "1757792125",
+    "paymentId": "pay-456",
+    "idempotencyKey": "test-key-3",
+    "totals": {
+      "items": 0,
+      "shipping": 0,
+      "tax": 0,
+      "grand": 0
+    },
+    "shipments": [
+      {
+        "outcome": "DS>Customer",
+        "lines": [
+          {
+            "sku": "TEST-SKU-1",
+            "qty": 2
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-09-13T19:35:25.747Z",
+    "customer": {
+      "email": null,
+      "customerId": null
+    }
+  },
+  "ord_1757792144381_50mv18pbv": {
+    "orderId": "ord_1757792144381_50mv18pbv",
+    "baseNumber": "1757792144",
+    "paymentId": "pay-multi",
+    "idempotencyKey": "test-key-multi",
+    "totals": {
+      "items": 0,
+      "shipping": 0,
+      "tax": 0,
+      "grand": 0
+    },
+    "shipments": [
+      {
+        "outcome": "DS>Customer",
+        "lines": [
+          {
+            "sku": "TEST-NON-REGULATED",
+            "qty": 1
+          }
+        ]
+      },
+      {
+        "outcome": "DS>FFL",
+        "lines": [
+          {
+            "sku": "TEST-REGULATED",
+            "qty": 1
+          }
+        ],
+        "ffl": {
+          "id": "ffl-test-123"
+        }
+      }
+    ],
+    "createdAt": "2025-09-13T19:35:44.381Z",
+    "customer": {
+      "email": null,
+      "customerId": null
+    }
+  }
+}

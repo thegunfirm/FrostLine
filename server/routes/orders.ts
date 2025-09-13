@@ -8,7 +8,7 @@ import { taxService } from '../lib/taxService';
 import { deriveOutcomes, type OrderLine } from '../lib/shippingOutcomes';
 import { toSummary, type OrderDocument, type OrderSummaryResponse } from '../lib/formatOrderSummary';
 import { ordersStore } from '../lib/ordersStore';
-import axios from 'axios';
+// axios import removed - no longer needed
 
 const router = Router();
 
@@ -34,24 +34,15 @@ interface FinalizeOrderRequest {
 }
 
 /**
- * Generate order number by calling existing internal endpoint
+ * Generate TGF order number using simple sequential approach
+ * This is a simplified implementation - in production, this should use
+ * atomic database sequences or similar for proper sequential numbering
  */
-async function getOrderNumber(fulfillmentPaths: string[]): Promise<{ orderId: number; orderNumber: string }> {
-  try {
-    const response = await axios.post('http://localhost:5000/api/orders/number', {
-      paths: fulfillmentPaths
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Idempotency-Key': `finalize-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      }
-    });
-    
-    return response.data;
-  } catch (error) {
-    console.error('Error getting order number:', error);
-    throw new Error('Failed to generate order number');
-  }
+function generateOrderNumber(paths: unknown): string {
+  const arr = Array.isArray(paths) ? paths : [];
+  const sequence = Math.floor(Date.now() / 1000);
+  const suffix = arr.length <= 1 ? '0' : 'Z';
+  return `${sequence}-${suffix}`;
 }
 
 /**
@@ -155,9 +146,14 @@ router.post('/finalize', async (req, res) => {
       }
     });
 
-    // Get base order number
-    const orderNumberResult = await getOrderNumber(fulfillmentPaths);
-    const baseNumber = orderNumberResult.orderNumber.replace(/-(0|Z|[A-D])$/, '');
+    // Generate base order number
+    console.debug('Order numbering', { fulfillmentPaths, uniqueOutcomes });
+    const fullOrderNumber = generateOrderNumber(fulfillmentPaths ?? []);
+    if (typeof fullOrderNumber !== 'string' || !fullOrderNumber) {
+      throw new Error('Order number generation failed');
+    }
+    const baseNumber = fullOrderNumber.includes('-') ? fullOrderNumber.split('-')[0] : fullOrderNumber;
+    console.debug('Generated order number', { fullOrderNumber, baseNumber });
 
     // Prepare shipments with FFL info where needed
     const shipments = Object.values(outcomes.buckets).map(bucket => ({
