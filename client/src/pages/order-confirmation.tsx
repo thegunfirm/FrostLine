@@ -37,6 +37,7 @@ interface OrderSummaryResponse {
     email: string | null;
     customerId: string | null;
   };
+  transactionId: string | null;
 }
 
 export default function OrderConfirmation() {
@@ -142,7 +143,7 @@ export default function OrderConfirmation() {
       orderNumber: summary.displayNumber,
       tgfOrderNumber: summary.displayNumber,
       orderId: summary.orderId,
-      transactionId: summary.orderId, // Use orderId as transaction ID for display
+      transactionId: summary.transactionId, // Use actual transaction ID from API
       amount: totalAmount * 100, // Convert to cents for legacy format
       orderStatus: 'Processing',
       items: summary.shipments?.flatMap(shipment => 
