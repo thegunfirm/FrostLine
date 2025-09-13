@@ -31,6 +31,81 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Freeze guard — customer UI & frozen lines
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Allow explicit override via commit message token
+          msg="$(git log -1 --pretty=%B)"
+          if grep -q '\[override-freeze\]' <<<"$msg"; then
+            echo "[Freeze] override-freeze present; skipping checks."
+            exit 0
+          fi
+
+          # Compare against main (fallback to parent if shallow)
+          git fetch --no-tags --depth=2 origin main || true
+          base="$(git merge-base HEAD origin/main 2>/dev/null || echo HEAD^)"
+
+          changed="$(git diff --name-only "$base" HEAD || true)"
+
+          # --- Frozen files (no edits allowed without override) ---
+          FROZEN_FILES=(
+            client/src/pages/home.tsx
+            client/src/pages/products.tsx
+            client/src/pages/cart.tsx
+            client/src/pages/ffl-selection.tsx
+            client/src/pages/shipping.tsx
+            client/src/pages/billing.tsx
+            client/src/pages/payment.tsx
+            client/src/pages/order-confirmation.tsx
+            client/src/pages/account.tsx
+          )
+          for f in "${FROZEN_FILES[@]}"; do
+            if grep -Fxq "$f" <<<"$changed"; then
+              echo "::error::Freeze violation: $f changed. Add [override-freeze] to commit message to allow."
+              exit 1
+            fi
+          done
+
+          # --- Frozen line ranges in specific files ---
+          check_ranges() {
+            file="$1"; shift
+            diffout="$(git diff --no-color -U0 "$base" HEAD -- "$file" || true)"
+            awk -v ranges="$*" -v file="$file" '
+              BEGIN{
+                n=split(ranges,a," ");
+                for(i=1;i<=n;i++){ split(a[i],p,":"); RS[i]=p[1]+0; RE[i]=p[2]+0; }
+              }
+              /^@@/{
+                # hunk header: @@ -oldStart,oldLen +newStart,newLen @@
+                if (match($0,/^\@\@ [^+]*\+([0-9]+)(,([0-9]+))? /,m)) {
+                  ns=m[1]+0; nl=(m[3]==""?1:m[3]+0); ne=ns+nl-1;
+                  for(i=1;i<=n;i++){
+                    if (ns<=RE[i] && ne>=RS[i]) {
+                      print "VIOLATION " file " +" ns "," nl " overlaps " RS[i] "-" RE[i];
+                      exit 42;
+                    }
+                  }
+                }
+              }
+            ' <<<"$diffout"
+            code=$?
+            if [ $code -eq 42 ]; then
+              echo "::error::Freeze violation: $file modified within frozen line ranges. Add [override-freeze] to commit message to allow."
+              exit 1
+            fi
+          }
+
+          # server/routes.ts frozen segments
+          check_ranges server/routes.ts \
+            318:937 1231:1366 1933:1933 2719:2758 2943:2983 4351:4351 724:7933 7960:8016
+
+          # server/local-auth-routes.ts single frozen line
+          check_ranges server/local-auth-routes.ts 279:279
+
+          echo "[Freeze] OK — no frozen areas touched."
+
       - name: Load SSH key into agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
