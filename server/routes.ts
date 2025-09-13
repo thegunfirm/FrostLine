@@ -1122,6 +1122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log('✅ Payment successful');
             
             // Create order record in database
+            let orderDocument = null;
             try {
               // TODO: Get actual user ID from session when authentication is re-enabled
               const userId = req.session?.user?.id || 10; // Fallback for testing
@@ -1140,7 +1141,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }))
               };
               
-              const savedOrder = await storage.createOrder(orderData);
+              // Generate TGF order number using the order numbering system
+              try {
+                const { calculate: calculateTax } = await import('./lib/taxService');
+                const { deriveOutcomes } = await import('./lib/shippingOutcomes');
+                const { ordersStore } = await import('./lib/ordersStore');
+                
+                console.log('🔢 Starting TGF order number generation...');
+                
+                // Convert payment data to order finalization format
+                const finalizeRequest = {
+                  cartId: `payment-${transactionResponse.transId}`,
+                  paymentId: transactionResponse.transId,
+                  idempotencyKey: `payment-${transactionResponse.transId}`,
+                  shipTo: {
+                    name: `${billingInfo.firstName} ${billingInfo.lastName}`,
+                    address1: billingInfo.address,
+                    city: billingInfo.city,
+                    state: billingInfo.state,
+                    zip: billingInfo.zip
+                  },
+                  lines: orderItems.map(item => ({
+                    sku: item.name || item.description || 'ITEM',
+                    qty: item.quantity || 1,
+                    regulated: item.requiresFFL || false,
+                    fulfillment: 'DS' // Default to drop-ship
+                  })),
+                  fflId: orderItems.find(item => item.selectedFFL)?.selectedFFL || null
+                };
+
+                // Generate TGF order number
+                let taxAmount = 0;
+                let taxBlocked = false;
+                try {
+                  taxAmount = calculateTax({
+                    shipTo: finalizeRequest.shipTo,
+                    lines: finalizeRequest.lines,
+                    items: parseFloat(amount.toString()),
+                    shipping: 0
+                  });
+                } catch (taxError: any) {
+                  if (taxError.code === 'NO_SHIP_CA') {
+                    taxBlocked = true;
+                    console.log('⚠️ Order would be blocked by CA restriction, but payment already processed');
+                  }
+                }
+
+                const outcomes = deriveOutcomes(finalizeRequest.lines, finalizeRequest.fflId);
+                const baseNumber = Math.floor(Date.now() / 1000).toString();
+                const orderId = `ord_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                const displayNumber = outcomes.length === 1 ? `${baseNumber}-0` : `${baseNumber}-Z`;
+
+                orderDocument = {
+                  orderId,
+                  baseNumber,
+                  displayNumber,
+                  totals: {
+                    items: parseFloat(amount.toString()),
+                    shipping: 0,
+                    tax: taxAmount,
+                    grand: parseFloat(amount.toString()) + taxAmount
+                  },
+                  shipments: outcomes,
+                  createdAt: new Date().toISOString(),
+                  customer: {
+                    email: req.session?.user?.email || null,
+                    customerId: userId || null
+                  },
+                  authorizeNetTransactionId: transactionResponse.transId
+                };
+
+                // Store the order with TGF numbering
+                await ordersStore.storeOrder(orderDocument);
+                console.log('✅ Order with TGF number saved:', orderDocument.displayNumber);
+              } catch (tgfError) {
+                console.error('⚠️ TGF order numbering failed:', tgfError);
+                // Continue with regular order processing
+              }
+
+              // Also save to the existing database system for compatibility
+              const savedOrder = await storage.createOrder({
+                ...orderData,
+                tgfOrderNumber: orderDocument?.displayNumber || null,
+                orderId: orderDocument?.orderId || null
+              });
               console.log('✅ Order saved to database:', savedOrder.id);
 
               // Create Zoho Deal for the order
@@ -1188,7 +1272,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               transactionId: transactionResponse.transId,
               authCode: transactionResponse.authCode,
               messageCode: transactionResponse.messages[0]?.code,
-              description: transactionResponse.messages[0]?.description || 'Payment processed successfully'
+              description: transactionResponse.messages[0]?.description || 'Payment processed successfully',
+              tgfOrderNumber: orderDocument?.displayNumber || null,
+              orderId: orderDocument?.orderId || null
             });
           } else {
             // Payment declined

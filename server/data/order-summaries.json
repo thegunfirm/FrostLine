@@ -66,5 +66,33 @@
       "email": null,
       "customerId": null
     }
+  },
+  "ord_1757793783798_7otrn37uu": {
+    "orderId": "ord_1757793783798_7otrn37uu",
+    "baseNumber": "1757793783",
+    "paymentId": "120070994163",
+    "idempotencyKey": "test-working",
+    "totals": {
+      "items": 0,
+      "shipping": 0,
+      "tax": 0,
+      "grand": 0
+    },
+    "shipments": [
+      {
+        "outcome": "DS>Customer",
+        "lines": [
+          {
+            "sku": "TEST-PRODUCT",
+            "qty": 1
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-09-13T20:03:03.798Z",
+    "customer": {
+      "email": null,
+      "customerId": null
+    }
   }
 }

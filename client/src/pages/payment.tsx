@@ -156,24 +156,29 @@ function PaymentPageContent() {
     onSuccess: (response) => {
       console.log('Payment response:', response);
       if (response?.success) {
-        // Store order data for confirmation page
-        const orderData = {
-          transactionId: response.transactionId,
-          amount: getTotalPrice() * 100, // Convert to cents for display
-          items: items.map(item => ({
-            description: item.description,
-            quantity: item.quantity,
-            price: parseFloat(item.price)
-          }))
-        };
-        sessionStorage.setItem('lastOrderData', JSON.stringify(orderData));
-        
         setPaymentSuccess(true);
         clearCart();
         
-        // Redirect to confirmation page immediately
+        // Redirect to confirmation page with TGF order ID
         setTimeout(() => {
-          setLocation('/order-confirmation');
+          if (response.orderId) {
+            // Use new order numbering system
+            setLocation(`/order-confirmation?orderId=${response.orderId}`);
+          } else {
+            // Fallback to legacy system
+            const orderData = {
+              transactionId: response.transactionId,
+              tgfOrderNumber: response.tgfOrderNumber,
+              amount: getTotalPrice() * 100,
+              items: items.map(item => ({
+                description: item.description,
+                quantity: item.quantity,
+                price: parseFloat(item.price)
+              }))
+            };
+            sessionStorage.setItem('lastOrderData', JSON.stringify(orderData));
+            setLocation('/order-confirmation');
+          }
         }, 2000);
       }
     },
