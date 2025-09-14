@@ -109,3 +109,4 @@ cookies.txt
 
 # Large data files (keep structure, not data)
 rsr_inventory_*.txt.zoho-tokens.json
+!.env.age
