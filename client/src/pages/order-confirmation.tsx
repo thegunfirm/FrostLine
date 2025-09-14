@@ -148,8 +148,8 @@ export default function OrderConfirmation() {
       orderStatus: 'Processing',
       items: summary.shipments?.flatMap(shipment => 
         shipment.lines?.map(line => ({
-          description: `${line.sku} (${shipment.outcome})`,
-          name: line.sku,
+          description: line.name || line.sku || 'Product',
+          name: line.name || line.sku || 'Product',
           quantity: line.qty,
           price: line.price || 0,
           requiresFFL: shipment.outcome.includes('FFL')
