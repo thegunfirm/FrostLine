@@ -55,7 +55,7 @@ export default function OrderConfirmation() {
     isLoading, 
     error 
   } = useQuery<OrderSummaryResponse>({
-    queryKey: ['/api/orders', orderId!, 'summary'],
+    queryKey: [`/api/orders/${orderId}/summary`],
     enabled: !!orderId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
