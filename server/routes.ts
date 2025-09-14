@@ -1196,27 +1196,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const orderId = `ord_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 const displayNumber = shipmentsArray.length === 1 ? `${baseNumber}-0` : `${baseNumber}-Z`;
 
-                // Create price lookup map from order items
+                // Create price and name lookup maps from order items
                 const priceMap = new Map();
-                console.log('🔍 Creating price map from order items:', orderItems.length, 'items');
+                const nameMap = new Map();
+                console.log('🔍 Creating price and name maps from order items:', orderItems.length, 'items');
                 orderItems.forEach(item => {
                   const sku = item.productSku || item.sku || item.stockNumber || item.name || item.description || 'ITEM';
-                  console.log('   Mapping SKU:', sku, '-> Price:', item.price);
+                  const name = item.productName || item.name || item.description || 'Unknown Product';
+                  console.log('   Mapping SKU:', sku, '-> Price:', item.price, ', Name:', name);
                   priceMap.set(sku, item.price || 0);
+                  nameMap.set(sku, name);
                 });
 
-                // Add prices to outcomes
-                console.log('🔍 Adding prices to outcomes. Shipments before:', shipmentsArray.length);
+                // Add prices and names to outcomes
+                console.log('🔍 Adding prices and names to outcomes. Shipments before:', shipmentsArray.length);
                 const shipmentsWithPrices = shipmentsArray.map(shipment => {
                   console.log('   Processing shipment:', shipment.outcome, 'with', shipment.lines?.length, 'lines');
                   return {
                     ...shipment,
                     lines: shipment.lines.map(line => {
                       const price = priceMap.get(line.sku) || 0;
-                      console.log('     Line SKU:', line.sku, '-> Price from map:', price);
+                      const name = nameMap.get(line.sku) || 'Unknown Product';
+                      console.log('     Line SKU:', line.sku, '-> Price:', price, ', Name:', name);
                       return {
                         ...line,
-                        price: price
+                        price: price,
+                        name: name
                       };
                     })
                   };
