@@ -36,6 +36,7 @@ export interface OrderSummaryResponse {
     email: string | null;
     customerId: string | null;
   };
+  transactionId: string | null;
 }
 
 export interface OrderDocument {
@@ -60,6 +61,7 @@ export interface OrderDocument {
     email: string | null;
     customerId: string | null;
   };
+  transactionId: string | null;
 }
 
 /**
@@ -108,6 +110,7 @@ export function toSummary(orderDoc: OrderDocument): OrderSummaryResponse {
     totals: orderDoc.totals,
     shipments: formattedShipments,
     createdAt: orderDoc.createdAt.toISOString(),
-    customer: orderDoc.customer
+    customer: orderDoc.customer,
+    transactionId: orderDoc.transactionId
   };
 }

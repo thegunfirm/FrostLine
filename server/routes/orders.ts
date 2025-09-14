@@ -16,6 +16,7 @@ interface FinalizeOrderRequest {
   cartId: string;
   paymentId: string;
   idempotencyKey: string;
+  transactionId?: string;
   shipTo: {
     name: string;
     address1: string;
@@ -79,6 +80,7 @@ router.post('/finalize', async (req, res) => {
       cartId,
       paymentId,
       idempotencyKey,
+      transactionId,
       shipTo,
       lines,
       fflId
@@ -170,6 +172,7 @@ router.post('/finalize', async (req, res) => {
       baseNumber,
       paymentId,
       idempotencyKey,
+      transactionId: transactionId ?? null,
       totals: {
         items: itemsTotal,
         shipping: shippingTotal,
