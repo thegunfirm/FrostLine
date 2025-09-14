@@ -168,10 +168,10 @@ function PaymentPageContent() {
       if (response?.success) {
         setPaymentSuccess(true);
         
-        // Navigate immediately before clearing cart to prevent component unmounting
+        // Navigate immediately using window.location to avoid any React router issues
         if (response.orderId) {
-          // Use new order numbering system
-          setLocation(`/order-confirmation?orderId=${response.orderId}`);
+          // Use new order numbering system with direct navigation
+          window.location.href = `/order-confirmation?orderId=${response.orderId}`;
         } else {
           // Fallback to legacy system
           const orderData = {
@@ -185,7 +185,7 @@ function PaymentPageContent() {
             }))
           };
           sessionStorage.setItem('lastOrderData', JSON.stringify(orderData));
-          setLocation('/order-confirmation');
+          window.location.href = '/order-confirmation';
         }
         
         // Clear cart after navigation to avoid side effects canceling navigation
