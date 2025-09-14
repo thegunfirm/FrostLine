@@ -48,64 +48,9 @@ jobs:
       - name: Bootstrap server (Node 20, PM2, tools) and ensure path
         shell: bash
         run: |
-          ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" 'bash -lc "
-            set -e
-            export DEBIAN_FRONTEND=noninteractive
-            apt-get update -y
-            apt-get install -y ca-certificates curl gnupg rsync git build-essential python3 pkg-config jq
-            if ! command -v node >/dev/null 2>&1; then
-              curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-              apt-get install -y nodejs
-            fi
-            if ! command -v pm2 >/dev/null 2>&1; then
-              npm i -g pm2
-            fi
-            mkdir -p \"$APP_PATH\"
-            node -v; npm -v; pm2 -v
-          "'
-
-      - name: Sync files to server
-        shell: bash
-        run: |
-          rsync -az --delete \
-            --rsh="ssh -4 -p $SSH_PORT -o StrictHostKeyChecking=yes -o PreferredAuthentications=publickey -o BatchMode=yes" \
-            --exclude ".git/" --exclude ".github/" --exclude "node_modules/" --exclude "*.log" \
-            ./ "$SSH_USER@$SSH_HOST:$APP_PATH/"
-
-      - name: Ensure PM2 wrapper exists (sources /etc/frostline/env)
-        shell: bash
-        run: |
           ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" "bash -s" <<'REMOTE'
           set -e
-          sudo mkdir -p /root/pm2
-          sudo tee /root/pm2/start-frostline.sh >/dev/null <<'SH'
-          #!/usr/bin/env bash
-          set -euo pipefail
-          cd /var/www/frostline
-          set -a
-          [ -f /etc/frostline/env ] && . /etc/frostline/env
-          [ -f ./.env.update ] && . ./.env.update
-          set +a
-          export PORT="${PORT:-5001}"
-          export NODE_ENV="${NODE_ENV:-production}"
-          exec node dist/index.js
-          SH
-          sudo chmod +x /root/pm2/start-frostline.sh
-          REMOTE
-
-      - name: Build & restart with PM2 (use wrapper)
-        shell: bash
-        run: |
-          ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" "bash -s" <<'REMOTE'
-          set -e
-          cd /var/www/frostline
-          export NPM_CONFIG_FUND=false NPM_CONFIG_AUDIT=false
-          npm ci
-          npm run build
-          APP_NAME="${PM2_APP:-frostline}"
-          if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
-            pm2 delete "$APP_NAME"
-          fi
-          pm2 start /root/pm2/start-frostline.sh --name "$APP_NAME" --cwd /var/www/frostline
-          pm2 save
-          REMOTE
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update -y
+          apt-get install -y ca-certificates curl gnupg rsync git build-essential python3 pkg-config jq
+          if ! co
