@@ -150,6 +150,7 @@ export default function OrderConfirmation() {
         shipment.lines?.map(line => ({
           description: `${line.name || line.sku || 'Product'} (${shipment.outcome})`,
           name: line.name || line.sku || 'Product',
+          sku: line.sku || 'N/A',
           quantity: line.qty,
           price: line.price || 0,
           requiresFFL: shipment.outcome.includes('FFL')
@@ -244,10 +245,13 @@ export default function OrderConfirmation() {
                     <div key={index} className="flex justify-between items-start space-x-3 pb-3 border-b border-gray-200 last:border-b-0">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900">
-                          {item.description || item.name || `Item ${index + 1}`}
+                          {item.name || `Item ${index + 1}`}
+                        </p>
+                        <p className="text-xs text-gray-500 font-mono">
+                          SKU: {item.sku || 'N/A'}
                         </p>
                         <p className="text-sm text-gray-600">
-                          Qty: {item.quantity || 1}
+                          Qty: {item.quantity || 1} {item.description?.includes('(') ? `• ${item.description.match(/\(([^)]+)\)/)?.[1] || ''}` : ''}
                         </p>
                         {item.requiresFFL && (
                           <span className="inline-block px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full mt-1">
