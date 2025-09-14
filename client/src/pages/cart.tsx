@@ -113,7 +113,7 @@ export default function CartPage() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0"
-                                onClick={() => updateQuantity(item.productSku, Math.max(1, item.quantity - 1))}
+                                onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
                               >
                                 <Minus className="w-3 h-3" />
                               </Button>
@@ -124,7 +124,7 @@ export default function CartPage() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0"
-                                onClick={() => updateQuantity(item.productSku, Math.min(10, item.quantity + 1))}
+                                onClick={() => updateQuantity(item.id, Math.min(10, item.quantity + 1))}
                               >
                                 <Plus className="w-3 h-3" />
                               </Button>
@@ -134,7 +134,7 @@ export default function CartPage() {
                               variant="ghost"
                               size="sm"
                               className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => removeItem(item.productSku)}
+                              onClick={() => removeItem(item.id)}
                             >
                               <X className="w-4 h-4 mr-1" />
                               Remove

@@ -1165,7 +1165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     zip: billingInfo.zip
                   },
                   lines: orderItems.map(item => ({
-                    sku: item.productSku || item.sku || item.stockNumber || item.name || item.description || 'ITEM',
+                    sku: item.productMPN || item.manufacturerPartNumber || item.sku || item.stockNumber || item.name || item.description || 'ITEM',
                     qty: item.quantity || 1,
                     regulated: item.requiresFFL || false,
                     fulfillment: 'DS' // Default to drop-ship
@@ -1201,7 +1201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const nameMap = new Map();
                 console.log('🔍 Creating price and name maps from order items:', orderItems.length, 'items');
                 orderItems.forEach(item => {
-                  const sku = item.productSku || item.sku || item.stockNumber || item.name || item.description || 'ITEM';
+                  const sku = item.productMPN || item.manufacturerPartNumber || item.sku || item.stockNumber || item.name || item.description || 'ITEM';
                   const name = item.productName || item.name || item.description || 'Unknown Product';
                   console.log('   Mapping SKU:', sku, '-> Price:', item.price, ', Name:', name);
                   priceMap.set(sku, item.price || 0);
@@ -2024,7 +2024,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         suffix: 'A' as const,
         outcome: orderItems.some((item: any) => item.requiresFFL) ? 'DS>FFL' : 'DS>Customer',
         lines: orderItems.map((item: any) => ({
-          sku: item.productSku || item.sku || item.stockNumber,
+          sku: item.productMPN || item.manufacturerPartNumber || item.sku || item.stockNumber,
           qty: item.quantity || 1
         })),
         ffl: orderItems.some((item: any) => item.requiresFFL) ? 
