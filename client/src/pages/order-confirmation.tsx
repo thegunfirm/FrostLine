@@ -148,7 +148,7 @@ export default function OrderConfirmation() {
       orderStatus: 'Processing',
       items: summary.shipments?.flatMap(shipment => 
         shipment.lines?.map(line => ({
-          description: line.name || line.sku || 'Product',
+          description: `${line.name || line.sku || 'Product'} (${shipment.outcome})`,
           name: line.name || line.sku || 'Product',
           quantity: line.qty,
           price: line.price || 0,
