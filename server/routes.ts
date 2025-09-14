@@ -7336,6 +7336,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== ALGOLIA UPC/MPN TEST ENDPOINTS =====
+  
+  // Test UPC/MPN search improvements safely with replica index
+  app.post("/api/admin/test-algolia-upc-mpn", async (req, res) => {
+    try {
+      console.log('🧪 Starting Algolia UPC/MPN test suite...');
+      
+      const { algoliaSearchTest } = await import('./services/algolia-search-test');
+      const results = await algoliaSearchTest.runTestSuite();
+      
+      res.json({
+        success: true,
+        message: 'UPC/MPN test suite completed successfully',
+        results
+      });
+    } catch (error) {
+      console.error('❌ Algolia test suite failed:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Clean up test index
+  app.delete("/api/admin/test-algolia-cleanup", async (req, res) => {
+    try {
+      console.log('🗑️ Cleaning up Algolia test index...');
+      
+      const { algoliaSearchTest } = await import('./services/algolia-search-test');
+      await algoliaSearchTest.deleteTestIndex();
+      
+      res.json({
+        success: true,
+        message: 'Test index cleaned up successfully'
+      });
+    } catch (error) {
+      console.error('❌ Failed to cleanup test index:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   // ===== SEARCH ANALYTICS & AI LEARNING ADMIN =====
   
   // Get search analytics
