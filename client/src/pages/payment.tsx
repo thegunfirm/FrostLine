@@ -119,7 +119,9 @@ function PaymentPageContent() {
   type CheckoutItem = CartItem & { 
     rsrStock?: string; 
     description?: string; 
-    price: number | string 
+    price: number | string;
+    sku?: string;
+    name?: string;
   };
   const checkoutItems = items as CheckoutItem[];
 
@@ -152,7 +154,7 @@ function PaymentPageContent() {
           zip: '12345'
         },
         orderItems: checkoutItems.map(item => ({
-          rsrStock: item.rsrStock ?? item.sku ?? String(item.id),
+          rsrStock: item.rsrStock ?? item.sku ?? item.name ?? String(item.id),
           description: item.description ?? item.name ?? 'Item',
           quantity: item.quantity,
           price: Number(item.price)
@@ -179,7 +181,7 @@ function PaymentPageContent() {
               tgfOrderNumber: response.tgfOrderNumber,
               amount: getTotalPrice() * 100,
               items: checkoutItems.map(item => ({
-                description: item.description ?? item.name ?? 'Item',
+                description: item.description ?? item.name ?? item.sku ?? 'Item',
                 quantity: item.quantity,
                 price: Number(item.price)
               }))
@@ -391,7 +393,7 @@ function PaymentPageContent() {
                   <div key={item.id} className="flex justify-between items-start space-x-3 pb-3 border-b border-gray-200 last:border-b-0">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
-                        {item.description ?? item.name ?? 'Item'}
+                        {item.description ?? item.name ?? item.sku ?? 'Item'}
                       </p>
                       <p className="text-sm text-gray-600">
                         Qty: {item.quantity}
