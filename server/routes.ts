@@ -1165,7 +1165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     zip: billingInfo.zip
                   },
                   lines: orderItems.map(item => ({
-                    sku: item.name || item.description || 'ITEM',
+                    sku: item.productSku || item.sku || item.stockNumber || item.name || item.description || 'ITEM',
                     qty: item.quantity || 1,
                     regulated: item.requiresFFL || false,
                     fulfillment: 'DS' // Default to drop-ship
