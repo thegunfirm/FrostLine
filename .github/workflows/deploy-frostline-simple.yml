@@ -91,7 +91,6 @@ jobs:
             export NPM_CONFIG_FUND=false NPM_CONFIG_AUDIT=false
             npm ci
             npm run build
-            # Start via wrapper; pass just DB from GH; no files written
             export PORT=5001 NODE_ENV=production DATABASE_URL='"'"'${{ secrets.DATABASE_URL }}'"'"'
             pm2 delete frostline >/dev/null 2>&1 || true
             pm2 start /root/pm2/start-frostline.sh --name frostline --cwd /var/www/frostline --update-env
