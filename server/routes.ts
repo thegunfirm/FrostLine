@@ -941,6 +941,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // if (!req.session?.user) {
     //   return res.status(401).json({ success: false, error: 'Authentication required' });
     // }
+    
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     try {
       const { 
         cardNumber, 
@@ -1066,7 +1069,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Use fetch with timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         controller.abort();
       }, 15000); // 15 second timeout
 
@@ -1296,7 +1299,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       } catch (fetchError: any) {
-        clearTimeout(timeoutId);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
         if (fetchError.name === 'AbortError') {
           console.error('❌ Request timeout');
           res.status(408).json({
