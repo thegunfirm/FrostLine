@@ -18,6 +18,7 @@ export interface OrderSummaryShipment {
   lines: Array<{
     sku: string;
     qty: number;
+    price?: number;
   }>;
   ffl?: {
     id: string;
@@ -50,6 +51,7 @@ export interface OrderDocument {
     lines: Array<{
       sku: string;
       qty: number;
+      price?: number;
     }>;
     ffl?: {
       id: string;

@@ -11,6 +11,7 @@ export interface OrderLine {
   qty: number;
   regulated: boolean;
   fulfillment: 'IH' | 'DS';
+  price?: number;
 }
 
 export interface ShippingBucket {

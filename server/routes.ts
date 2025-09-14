@@ -1190,10 +1190,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }
                 }
 
-                const outcomes = deriveOutcomes(finalizeRequest.lines, finalizeRequest.fflId);
+                const outcomes = deriveOutcomes(finalizeRequest.lines);
+                const shipmentsArray = Object.values(outcomes.buckets);
                 const baseNumber = Math.floor(Date.now() / 1000).toString();
                 const orderId = `ord_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                const displayNumber = outcomes.length === 1 ? `${baseNumber}-0` : `${baseNumber}-Z`;
+                const displayNumber = shipmentsArray.length === 1 ? `${baseNumber}-0` : `${baseNumber}-Z`;
+
+                // Create price lookup map from order items
+                const priceMap = new Map();
+                console.log('🔍 Creating price map from order items:', orderItems.length, 'items');
+                orderItems.forEach(item => {
+                  const sku = item.productSku || item.sku || item.stockNumber || item.name || item.description || 'ITEM';
+                  console.log('   Mapping SKU:', sku, '-> Price:', item.price);
+                  priceMap.set(sku, item.price || 0);
+                });
+
+                // Add prices to outcomes
+                console.log('🔍 Adding prices to outcomes. Shipments before:', shipmentsArray.length);
+                const shipmentsWithPrices = shipmentsArray.map(shipment => {
+                  console.log('   Processing shipment:', shipment.outcome, 'with', shipment.lines?.length, 'lines');
+                  return {
+                    ...shipment,
+                    lines: shipment.lines.map(line => {
+                      const price = priceMap.get(line.sku) || 0;
+                      console.log('     Line SKU:', line.sku, '-> Price from map:', price);
+                      return {
+                        ...line,
+                        price: price
+                      };
+                    })
+                  };
+                });
+                console.log('🔍 Shipments with prices created:', shipmentsWithPrices.length);
 
                 orderDocument = {
                   orderId,
@@ -1205,7 +1233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     tax: taxAmount,
                     grand: parseFloat(amount.toString()) + taxAmount
                   },
-                  shipments: outcomes,
+                  shipments: shipmentsWithPrices,
                   createdAt: new Date().toISOString(),
                   customer: {
                     email: req.session?.user?.email || null,
@@ -1213,6 +1241,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   },
                   authorizeNetTransactionId: transactionResponse.transId
                 };
+
+                // Save TGF order document to ordersStore for API access
+                console.log('🔄 Attempting to save TGF order to ordersStore...');
+                try {
+                  const { readFileSync, writeFileSync, existsSync } = await import('fs');
+                  const { join } = await import('path');
+                  
+                  console.log('📁 Reading existing orders file...');
+                  const ordersFilePath = join(process.cwd(), 'server', 'data', 'order-summaries.json');
+                  let orderData = {};
+                  
+                  if (existsSync(ordersFilePath)) {
+                    const ordersContent = readFileSync(ordersFilePath, 'utf-8');
+                    orderData = JSON.parse(ordersContent);
+                    console.log('📖 Existing orders file loaded, contains', Object.keys(orderData).length, 'orders');
+                  } else {
+                    console.log('📝 Orders file does not exist, creating new one');
+                  }
+                  
+                  const tgfOrderDoc = {
+                    ...orderDocument,
+                    paymentId: transactionResponse.transId,
+                    idempotencyKey: `payment-${transactionResponse.transId}`,
+                    transactionId: transactionResponse.transId,
+                    createdAt: new Date().toISOString()
+                  };
+                  
+                  console.log('💾 Saving order with ID:', orderDocument.orderId);
+                  console.log('📝 Order document preview:', JSON.stringify({
+                    orderId: tgfOrderDoc.orderId,
+                    baseNumber: tgfOrderDoc.baseNumber,
+                    shipmentCount: tgfOrderDoc.shipments?.length,
+                    hasPrice: tgfOrderDoc.shipments?.[0]?.lines?.[0]?.price !== undefined
+                  }));
+                  
+                  orderData[orderDocument.orderId] = tgfOrderDoc;
+                  
+                  writeFileSync(ordersFilePath, JSON.stringify(orderData, null, 2));
+                  console.log('✅ TGF order saved to ordersStore successfully');
+                } catch (ordersStoreError) {
+                  console.error('⚠️ Failed to save TGF order to ordersStore:', ordersStoreError);
+                  console.error('⚠️ Error details:', ordersStoreError.message, ordersStoreError.stack);
+                }
 
                 // TGF order document created successfully
                 console.log('✅ TGF order number generated:', orderDocument.displayNumber);
@@ -1872,6 +1943,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/orders/:orderId/summary", async (req, res) => {
     try {
       const { orderId } = req.params;
+      
+      // First, try to find the order in TGF ordersStore (new system with pricing)
+      const { ordersStore } = await import('./lib/ordersStore');
+      const { toSummary } = await import('./lib/formatOrderSummary');
+      
+      const tgfOrder = ordersStore.findById(orderId);
+      if (tgfOrder) {
+        console.log('🔍 Found TGF order in ordersStore:', orderId);
+        const summary = toSummary(tgfOrder);
+        return res.json(summary);
+      }
+      
+      console.log('🔍 TGF order not found, falling back to database lookup for:', orderId);
       
       // Use direct SQL query to avoid Drizzle schema issues
       const query = `

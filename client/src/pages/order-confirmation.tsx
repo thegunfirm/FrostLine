@@ -151,7 +151,7 @@ export default function OrderConfirmation() {
           description: `${line.sku} (${shipment.outcome})`,
           name: line.sku,
           quantity: line.qty,
-          price: 0, // Pricing not available in summary format
+          price: line.price || 0,
           requiresFFL: shipment.outcome.includes('FFL')
         })) || []
       ) || [],

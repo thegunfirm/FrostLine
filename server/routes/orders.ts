@@ -162,7 +162,8 @@ router.post('/finalize', async (req, res) => {
       outcome: bucket.outcome,
       lines: bucket.lines.map(line => ({
         sku: line.sku,
-        qty: line.qty
+        qty: line.qty,
+        price: line.price || 0
       })),
       ...(bucket.outcome.endsWith('>FFL') && fflId ? { ffl: { id: fflId } } : {})
     }));
@@ -227,8 +228,17 @@ router.get('/:orderId/summary', async (req, res) => {
       });
     }
 
+    // Debug logging for price issue
+    console.log('🔍 Order Summary Debug for:', orderId);
+    console.log('   Raw order document line 0:', JSON.stringify(orderDoc.shipments?.[0]?.lines?.[0], null, 2));
+    console.log('   Shipments count:', orderDoc.shipments?.length);
+    
     // Return formatted summary
     const summary = toSummary(orderDoc);
+    
+    console.log('   Formatted summary line 0:', JSON.stringify(summary.shipments?.[0]?.lines?.[0], null, 2));
+    console.log('   Display number:', summary.displayNumber);
+    
     res.json(summary);
 
   } catch (error) {
