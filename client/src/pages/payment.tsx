@@ -167,29 +167,29 @@ function PaymentPageContent() {
       console.log('Payment response:', response);
       if (response?.success) {
         setPaymentSuccess(true);
-        clearCart();
         
-        // Redirect to confirmation page with TGF order ID
-        setTimeout(() => {
-          if (response.orderId) {
-            // Use new order numbering system
-            setLocation(`/order-confirmation?orderId=${response.orderId}`);
-          } else {
-            // Fallback to legacy system
-            const orderData = {
-              transactionId: response.transactionId,
-              tgfOrderNumber: response.tgfOrderNumber,
-              amount: getTotalPrice() * 100,
-              items: checkoutItems.map(item => ({
-                description: item.description ?? item.name ?? item.sku ?? 'Item',
-                quantity: item.quantity,
-                price: Number(item.price)
-              }))
-            };
-            sessionStorage.setItem('lastOrderData', JSON.stringify(orderData));
-            setLocation('/order-confirmation');
-          }
-        }, 2000);
+        // Navigate immediately before clearing cart to prevent component unmounting
+        if (response.orderId) {
+          // Use new order numbering system
+          setLocation(`/order-confirmation?orderId=${response.orderId}`);
+        } else {
+          // Fallback to legacy system
+          const orderData = {
+            transactionId: response.transactionId,
+            tgfOrderNumber: response.tgfOrderNumber,
+            amount: getTotalPrice() * 100,
+            items: checkoutItems.map(item => ({
+              description: item.description ?? item.name ?? item.sku ?? 'Item',
+              quantity: item.quantity,
+              price: Number(item.price)
+            }))
+          };
+          sessionStorage.setItem('lastOrderData', JSON.stringify(orderData));
+          setLocation('/order-confirmation');
+        }
+        
+        // Clear cart after navigation to avoid side effects canceling navigation
+        setTimeout(() => clearCart(), 100);
       }
     },
     onError: (error) => {
