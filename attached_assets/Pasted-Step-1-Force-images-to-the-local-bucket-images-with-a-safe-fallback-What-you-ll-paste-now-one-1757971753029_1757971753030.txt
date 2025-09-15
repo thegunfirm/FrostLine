@@ -1,4 +1,11 @@
-// server/routes/orderSummaryById.cjs
+Step 1 — Force images to the local bucket (/images) with a safe fallback
+
+What you’ll paste now (one file): make the confirmation API always return an imageUrl under /images, falling back to /images/placeholder.jpg. This prevents any external image from blanking the page.
+
+Open: server/routes/orderSummaryById.js
+Replace the entire file with this:
+
+// server/routes/orderSummaryById.js
 // GET /api/orders/:orderId/summary  → returns confirmation payload with local /images enforcement
 
 const express = require('express');
@@ -74,7 +81,6 @@ router.get('/api/orders/:orderId/summary', (req, res) => {
   return res.json({
     orderId,                              // raw id (e.g., 129)
     orderNumber: minted.main,             // minted (e.g., 100007-0)
-    orderNumberText: minted.main,         // compatibility alias
     order: {
       id: minted.main,
       number: minted.main,
@@ -108,12 +114,7 @@ function toLineWithAliases(it) {
       mpn: it.mpn,
       name: it.name,
       image: { url },
-      imageUrl: url,
-      // Product-level uppercase aliases for legacy systems
-      UPC: it.upc,
-      MPN: it.mpn,
-      SKU: it.sku,
-      NAME: it.name
+      imageUrl: url
     }
   };
 
