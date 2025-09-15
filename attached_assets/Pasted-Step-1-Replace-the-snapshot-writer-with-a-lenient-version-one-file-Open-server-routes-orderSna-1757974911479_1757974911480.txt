@@ -1,11 +1,16 @@
-// /server/routes/orderSnapshot.ts  (lenient v1 writer)
-// POST /api/orders/:orderId/snapshot
+Step 1 — Replace the snapshot writer with a lenient version (one file)
+
+Open: server/routes/orderSnapshot.js
+Replace the entire file with:
+
+// server/routes/orderSnapshot.js
+// POST /api/orders/:orderId/snapshot  (lenient v1 writer)
 // Accept minimal facts, fill safe defaults, mint once, persist.
 
-import express from 'express';
-import { splitOutcomes } from '../lib/shippingSplit.js';
-import { mintOrderNumber } from '../lib/orderNumbers.js';
-import { readSnapshot, writeSnapshot } from '../lib/storage.js';
+const express = require('express');
+const { splitOutcomes } = require('../lib/shippingSplit');
+const { mintOrderNumber } = require('../lib/orderNumbers');
+const { readSnapshot, writeSnapshot } = require('../lib/storage');
 
 const router = express.Router();
 
@@ -18,8 +23,8 @@ router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
   if (!raw.length) return res.status(422).json({ error: 'items[] required' });
 
   // Minimal, lenient validation: require UPC + qty + price only.
-  const missing: string[] = [];
-  const items = raw.map((it: any, i: number) => {
+  const missing = [];
+  const items = raw.map((it, i) => {
     const upc = String(it.upc || '').trim();
     if (!upc) missing.push(`items[${i}].upc`);
 
@@ -31,8 +36,8 @@ router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
 
     // Lenient defaults (name/sku/mpn optional):
     const name = String(it.name || `Item ${upc}`);
-    const mpn = String(it.mpn || '');
-    const sku = String(it.sku || '');
+    const mpn  = String(it.mpn  || '');
+    const sku  = String(it.sku  || '');
 
     // Image is irrelevant to processing; force safe local path (no external deps)
     let imageUrl = String(it.imageUrl || '');
@@ -46,10 +51,10 @@ router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
   }
 
   // Outcomes (default IH>Customer)
-  let outcomes;
+  let outcomes = [];
   try {
     outcomes = splitOutcomes(body.shippingOutcomes || ['IH>Customer']);
-  } catch (e: any) {
+  } catch (e) {
     return res.status(400).json({ error: e.message || 'invalid outcomes' });
   }
 
@@ -74,4 +79,4 @@ router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
   return res.json({ ok: true, orderId, orderNumber: minted.main });
 });
 
-export default router;
+module.exports = router;

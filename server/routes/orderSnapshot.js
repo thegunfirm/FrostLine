@@ -1,12 +1,11 @@
-// /server/routes/orderSnapshot.js
-// POST /api/orders/:orderId/snapshot
-// Required at payment-success, before redirect to /order-confirmation.
-// Body MUST include items with product metadata (no cross-service enrichment).
+// server/routes/orderSnapshot.js
+// POST /api/orders/:orderId/snapshot  (lenient v1 writer)
+// Accept minimal facts, fill safe defaults, mint once, persist.
 
 const express = require('express');
-const { splitOutcomes } = require('../lib/shippingSplit.js');
-const { mintOrderNumber } = require('../lib/orderNumbers.js');
-const { readSnapshot, writeSnapshot } = require('../lib/storage.js');
+const { splitOutcomes } = require('../lib/shippingSplit');
+const { mintOrderNumber } = require('../lib/orderNumbers');
+const { readSnapshot, writeSnapshot } = require('../lib/storage');
 
 const router = express.Router();
 
@@ -15,28 +14,46 @@ router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
   if (!orderId) return res.status(400).json({ error: 'orderId required' });
 
   const body = req.body || {};
-  const itemsIn = Array.isArray(body.items) ? body.items : [];
-  if (!itemsIn.length) return res.status(422).json({ error: 'items[] required' });
+  const raw = Array.isArray(body.items) ? body.items : [];
+  if (!raw.length) return res.status(422).json({ error: 'items[] required' });
 
-  // Validate required item fields so the UI never renders blanks.
+  // Minimal, lenient validation: require UPC + qty + price only.
   const missing = [];
-  itemsIn.forEach((it, i) => {
-    if (!it.name) missing.push(`items[${i}].name`);
-    if (!it.qty && it.qty !== 0) missing.push(`items[${i}].qty`);
-    if (it.price === undefined || it.price === null) missing.push(`items[${i}].price`);
-    if (!it.upc) missing.push(`items[${i}].upc`);
-    if (!it.mpn) missing.push(`items[${i}].mpn`);
-    if (!it.sku) missing.push(`items[${i}].sku`);
-    if (!it.imageUrl) missing.push(`items[${i}].imageUrl`);
+  const items = raw.map((it, i) => {
+    const upc = String(it.upc || '').trim();
+    if (!upc) missing.push(`items[${i}].upc`);
+
+    const qty = Number(it.qty ?? 1);
+    if (!Number.isFinite(qty) || qty <= 0) missing.push(`items[${i}].qty`);
+
+    const price = Number(it.price ?? 0);
+    if (!Number.isFinite(price) || price < 0) missing.push(`items[${i}].price`);
+
+    // Lenient defaults (name/sku/mpn optional):
+    const name = String(it.name || `Item ${upc}`);
+    const mpn  = String(it.mpn  || '');
+    const sku  = String(it.sku  || '');
+
+    // Image is irrelevant to processing; force safe local path (no external deps)
+    let imageUrl = String(it.imageUrl || '');
+    if (!imageUrl.startsWith('/images/')) imageUrl = '/images/placeholder.jpg';
+
+    return { upc, qty, price, name, mpn, sku, imageUrl };
   });
+
   if (missing.length) {
-    return res.status(422).json({ error: 'Missing required fields', fields: missing });
+    return res.status(422).json({ error: 'Snapshot incomplete', fields: missing });
   }
 
-  let outcomes;
-  try { outcomes = splitOutcomes(body.shippingOutcomes || ['IH>Customer']); }
-  catch (e) { return res.status(400).json({ error: e.message }); }
+  // Outcomes (default IH>Customer)
+  let outcomes = [];
+  try {
+    outcomes = splitOutcomes(body.shippingOutcomes || ['IH>Customer']);
+  } catch (e) {
+    return res.status(400).json({ error: e.message || 'invalid outcomes' });
+  }
 
+  // Preserve any prior snapshot + minted numbers
   const existing = readSnapshot(orderId) || {};
   const minted = existing.minted || mintOrderNumber(outcomes);
 
@@ -45,13 +62,9 @@ router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
     txnId: String(body.txnId || existing.txnId || ''),
     status: String(body.status || existing.status || 'processing'),
     customer: body.customer || existing.customer || {},
-    items: itemsIn.map((it) => ({
-      sku: String(it.sku), upc: String(it.upc), mpn: String(it.mpn),
-      name: String(it.name), qty: Number(it.qty || 1), price: Number(it.price || 0),
-      imageUrl: String(it.imageUrl)
-    })),
+    items,
     shippingOutcomes: outcomes,
-    allocations: body.allocations || existing.allocations || null, // optional
+    allocations: body.allocations || existing.allocations || null,
     minted, // { main, parts[] }
     createdAt: existing.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
