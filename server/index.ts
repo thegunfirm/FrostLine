@@ -172,6 +172,10 @@ app.use((req, res, next) => {
   app.use(orderSnapshotRouter);
   app.use(orderSummaryByIdRouter);
   
+  // Image verifier for local /images/* URLs
+  const imageVerifyRouter = await import('./routes/imageVerify.cjs');
+  app.use(imageVerifyRouter.default);
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

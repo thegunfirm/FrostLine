@@ -1,0 +1,30 @@
+{
+  "orderId": "130",
+  "txnId": "ANET-TEST-130",
+  "status": "processing",
+  "customer": {
+    "email": "buyer@example.com",
+    "name": "Buyer Name"
+  },
+  "items": [
+    {
+      "sku": "ZAFZP19BG",
+      "upc": "658792270011",
+      "mpn": "ZP.19BG",
+      "name": "Zaffirro Slide Gen 3/4 G19",
+      "qty": 1,
+      "price": 585,
+      "imageUrl": "/images/placeholder.jpg"
+    }
+  ],
+  "shippingOutcomes": [
+    "IH>Customer"
+  ],
+  "allocations": null,
+  "minted": {
+    "main": "100008-0",
+    "parts": []
+  },
+  "createdAt": "2025-09-15T21:46:36.846Z",
+  "updatedAt": "2025-09-15T21:46:36.846Z"
+}

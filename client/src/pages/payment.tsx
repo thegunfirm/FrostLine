@@ -15,6 +15,7 @@ import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { SubscriptionEnforcement } from "@/components/auth/subscription-enforcement";
 import { apiRequest } from "@/lib/queryClient";
+import { finalizeOrder } from "@/lib/finalizeOrder";
 
 const paymentSchema = z.object({
   cardNumber: z.string().min(15, "Card number must be at least 15 digits").max(19, "Card number must be at most 19 digits"),
@@ -153,32 +154,43 @@ function PaymentPageContent() {
       
       return await response.json();
     },
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       console.log('Payment response:', response);
       if (response?.success) {
-        // Store order data for confirmation page
-        const orderData = {
-          transactionId: response.transactionId,
-          amount: getTotalPrice() * 100, // Convert to cents for display
-          items: items.map(item => ({
-            description: item.description,
-            quantity: item.quantity,
-            price: parseFloat(item.price)
-          }))
-        };
-        sessionStorage.setItem('lastOrderData', JSON.stringify(orderData));
-        
         setPaymentSuccess(true);
         clearCart();
         
-        // Redirect to confirmation page with order ID
-        setTimeout(() => {
-          if (response.orderId) {
-            setLocation(`/order-confirmation?orderId=${response.orderId}`);
-          } else {
-            setLocation('/order-confirmation');
-          }
-        }, 2000);
+        try {
+          // Use finalizeOrder to write snapshot and redirect
+          await finalizeOrder({
+            orderId: response.orderId,
+            txnId: response.transactionId,
+            customer: {
+              email: user?.email || 'unknown@example.com',
+              name: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName || 'Customer'
+            },
+            lines: items.map(item => ({
+              upc: item.upc || '',
+              mpn: item.mpn || '',
+              sku: item.rsrStock || '',
+              name: item.description || '',
+              qty: item.quantity || 1,
+              price: parseFloat(item.price || '0')
+            })),
+            // Check if any items require FFL shipping
+            shippingOutcomes: items.some(item => item.needsFfl) ? ['DS>FFL'] : ['IH>Customer']
+          });
+        } catch (error) {
+          console.error('Failed to finalize order:', error);
+          // Fall back to manual redirect if finalizeOrder fails
+          setTimeout(() => {
+            if (response.orderId) {
+              setLocation(`/order-confirmation?orderId=${response.orderId}`);
+            } else {
+              setLocation('/order-confirmation');
+            }
+          }, 2000);
+        }
       }
     },
     onError: (error) => {
