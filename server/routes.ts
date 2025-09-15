@@ -1181,7 +1181,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               transactionId: transactionResponse.transId,
               authCode: transactionResponse.authCode,
               messageCode: transactionResponse.messages[0]?.code,
-              description: transactionResponse.messages[0]?.description || 'Payment processed successfully'
+              description: transactionResponse.messages[0]?.description || 'Payment processed successfully',
+              orderId: savedOrder.id
             });
           } else {
             // Payment declined
@@ -1783,6 +1784,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get user orders error:", error);
       res.status(500).json({ message: "Failed to get orders" });
+    }
+  });
+
+  // Order Summary endpoint for order confirmation page
+  app.get("/api/orders/:id/summary", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const order = await storage.getOrder(parseInt(id));
+      
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Get order items with product details
+      const orderLines = await storage.getOrderLines(order.id);
+      
+      // Get user for membership tier info
+      let membershipTier = 'Guest';
+      let tierLabels = { 
+        guest: 'Guest', 
+        bronze: 'Bronze', 
+        gold: 'Gold', 
+        platinum: 'Platinum' 
+      };
+      
+      if (order.userId) {
+        const user = await storage.getUser(order.userId);
+        membershipTier = user?.membershipTier || 'Guest';
+      }
+
+      // Transform order lines to expected format
+      const lines = await Promise.all(orderLines.map(async (line) => {
+        // Get product details
+        let productSnapshot = {
+          name: line.productName || 'Product',
+          imageUrl: line.productImageUrl,
+          upc: line.productUPC,
+          mpn: line.productMPN || line.manufacturerPartNumber
+        };
+
+        // Get pricing details if available
+        let pricingSnapshot = {
+          retail: line.retailPrice ? parseFloat(line.retailPrice.toString()) : undefined,
+          tiers: {}
+        };
+
+        return {
+          qty: line.quantity,
+          unitPricePaid: line.unitPrice ? parseFloat(line.unitPrice.toString()) : undefined,
+          lineTotal: line.totalPrice ? parseFloat(line.totalPrice.toString()) : undefined,
+          pricingSnapshot,
+          productSnapshot
+        };
+      }));
+
+      // Calculate totals
+      const totals = {
+        items: parseFloat(order.subtotal?.toString() || '0'),
+        shipping: parseFloat(order.shippingCost?.toString() || '0'),
+        tax: parseFloat(order.taxAmount?.toString() || '0'),
+        grand: parseFloat(order.totalAmount?.toString() || '0')
+      };
+
+      // Build summary response
+      const summary = {
+        orderId: order.id.toString(),
+        baseNumber: order.id.toString(),
+        displayNumber: order.tgfOrderNumber || order.id.toString(),
+        status: order.status || 'Processing',
+        paymentId: order.authorizeNetTransactionId,
+        membershipTier,
+        tierLabels,
+        lines,
+        totals,
+        createdAt: order.createdAt?.toISOString()
+      };
+      
+      res.json(summary);
+    } catch (error) {
+      console.error("Get order summary error:", error);
+      res.status(500).json({ message: "Failed to fetch order summary" });
     }
   });
 

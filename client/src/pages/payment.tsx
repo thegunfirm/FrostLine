@@ -171,9 +171,13 @@ function PaymentPageContent() {
         setPaymentSuccess(true);
         clearCart();
         
-        // Redirect to confirmation page immediately
+        // Redirect to confirmation page with order ID
         setTimeout(() => {
-          setLocation('/order-confirmation');
+          if (response.orderId) {
+            setLocation(`/order-confirmation?orderId=${response.orderId}`);
+          } else {
+            setLocation('/order-confirmation');
+          }
         }, 2000);
       }
     },
