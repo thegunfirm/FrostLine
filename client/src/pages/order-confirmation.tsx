@@ -143,9 +143,57 @@ const OrderConfirmationPage: React.FC = () => {
         ];
         let data: OrderSummary | null = null;
         for (const url of tryUrls) {
-          const res = await fetch(url, { credentials: 'include' });
-          if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
-            data = await res.json();
+          // Force fresh responses to avoid 304 issues
+          const cacheUrl = `${url}?t=${Date.now()}`;
+          const res = await fetch(cacheUrl, { credentials: 'include', cache: 'no-store' });
+          if ((res.ok || res.status === 304) && res.headers.get('content-type')?.includes('application/json')) {
+            const rawData = await res.json();
+            
+            // Normalize server fields to match frontend expectations
+            if (rawData) {
+              // Map orderNumber to displayNumber if needed
+              if (!rawData.displayNumber && rawData.orderNumber) {
+                rawData.displayNumber = rawData.orderNumber;
+              }
+              
+              // Map totals fields if needed
+              if (rawData.totals?.subtotal !== undefined) {
+                rawData.totals = {
+                  items: rawData.totals.subtotal,
+                  shipping: rawData.totals.shipping ?? 0,
+                  tax: rawData.totals.tax ?? 0,
+                  grand: rawData.totals.grandTotal ?? (rawData.totals.subtotal + (rawData.totals.shipping || 0) + (rawData.totals.tax || 0))
+                };
+              }
+              
+              // Map product fields for lines
+              const mapLines = (lines: any[]) => {
+                return lines?.map(line => {
+                  if (line.product && !line.productSnapshot) {
+                    line.productSnapshot = {
+                      name: line.product.name || line.name,
+                      imageUrl: line.product.imageUrl || line.product.image?.url || line.imageUrl,
+                      upc: line.product.upc || line.upc,
+                      mpn: line.product.mpn || line.mpn
+                    };
+                  }
+                  return line;
+                });
+              };
+              
+              // Apply mapping to both shipments and direct lines
+              if (rawData.shipments) {
+                rawData.shipments = rawData.shipments.map((shipment: any) => ({
+                  ...shipment,
+                  lines: mapLines(shipment.lines)
+                }));
+              }
+              if (rawData.lines) {
+                rawData.lines = mapLines(rawData.lines);
+              }
+            }
+            
+            data = rawData;
             break;
           }
         }
