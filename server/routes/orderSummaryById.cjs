@@ -37,20 +37,20 @@ router.get('/api/orders/:orderId/summary', (req, res) => {
     writeSnapshot(orderId, snap);
   }
 
-  // Normalize items leniently — no 422 for missing optional fields
+  // Use real product data from snapshot - NO FALLBACKS
   const rawItems = Array.isArray(snap.items) ? snap.items : [];
   const normItems = rawItems.map((it, idx) => {
-    const upc = String(firstNonEmpty(it.upc, it.UPC, it.upc_code, it.product?.upc) || `UNKNOWN-${idx+1}`);
+    const upc = String(firstNonEmpty(it.upc, it.UPC, it.upc_code, it.product?.upc) || '');
     const mpn = String(firstNonEmpty(it.mpn, it.MPN, it.MNP, it.product?.mpn) || '');
     const sku = String(firstNonEmpty(it.sku, it.SKU, it.product?.sku) || '');
-    const name = String(firstNonEmpty(it.name, it.title, it.product?.name) || `Item ${upc}`);
+    const name = String(firstNonEmpty(it.name, it.title, it.product?.name) || `Product ${idx+1}`);
     const qty  = Number(firstNonEmpty(it.qty, it.quantity, 1));
     const unit = Number(firstNonEmpty(it.price, it.unitPrice, it.retail, it.pricingSnapshot?.retail, 0));
 
-    // Images are not required for processing; enforce local placeholder if not already /images
+    // Images based on SKU since that's what we have
     let imageUrl = String(firstNonEmpty(it.imageUrl, it.product?.imageUrl, '') || '');
     if (!imageUrl.startsWith('/images/')) {
-      imageUrl = upc.startsWith('UNKNOWN-') ? '/images/placeholder.jpg' : `/images/${upc}.jpg`;
+      imageUrl = sku ? `/images/${sku}.jpg` : '/images/placeholder.jpg';
     }
 
     // Build a line the UI can read regardless of legacy shape

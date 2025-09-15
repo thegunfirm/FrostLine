@@ -8,31 +8,31 @@
   },
   "items": [
     {
-      "upc": "UNKNOWN-1",
+      "upc": "",
       "mpn": "",
-      "sku": "",
-      "name": "Item UNKNOWN-1",
+      "sku": "SGSORX1690",
+      "name": "SIG ROMEO-X ENCLD C SIG-LOC 3MOA",
       "qty": 1,
       "price": 585,
-      "imageUrl": "/images/placeholder.jpg"
+      "imageUrl": "/images/SGSORX1690.jpg"
     },
     {
-      "upc": "UNKNOWN-2",
+      "upc": "",
       "mpn": "",
-      "sku": "",
-      "name": "Item UNKNOWN-2",
+      "sku": "SGSORX1680",
+      "name": "SIG ROMEO-X ENCLD C SIG-LOC 6MOA",
       "qty": 1,
       "price": 600,
-      "imageUrl": "/images/placeholder.jpg"
+      "imageUrl": "/images/SGSORX1680.jpg"
     },
     {
-      "upc": "UNKNOWN-3",
+      "upc": "",
       "mpn": "",
-      "sku": "",
-      "name": "Item UNKNOWN-3",
+      "sku": "SGSORX1670",
+      "name": "SIG ROMEO-X ENCLD C SIG-LOC GRN/BK",
       "qty": 1,
       "price": 42.99,
-      "imageUrl": "/images/placeholder.jpg"
+      "imageUrl": "/images/SGSORX1670.jpg"
     }
   ],
   "shippingOutcomes": [
@@ -44,5 +44,5 @@
     "parts": []
   },
   "createdAt": "2025-09-15T23:43:38.153Z",
-  "updatedAt": "2025-09-15T23:43:38.153Z"
+  "updatedAt": "2025-09-15T23:52:15.807Z"
 }
