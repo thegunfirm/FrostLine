@@ -1139,6 +1139,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
               savedOrder = await storage.createOrder(orderData);
               console.log('✅ Order saved to database:', savedOrder.id);
 
+              // Save order snapshot for confirmation page
+              try {
+                const { writeSnapshot } = await import('./lib/order-storage.js');
+                const snapshotData = {
+                  txnId: transactionResponse.transId,
+                  status: 'processing',
+                  customer: {
+                    email: req.session?.user?.email || billingInfo.email || 'customer@example.com',
+                    name: `${billingInfo.firstName} ${billingInfo.lastName}`,
+                    firstName: billingInfo.firstName,
+                    lastName: billingInfo.lastName,
+                    address: billingInfo.address,
+                    city: billingInfo.city,
+                    state: billingInfo.state,
+                    zip: billingInfo.zip
+                  },
+                  shippingOutcomes: orderItems.map(item => 
+                    item.fulfillmentType === 'ffl_non_dropship' ? 'IH>FFL' : 
+                    item.fulfillmentType === 'ffl_dropship' ? 'DS>FFL' :
+                    item.fulfillmentType === 'direct_dropship' ? 'DS>Customer' : 'IH>Customer'
+                  ),
+                  items: orderItems.map(item => ({
+                    sku: item.productSku || item.sku || '',
+                    upc: item.upc || '',
+                    mpn: item.mpn || item.productSku || '',
+                    name: item.productName || item.name || '',
+                    qty: item.quantity || 1,
+                    price: item.price || 0,
+                    imageUrl: item.productImage || `/api/image/${item.productSku || item.sku}`
+                  }))
+                };
+                
+                writeSnapshot(savedOrder.id.toString(), snapshotData);
+                console.log(`✅ Order snapshot saved for confirmation page: ${savedOrder.id}`);
+              } catch (snapshotError) {
+                console.error('⚠️ Failed to save order snapshot:', snapshotError);
+                // Don't fail the order if snapshot fails
+              }
+
               // Create Zoho Deal for the order
               try {
                 const { orderZohoIntegration, OrderZohoIntegration } = await import('./order-zoho-integration');

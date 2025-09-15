@@ -1,0 +1,208 @@
+1) /checkout/server/lib/storage.js
+// /checkout/server/lib/storage.js
+// Minimal file-backed storage for order snapshots & minted numbers.
+
+const fs = require('fs');
+const path = require('path');
+
+const DATA_DIR = path.join(__dirname, '..', 'data', 'orders');
+
+function ensureDir() {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+function fileFor(orderId) {
+  ensureDir();
+  return path.join(DATA_DIR, `${orderId}.json`);
+}
+
+function readSnapshot(orderId) {
+  try {
+    const f = fileFor(orderId);
+    if (!fs.existsSync(f)) return null;
+    return JSON.parse(fs.readFileSync(f, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function writeSnapshot(orderId, obj) {
+  const f = fileFor(orderId);
+  fs.writeFileSync(f, JSON.stringify(obj, null, 2));
+  return obj;
+}
+
+module.exports = { readSnapshot, writeSnapshot };
+
+2) /checkout/server/routes/orderSnapshot.js
+// /checkout/server/routes/orderSnapshot.js
+// POST /api/orders/:orderId/snapshot
+// Body: { items:[{sku,upc,mpn,name,qty,price,imageUrl}], shippingOutcomes:[...], customer:{}, txnId, status }
+// Persists a canonical snapshot and mints the order number (once) for stability.
+
+const express = require('express');
+const { splitOutcomes } = require('../lib/shippingSplit');
+const { mintOrderNumber } = require('../lib/orderNumbers');
+const { readSnapshot, writeSnapshot } = require('../lib/storage');
+
+const router = express.Router();
+router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
+  const orderId = String(req.params.orderId || '').trim();
+  if (!orderId) return res.status(400).json({ error: 'orderId required' });
+
+  const body = req.body || {};
+  const rawItems = Array.isArray(body.items) ? body.items : [];
+  if (rawItems.length === 0) return res.status(400).json({ error: 'items[] required' });
+
+  const items = rawItems.map(it => ({
+    sku: String(it.sku || ''),      // RSR Stock #
+    upc: String(it.upc || ''),      // UPC
+    mpn: String(it.mpn || ''),      // Manufacturer Part #
+    name: String(it.name || ''),
+    qty: Number(it.qty || 1),
+    price: Number(it.price || 0),
+    imageUrl: String(it.imageUrl || '')
+  }));
+
+  let outcomes;
+  try {
+    outcomes = splitOutcomes(body.shippingOutcomes || ['DS>Customer']);
+  } catch (e) {
+    return res.status(400).json({ error: e.message || 'Invalid shippingOutcomes' });
+  }
+
+  const existing = readSnapshot(orderId) || {};
+  // Preserve existing minted numbers to keep them stable across retries
+  const minted = existing.minted || mintOrderNumber(outcomes);
+
+  const snapshot = {
+    orderId,
+    txnId: String(body.txnId || existing.txnId || ''),
+    status: String(body.status || existing.status || 'processing'),
+    customer: body.customer || existing.customer || {},
+    items,
+    shippingOutcomes: outcomes,
+    minted,                // { main, parts[] }
+    createdAt: existing.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  writeSnapshot(orderId, snapshot);
+  return res.json({ ok: true, orderId, mainOrderNumber: minted.main });
+});
+
+module.exports = router;
+
+3) /checkout/server/routes/orderSummaryById.js
+// /checkout/server/routes/orderSummaryById.js
+// GET /api/orders/:orderId/summary  (the exact path your confirmation page calls)
+
+const express = require('express');
+const { readSnapshot, writeSnapshot } = require('../lib/storage');
+const { splitOutcomes } = require('../lib/shippingSplit');
+const { mintOrderNumber } = require('../lib/orderNumbers');
+
+const router = express.Router();
+
+router.get('/api/orders/:orderId/summary', async (req, res) => {
+  const orderId = String(req.params.orderId || '').trim();
+  if (!orderId) return res.status(400).json({ error: 'orderId required' });
+
+  const snap = readSnapshot(orderId);
+  if (!snap) {
+    // Not found: the UI will render blanks; better to be explicit.
+    return res.status(404).json({ error: 'Order snapshot not found for this orderId' });
+  }
+
+  // Ensure outcomes are normalized and order number is minted (persist once)
+  let outcomes = [];
+  try { outcomes = splitOutcomes(snap.shippingOutcomes || ['DS>Customer']); }
+  catch (e) { return res.status(400).json({ error: e.message || 'Invalid shippingOutcomes' }); }
+
+  const minted = snap.minted || mintOrderNumber(outcomes);
+  if (!snap.minted) {
+    snap.minted = minted;
+    snap.updatedAt = new Date().toISOString();
+    writeSnapshot(orderId, snap);
+  }
+
+  const items = Array.isArray(snap.items) ? snap.items : [];
+
+  const shipments = (minted.parts.length ? minted.parts : [{ outcome: outcomes[0], orderNumber: minted.main }])
+    .map((p, idx) => ({
+      idx,
+      outcome: p.outcome || outcomes[0],
+      orderNumber: p.orderNumber || minted.main,
+      items
+    }));
+
+  const totals = computeTotals(items);
+
+  return res.json({
+    orderId,
+    mainOrderNumber: minted.main,
+    multiShipment: minted.parts.length > 0,
+    shipments,
+    customer: snap.customer || {},
+    totals,
+    status: snap.status || 'processing',
+    txnId: snap.txnId || ''
+  });
+});
+
+function computeTotals(items) {
+  const sub = items.reduce((s, it) => s + (Number(it.price || 0) * Number(it.qty || 1)), 0);
+  return {
+    subtotal: round2(sub),
+    tax: 0,
+    shipping: 0,
+    grandTotal: round2(sub)
+  };
+}
+
+function round2(n) { return Math.round(Number(n) * 100) / 100; }
+
+module.exports = router;
+
+4) Wire the routes (two lines)
+// /checkout/server/index.js
+// ...
+const express = require('express');
+const app = express();
+
+// (existing middleware/routes)
+
+// ⬇️ add these
+app.use(require('./routes/orderSnapshot'));
+app.use(require('./routes/orderSummaryById'));
+
+// (existing error handlers / listen)
+module.exports = app;
+
+How Replit should use it (one call)
+
+Right after payment succeeds (before redirecting to /order-confirmation), Replit should POST the snapshot once:
+
+POST /api/orders/{orderId}/snapshot
+Body includes the data your page needs to display:
+
+{
+  "txnId": "1234567890",
+  "status": "processing",
+  "customer": { "email": "buyer@example.com", "name": "Buyer Name" },
+  "shippingOutcomes": ["DS>FFL","IH>Customer"],
+  "items": [
+    {
+      "sku": "ZAFZP19BG",
+      "upc": "658792270011",
+      "mpn": "ZP.19BG",
+      "name": "Zaffirro Slide Gen 3/4 G19",
+      "qty": 1,
+      "price": 229.99,
+      "imageUrl": "https://inventory.thegunfirm.com/images/658792270011.jpg"
+    }
+  ]
+}
+
+
+Then your confirmation page’s GET to /api/orders/{orderId}/summary will return the fully populated payload (with stable order numbers) that your frozen UI can render.

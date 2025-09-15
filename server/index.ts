@@ -162,11 +162,15 @@ app.use((req, res, next) => {
   // Register SAML routes
   app.use('/sso/saml', samlRoutes);
   
-  // NEW: mount the two safe routes
+  // NEW: mount the order routes
   const { default: orderNumberRouter } = await import('./routes/orderNumber.js');
   const { default: orderSummaryRouter } = await import('./routes/orderSummary.js');
+  const { default: orderSnapshotRouter } = await import('./routes/orderSnapshot.js');
+  const { default: orderSummaryByIdRouter } = await import('./routes/orderSummaryById.js');
   app.use(orderNumberRouter);
   app.use(orderSummaryRouter);
+  app.use(orderSnapshotRouter);
+  app.use(orderSummaryByIdRouter);
   
   const server = await registerRoutes(app);
 
