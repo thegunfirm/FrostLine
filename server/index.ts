@@ -56,6 +56,16 @@ import { pricingService } from "./services/pricing-service";
 import { automaticZohoTokenManager } from "./services/automatic-zoho-token-manager";
 
 const app = express();
+
+// 🔎 Probe: log which /api/* endpoints the confirmation page hits
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api/')) {
+    const len = Number(req.headers['content-length'] || 0) || 0;
+    console.log(`[API] ${req.method} ${req.url} len=${len}`);
+  }
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
