@@ -37,28 +37,52 @@ router.get('/api/orders/:orderId/summary', (req, res) => {
     writeSnapshot(orderId, snap);
   }
 
-  // Use real product data from snapshot - NO FALLBACKS
+  // Use only real product data from snapshot - ZERO FALLBACKS
   const rawItems = Array.isArray(snap.items) ? snap.items : [];
+  if (!rawItems.length) {
+    return res.status(422).json({ error: 'No items in order snapshot' });
+  }
+  
+  // Validate all items first - fail fast if any item is invalid
+  for (let idx = 0; idx < rawItems.length; idx++) {
+    const it = rawItems[idx];
+    const name = firstNonEmpty(it.name, it.title, it.product?.name);
+    if (!name) {
+      return res.status(422).json({ error: `Item ${idx + 1}: Product name missing from snapshot. No fallbacks allowed.` });
+    }
+    
+    const qty = Number(firstNonEmpty(it.qty, it.quantity));
+    if (!Number.isFinite(qty) || qty <= 0) {
+      return res.status(422).json({ error: `Item ${idx + 1}: Invalid quantity in snapshot.` });
+    }
+    
+    const unit = Number(firstNonEmpty(it.price, it.unitPrice, it.retail, it.pricingSnapshot?.retail));
+    if (!Number.isFinite(unit) || unit < 0) {
+      return res.status(422).json({ error: `Item ${idx + 1}: Invalid price in snapshot.` });
+    }
+
+    const imageUrl = firstNonEmpty(it.imageUrl, it.product?.imageUrl);
+    if (!imageUrl || !imageUrl.startsWith('/images/')) {
+      return res.status(422).json({ error: `Item ${idx + 1}: Invalid or missing image URL in snapshot.` });
+    }
+  }
+  
+  // All items are valid - build the normalized items
   const normItems = rawItems.map((it, idx) => {
     const upc = String(firstNonEmpty(it.upc, it.UPC, it.upc_code, it.product?.upc) || '');
     const mpn = String(firstNonEmpty(it.mpn, it.MPN, it.MNP, it.product?.mpn) || '');
     const sku = String(firstNonEmpty(it.sku, it.SKU, it.product?.sku) || '');
-    const name = String(firstNonEmpty(it.name, it.title, it.product?.name) || `Product ${idx+1}`);
-    const qty  = Number(firstNonEmpty(it.qty, it.quantity, 1));
-    const unit = Number(firstNonEmpty(it.price, it.unitPrice, it.retail, it.pricingSnapshot?.retail, 0));
+    const name = firstNonEmpty(it.name, it.title, it.product?.name); // Already validated
+    const qty = Number(firstNonEmpty(it.qty, it.quantity)); // Already validated
+    const unit = Number(firstNonEmpty(it.price, it.unitPrice, it.retail, it.pricingSnapshot?.retail)); // Already validated
+    const imageUrl = firstNonEmpty(it.imageUrl, it.product?.imageUrl); // Already validated
 
-    // Images based on SKU since that's what we have
-    let imageUrl = String(firstNonEmpty(it.imageUrl, it.product?.imageUrl, '') || '');
-    if (!imageUrl.startsWith('/images/')) {
-      imageUrl = sku ? `/images/${sku}.jpg` : '/images/placeholder.jpg';
-    }
-
-    // Build a line the UI can read regardless of legacy shape
-    const line = {
-      qty: Number.isFinite(qty) && qty > 0 ? qty : 1,
-      pricingSnapshot: { retail: Number.isFinite(unit) && unit >= 0 ? unit : 0 },
-      unitPrice: Number.isFinite(unit) && unit >= 0 ? unit : 0,
-      extendedPrice: round2((Number.isFinite(unit) && unit >= 0 ? unit : 0) * (Number.isFinite(qty) && qty > 0 ? qty : 1)),
+    // Build a line with validated real data only
+    return {
+      qty,
+      pricingSnapshot: { retail: unit },
+      unitPrice: unit,
+      extendedPrice: round2(unit * qty),
       product: {
         sku, upc, mpn, name,
         image: { url: imageUrl },
@@ -68,7 +92,6 @@ router.get('/api/orders/:orderId/summary', (req, res) => {
       // line-level aliases (many legacy components look here)
       sku, upc, mpn, name, imageUrl
     };
-    return line;
   });
 
   // Shipments (Amazon-style): v1 shows same lines per outcome unless allocations are present
