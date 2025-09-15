@@ -1,0 +1,24 @@
+name: SSH smoke
+on: { workflow_dispatch: {} }
+
+jobs:
+  ssh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Guard secrets
+        run: |
+          test -n "${{ secrets.SSH_PRIVATE_KEY }}" || { echo "missing SSH_PRIVATE_KEY"; exit 1; }
+          test -n "${{ secrets.SSH_HOST }}" || { echo "missing SSH_HOST"; exit 1; }
+          test -n "${{ secrets.SSH_USER }}" || { echo "missing SSH_USER"; exit 1; }
+          test -n "${{ secrets.SSH_PORT }}" || { echo "missing SSH_PORT"; exit 1; }
+
+      - name: Load key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: SSH OK?
+        run: |
+          ssh -o StrictHostKeyChecking=no -p "${{ secrets.SSH_PORT }}" \
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+              'echo "SSH OK"; whoami; uname -a'
