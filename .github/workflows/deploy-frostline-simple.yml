@@ -21,11 +21,10 @@ jobs:
       - name: Validate required secrets
         run: |
           set -euo pipefail
-          test -n "${{ secrets.SSH_KEY }}"    || { echo "::error::SSH_KEY is empty"; exit 1; }
-          test -n "${SSH_HOST}"               || { echo "::error::SSH_HOST is empty"; exit 1; }
-          test -n "${SSH_USER}"               || { echo "::error::SSH_USER is empty"; exit 1; }
-          test -n "${SSH_PORT}"               || { echo "::error::SSH_PORT is empty"; exit 1; }
-          # Core app/FTP secrets
+          test -n "${{ secrets.SSH_KEY }}"       || { echo "::error::SSH_KEY is empty"; exit 1; }
+          test -n "${SSH_HOST}"                  || { echo "::error::SSH_HOST is empty"; exit 1; }
+          test -n "${SSH_USER}"                  || { echo "::error::SSH_USER is empty"; exit 1; }
+          test -n "${SSH_PORT}"                  || { echo "::error::SSH_PORT is empty"; exit 1; }
           test -n "${{ secrets.DATABASE_URL }}"  || { echo "::error::DATABASE_URL is empty"; exit 1; }
           test -n "${{ secrets.RSR_USERNAME }}"  || { echo "::error::RSR_USERNAME (FTP) is empty"; exit 1; }
           test -n "${{ secrets.RSR_PASSWORD }}"  || { echo "::error::RSR_PASSWORD (FTP) is empty"; exit 1; }
@@ -53,12 +52,12 @@ jobs:
           RSR_USERNAME:                  ${{ secrets.RSR_USERNAME }}
           RSR_PASSWORD:                  ${{ secrets.RSR_PASSWORD }}
 
-          # Recommended defaults (can be overridden in repo secrets)
+          # Recommended defaults (overridable)
           RSR_FTP_HOST:                  ${{ secrets.RSR_FTP_HOST }}
           RSR_FTP_PORT:                  ${{ secrets.RSR_FTP_PORT }}
           RSR_FTPS:                      ${{ secrets.RSR_FTPS }}
 
-          # RSR “Standard” (API/feed) – distinct from FTP; optional but supported
+          # RSR “Standard” (API/feed) – distinct from FTP (optional)
           RSR_STANDARD_USERNAME:         ${{ secrets.RSR_STANDARD_USERNAME }}
           RSR_STANDARD_PASSWORD:         ${{ secrets.RSR_STANDARD_PASSWORD }}
 
@@ -103,23 +102,19 @@ jobs:
             if [ -n "${ALGOLIA_ADMIN_API_KEY:-}" ];         then printf 'ALGOLIA_ADMIN_API_KEY=%s\n' "$ALGOLIA_ADMIN_API_KEY"; fi
           } >"$tmpfile"
 
-          # Ship it and clean up
+          # Ship the env and remove temp
           scp -P "$SSH_PORT" "$tmpfile" "$SSH_USER@$SSH_HOST:/root/pm2/frostline.env"
           rm -f "$tmpfile"
 
-          # Load env, restart PM2, basic health checks
-          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'bash -s' <<'SH'
+          # Remote restart & checks (no heredoc; safe quoting)
+          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'bash -lc '"'"'
             set -euo pipefail
-            set +H                      # disable history expansion in case any value contains '!'
+            set +H
             chmod 600 /root/pm2/frostline.env
             set -a; . /root/pm2/frostline.env; set +a
             cd /var/www/frostline
             pm2 restart frostline --update-env --cwd /var/www/frostline
             pm2 save
-
-            # App listening?
-            ss -ltnp | grep -E ':(5000)\b' || { echo "::error::app is not listening on :5000"; exit 1; }
-
-            # Quick FTP handshake trace (expect to see < 230 after > USER)
-            pm2 logs frostline --lines 120 --nostream | egrep -i 'Connecting FTPS|> USER|< 331|< 230|< 530' || true
-SH
+            ss -ltnp | grep -E ":(5000)\b" || { echo "::error::app is not listening on :5000"; exit 1; }
+            pm2 logs frostline --lines 120 --nostream | egrep -i "Connecting FTPS|> USER|< 331|< 230|< 530" || true
+          '"'"'
