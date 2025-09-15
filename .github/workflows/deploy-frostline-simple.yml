@@ -73,8 +73,8 @@ jobs:
           # Ensure remote folder exists (private perms)
           ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'install -d -m 700 /root/pm2'
 
-          # Build a temp .env locally (masked in logs)
-          tmpfile="$(mktemp)"; umask 077
+          # --- Build a temp .env locally (masked in logs) ---
+          envfile="$(mktemp)"; umask 077
           {
             printf 'PORT=5000\n'
             printf 'NODE_ENV=production\n'
@@ -90,7 +90,6 @@ jobs:
             printf 'RSR_PASSWORD=%s\n' "$RSR_PASSWORD"
 
             # --- RSR "Standard" feed/API creds (separate from FTP) ---
-            # Do NOT fall back to FTP creds here.
             if [ -n "${RSR_STANDARD_USERNAME:-}" ]; then printf 'RSR_STANDARD_USERNAME=%s\n' "$RSR_STANDARD_USERNAME"; fi
             if [ -n "${RSR_STANDARD_PASSWORD:-}" ]; then printf 'RSR_STANDARD_PASSWORD=%s\n' "$RSR_STANDARD_PASSWORD"; fi
 
@@ -100,21 +99,32 @@ jobs:
             if [ -n "${SENDGRID_API_KEY:-}" ];              then printf 'SENDGRID_API_KEY=%s\n' "$SENDGRID_API_KEY"; fi
             if [ -n "${ALGOLIA_APP_ID:-}" ];                then printf 'ALGOLIA_APP_ID=%s\n' "$ALGOLIA_APP_ID"; fi
             if [ -n "${ALGOLIA_ADMIN_API_KEY:-}" ];         then printf 'ALGOLIA_ADMIN_API_KEY=%s\n' "$ALGOLIA_ADMIN_API_KEY"; fi
-          } >"$tmpfile"
+          } >"$envfile"
 
-          # Ship the env and remove temp
-          scp -P "$SSH_PORT" "$tmpfile" "$SSH_USER@$SSH_HOST:/root/pm2/frostline.env"
-          rm -f "$tmpfile"
+          # --- Create the remote restart script locally (no quote gymnastics) ---
+          restart="$(mktemp)"; umask 077
+          cat >"$restart" <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+set +H                      # disable history expansion in case any value has '!'
+chmod 600 /root/pm2/frostline.env
+set -a; . /root/pm2/frostline.env; set +a
 
-          # Remote restart & checks (no heredoc; safe quoting)
-          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'bash -lc '"'"'
-            set -euo pipefail
-            set +H
-            chmod 600 /root/pm2/frostline.env
-            set -a; . /root/pm2/frostline.env; set +a
-            cd /var/www/frostline
-            pm2 restart frostline --update-env --cwd /var/www/frostline
-            pm2 save
-            ss -ltnp | grep -E ":(5000)\b" || { echo "::error::app is not listening on :5000"; exit 1; }
-            pm2 logs frostline --lines 120 --nostream | egrep -i "Connecting FTPS|> USER|< 331|< 230|< 530" || true
-          '"'"'
+cd /var/www/frostline
+pm2 restart frostline --update-env --cwd /var/www/frostline
+pm2 save
+
+# App should be listening
+ss -ltnp | grep -E ':(5000)\b' || { echo '::error::app is not listening on :5000'; exit 1; }
+
+# Quick FTP handshake trace (expect to see < 230 after > USER)
+pm2 logs frostline --lines 120 --nostream | egrep -i 'Connecting FTPS|> USER|< 331|< 230|< 530' || true
+SCRIPT
+          chmod 700 "$restart"
+
+          # --- Ship files and run ---
+          scp -P "$SSH_PORT" "$envfile" "$SSH_USER@$SSH_HOST:/root/pm2/frostline.env"
+          scp -P "$SSH_PORT" "$restart" "$SSH_USER@$SSH_HOST:/root/pm2/restart-frostline.sh"
+          rm -f "$envfile" "$restart"
+
+          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "bash /root/pm2/restart-frostline.sh"
