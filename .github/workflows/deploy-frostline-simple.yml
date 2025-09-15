@@ -40,7 +40,10 @@ jobs:
       - name: Connectivity test
         shell: bash
         run: |
-          ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes -o PreferredAuthentications=publickey -o BatchMode=yes \
+          ssh -4 -p "$SSH_PORT" \
+            -o StrictHostKeyChecking=yes \
+            -o PreferredAuthentications=publickey \
+            -o BatchMode=yes \
             "$SSH_USER@$SSH_HOST" 'echo OK $(hostname); whoami'
 
       - name: Bootstrap server (Node 20, PM2, tools) and ensure path
@@ -49,7 +52,7 @@ jobs:
           ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" /bin/bash -lc 'set -e
             export DEBIAN_FRONTEND=noninteractive
             apt-get update -y
-            apt-get install -y ca-certificates curl gnupg rsync git build-essential python3 pkg-config jq binutils
+            apt-get install -y ca-certificates curl gnupg rsync git build-essential python3 pkg-config jq
             if ! command -v node >/dev/null 2>&1; then
               curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
               apt-get install -y nodejs
@@ -69,7 +72,7 @@ jobs:
             --exclude ".git/" --exclude ".github/" --exclude "node_modules/" --exclude "*.log" \
             ./ "$SSH_USER@$SSH_HOST:/var/www/frostline/"
 
-      - name: Ensure PM2 wrapper exists (no server env files)
+      - name: Ensure PM2 wrapper exists
         shell: bash
         run: |
           ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" /bin/bash -lc 'set -e
@@ -78,16 +81,12 @@ jobs:
               "#!/usr/bin/env bash" \
               "set -euo pipefail" \
               "cd /var/www/frostline" \
-              "export PORT=\"\${PORT:-5001}\"" \
-              "export NODE_ENV=\"\${NODE_ENV:-production}\"" \
-              # require DB (provided from GH at start)
-              ": \"\${DATABASE_URL:?DATABASE_URL required}\"" \
               "exec node dist/index.js" \
             | sudo tee /root/pm2/start-frostline.sh >/dev/null
             sudo chmod +x /root/pm2/start-frostline.sh
           '
 
-      - name: Build & restart with PM2 (inject DB, auto-stub the rest)
+      - name: Build & restart with PM2 (inject DB + RSR secrets)
         shell: bash
         run: |
           ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" /bin/bash -lc 'set -e
@@ -96,16 +95,14 @@ jobs:
             npm ci
             npm run build
 
-            # Base runtime
-            export PORT=5001 NODE_ENV=production DATABASE_URL='"'"'${{ secrets.DATABASE_URL }}'"'"'
-
-            # Auto-detect all env keys referenced by the build and default any missing ones to "disabled"
-            mapfile -t VARS < <(strings dist/index.js \
-              | grep -oE "(AUTHORIZE_NET_[A-Z_]+|SENDGRID_[A-Z_]+|ZOHO_[A-Z_]+|RSR_[A-Z_]+|SMTP_[A-Z_]+|EMAIL_[A-Z_]+|AWS_[A-Z_]+|S3_[A-Z_]+|HETZNER_[A-Z_]+|CF_[A-Z_]+)" \
-              | sort -u)
-            for v in "${VARS[@]}"; do
-              [ -n "${!v:-}" ] || export "$v=disabled"
-            done
+            # Runtime env (app listens on :5000)
+            export PORT=5000 NODE_ENV=production
+            export DATABASE_URL='"'"'${{ secrets.DATABASE_URL }}'"'"'
+            export RSR_FTP_HOST='"'"'${{ secrets.RSR_FTP_HOST }}'"'"'
+            export RSR_USERNAME='"'"'${{ secrets.RSR_USERNAME }}'"'"'
+            export RSR_PASSWORD='"'"'${{ secrets.RSR_PASSWORD }}'"'"'
+            export RSR_STANDARD_USERNAME='"'"'${{ secrets.RSR_STANDARD_USERNAME }}'"'"'
+            export RSR_STANDARD_PASSWORD='"'"'${{ secrets.RSR_STANDARD_PASSWORD }}'"'"'
 
             pm2 delete frostline >/dev/null 2>&1 || true
             pm2 start /root/pm2/start-frostline.sh --name frostline --cwd /var/www/frostline --update-env
