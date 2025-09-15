@@ -1,98 +1,49 @@
-name: Deploy FrostLine (SIMPLE)
+name: Deploy FrostLine
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ "main" ]
 
 permissions:
   contents: read
 
-concurrency:
-  group: deploy-frostline-simple-${{ github.ref_name }}
-  cancel-in-progress: true
-
-env:
-  SSH_USER: ${{ secrets.SSH_USER }}
-  SSH_HOST: ${{ secrets.SSH_HOST }}
-  SSH_PORT: ${{ secrets.SSH_PORT }}
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout (main)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
 
-      - name: Load SSH key
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        run: |
+          test -n "${{ secrets.SSH_KEY }}"   || { echo "::error::SSH_KEY is empty"; exit 1; }
+          test -n "${SSH_HOST}"              || { echo "::error::SSH_HOST is empty"; exit 1; }
+          test -n "${SSH_USER}"              || { echo "::error::SSH_USER is empty"; exit 1; }
+          test -n "${SSH_PORT}"              || { echo "::error::SSH_PORT is empty"; exit 1; }
+
+      - name: Start ssh-agent (load private key)
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      - name: Trust server host key
-        shell: bash
+      - name: Add host to known_hosts
         run: |
+          mkdir -p ~/.ssh
           ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
 
-      - name: Bootstrap server (Node 20, PM2, tools)
-        shell: bash
-        run: |
-          ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" /bin/bash -lc '
-            set -e
-            export DEBIAN_FRONTEND=noninteractive
-            apt-get update -y
-            apt-get install -y ca-certificates curl gnupg rsync git build-essential python3 pkg-config jq
-            if ! command -v node >/dev/null 2>&1; then
-              curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-              apt-get install -y nodejs
-            fi
-            if ! command -v pm2 >/dev/null 2>&1; then
-              npm i -g pm2
-            fi
-            mkdir -p /var/www/frostline
-            node -v; npm -v; pm2 -v
-          '
+      - name: Smoke test SSH
+        run: ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'echo ok; whoami; hostname'
 
-      - name: Rsync code to /var/www/frostline
-        shell: bash
-        run: |
-          rsync -az --delete \
-            --rsh="ssh -4 -p $SSH_PORT -o StrictHostKeyChecking=yes -o PreferredAuthentications=publickey -o BatchMode=yes" \
-            --exclude ".git/" --exclude ".github/" --exclude "node_modules/" --exclude "*.log" \
-            ./ "$SSH_USER@$SSH_HOST:/var/www/frostline/"
-
-      - name: Build & start app on :5000 with env
-        shell: bash
-        run: |
-          # Escape secrets safely for remote shell
-          DB_URL=${{ secrets.DATABASE_URL }}
-          RSR_HOST=${{ secrets.RSR_FTP_HOST }}
-          RSR_USER=${{ secrets.RSR_USERNAME }}
-          RSR_PASS=${{ secrets.RSR_PASSWORD }}
-
-          printf -v DB_ESC   "%q" "$DB_URL"
-          printf -v HOST_ESC "%q" "$RSR_HOST"
-          printf -v USER_ESC "%q" "$RSR_USER"
-          printf -v PASS_ESC "%q" "$RSR_PASS"
-
-          ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" /bin/bash -lc "
-            set -e
-            cd /var/www/frostline
-            export NPM_CONFIG_FUND=false NPM_CONFIG_AUDIT=false
-            npm ci
-            npm run build
-
-            # Inject only the required env and bind on :5000
-            export PORT=5000 NODE_ENV=production \
-              DATABASE_URL=$DB_ESC \
-              RSR_FTP_HOST=$HOST_ESC \
-              RSR_USERNAME=$USER_ESC \
-              RSR_PASSWORD=$PASS_ESC
-
-            pm2 delete frostline >/dev/null 2>&1 || true
-            pm2 start dist/index.js --name frostline --cwd /var/www/frostline --update-env
-            pm2 save
-          "
+      # Add your deploy steps below this line
+      # - name: Deploy
+      #   run: |
+      #     ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'bash -s' <<'SH'
+      #     set -euo pipefail
+      #     cd /var/www/frostline
+      #     pm2 restart frostline --update-env --cwd /var/www/frostline
+      #     pm2 save
+      #     SH
