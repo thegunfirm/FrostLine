@@ -1,33 +1,30 @@
 {
-  "txnId": "120071098414",
+  "orderId": "129",
+  "txnId": "ANET-TEST-129",
   "status": "processing",
   "customer": {
-    "email": "ripmagicalbeast@gmail.com",
-    "name": "Rip Ripple",
-    "firstName": "Rip",
-    "lastName": "Ripple",
-    "address": "123 Test St",
-    "city": "Test City",
-    "state": "AZ",
-    "zip": "12345"
+    "email": "buyer@example.com",
+    "name": "Buyer Name"
   },
+  "items": [
+    {
+      "sku": "ZAFZP19BG",
+      "upc": "658792270011",
+      "mpn": "ZP.19BG",
+      "name": "Zaffirro Slide Gen 3/4 G19",
+      "qty": 1,
+      "price": 585,
+      "imageUrl": "https://inventory.thegunfirm.com/images/658792270011.jpg"
+    }
+  ],
   "shippingOutcomes": [
     "IH>Customer"
   ],
-  "items": [
-    {
-      "sku": "",
-      "upc": "",
-      "mpn": "",
-      "name": "",
-      "qty": 1,
-      "price": 600,
-      "imageUrl": "/api/image/undefined"
-    }
-  ],
+  "allocations": null,
   "minted": {
     "main": "100007-0",
     "parts": []
   },
-  "updatedAt": "2025-09-15T18:05:33.970Z"
+  "createdAt": "2025-09-15T19:25:52.672Z",
+  "updatedAt": "2025-09-15T19:25:52.672Z"
 }
