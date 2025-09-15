@@ -1,3 +1,8 @@
+Step — Replace the snapshot writer with a “never-block” normalizer
+
+Open: server/routes/orderSnapshot.js
+Replace the entire file with this:
+
 // server/routes/orderSnapshot.js
 // POST /api/orders/:orderId/snapshot  — v1 "never-block" writer
 // Accept messy cart lines, normalize, fill defaults, mint once, persist.
@@ -94,3 +99,14 @@ router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
 });
 
 module.exports = router;
+
+
+What this does
+
+Accepts whatever your cart sends (no more 422 for missing sku/mpn/name).
+
+Derives upc/qty/price from multiple common keys; fills defaults if absent.
+
+Forces a local image path (won’t block rendering).
+
+Mints and persists the order number every time.

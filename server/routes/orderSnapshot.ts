@@ -1,6 +1,6 @@
-// /server/routes/orderSnapshot.ts  (lenient v1 writer)
-// POST /api/orders/:orderId/snapshot
-// Accept minimal facts, fill safe defaults, mint once, persist.
+// server/routes/orderSnapshot.ts
+// POST /api/orders/:orderId/snapshot  — v1 "never-block" writer
+// Accept messy cart lines, normalize, fill defaults, mint once, persist.
 
 import express from 'express';
 import { splitOutcomes } from '../lib/shippingSplit.js';
@@ -9,48 +9,67 @@ import { readSnapshot, writeSnapshot } from '../lib/storage.js';
 
 const router = express.Router();
 
+function firstNonEmpty(...vals: any[]): any {
+  for (const v of vals) {
+    if (v === null || v === undefined) continue;
+    const s = (typeof v === 'string') ? v.trim() : v;
+    if (s !== '' && s !== false) return s;
+  }
+  return undefined;
+}
+
 router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
   const orderId = String(req.params.orderId || '').trim();
   if (!orderId) return res.status(400).json({ error: 'orderId required' });
 
   const body = req.body || {};
-  const raw = Array.isArray(body.items) ? body.items : [];
-  if (!raw.length) return res.status(422).json({ error: 'items[] required' });
+  const rawItems = Array.isArray(body.items) ? body.items : [];
+  if (!rawItems.length) return res.status(422).json({ error: 'items[] required' });
 
-  // Minimal, lenient validation: require UPC + qty + price only.
-  const missing: string[] = [];
-  const items = raw.map((it: any, i: number) => {
-    const upc = String(it.upc || '').trim();
-    if (!upc) missing.push(`items[${i}].upc`);
+  // Normalize every line, tolerate missing fields, use safe defaults
+  const items = rawItems.map((it: any, idx: number) => {
+    const upc = String(firstNonEmpty(
+      it.upc, it.UPC, it.upc_code, it.barcode,
+      it.product?.upc, it.product?.UPC
+    ) || `UNKNOWN-${idx+1}`);
 
-    const qty = Number(it.qty ?? 1);
-    if (!Number.isFinite(qty) || qty <= 0) missing.push(`items[${i}].qty`);
+    const mpn = String(firstNonEmpty(
+      it.mpn, it.MPN, it.MNP, it.manufacturerPart, it.manufacturerPartNumber,
+      it.product?.mpn
+    ) || '');
 
-    const price = Number(it.price ?? 0);
-    if (!Number.isFinite(price) || price < 0) missing.push(`items[${i}].price`);
+    const sku = String(firstNonEmpty(
+      it.sku, it.SKU, it.stock, it.stockNo, it.stock_num, it.rsrStock,
+      it.product?.sku
+    ) || '');
 
-    // Lenient defaults (name/sku/mpn optional):
-    const name = String(it.name || `Item ${upc}`);
-    const mpn = String(it.mpn || '');
-    const sku = String(it.sku || '');
+    const name = String(firstNonEmpty(
+      it.name, it.title, it.description, it.product?.name
+    ) || `Item ${upc}`);
 
-    // Image is irrelevant to processing; force safe local path (no external deps)
-    let imageUrl = String(it.imageUrl || '');
-    if (!imageUrl.startsWith('/images/')) imageUrl = '/images/placeholder.jpg';
+    const qty = Number(firstNonEmpty(it.qty, it.quantity, it.count, 1));
+    const price = Number(firstNonEmpty(
+      it.price, it.unitPrice, it.unit_price,
+      it.retail, it.pricingSnapshot?.retail, 0
+    ));
 
-    return { upc, qty, price, name, mpn, sku, imageUrl };
+    // Images are irrelevant to processing; force local placeholder if not local
+    let imageUrl = String(firstNonEmpty(it.imageUrl, it.product?.imageUrl, '') || '');
+    if (!imageUrl.startsWith('/images/')) {
+      imageUrl = upc.startsWith('UNKNOWN-') ? '/images/placeholder.jpg' : `/images/${upc}.jpg`;
+    }
+
+    return { upc, mpn, sku, name, qty: Number.isFinite(qty) && qty > 0 ? qty : 1,
+             price: Number.isFinite(price) && price >= 0 ? price : 0,
+             imageUrl };
   });
 
-  if (missing.length) {
-    return res.status(422).json({ error: 'Snapshot incomplete', fields: missing });
-  }
-
-  // Outcomes (default IH>Customer)
-  let outcomes;
+  // Outcomes (default single shipment)
+  let outcomes: any[] = [];
   try {
     outcomes = splitOutcomes(body.shippingOutcomes || ['IH>Customer']);
-  } catch (e: any) {
-    return res.status(400).json({ error: e.message || 'invalid outcomes' });
+  } catch (e) {
+    outcomes = ['IH>Customer'];
   }
 
   // Preserve any prior snapshot + minted numbers
