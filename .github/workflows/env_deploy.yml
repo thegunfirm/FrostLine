@@ -1,0 +1,46 @@
+- name: Write env and restart PM2
+  env:
+    SSH_HOST: ${{ secrets.SSH_HOST }}
+    SSH_USER: ${{ secrets.SSH_USER }}
+    SSH_PORT: ${{ secrets.SSH_PORT }}
+  run: |
+    set -euo pipefail
+    ssh -o StrictHostKeyChecking=no -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'bash -s' <<'SH'
+    set -euo pipefail
+    install -d -m 700 /root/pm2
+    umask 077
+    cat >/root/pm2/frostline.env <<EOF
+PORT=5000
+NODE_ENV=production
+DATABASE_URL=${{ secrets.DATABASE_URL }}
+
+# RSR FTP (explicit FTPS on 2222)
+RSR_FTP_HOST=ftps.rsrgroup.com
+RSR_FTP_PORT=2222
+RSR_FTPS=1
+RSR_USERNAME=${{ secrets.RSR_USERNAME }}
+RSR_PASSWORD=${{ secrets.RSR_PASSWORD }}
+
+# RSR "Standard" feed/API (distinct from FTP)
+RSR_STANDARD_USERNAME=${{ secrets.RSR_STANDARD_USERNAME }}
+RSR_STANDARD_PASSWORD=${{ secrets.RSR_STANDARD_PASSWORD }}
+
+# Payments / misc (fill as needed)
+AUTHORIZE_NET_API_LOGIN_ID=${{ secrets.AUTHORIZE_NET_API_LOGIN_ID }}
+AUTHORIZE_NET_TRANSACTION_KEY=${{ secrets.AUTHORIZE_NET_TRANSACTION_KEY }}
+AUTHORIZE_NET_ENVIRONMENT=${{ secrets.AUTHORIZE_NET_ENVIRONMENT }} # sandbox|production
+SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}
+ALGOLIA_APP_ID=${{ secrets.ALGOLIA_APP_ID }}
+ALGOLIA_ADMIN_API_KEY=${{ secrets.ALGOLIA_ADMIN_API_KEY }}
+EOF
+
+    # Make start script source the env file (one-time change if not already)
+    if ! grep -q 'frostline.env' /root/pm2/start-frostline.sh 2>/dev/null; then
+      sed -i '1i [ -f /root/pm2/frostline.env ] && set -a && . /root/pm2/frostline.env && set +a' /root/pm2/start-frostline.sh
+      chmod 700 /root/pm2/start-frostline.sh
+    fi
+
+    cd /var/www/frostline
+    pm2 restart frostline --update-env --cwd /var/www/frostline || pm2 start dist/index.js --name frostline --cwd /var/www/frostline --update-env
+    pm2 save
+    SH
