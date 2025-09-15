@@ -1,12 +1,12 @@
-// /server/routes/orderSnapshot.ts
+// /server/routes/orderSnapshot.js
 // POST /api/orders/:orderId/snapshot
-// Body: { items:[{sku,upc,mpn,name,qty,price,imageUrl}], shippingOutcomes:[...], customer:{}, txnId, status }
-// Persists a canonical snapshot and mints the order number (once) for stability.
+// Required at payment-success, before redirect to /order-confirmation.
+// Body MUST include items with product metadata (no cross-service enrichment).
 
-import express from 'express';
-import { splitOutcomes } from '../lib/shippingSplit.js';
-import { mintOrderNumber } from '../lib/orderNumbers.js';
-import { readSnapshot, writeSnapshot } from '../lib/storage.js';
+const express = require('express');
+const { splitOutcomes } = require('../lib/shippingSplit.js');
+const { mintOrderNumber } = require('../lib/orderNumbers.js');
+const { readSnapshot, writeSnapshot } = require('../lib/storage.js');
 
 const router = express.Router();
 
@@ -19,8 +19,8 @@ router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
   if (!itemsIn.length) return res.status(422).json({ error: 'items[] required' });
 
   // Validate required item fields so the UI never renders blanks.
-  const missing: string[] = [];
-  itemsIn.forEach((it: any, i: number) => {
+  const missing = [];
+  itemsIn.forEach((it, i) => {
     if (!it.name) missing.push(`items[${i}].name`);
     if (!it.qty && it.qty !== 0) missing.push(`items[${i}].qty`);
     if (it.price === undefined || it.price === null) missing.push(`items[${i}].price`);
@@ -33,21 +33,11 @@ router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
     return res.status(422).json({ error: 'Missing required fields', fields: missing });
   }
 
-  const items = itemsIn.map((it: any) => ({
-    sku: String(it.sku), upc: String(it.upc), mpn: String(it.mpn),
-    name: String(it.name), qty: Number(it.qty || 1), price: Number(it.price || 0),
-    imageUrl: String(it.imageUrl)
-  }));
-
   let outcomes;
-  try {
-    outcomes = splitOutcomes(body.shippingOutcomes || ['IH>Customer']);
-  } catch (e: any) {
-    return res.status(400).json({ error: e.message || 'Invalid shippingOutcomes' });
-  }
+  try { outcomes = splitOutcomes(body.shippingOutcomes || ['IH>Customer']); }
+  catch (e) { return res.status(400).json({ error: e.message }); }
 
   const existing = readSnapshot(orderId) || {};
-  // Preserve existing minted numbers to keep them stable across retries
   const minted = existing.minted || mintOrderNumber(outcomes);
 
   const snapshot = {
@@ -55,10 +45,14 @@ router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
     txnId: String(body.txnId || existing.txnId || ''),
     status: String(body.status || existing.status || 'processing'),
     customer: body.customer || existing.customer || {},
-    items,
+    items: itemsIn.map((it) => ({
+      sku: String(it.sku), upc: String(it.upc), mpn: String(it.mpn),
+      name: String(it.name), qty: Number(it.qty || 1), price: Number(it.price || 0),
+      imageUrl: String(it.imageUrl)
+    })),
     shippingOutcomes: outcomes,
     allocations: body.allocations || existing.allocations || null, // optional
-    minted,                // { main, parts[] }
+    minted, // { main, parts[] }
     createdAt: existing.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -67,4 +61,4 @@ router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
   return res.json({ ok: true, orderId, orderNumber: minted.main });
 });
 
-export default router;
+module.exports = router;

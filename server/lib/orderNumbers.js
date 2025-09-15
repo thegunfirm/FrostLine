@@ -1,7 +1,5 @@
 // /server/lib/orderNumbers.js
-// Mini server logic to mint order numbers.
-// Rule: If exactly one shipping outcome -> ends with "0" (single shipment).
-// If multiple outcomes -> main ends with "Z", and sub-orders get suffixes A,B,C,D (in insertion order).
+// Stable order-number minting: single -> -0; multi -> -Z parent and -ZA, -ZB... children.
 
 import fs from 'fs';
 import path from 'path';

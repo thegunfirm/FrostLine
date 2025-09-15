@@ -1,10 +1,10 @@
-// /server/routes/orderSummaryById.ts
+// /server/routes/orderSummaryById.js
 // GET /api/orders/:orderId/summary  -> exact shape the frozen UI consumes
 
-import express from 'express';
-import { readSnapshot, writeSnapshot } from '../lib/storage.js';
-import { splitOutcomes } from '../lib/shippingSplit.js';
-import { mintOrderNumber } from '../lib/orderNumbers.js';
+const express = require('express');
+const { readSnapshot, writeSnapshot } = require('../lib/storage.js');
+const { splitOutcomes } = require('../lib/shippingSplit.js');
+const { mintOrderNumber } = require('../lib/orderNumbers.js');
 
 const router = express.Router();
 
@@ -16,9 +16,9 @@ router.get('/api/orders/:orderId/summary', (req, res) => {
   if (!snap) return res.status(404).json({ error: 'Order snapshot not found for this orderId' });
 
   // Normalize outcomes & mint once
-  let outcomes: string[];
+  let outcomes;
   try { outcomes = splitOutcomes(snap.shippingOutcomes || ['IH>Customer']); }
-  catch (e: any) { return res.status(400).json({ error: e.message }); }
+  catch (e) { return res.status(400).json({ error: e.message }); }
 
   const minted = snap.minted || mintOrderNumber(outcomes);
   if (!snap.minted) {
@@ -29,8 +29,8 @@ router.get('/api/orders/:orderId/summary', (req, res) => {
 
   // Enforce required fields (stop blank UI)
   const items = Array.isArray(snap.items) ? snap.items.filter(Boolean) : [];
-  const missing: string[] = [];
-  items.forEach((it: any, i: number) => {
+  const missing = [];
+  items.forEach((it, i) => {
     if (!it.upc) missing.push(`items[${i}].upc`);
     if (!it.mpn) missing.push(`items[${i}].mpn`);
     if (!it.sku) missing.push(`items[${i}].sku`);
@@ -50,7 +50,7 @@ router.get('/api/orders/:orderId/summary', (req, res) => {
   const parts = (minted.parts.length ? minted.parts : [{ outcome: outcomes[0], orderNumber: minted.main }]);
   const alloc = (snap.allocations && typeof snap.allocations === 'object') ? snap.allocations : null;
 
-  const shipments = parts.map((p: any, idx: number) => {
+  const shipments = parts.map((p, idx) => {
     const shipItems = itemsForOutcome(p.outcome || outcomes[0], items, alloc);
     const shipLines = shipItems.map(toLine);
     return { idx, outcome: p.outcome || outcomes[0], orderNumber: p.orderNumber || minted.main, lines: shipLines, totals: computeTotals(shipLines) };
@@ -72,7 +72,7 @@ router.get('/api/orders/:orderId/summary', (req, res) => {
   });
 });
 
-function toLine(it: any) {
+function toLine(it) {
   const qty = Number(it.qty || 1);
   const unit = Number(it.price || 0);
   const imageUrl = String(it.imageUrl || '');
@@ -88,14 +88,14 @@ function toLine(it: any) {
   };
 }
 
-function itemsForOutcome(outcome: string, items: any[], allocations: any) {
+function itemsForOutcome(outcome, items, allocations) {
   if (!allocations || !allocations[outcome]) return items;
   const a = allocations[outcome];
   if (!Array.isArray(a) || !a.length) return [];
-  if (typeof a[0] === 'number') return a.map((i: number) => items[i]).filter(Boolean);
+  if (typeof a[0] === 'number') return a.map(i => items[i]).filter(Boolean);
   // selector objects
-  return a.map((sel: any) => {
-    const found = items.find((it: any) =>
+  return a.map(sel => {
+    const found = items.find(it =>
       (sel.sku && it.sku === sel.sku) || (sel.upc && it.upc === sel.upc) || (sel.mpn && it.mpn === sel.mpn)
     );
     if (!found) return null;
@@ -103,11 +103,11 @@ function itemsForOutcome(outcome: string, items: any[], allocations: any) {
   }).filter(Boolean);
 }
 
-function computeTotals(lines: any[]) {
+function computeTotals(lines) {
   const sub = lines.reduce((s, ln) => s + Number(ln.extendedPrice || 0), 0);
   return { subtotal: round2(sub), tax: 0, shipping: 0, grandTotal: round2(sub) };
 }
-function sumTotals(list: any[]) {
+function sumTotals(list) {
   return list.reduce((acc, t) => ({
     subtotal: round2((acc.subtotal||0) + (t.subtotal||0)),
     tax: round2((acc.tax||0) + (t.tax||0)),
@@ -115,6 +115,6 @@ function sumTotals(list: any[]) {
     grandTotal: round2((acc.grandTotal||0) + (t.grandTotal||0)),
   }), { subtotal:0,tax:0,shipping:0,grandTotal:0 });
 }
-function round2(n: number) { return Math.round(Number(n) * 100) / 100; }
+function round2(n) { return Math.round(Number(n) * 100) / 100; }
 
-export default router;
+module.exports = router;

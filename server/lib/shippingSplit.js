@@ -23,4 +23,4 @@ function splitOutcomes(arr) {
   return order.filter(o => seen.has(o));
 }
 
-export { splitOutcomes };
+export { splitOutcomes, normalizeOutcome };
