@@ -1114,6 +1114,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Payment successful
             console.log('✅ Payment successful');
             
+            // Declare savedOrder variable in proper scope
+            let savedOrder;
+            
             // Create order record in database
             try {
               // TODO: Get actual user ID from session when authentication is re-enabled
@@ -1133,7 +1136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }))
               };
               
-              const savedOrder = await storage.createOrder(orderData);
+              savedOrder = await storage.createOrder(orderData);
               console.log('✅ Order saved to database:', savedOrder.id);
 
               // Create Zoho Deal for the order
@@ -1182,7 +1185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               authCode: transactionResponse.authCode,
               messageCode: transactionResponse.messages[0]?.code,
               description: transactionResponse.messages[0]?.description || 'Payment processed successfully',
-              orderId: savedOrder.id
+              orderId: savedOrder?.id || 'N/A' // Fallback if order creation failed
             });
           } else {
             // Payment declined
