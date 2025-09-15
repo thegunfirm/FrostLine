@@ -1205,7 +1205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       } catch (fetchError: any) {
-        clearTimeout(timeoutId);
+        // clearTimeout(timeoutId); // Fixed: timeoutId not defined in this scope
         if (fetchError.name === 'AbortError') {
           console.error('❌ Request timeout');
           res.status(408).json({
