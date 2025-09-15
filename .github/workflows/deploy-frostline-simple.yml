@@ -26,7 +26,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Load SSH key into agent
+      - name: Load SSH key
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
@@ -40,19 +40,16 @@ jobs:
       - name: Connectivity test
         shell: bash
         run: |
-          ssh -4 -p "$SSH_PORT" \
-            -o StrictHostKeyChecking=yes \
-            -o PreferredAuthentications=publickey \
-            -o BatchMode=yes \
+          ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes -o PreferredAuthentications=publickey -o BatchMode=yes \
             "$SSH_USER@$SSH_HOST" 'echo OK $(hostname); whoami'
 
-      - name: Bootstrap server (Node 20, PM2, tools) and ensure path
+      - name: Bootstrap server (Node 20, PM2, tools)
         shell: bash
         run: |
           ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" /bin/bash -lc 'set -e
             export DEBIAN_FRONTEND=noninteractive
             apt-get update -y
-            apt-get install -y ca-certificates curl gnupg rsync git build-essential python3 pkg-config jq
+            apt-get install -y ca-certificates curl gnupg rsync git build-essential python3 pkg-config jq age
             if ! command -v node >/dev/null 2>&1; then
               curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
               apt-get install -y nodejs
@@ -64,7 +61,7 @@ jobs:
             node -v; npm -v; pm2 -v
           '
 
-      - name: Sync files to /var/www/frostline
+      - name: Rsync code to /var/www/frostline
         shell: bash
         run: |
           rsync -az --delete \
@@ -72,7 +69,7 @@ jobs:
             --exclude ".git/" --exclude ".github/" --exclude "node_modules/" --exclude "*.log" \
             ./ "$SSH_USER@$SSH_HOST:/var/www/frostline/"
 
-      - name: Ensure PM2 wrapper exists
+      - name: Ensure robust PM2 wrapper (PORT=5000 + safe fallbacks)
         shell: bash
         run: |
           ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" /bin/bash -lc 'set -e
@@ -81,12 +78,23 @@ jobs:
               "#!/usr/bin/env bash" \
               "set -euo pipefail" \
               "cd /var/www/frostline" \
+              'if [ -f ./.env.age ]; then set -a; source <(age -d -i /root/.config/age/keys.txt ./.env.age); set +a; fi' \
+              'export PORT="${PORT:-5000}"' \
+              'export NODE_ENV="${NODE_ENV:-production}"' \
+              'export SENDGRID_API_KEY="${SENDGRID_API_KEY:-disabled}"' \
+              'export AUTHORIZE_NET_API_LOGIN_ID="${AUTHORIZE_NET_API_LOGIN_ID:-disabled}"' \
+              'export AUTHORIZE_NET_TRANSACTION_KEY="${AUTHORIZE_NET_TRANSACTION_KEY:-disabled}"' \
+              'export ALGOLIA_APP_ID="${ALGOLIA_APP_ID:-disabled}"' \
+              'export ALGOLIA_ADMIN_API_KEY="${ALGOLIA_ADMIN_API_KEY:-disabled}"' \
+              'export ZOHO_ACCOUNTS_HOST="${ZOHO_ACCOUNTS_HOST:-https://accounts.zoho.com}"' \
+              'export ZOHO_CRM_BASE="${ZOHO_CRM_BASE:-https://www.zohoapis.com/crm}"' \
+              'export ZOHO_REDIRECT_URI="${ZOHO_REDIRECT_URI:-https://localhost/zoho/callback}"' \
               "exec node dist/index.js" \
             | sudo tee /root/pm2/start-frostline.sh >/dev/null
             sudo chmod +x /root/pm2/start-frostline.sh
           '
 
-      - name: Build & restart with PM2 (inject DB + RSR secrets)
+      - name: Build & restart with PM2 (inject DB + RSR FTP)
         shell: bash
         run: |
           ssh -4 -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" /bin/bash -lc 'set -e
@@ -95,14 +103,15 @@ jobs:
             npm ci
             npm run build
 
-            # Runtime env (app listens on :5000)
+            # Runtime env (always bind on :5000)
             export PORT=5000 NODE_ENV=production
             export DATABASE_URL='"'"'${{ secrets.DATABASE_URL }}'"'"'
             export RSR_FTP_HOST='"'"'${{ secrets.RSR_FTP_HOST }}'"'"'
             export RSR_USERNAME='"'"'${{ secrets.RSR_USERNAME }}'"'"'
             export RSR_PASSWORD='"'"'${{ secrets.RSR_PASSWORD }}'"'"'
-            export RSR_STANDARD_USERNAME='"'"'${{ secrets.RSR_STANDARD_USERNAME }}'"'"'
-            export RSR_STANDARD_PASSWORD='"'"'${{ secrets.RSR_STANDARD_PASSWORD }}'"'"'
+            # (STANDARD creds optional; not used for FTP login)
+            [ -n "'"${{ secrets.RSR_STANDARD_USERNAME }}"'" ] && export RSR_STANDARD_USERNAME='"'"'${{ secrets.RSR_STANDARD_USERNAME }}'"'"' || true
+            [ -n "'"${{ secrets.RSR_STANDARD_PASSWORD }}"'" ] && export RSR_STANDARD_PASSWORD='"'"'${{ secrets.RSR_STANDARD_PASSWORD }}'"'"' || true
 
             pm2 delete frostline >/dev/null 2>&1 || true
             pm2 start /root/pm2/start-frostline.sh --name frostline --cwd /var/www/frostline --update-env
