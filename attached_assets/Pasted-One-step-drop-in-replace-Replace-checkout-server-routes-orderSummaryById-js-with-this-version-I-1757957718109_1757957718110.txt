@@ -1,10 +1,22 @@
-// /server/routes/orderSummaryById.ts
+One step (drop-in replace)
+
+Replace /checkout/server/routes/orderSummaryById.js with this version. It:
+
+Returns orderNumber (alias) so your UI stops showing the bare orderId.
+
+Emits lines[] in the shape your UI reads (qty, pricingSnapshot.retail, product.upc/mpn, product.image.url).
+
+Splits shipments by outcome using snap.allocations when present.
+
+Gives each shipment its own orderNumber and totals (Amazon-like).
+
+// /checkout/server/routes/orderSummaryById.js
 // GET /api/orders/:orderId/summary
 
-import express from 'express';
-import { readSnapshot, writeSnapshot } from '../lib/order-storage.js';
-import { splitOutcomes } from '../lib/shippingSplit.js';
-import { mintOrderNumber } from '../lib/orderNumbers.js';
+const express = require('express');
+const { readSnapshot, writeSnapshot } = require('../lib/storage');
+const { splitOutcomes } = require('../lib/shippingSplit');
+const { mintOrderNumber } = require('../lib/orderNumbers');
 
 const router = express.Router();
 
@@ -16,10 +28,10 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
   if (!snap) return res.status(404).json({ error: 'Order snapshot not found for this orderId' });
 
   // Normalize outcomes & mint once (persist for stability)
-  let outcomes: string[] = [];
+  let outcomes = [];
   try {
     outcomes = splitOutcomes(snap.shippingOutcomes || ['DS>Customer']);
-  } catch (e: any) {
+  } catch (e) {
     return res.status(400).json({ error: e.message || 'Invalid shippingOutcomes' });
   }
 
@@ -43,7 +55,7 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
     ? minted.parts
     : [{ outcome: outcomes[0], orderNumber: minted.main }]);
 
-  const shipments = shipmentDefs.map((p: any, idx: number) => {
+  const shipments = shipmentDefs.map((p, idx) => {
     const out = p.outcome || outcomes[0];
     const shipItems = itemsForOutcome(out, items, allocations);
     const shipLines = shipItems.map(toLine);
@@ -57,7 +69,7 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
     };
   });
 
-  // Top-level totals = sum of shipment totals (so it matches Amazon's "Order total")
+  // Top-level totals = sum of shipment totals (so it matches Amazon’s “Order total”)
   const totals = sumTotals(shipments.map(s => s.totals));
 
   return res.json({
@@ -74,7 +86,7 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
   });
 });
 
-function toLine(it: any) {
+function toLine(it) {
   const qty = Number(it.qty || 1);
   const unit = Number(it.price || 0);
 
@@ -99,17 +111,17 @@ function toLine(it: any) {
   };
 }
 
-function itemsForOutcome(outcome: string, items: any[], allocations: any) {
+function itemsForOutcome(outcome, items, allocations) {
   if (!allocations || !allocations[outcome]) return items;
   const a = allocations[outcome];
   if (!Array.isArray(a) || a.length === 0) return [];
   if (typeof a[0] === 'number') {
     // index-based allocation
-    return a.map((i: number) => items[i]).filter(Boolean);
+    return a.map(i => items[i]).filter(Boolean);
   }
   // selector-based allocation
-  return a.map((sel: any) => {
-    const found = items.find((it: any) =>
+  return a.map(sel => {
+    const found = items.find(it =>
       (sel.sku && it.sku === sel.sku) ||
       (sel.upc && it.upc === sel.upc) ||
       (sel.mpn && it.mpn === sel.mpn)
@@ -119,7 +131,7 @@ function itemsForOutcome(outcome: string, items: any[], allocations: any) {
   }).filter(Boolean);
 }
 
-function computeTotals(lines: any[]) {
+function computeTotals(lines) {
   const sub = lines.reduce((s, ln) => s + Number(ln.extendedPrice || 0), 0);
   return {
     subtotal: round2(sub),
@@ -129,7 +141,7 @@ function computeTotals(lines: any[]) {
   };
 }
 
-function sumTotals(list: any[]) {
+function sumTotals(list) {
   const zero = { subtotal: 0, tax: 0, shipping: 0, grandTotal: 0 };
   return list.reduce((acc, t) => ({
     subtotal: round2(acc.subtotal + (t.subtotal || 0)),
@@ -139,6 +151,6 @@ function sumTotals(list: any[]) {
   }), zero);
 }
 
-function round2(n: number) { return Math.round(Number(n) * 100) / 100; }
+function round2(n) { return Math.round(Number(n) * 100) / 100; }
 
-export default router;
+module.exports = router;
