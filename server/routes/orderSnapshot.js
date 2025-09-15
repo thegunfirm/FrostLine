@@ -26,42 +26,56 @@ router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
   const rawItems = Array.isArray(body.items) ? body.items : [];
   if (!rawItems.length) return res.status(422).json({ error: 'items[] required' });
 
-  // Normalize every line, tolerate missing fields, use safe defaults
+  // Strict validation - NO FALLBACKS, error out if missing required data
   const items = rawItems.map((it, idx) => {
-    const upc = String(firstNonEmpty(
+    const upc = firstNonEmpty(
       it.upc, it.UPC, it.upc_code, it.barcode,
       it.product?.upc, it.product?.UPC
-    ) || `UNKNOWN-${idx+1}`);
-
-    const mpn = String(firstNonEmpty(
-      it.mpn, it.MPN, it.MNP, it.manufacturerPart, it.manufacturerPartNumber,
-      it.product?.mpn
-    ) || '');
-
-    const sku = String(firstNonEmpty(
-      it.sku, it.SKU, it.stock, it.stockNo, it.stock_num, it.rsrStock,
-      it.product?.sku
-    ) || '');
-
-    const name = String(firstNonEmpty(
-      it.name, it.title, it.description, it.product?.name
-    ) || `Item ${upc}`);
-
-    const qty = Number(firstNonEmpty(it.qty, it.quantity, it.count, 1));
-    const price = Number(firstNonEmpty(
-      it.price, it.unitPrice, it.unit_price,
-      it.retail, it.pricingSnapshot?.retail, 0
-    ));
-
-    // Images are irrelevant to processing; force local placeholder if not local
-    let imageUrl = String(firstNonEmpty(it.imageUrl, it.product?.imageUrl, '') || '');
-    if (!imageUrl.startsWith('/images/')) {
-      imageUrl = upc.startsWith('UNKNOWN-') ? '/images/placeholder.jpg' : `/images/${upc}.jpg`;
+    );
+    if (!upc) {
+      throw new Error(`Item ${idx + 1}: UPC is required but missing. No fallbacks allowed.`);
     }
 
-    return { upc, mpn, sku, name, qty: Number.isFinite(qty) && qty > 0 ? qty : 1,
-             price: Number.isFinite(price) && price >= 0 ? price : 0,
-             imageUrl };
+    const mpn = firstNonEmpty(
+      it.mpn, it.MPN, it.MNP, it.manufacturerPart, it.manufacturerPartNumber,
+      it.product?.mpn
+    );
+    if (!mpn) {
+      throw new Error(`Item ${idx + 1}: MPN is required but missing. No fallbacks allowed.`);
+    }
+
+    const name = firstNonEmpty(
+      it.name, it.title, it.description, it.product?.name
+    );
+    if (!name) {
+      throw new Error(`Item ${idx + 1}: Product name is required but missing. No fallbacks allowed.`);
+    }
+
+    const qty = Number(firstNonEmpty(it.qty, it.quantity, it.count));
+    if (!Number.isFinite(qty) || qty <= 0) {
+      throw new Error(`Item ${idx + 1}: Valid quantity is required but missing. No fallbacks allowed.`);
+    }
+
+    const price = Number(firstNonEmpty(
+      it.price, it.unitPrice, it.unit_price,
+      it.retail, it.pricingSnapshot?.retail
+    ));
+    if (!Number.isFinite(price) || price < 0) {
+      throw new Error(`Item ${idx + 1}: Valid price is required but missing. No fallbacks allowed.`);
+    }
+
+    // Images are irrelevant to processing; use UPC-based path
+    const imageUrl = `/images/${upc}.jpg`;
+
+    return { 
+      upc: String(upc), 
+      mpn: String(mpn), 
+      sku: '', // You said you don't use SKU 
+      name: String(name), 
+      qty, 
+      price,
+      imageUrl 
+    };
   });
 
   // Outcomes (default single shipment)
