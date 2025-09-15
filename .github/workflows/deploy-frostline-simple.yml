@@ -79,20 +79,16 @@ jobs:
             printf 'PORT=5000\n'
             printf 'NODE_ENV=production\n'
             printf 'DATABASE_URL=%s\n' "$DATABASE_URL"
-
             # --- RSR FTPS (explicit TLS on 2222) ---
             printf 'RSR_FTP_HOST=%s\n' "${RSR_FTP_HOST:-ftps.rsrgroup.com}"
             printf 'RSR_FTP_PORT=%s\n' "${RSR_FTP_PORT:-2222}"
             printf 'RSR_FTPS=%s\n'     "${RSR_FTPS:-1}"
-
             # FTP creds ONLY (dealer login)
             printf 'RSR_USERNAME=%s\n' "$RSR_USERNAME"
             printf 'RSR_PASSWORD=%s\n' "$RSR_PASSWORD"
-
             # --- RSR "Standard" feed/API creds (separate from FTP) ---
             if [ -n "${RSR_STANDARD_USERNAME:-}" ]; then printf 'RSR_STANDARD_USERNAME=%s\n' "$RSR_STANDARD_USERNAME"; fi
             if [ -n "${RSR_STANDARD_PASSWORD:-}" ]; then printf 'RSR_STANDARD_PASSWORD=%s\n' "$RSR_STANDARD_PASSWORD"; fi
-
             # Optional integrations
             if [ -n "${AUTHORIZE_NET_API_LOGIN_ID:-}" ];    then printf 'AUTHORIZE_NET_API_LOGIN_ID=%s\n' "$AUTHORIZE_NET_API_LOGIN_ID"; fi
             if [ -n "${AUTHORIZE_NET_TRANSACTION_KEY:-}" ]; then printf 'AUTHORIZE_NET_TRANSACTION_KEY=%s\n' "$AUTHORIZE_NET_TRANSACTION_KEY"; fi
@@ -101,25 +97,23 @@ jobs:
             if [ -n "${ALGOLIA_ADMIN_API_KEY:-}" ];         then printf 'ALGOLIA_ADMIN_API_KEY=%s\n' "$ALGOLIA_ADMIN_API_KEY"; fi
           } >"$envfile"
 
-          # --- Create the remote restart script locally (no quote gymnastics) ---
+          # --- Create the remote restart script locally (no heredocs) ---
           restart="$(mktemp)"; umask 077
-          cat >"$restart" <<'SCRIPT'
-#!/usr/bin/env bash
-set -euo pipefail
-set +H                      # disable history expansion in case any value has '!'
-chmod 600 /root/pm2/frostline.env
-set -a; . /root/pm2/frostline.env; set +a
-
-cd /var/www/frostline
-pm2 restart frostline --update-env --cwd /var/www/frostline
-pm2 save
-
-# App should be listening
-ss -ltnp | grep -E ':(5000)\b' || { echo '::error::app is not listening on :5000'; exit 1; }
-
-# Quick FTP handshake trace (expect to see < 230 after > USER)
-pm2 logs frostline --lines 120 --nostream | egrep -i 'Connecting FTPS|> USER|< 331|< 230|< 530' || true
-SCRIPT
+          {
+            printf '%s\n' '#!/usr/bin/env bash'
+            printf '%s\n' 'set -euo pipefail'
+            printf '%s\n' 'set +H'  # disable history expansion in case any value contains "!"
+            printf '%s\n' 'chmod 600 /root/pm2/frostline.env'
+            printf '%s\n' 'set -a; . /root/pm2/frostline.env; set +a'
+            printf '%s\n' ''
+            printf '%s\n' 'cd /var/www/frostline'
+            printf '%s\n' 'pm2 restart frostline --update-env --cwd /var/www/frostline'
+            printf '%s\n' 'pm2 save'
+            printf '%s\n' ''
+            printf '%s\n' 'ss -ltnp | grep -E ":(5000)\\b" || { echo "::error::app is not listening on :5000"; exit 1; }'
+            printf '%s\n' ''
+            printf '%s\n' 'pm2 logs frostline --lines 120 --nostream | egrep -i "Connecting FTPS|> USER|< 331|< 230|< 530" || true'
+          } >"$restart"
           chmod 700 "$restart"
 
           # --- Ship files and run ---
