@@ -166,7 +166,7 @@ app.use((req, res, next) => {
   const { default: orderNumberRouter } = await import('./routes/orderNumber.js');
   const { default: orderSummaryRouter } = await import('./routes/orderSummary.js');
   const { default: orderSnapshotRouter } = await import('./routes/orderSnapshot.js');
-  const { default: orderSummaryByIdRouter } = await import('./routes/orderSummaryById.js');
+  const { default: orderSummaryByIdRouter } = await import('./routes/orderSummaryById.cjs');
   app.use(orderNumberRouter);
   app.use(orderSummaryRouter);
   app.use(orderSnapshotRouter);

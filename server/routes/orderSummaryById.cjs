@@ -1,10 +1,10 @@
-// /server/routes/orderSummaryById.ts
-// GET /api/orders/:orderId/summary  -> exact shape the frozen UI consumes with compatibility aliases
+// server/routes/orderSummaryById.js
+// GET /api/orders/:orderId/summary  -> returns the shape the frozen UI expects + broad compatibility aliases
 
-import express from 'express';
-import { readSnapshot, writeSnapshot } from '../lib/storage.js';
-import { splitOutcomes } from '../lib/shippingSplit.js';
-import { mintOrderNumber } from '../lib/orderNumbers.js';
+const express = require('express');
+const { readSnapshot, writeSnapshot } = require('../lib/storage');
+const { splitOutcomes } = require('../lib/shippingSplit');
+const { mintOrderNumber } = require('../lib/orderNumbers');
 
 const router = express.Router();
 
@@ -16,9 +16,9 @@ router.get('/api/orders/:orderId/summary', (req, res) => {
   if (!snap) return res.status(404).json({ error: 'Order snapshot not found for this orderId' });
 
   // Normalize outcomes & mint once
-  let outcomes: string[];
+  let outcomes;
   try { outcomes = splitOutcomes(snap.shippingOutcomes || ['IH>Customer']); }
-  catch (e: any) { return res.status(400).json({ error: e.message }); }
+  catch (e) { return res.status(400).json({ error: e.message }); }
 
   const minted = snap.minted || mintOrderNumber(outcomes);
   if (!snap.minted) {
@@ -29,8 +29,8 @@ router.get('/api/orders/:orderId/summary', (req, res) => {
 
   // Enforce required fields so UI never renders blanks silently
   const items = Array.isArray(snap.items) ? snap.items.filter(Boolean) : [];
-  const missing: string[] = [];
-  items.forEach((it: any, i: number) => {
+  const missing = [];
+  items.forEach((it, i) => {
     if (!it.upc) missing.push(`items[${i}].upc`);
     if (!it.mpn) missing.push(`items[${i}].mpn`);
     if (!it.sku) missing.push(`items[${i}].sku`);
@@ -43,16 +43,16 @@ router.get('/api/orders/:orderId/summary', (req, res) => {
     return res.status(422).json({ error: 'Snapshot incomplete for summary', fields: missing });
   }
 
-  // Build full-cart lines (primary shape) + add compatibility aliases at the line level
-  const linesAll = items.map(toLineWithAliases);
+  // Build full-cart lines + add compatibility aliases at both line AND product level
+  const linesAll = items.map(toLineWithWideAliases);
 
   // Per-shipment (Amazon-style) using optional allocations
   const parts = (minted.parts.length ? minted.parts : [{ outcome: outcomes[0], orderNumber: minted.main }]);
   const alloc = (snap.allocations && typeof snap.allocations === 'object') ? snap.allocations : null;
 
-  const shipments = parts.map((p: any, idx: number) => {
+  const shipments = parts.map((p, idx) => {
     const shipItems = itemsForOutcome(p.outcome || outcomes[0], items, alloc);
-    const shipLines = shipItems.map(toLineWithAliases);
+    const shipLines = shipItems.map(toLineWithWideAliases);
     return {
       idx,
       outcome: p.outcome || outcomes[0],
@@ -64,15 +64,21 @@ router.get('/api/orders/:orderId/summary', (req, res) => {
 
   const totals = sumTotals(shipments.map(s => s.totals));
 
-  // Add nested alias "order.orderNumber" for legacy reads
+  // Top-level + nested "order" aliases for maximum compatibility
   return res.json({
-    orderId,
-    orderNumber: minted.main,             // primary key the UI should read
-    order: { orderNumber: minted.main },  // legacy alias some UIs expect
-    mainOrderNumber: minted.main,         // keep for other consumers
+    orderId,                              // original numeric/string id (e.g., 129)
+    orderNumber: minted.main,             // primary minted number (e.g., 100007-0)
+    orderNumberText: minted.main,         // alias
+    order: {
+      id: minted.main,                    // some UIs show order.id
+      number: minted.main,                // some UIs show order.number
+      orderNumber: minted.main,           // some UIs show order.orderNumber
+      idRaw: orderId                      // keep raw query id for debugging
+    },
+    mainOrderNumber: minted.main,         // retained for other consumers
     multiShipment: minted.parts.length > 0,
-    lines: linesAll,                      // top-level lines (UI iterates this)
-    shipments,                            // Amazon-style splits (per outcome)
+    lines: linesAll,                      // UI iterates this
+    shipments,                            // Amazon-style splits
     customer: snap.customer || {},
     totals,
     status: snap.status || 'processing',
@@ -80,44 +86,56 @@ router.get('/api/orders/:orderId/summary', (req, res) => {
   });
 });
 
-function toLineWithAliases(it: any) {
+function toLineWithWideAliases(it) {
   const qty = Number(it.qty || 1);
   const unit = Number(it.price || 0);
-  const imageUrl = String(it.imageUrl || '');
+  const url = String(it.imageUrl || '');
   const sku = String(it.sku || '');
   const upc = String(it.upc || '');
   const mpn = String(it.mpn || '');
   const name = String(it.name || '');
 
-  const base = {
+  const product = {
+    sku,
+    upc,
+    mpn,
+    name,
+    image: { url },
+    // ⬇︎ product-level alias many legacy UIs use
+    imageUrl: url,
+    // ⬇︎ occasionally legacy code references uppercase keys
+    UPC: upc,
+    MPN: mpn,
+    SKU: sku,
+    NAME: name
+  };
+
+  const line = {
     qty,
     pricingSnapshot: { retail: unit },
     unitPrice: unit,
     extendedPrice: round2(unit * qty),
-    product: {
-      sku, upc, mpn, name,
-      image: { url: imageUrl }
-    }
+    product
   };
 
-  // Line-level aliases (legacy reads): imageUrl / upc / mpn / sku / name on the line itself
-  (base as any).imageUrl = imageUrl;
-  (base as any).upc = upc;
-  (base as any).mpn = mpn;
-  (base as any).sku = sku;
-  (base as any).name = name;
+  // Line-level aliases (legacy reads on line object itself)
+  line.imageUrl = url;
+  line.upc = upc;
+  line.mpn = mpn;
+  line.sku = sku;
+  line.name = name;
 
-  return base;
+  return line;
 }
 
-function itemsForOutcome(outcome: string, items: any[], allocations: any) {
+function itemsForOutcome(outcome, items, allocations) {
   if (!allocations || !allocations[outcome]) return items;
   const a = allocations[outcome];
   if (!Array.isArray(a) || !a.length) return [];
-  if (typeof a[0] === 'number') return a.map((i: number) => items[i]).filter(Boolean);
+  if (typeof a[0] === 'number') return a.map(i => items[i]).filter(Boolean);
   // selector objects
-  return a.map((sel: any) => {
-    const found = items.find((it: any) =>
+  return a.map(sel => {
+    const found = items.find(it =>
       (sel.sku && it.sku === sel.sku) ||
       (sel.upc && it.upc === sel.upc) ||
       (sel.mpn && it.mpn === sel.mpn)
@@ -127,11 +145,11 @@ function itemsForOutcome(outcome: string, items: any[], allocations: any) {
   }).filter(Boolean);
 }
 
-function computeTotals(lines: any[]) {
+function computeTotals(lines) {
   const sub = lines.reduce((s, ln) => s + Number(ln.extendedPrice || 0), 0);
   return { subtotal: round2(sub), tax: 0, shipping: 0, grandTotal: round2(sub) };
 }
-function sumTotals(list: any[]) {
+function sumTotals(list) {
   return list.reduce((acc, t) => ({
     subtotal: round2((acc.subtotal||0) + (t.subtotal||0)),
     tax: round2((acc.tax||0) + (t.tax||0)),
@@ -139,6 +157,6 @@ function sumTotals(list: any[]) {
     grandTotal: round2((acc.grandTotal||0) + (t.grandTotal||0)),
   }), { subtotal:0,tax:0,shipping:0,grandTotal:0 });
 }
-function round2(n: number) { return Math.round(Number(n) * 100) / 100; }
+function round2(n) { return Math.round(Number(n) * 100) / 100; }
 
-export default router;
+module.exports = router;
