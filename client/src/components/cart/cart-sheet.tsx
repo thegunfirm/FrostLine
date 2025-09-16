@@ -124,9 +124,28 @@ export function CartSheet() {
                     </p>
                     
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-sm font-semibold">
-                        {formatPrice(item.price)}
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold">
+                          {formatPrice(item.price)}
+                        </span>
+                        {/* Show tier pricing indicator */}
+                        {user?.subscriptionTier && (
+                          <span className="text-xs text-green-600 font-medium">
+                            {user.subscriptionTier} Price
+                          </span>
+                        )}
+                        {!user && (
+                          <span className="text-xs text-gray-500">
+                            Bronze Price
+                          </span>
+                        )}
+                        {/* Show savings if available */}
+                        {user && user.subscriptionTier !== 'Bronze' && item.priceBronze && item.priceBronze > item.price && (
+                          <span className="text-xs text-red-600 line-through">
+                            {formatPrice(item.priceBronze)}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-0.5">
                         <Button
                           variant="ghost"
