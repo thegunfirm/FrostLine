@@ -205,6 +205,29 @@ class RSRFileProcessor {
     };
   }
 
+  private calculateGoldPrice(retailMAP: string, rsrPricing: string, retailPrice: string): string {
+    const mapPrice = parseFloat(retailMAP) || 0;
+    const dealerPrice = parseFloat(rsrPricing) || 0;
+    const msrpPrice = parseFloat(retailPrice) || 0;
+    
+    // Gold = (MAP + Dealer Price) / 2
+    if (mapPrice > 0 && dealerPrice > 0) {
+      return ((mapPrice + dealerPrice) / 2).toFixed(2);
+    }
+    
+    // Fallback: If MAP missing, use (MSRP + Dealer) / 2
+    if (msrpPrice > 0 && dealerPrice > 0) {
+      return ((msrpPrice + dealerPrice) / 2).toFixed(2);
+    }
+    
+    // Last fallback: Dealer price + 10%
+    if (dealerPrice > 0) {
+      return (dealerPrice * 1.10).toFixed(2);
+    }
+    
+    return "0.00";
+  }
+
   private async processInventoryRecord(record: RSRInventoryRecord): Promise<void> {
     // Skip deleted items
     if (record.allocatedCloseoutDeleted === 'Deleted') {
@@ -217,6 +240,9 @@ class RSRFileProcessor {
     // Check if product exists by customer SKU
     const existingProduct = await storage.getProductBySku(customerSku);
     
+    // Calculate Gold pricing correctly
+    const goldPrice = this.calculateGoldPrice(record.retailMAP, record.rsrPricing, record.retailPrice);
+    
     const productData: InsertProduct = {
       name: record.description,
       description: record.expandedDescription || record.description,
@@ -227,9 +253,9 @@ class RSRFileProcessor {
       upcCode: record.upcCode,
       priceWholesale: record.rsrPricing || "0",
       priceMSRP: record.retailPrice || "0",
-      priceMAP: record.retailMAP || record.retailPrice || "0",
+      priceMAP: record.retailMAP || "0", // Only use actual MAP, no fallbacks
       priceBronze: record.retailPrice || "0", // Bronze = MSRP
-      priceGold: record.retailMAP || record.retailPrice || "0", // Gold = MAP
+      priceGold: goldPrice, // FIXED: Gold = (MAP + Dealer Price) / 2
       pricePlatinum: record.rsrPricing || "0", // Platinum = Dealer price
       inStock: parseInt(record.inventoryQuantity) > 0,
       stockQuantity: parseInt(record.inventoryQuantity) || 0,
