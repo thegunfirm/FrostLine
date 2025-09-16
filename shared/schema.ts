@@ -798,3 +798,26 @@ export const insertRsrSkuAliasSchema = createInsertSchema(rsrSkuAliases).omit({
 });
 export type RsrSkuAlias = typeof rsrSkuAliases.$inferSelect;
 export type InsertRsrSkuAlias = z.infer<typeof insertRsrSkuAliasSchema>;
+
+// Deduplication Log - Track archived_product_id → canonical_product_id mapping for rollback capability
+export const dedupLog = pgTable("dedup_log", {
+  id: serial("id").primaryKey(),
+  upcCode: text("upc_code").notNull(), // UPC that was deduplicated
+  canonicalProductId: integer("canonical_product_id").notNull(), // Product that was kept active
+  archivedProductId: integer("archived_product_id").notNull(), // Product that was archived (is_active=false)
+  archivedProductSku: text("archived_product_sku"), // SKU of archived product for reference
+  archivedProductName: text("archived_product_name"), // Name of archived product for reference
+  dedupReason: text("dedup_reason").notNull(), // Why this product was chosen as canonical vs archived
+  batchId: text("batch_id").notNull(), // Batch identifier for grouping dedup operations
+  canRollback: boolean("can_rollback").default(true), // Whether this deduplication can be safely rolled back
+  rollbackNotes: text("rollback_notes"), // Notes about potential rollback complications
+  processedAt: timestamp("processed_at").defaultNow(),
+  processedBy: text("processed_by").notNull().default("system"), // 'system', or user ID who initiated
+});
+
+export const insertDedupLogSchema = createInsertSchema(dedupLog).omit({
+  id: true,
+  processedAt: true,
+});
+export type DedupLog = typeof dedupLog.$inferSelect;
+export type InsertDedupLog = z.infer<typeof insertDedupLogSchema>;

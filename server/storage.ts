@@ -20,6 +20,7 @@ import {
   fflDataSources,
   orderActivityLogs,
   rsrSkuAliases,
+  dedupLog,
   type User, 
   type InsertUser,
   type Product,
@@ -58,6 +59,8 @@ import {
   type InsertOrderActivityLog,
   type RsrSkuAlias,
   type InsertRsrSkuAlias,
+  type DedupLog,
+  type InsertDedupLog,
   tierLabelSettings,
   type TierLabelSetting,
   type InsertTierLabelSetting
