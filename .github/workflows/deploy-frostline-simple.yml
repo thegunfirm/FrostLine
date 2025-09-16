@@ -21,15 +21,15 @@ jobs:
       - name: Validate required secrets
         run: |
           set -euo pipefail
-          test -n "${{ secrets.SSH_KEY }}"       || { echo "::error::SSH_KEY is empty"; exit 1; }
-          test -n "${SSH_HOST}"                  || { echo "::error::SSH_HOST is empty"; exit 1; }
-          test -n "${SSH_USER}"                  || { echo "::error::SSH_USER is empty"; exit 1; }
-          test -n "${SSH_PORT}"                  || { echo "::error::SSH_PORT is empty"; exit 1; }
-          test -n "${{ secrets.DATABASE_URL }}"  || { echo "::error::DATABASE_URL is empty"; exit 1; }
-          test -n "${{ secrets.RSR_USERNAME }}"  || { echo "::error::RSR_USERNAME (FTP) is empty"; exit 1; }
-          test -n "${{ secrets.RSR_PASSWORD }}"  || { echo "::error::RSR_PASSWORD (FTP) is empty"; exit 1; }
+          test -n "${{ secrets.SSH_KEY }}"      || { echo "::error::SSH_KEY is empty"; exit 1; }
+          test -n "${SSH_HOST}"                 || { echo "::error::SSH_HOST is empty"; exit 1; }
+          test -n "${SSH_USER}"                 || { echo "::error::SSH_USER is empty"; exit 1; }
+          test -n "${SSH_PORT}"                 || { echo "::error::SSH_PORT is empty"; exit 1; }
+          test -n "${{ secrets.DATABASE_URL }}" || { echo "::error::DATABASE_URL is empty"; exit 1; }
+          test -n "${{ secrets.RSR_USERNAME }}" || { echo "::error::RSR_USERNAME is empty"; exit 1; }
+          test -n "${{ secrets.RSR_PASSWORD }}" || { echo "::error::RSR_PASSWORD is empty"; exit 1; }
 
-      - name: Start ssh-agent (load private key)
+      - name: Start ssh-agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
@@ -43,25 +43,18 @@ jobs:
       - name: Smoke test SSH
         run: |
           set -euo pipefail
-          ssh -o BatchMode=yes -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'echo ok && whoami && hostname'
+          ssh -o BatchMode=yes -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "echo ok && whoami && hostname"
 
-      - name: Write env, ship restart script, run it
+      - name: Push env + restart script and run
         env:
-          # Required
           DATABASE_URL:                  ${{ secrets.DATABASE_URL }}
           RSR_USERNAME:                  ${{ secrets.RSR_USERNAME }}
           RSR_PASSWORD:                  ${{ secrets.RSR_PASSWORD }}
-
-          # Recommended defaults (overridable)
           RSR_FTP_HOST:                  ${{ secrets.RSR_FTP_HOST }}
           RSR_FTP_PORT:                  ${{ secrets.RSR_FTP_PORT }}
           RSR_FTPS:                      ${{ secrets.RSR_FTPS }}
-
-          # RSR “Standard” (API/feed) – distinct from FTP (optional)
           RSR_STANDARD_USERNAME:         ${{ secrets.RSR_STANDARD_USERNAME }}
           RSR_STANDARD_PASSWORD:         ${{ secrets.RSR_STANDARD_PASSWORD }}
-
-          # Optional integrations
           AUTHORIZE_NET_API_LOGIN_ID:    ${{ secrets.AUTHORIZE_NET_API_LOGIN_ID }}
           AUTHORIZE_NET_TRANSACTION_KEY: ${{ secrets.AUTHORIZE_NET_TRANSACTION_KEY }}
           SENDGRID_API_KEY:              ${{ secrets.SENDGRID_API_KEY }}
@@ -70,61 +63,39 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Find the restart script in common locations.
-          LOCAL_RESTART=""
-          if   [ -f "scripts/restart.sh" ]; then
-            LOCAL_RESTART="scripts/restart.sh"
-          elif [ -f "FrostLine/scripts/restart.sh" ]; then
-            LOCAL_RESTART="FrostLine/scripts/restart.sh"
-          elif [ -f ".github/scripts/restart.sh" ]; then
-            LOCAL_RESTART=".github/scripts/restart.sh"
-          fi
-
-          if [ -z "$LOCAL_RESTART" ]; then
-            echo "::error::restart.sh not found. Expected at one of:"
-            echo "  - scripts/restart.sh"
-            echo "  - FrostLine/scripts/restart.sh"
-            echo "  - .github/scripts/restart.sh"
-            echo "Repo tree (top-level):"
-            ls -la
-            exit 1
-          fi
-
-          # Ensure remote folder exists (private perms)
-          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'install -d -m 700 /root/pm2'
-
-          # Build a temp .env locally (masked in logs)
+          # Build env file locally
           envfile="$(mktemp)"; umask 077
           {
-            printf 'PORT=5000\n'
-            printf 'NODE_ENV=production\n'
-            printf 'DATABASE_URL=%s\n' "$DATABASE_URL"
+            echo "PORT=5000"
+            echo "NODE_ENV=production"
+            echo "DATABASE_URL=${DATABASE_URL}"
+
             # --- RSR FTPS (explicit TLS on 2222) ---
-            printf 'RSR_FTP_HOST=%s\n' "${RSR_FTP_HOST:-ftps.rsrgroup.com}"
-            printf 'RSR_FTP_PORT=%s\n' "${RSR_FTP_PORT:-2222}"
-            printf 'RSR_FTPS=%s\n'     "${RSR_FTPS:-1}"
+            echo "RSR_FTP_HOST=${RSR_FTP_HOST:-ftps.rsrgroup.com}"
+            echo "RSR_FTP_PORT=${RSR_FTP_PORT:-2222}"
+            echo "RSR_PORT=${RSR_FTP_PORT:-2222}"   # <- fix NaN logger
+            echo "RSR_FTPS=${RSR_FTPS:-1}"
+
             # FTP creds ONLY (dealer login)
-            printf 'RSR_USERNAME=%s\n' "$RSR_USERNAME"
-            printf 'RSR_PASSWORD=%s\n' "$RSR_PASSWORD"
-            # RSR “Standard” creds (optional, distinct from FTP)
-            if [ -n "${RSR_STANDARD_USERNAME:-}" ]; then printf 'RSR_STANDARD_USERNAME=%s\n' "$RSR_STANDARD_USERNAME"; fi
-            if [ -n "${RSR_STANDARD_PASSWORD:-}" ]; then printf 'RSR_STANDARD_PASSWORD=%s\n' "$RSR_STANDARD_PASSWORD"; fi
+            echo "RSR_USERNAME=${RSR_USERNAME}"
+            echo "RSR_PASSWORD=${RSR_PASSWORD}"
+
+            # RSR “Standard” API creds (separate from FTP)
+            if [ -n "${RSR_STANDARD_USERNAME:-}" ]; then echo "RSR_STANDARD_USERNAME=${RSR_STANDARD_USERNAME}"; fi
+            if [ -n "${RSR_STANDARD_PASSWORD:-}" ]; then echo "RSR_STANDARD_PASSWORD=${RSR_STANDARD_PASSWORD}"; fi
+
             # Optional integrations
-            if [ -n "${AUTHORIZE_NET_API_LOGIN_ID:-}" ];    then printf 'AUTHORIZE_NET_API_LOGIN_ID=%s\n' "$AUTHORIZE_NET_API_LOGIN_ID"; fi
-            if [ -n "${AUTHORIZE_NET_TRANSACTION_KEY:-}" ]; then printf 'AUTHORIZE_NET_TRANSACTION_KEY=%s\n' "$AUTHORIZE_NET_TRANSACTION_KEY"; fi
-            if [ -n "${SENDGRID_API_KEY:-}" ];              then printf 'SENDGRID_API_KEY=%s\n' "$SENDGRID_API_KEY"; fi
-            if [ -n "${ALGOLIA_APP_ID:-}" ];                then printf 'ALGOLIA_APP_ID=%s\n' "$ALGOLIA_APP_ID"; fi
-            if [ -n "${ALGOLIA_ADMIN_API_KEY:-}" ];         then printf 'ALGOLIA_ADMIN_API_KEY=%s\n' "$ALGOLIA_ADMIN_API_KEY"; fi
+            if [ -n "${AUTHORIZE_NET_API_LOGIN_ID:-}" ]; then echo "AUTHORIZE_NET_API_LOGIN_ID=${AUTHORIZE_NET_API_LOGIN_ID}"; fi
+            if [ -n "${AUTHORIZE_NET_TRANSACTION_KEY:-}" ]; then echo "AUTHORIZE_NET_TRANSACTION_KEY=${AUTHORIZE_NET_TRANSACTION_KEY}"; fi
+            if [ -n "${SENDGRID_API_KEY:-}" ]; then echo "SENDGRID_API_KEY=${SENDGRID_API_KEY}"; fi
+            if [ -n "${ALGOLIA_APP_ID:-}" ]; then echo "ALGOLIA_APP_ID=${ALGOLIA_APP_ID}"; fi
+            if [ -n "${ALGOLIA_ADMIN_API_KEY:-}" ]; then echo "ALGOLIA_ADMIN_API_KEY=${ALGOLIA_ADMIN_API_KEY}"; fi
           } > "$envfile"
 
-          # Ship env + restart script (strip CRLF just in case on the remote)
+          # Push env + restart script
           scp -P "$SSH_PORT" "$envfile" "$SSH_USER@$SSH_HOST:/root/pm2/frostline.env"
-          scp -P "$SSH_PORT" "$LOCAL_RESTART" "$SSH_USER@$SSH_HOST:/root/pm2/restart.sh"
+          scp -P "$SSH_PORT" .github/scripts/restart.sh "$SSH_USER@$SSH_HOST:/root/pm2/restart.sh"
           rm -f "$envfile"
 
-          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" '
-            set -euo pipefail
-            sed -i "s/\r$//" /root/pm2/restart.sh
-            chmod 700 /root/pm2/restart.sh
-            bash /root/pm2/restart.sh
-          '
+          # Run restart script on the host
+          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "chmod 700 /root/pm2/restart.sh && /root/pm2/restart.sh"
