@@ -19,6 +19,7 @@ import {
   atfDirectoryFiles,
   fflDataSources,
   orderActivityLogs,
+  rsrSkuAliases,
   type User, 
   type InsertUser,
   type Product,
@@ -55,6 +56,8 @@ import {
   type InsertFflDataSource,
   type OrderActivityLog,
   type InsertOrderActivityLog,
+  type RsrSkuAlias,
+  type InsertRsrSkuAlias,
   tierLabelSettings,
   type TierLabelSetting,
   type InsertTierLabelSetting
@@ -93,6 +96,11 @@ export interface IStorage {
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, updates: Partial<Product>): Promise<Product>;
   searchProducts(query: string, limit?: number): Promise<Product[]>;
+  
+  // RSR SKU Alias operations
+  upsertSkuAlias(stockNumber: string, upcCode: string, productId: number, isCurrent: boolean): Promise<RsrSkuAlias>;
+  findProductByAlias(stockNumber: string): Promise<Product | undefined>;
+  markCurrentSku(productId: number, stockNumber: string): Promise<void>;
   getProductsByCategory(category: string): Promise<Product[]>;
   getFeaturedProducts(limit?: number): Promise<Product[]>;
   getRelatedProducts(productId: number, category: string, manufacturer: string): Promise<Product[]>;
@@ -406,6 +414,54 @@ export class DatabaseStorage implements IStorage {
   async updateProduct(id: number, updates: Partial<Product>): Promise<Product> {
     const [product] = await db.update(products).set(updates).where(eq(products.id, id)).returning();
     return product;
+  }
+
+  // RSR SKU Alias functions
+  async upsertSkuAlias(stockNumber: string, upcCode: string, productId: number, isCurrent: boolean): Promise<RsrSkuAlias> {
+    const [alias] = await db.insert(rsrSkuAliases)
+      .values({
+        stockNumber,
+        upcCode,
+        productId,
+        isCurrent,
+        lastSeenAt: new Date()
+      })
+      .onConflictDoUpdate({
+        target: rsrSkuAliases.stockNumber,
+        set: {
+          upcCode,
+          productId,
+          isCurrent,
+          lastSeenAt: new Date()
+        }
+      })
+      .returning();
+    return alias;
+  }
+
+  async findProductByAlias(stockNumber: string): Promise<Product | undefined> {
+    const [alias] = await db.select()
+      .from(rsrSkuAliases)
+      .innerJoin(products, eq(rsrSkuAliases.productId, products.id))
+      .where(eq(rsrSkuAliases.stockNumber, stockNumber))
+      .limit(1);
+    
+    return alias ? alias.products : undefined;
+  }
+
+  async markCurrentSku(productId: number, stockNumber: string): Promise<void> {
+    // First, mark all aliases for this product as not current
+    await db.update(rsrSkuAliases)
+      .set({ isCurrent: false })
+      .where(eq(rsrSkuAliases.productId, productId));
+    
+    // Then mark the specified SKU as current
+    await db.update(rsrSkuAliases)
+      .set({ isCurrent: true })
+      .where(and(
+        eq(rsrSkuAliases.productId, productId),
+        eq(rsrSkuAliases.stockNumber, stockNumber)
+      ));
   }
 
   async searchProducts(query: string, limit = 20): Promise<Product[]> {

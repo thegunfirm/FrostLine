@@ -128,6 +128,17 @@ export const products = pgTable("products", {
   rsrPrice: text("rsr_price"), // RSR wholesale/dealer price
 });
 
+// RSR SKU Aliases table for tracking stock number changes
+export const rsrSkuAliases = pgTable("rsr_sku_aliases", {
+  id: serial("id").primaryKey(),
+  stockNumber: text("stock_number").notNull().unique(),
+  upcCode: text("upc_code").notNull(),
+  productId: integer("product_id").notNull(),
+  isCurrent: boolean("is_current").default(true),
+  lastSeenAt: timestamp("last_seen_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
@@ -778,3 +789,12 @@ export const orderActivityLogs = pgTable('order_activity_logs', {
 export const insertOrderActivityLogSchema = createInsertSchema(orderActivityLogs);
 export type OrderActivityLog = typeof orderActivityLogs.$inferSelect;
 export type InsertOrderActivityLog = z.infer<typeof insertOrderActivityLogSchema>;
+
+// RSR SKU Aliases schemas
+export const insertRsrSkuAliasSchema = createInsertSchema(rsrSkuAliases).omit({
+  id: true,
+  createdAt: true,
+  lastSeenAt: true,
+});
+export type RsrSkuAlias = typeof rsrSkuAliases.$inferSelect;
+export type InsertRsrSkuAlias = z.infer<typeof insertRsrSkuAliasSchema>;
