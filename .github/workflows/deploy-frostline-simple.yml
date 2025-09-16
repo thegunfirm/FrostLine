@@ -101,30 +101,29 @@ jobs:
           scp -P "$SSH_PORT" "$envfile" "$SSH_USER@$SSH_HOST:/root/pm2/frostline.env"
           rm -f "$envfile"
 
-          # Create the remote restart script with a single-quoted heredoc (no interpolation here)
-          restart="$(mktemp)"; umask 077
-          cat >"$restart" <<'SCRIPT'
-#!/usr/bin/env bash
+          # Execute the restart and DB self-heal remotely (single-quoted heredoc: no local interpolation)
+          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'bash -seu' <<'EOF'
 set -euo pipefail
 set +H
 
 chmod 600 /root/pm2/frostline.env
 set -a; . /root/pm2/frostline.env; set +a
 
-# -------- Parse DATABASE_URL without sed/awk (safe shell) --------
+# -------- Parse DATABASE_URL (pure shell; no external tools) --------
 DBURL="$DATABASE_URL"
 DB_NO_SCHEME="${DBURL#*://}"
 
-DB_USER="${DB_NO_SCHEME%%:*}"            # before first :
+DB_USER="${DB_NO_SCHEME%%:*}"          # before first :
 REST="${DB_NO_SCHEME#*:}"
-DB_PASS="${REST%%@*}"                    # before @
+DB_PASS="${REST%%@*}"                  # before @
 
 REST="${DB_NO_SCHEME#*@}"
-DB_HOST="${REST%%/*}"                    # host[:port]
-DB_HOST="${DB_HOST%%:*}"                 # strip :port if present
+DB_HOST_AND_DB="${REST}"
+DB_HOST="${DB_HOST_AND_DB%%/*}"        # host[:port]
+DB_HOST="${DB_HOST%%:*}"               # bare host
 
-DB_NAME="${DBURL##*/}"                   # after last /
-DB_NAME="${DB_NAME%%\?*}"                # strip ?query if present
+DB_NAME="${DB_HOST_AND_DB#*/}"         # after first /
+DB_NAME="${DB_NAME%%\?*}"              # strip ?query
 
 # Escape single-quotes for SQL
 ESC_PASS="${DB_PASS//\'/\'\'}"
@@ -137,26 +136,17 @@ sudo -u postgres psql -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT
 # Connectivity check as the app user
 PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -Atqc "select 1" >/dev/null
 
-# -------- Best-effort backup (no subshell/paren tricks) --------
-if command -v pg_dump >/dev/null 2>&1; then
-  ts="$(date +%Y%m%d-%H%M%S)"
-  install -d -m 700 /root/backups
-  if ! PGPASSWORD="$DB_PASS" pg_dump -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" --no-owner --format=custom -f "/root/backups/frostline-$ts.dump"; then
-    echo "::warning::pg_dump failed - backup skipped"
-  fi
-fi
-
 # -------- Restart app & persist --------
 cd /var/www/frostline
 pm2 restart frostline --update-env --cwd /var/www/frostline
 pm2 save
 
 # Wait up to 30s for :5000
-for i in {1..30}; do
+for i in $(seq 1 30); do
   if ss -ltnp | grep -qE ':5000\b'; then break; fi
   sleep 1
 done
-ss -ltnp | grep -E ':5000\b' >/dev/null || { echo "::error::app is not listening on :5000"; exit 1; }
+ss -ltnp | grep -qE ':5000\b' || { echo "::error::app is not listening on :5000"; exit 1; }
 
 # Origins
 curl -fsSI http://127.0.0.1:5000/ | head -1 || true
@@ -167,12 +157,7 @@ fi
 # RSR FTPS handshake & status
 pm2 logs frostline --lines 200 --nostream | egrep -i 'Connecting FTPS|> USER|< 331|< 230|< 530|IM-QTY|FULL|download|insert|upsert|error' || true
 
-# Kick a full import (best-effort)
+# Best-effort kick of a full import
 pm2 trigger frostline rsr:full >/dev/null 2>&1 || \
   curl -fsS -X POST http://127.0.0.1:5000/_internal/rsr/full >/dev/null 2>&1 || true
-SCRIPT
-
-          # Ship & execute the restart script
-          scp -P "$SSH_PORT" "$restart" "$SSH_USER@$SSH_HOST:/root/pm2/restart.sh"
-          rm -f "$restart"
-          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'bash /root/pm2/restart.sh'
+EOF
