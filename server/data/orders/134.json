@@ -8,31 +8,31 @@
   },
   "items": [
     {
-      "upc": "798681732128",
-      "mpn": "SORX1690",
-      "sku": "SGSORX1690",
-      "name": "SIG ROMEO-X ENCLD C SIG-LOC 3MOA",
+      "upc": "810100237950",
+      "mpn": "UX4350204FRN-BB",
+      "sku": "UX4350204FRN-BB",
+      "name": "GLOCK 43X 9MM 10RD BB FRONT RAIL",
       "qty": 1,
-      "price": 585,
-      "imageUrl": "/images/SGSORX1690.jpg"
+      "price": 585.00,
+      "imageUrl": "/images/UX4350204FRN-BB.jpg"
     },
     {
-      "upc": "798681732111",
-      "mpn": "SORX1680",
-      "sku": "SGSORX1680",
-      "name": "SIG ROMEO-X ENCLD C SIG-LOC 6MOA",
-      "qty": 1,
-      "price": 600,
-      "imageUrl": "/images/SGSORX1680.jpg"
-    },
-    {
-      "upc": "798681733200",
-      "mpn": "SORX1670",
-      "sku": "SGSORX1670",
-      "name": "SIG ROMEO-X ENCLD C SIG-LOC GRN/BK",
+      "upc": "813628014522",
+      "mpn": "XSI-BL-222",
+      "sku": "XSI-BL-222",
+      "name": "SME SIGHT RITE BORE SGHTR .223REM",
       "qty": 1,
       "price": 42.99,
-      "imageUrl": "/images/SGSORX1670.jpg"
+      "imageUrl": "/images/XSI-BL-222.jpg"
+    },
+    {
+      "upc": "047700067100",
+      "mpn": "REM23712",
+      "sku": "REM23712",
+      "name": "REM UMC 30CARB 110GR FMJ 50/500",
+      "qty": 1,
+      "price": 62.99,
+      "imageUrl": "/images/REM23712.jpg"
     }
   ],
   "shippingOutcomes": [
