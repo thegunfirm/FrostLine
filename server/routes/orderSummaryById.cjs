@@ -6,6 +6,7 @@ const express = require('express');
 const { readSnapshot, writeSnapshot } = require('../lib/storage');
 const { splitOutcomes } = require('../lib/shippingSplit');
 const { mintOrderNumber } = require('../lib/orderNumbers');
+const { storage } = require('../storage');
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ function firstNonEmpty(...vals) {
   return undefined;
 }
 
-router.get('/api/orders/:orderId/summary', (req, res) => {
+router.get('/api/orders/:orderId/summary', async (req, res) => {
   const orderId = String(req.params.orderId || '').trim();
   if (!orderId) return res.status(400).json({ error: 'orderId required' });
 
@@ -41,6 +42,64 @@ router.get('/api/orders/:orderId/summary', (req, res) => {
   const rawItems = Array.isArray(snap.items) ? snap.items : [];
   if (!rawItems.length) {
     return res.status(422).json({ error: 'No items in order snapshot' });
+  }
+  
+  // ENRICHMENT: Detect and fix old placeholder data before validation
+  let needsEnrichment = false;
+  for (let idx = 0; idx < rawItems.length; idx++) {
+    const it = rawItems[idx];
+    const name = firstNonEmpty(it.name, it.title, it.product?.name);
+    const upc = firstNonEmpty(it.upc, it.UPC, it.upc_code);
+    
+    // Check for placeholder data that needs enrichment
+    if (!name || name.startsWith('UNKNOWN') || upc?.startsWith('UNKNOWN')) {
+      needsEnrichment = true;
+      
+      try {
+        // Look up real product data by UPC or SKU
+        let product = null;
+        const lookupUpc = firstNonEmpty(it.upc, it.UPC, it.upc_code);
+        const lookupSku = firstNonEmpty(it.sku, it.SKU);
+        
+        if (lookupUpc && !lookupUpc.startsWith('UNKNOWN')) {
+          const products = await storage.getProductsByUpc(lookupUpc);
+          product = products && products.length > 0 ? products[0] : null;
+        } else if (lookupSku) {
+          product = await storage.getProductBySku(lookupSku);
+        }
+        
+        if (product) {
+          // Enrich the item with real product data
+          rawItems[idx] = {
+            ...it,
+            upc: product.upcCode || lookupUpc,
+            mpn: product.manufacturerPartNumber || it.mpn,
+            sku: product.sku || lookupSku,
+            name: product.name,
+            imageUrl: `/images/${product.sku}.jpg`,
+            product: {
+              ...it.product,
+              upc: product.upcCode,
+              mpn: product.manufacturerPartNumber,
+              sku: product.sku,
+              name: product.name,
+              imageUrl: `/images/${product.sku}.jpg`
+            }
+          };
+        }
+      } catch (error) {
+        console.error(`Failed to enrich item ${idx + 1} for order ${orderId}:`, error);
+        // Continue without enrichment for this item
+      }
+    }
+  }
+  
+  // Save enriched data back to snapshot if any changes were made
+  if (needsEnrichment) {
+    snap.items = rawItems;
+    snap.enrichedAt = new Date().toISOString();
+    snap.updatedAt = new Date().toISOString();
+    writeSnapshot(orderId, snap);
   }
   
   // Validate all items first - fail fast if any item is invalid
