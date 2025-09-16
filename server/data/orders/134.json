@@ -8,8 +8,8 @@
   },
   "items": [
     {
-      "upc": "",
-      "mpn": "",
+      "upc": "798681732128",
+      "mpn": "SORX1690",
       "sku": "SGSORX1690",
       "name": "SIG ROMEO-X ENCLD C SIG-LOC 3MOA",
       "qty": 1,
@@ -17,8 +17,8 @@
       "imageUrl": "/images/SGSORX1690.jpg"
     },
     {
-      "upc": "",
-      "mpn": "",
+      "upc": "798681732111",
+      "mpn": "SORX1680",
       "sku": "SGSORX1680",
       "name": "SIG ROMEO-X ENCLD C SIG-LOC 6MOA",
       "qty": 1,
@@ -26,8 +26,8 @@
       "imageUrl": "/images/SGSORX1680.jpg"
     },
     {
-      "upc": "",
-      "mpn": "",
+      "upc": "798681733200",
+      "mpn": "SORX1670",
       "sku": "SGSORX1670",
       "name": "SIG ROMEO-X ENCLD C SIG-LOC GRN/BK",
       "qty": 1,
