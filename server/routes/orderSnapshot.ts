@@ -27,8 +27,10 @@ router.post('/api/orders/:orderId/snapshot', express.json(), async (req, res) =>
   const rawItems = Array.isArray(body.items) ? body.items : [];
   if (!rawItems.length) return res.status(422).json({ error: 'items[] required' });
 
-  // Normalize every line, tolerate missing fields, use safe defaults
-  const items = await Promise.all(rawItems.map(async (it: any, idx: number) => {
+  // Normalize every line with proper error handling for zero tolerance policy
+  let items: any[] = [];
+  try {
+    items = await Promise.all(rawItems.map(async (it: any, idx: number) => {
     let upc = String(firstNonEmpty(
       it.upc, it.UPC, it.upc_code, it.barcode,
       it.product?.upc, it.product?.UPC
@@ -95,7 +97,16 @@ router.post('/api/orders/:orderId/snapshot', express.json(), async (req, res) =>
     return { upc, mpn, sku, name, qty: Number.isFinite(qty) && qty > 0 ? qty : 1,
              price: Number.isFinite(price) && price >= 0 ? price : 0,
              imageUrl };
-  }));
+    }));
+  } catch (error: any) {
+    // Return structured error response for blocked orders
+    console.error('Order blocked due to data validation:', error.message);
+    return res.status(422).json({ 
+      error: 'Order blocked: Missing authentic RSR data',
+      details: error.message,
+      requiresAuth: 'All items must have authentic UPC and product name from RSR database'
+    });
+  }
 
   // Outcomes (default single shipment)
   let outcomes: any[] = [];
