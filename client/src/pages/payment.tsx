@@ -145,10 +145,25 @@ function PaymentPageContent() {
           zip: '12345'
         },
         orderItems: items.map(item => ({
+          // Product identifiers for backend lookup
+          productId: item.productId,
+          upc: item.upc || item.UPC,
+          mpn: item.mpn || item.MPN,
+          sku: item.productSku || item.rsrStock,
           rsrStock: item.rsrStock,
+          
+          // Product details
+          name: item.productName || item.description,
           description: item.description,
           quantity: item.quantity,
-          price: parseFloat(item.price)
+          price: parseFloat(item.price),
+          
+          // Additional data for order processing
+          imageUrl: item.productImage,
+          manufacturer: item.manufacturer,
+          fulfillmentType: item.fulfillmentType || 'direct',
+          selectedFFL: item.selectedFFL || null,
+          requiresFFL: item.requiresFFL || false
         }))
       });
       
