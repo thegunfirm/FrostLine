@@ -16,7 +16,7 @@ export interface ProductPricing {
 }
 
 export interface User {
-  subscriptionTier: 'Bronze' | 'Gold' | 'Platinum';
+  subscriptionTier: string;
 }
 
 export interface PricingResult {
