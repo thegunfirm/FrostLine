@@ -57,15 +57,15 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
       needsEnrichment = true;
       
       try {
-        // Look up real product data by UPC or SKU
+        // Look up real product data by UPC or MPN (not SKU)
         let product = null;
         const lookupUpc = firstNonEmpty(it.upc, it.UPC, it.upc_code);
-        const lookupSku = firstNonEmpty(it.sku, it.SKU);
+        const lookupMpn = firstNonEmpty(it.mpn, it.MPN, it.manufacturerPartNumber);
         
         if (lookupUpc && !lookupUpc.startsWith('UNKNOWN')) {
           product = await storage.getProductByUpc(lookupUpc);
-        } else if (lookupSku) {
-          product = await storage.getProductBySku(lookupSku);
+        } else if (lookupMpn && !lookupMpn.startsWith('UNKNOWN')) {
+          product = await storage.getProductByMpn(lookupMpn);
         }
         
         if (product) {
@@ -87,7 +87,7 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
           
           // Only update image if using placeholder
           if (it.imageUrl?.includes('placeholder') || !it.imageUrl) {
-            enrichedItem.imageUrl = `/images/${product.sku}.jpg`;
+            enrichedItem.imageUrl = `/images/${product.upcCode}.jpg`;
             actuallyChanged = true;
           }
           
@@ -97,9 +97,8 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
               ...it.product,
               upc: (!it.product.upc || it.product.upc.startsWith('UNKNOWN')) ? product.upcCode : it.product.upc,
               name: (!it.product.name || it.product.name.startsWith('UNKNOWN')) ? product.name : it.product.name,
-              sku: it.product.sku || product.sku,
               mpn: it.product.mpn || product.manufacturerPartNumber,
-              imageUrl: (it.product.imageUrl?.includes('placeholder') || !it.product.imageUrl) ? `/images/${product.sku}.jpg` : it.product.imageUrl
+              imageUrl: (it.product.imageUrl?.includes('placeholder') || !it.product.imageUrl) ? `/images/${product.upcCode}.jpg` : it.product.imageUrl
             };
           }
           
