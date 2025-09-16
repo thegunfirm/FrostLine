@@ -101,6 +101,7 @@ export interface IStorage {
   upsertSkuAlias(stockNumber: string, upcCode: string, productId: number, isCurrent: boolean): Promise<RsrSkuAlias>;
   findProductByAlias(stockNumber: string): Promise<Product | undefined>;
   markCurrentSku(productId: number, stockNumber: string): Promise<void>;
+  checkSkuConflict(sku: string, excludeProductId?: number): Promise<Product | undefined>;
   getProductsByCategory(category: string): Promise<Product[]>;
   getFeaturedProducts(limit?: number): Promise<Product[]>;
   getRelatedProducts(productId: number, category: string, manufacturer: string): Promise<Product[]>;
@@ -376,7 +377,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProductByUpc(upc: string): Promise<Product | undefined> {
-    console.log(`🔧 SIMPLE UPC LOOKUP for: ${upc}`);
+    console.log(`🔧 DETERMINISTIC UPC LOOKUP for: ${upc}`);
     
     // Get all products with UPC - ensure we select all fields including requiresFFL
     const allProducts = await db.select().from(products).where(eq(products.upcCode, upc));
@@ -388,17 +389,47 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`🔍 Found ${allProducts.length} products for UPC ${upc}`);
     
-    // Find FFL-required product first
-    const fflProduct = allProducts.find(p => p.requiresFFL === true);
-    if (fflProduct) {
-      console.log(`✅ Found FFL-required product: ${fflProduct.name} (ID: ${fflProduct.id})`);
-      return fflProduct;
+    if (allProducts.length === 1) {
+      console.log(`✅ Single product for UPC: ${allProducts[0].name} (ID: ${allProducts[0].id})`);
+      return allProducts[0];
     }
     
-    // Fallback to first product
-    const firstProduct = allProducts[0];
-    console.log(`📦 Using first product: ${firstProduct.name} (ID: ${firstProduct.id}, FFL: ${firstProduct.requiresFFL})`);
-    return firstProduct;
+    // COLLISION SAFETY: Multiple products with same UPC - use deterministic selection
+    console.log(`⚠️  COLLISION: Multiple products found for UPC ${upc}, selecting canonical product`);
+    
+    // Get alias information for all products to find the one with current alias
+    const productIds = allProducts.map(p => p.id);
+    const aliases = await db.select()
+      .from(rsrSkuAliases)
+      .where(
+        and(
+          inArray(rsrSkuAliases.productId, productIds),
+          eq(rsrSkuAliases.isCurrent, true)
+        )
+      );
+    
+    // Prefer product with current alias (most recently updated via RSR import)
+    if (aliases.length > 0) {
+      const currentAliasProductId = aliases[0].productId;
+      const canonicalProduct = allProducts.find(p => p.id === currentAliasProductId);
+      if (canonicalProduct) {
+        console.log(`🎯 CANONICAL: Using product with current alias: ${canonicalProduct.name} (ID: ${canonicalProduct.id})`);
+        return canonicalProduct;
+      }
+    }
+    
+    // Fallback: Use most recently created product for consistency (updatedAt may not exist)
+    const sortedProducts = allProducts.sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime; // Most recent first
+    });
+    
+    const canonicalProduct = sortedProducts[0];
+    console.log(`📅 CANONICAL: Using most recently created product: ${canonicalProduct.name} (ID: ${canonicalProduct.id}, Created: ${canonicalProduct.createdAt})`);
+    console.log(`   🗂️  Skipped products: ${sortedProducts.slice(1).map(p => `${p.name} (ID: ${p.id})`).join(', ')}`);
+    
+    return canonicalProduct;
   }
 
   async getProductByMpn(mpn: string): Promise<Product | undefined> {
@@ -462,6 +493,21 @@ export class DatabaseStorage implements IStorage {
         eq(rsrSkuAliases.productId, productId),
         eq(rsrSkuAliases.stockNumber, stockNumber)
       ));
+  }
+  
+  async checkSkuConflict(sku: string, excludeProductId?: number): Promise<Product | undefined> {
+    if (excludeProductId) {
+      const conflictingProducts = await db.select().from(products).where(
+        and(
+          eq(products.sku, sku),
+          ne(products.id, excludeProductId)
+        )
+      );
+      return conflictingProducts[0] || undefined;
+    }
+    
+    const [conflictingProduct] = await db.select().from(products).where(eq(products.sku, sku));
+    return conflictingProduct || undefined;
   }
 
   async searchProducts(query: string, limit = 20): Promise<Product[]> {

@@ -235,10 +235,37 @@ class RSRFileProcessor {
     }
 
     // Use RSR stock number as product SKU for system compatibility
-    const productSku = record.stockNumber;
+    const targetSku = record.stockNumber;
     
     // Check if product exists by UPC to prevent duplicates (RSR changes SKUs for same products)
     const existingProduct = record.upcCode ? await storage.getProductByUpc(record.upcCode) : null;
+    
+    // COLLISION SAFETY: Check for SKU conflicts before assignment
+    let actualSku = targetSku;
+    let skuConflictDetected = false;
+    
+    if (existingProduct) {
+      // Updating existing product - check if target SKU conflicts with OTHER products
+      const conflictingProduct = await storage.checkSkuConflict(targetSku, existingProduct.id);
+      if (conflictingProduct) {
+        console.log(`⚠️  SKU COLLISION: Product ${conflictingProduct.id} (${conflictingProduct.name}) already has SKU '${targetSku}'`);
+        console.log(`   🔒 SAFE MODE: Keeping existing SKU '${existingProduct.sku}' for product ${existingProduct.id} (${existingProduct.name})`);
+        console.log(`   🔗 Will maintain alias: ${targetSku} → Product ${existingProduct.id}`);
+        actualSku = existingProduct.sku; // Keep existing SKU to avoid collision
+        skuConflictDetected = true;
+      }
+    } else {
+      // Creating new product - check if target SKU conflicts with ANY existing product
+      const conflictingProduct = await storage.checkSkuConflict(targetSku);
+      if (conflictingProduct) {
+        console.log(`⚠️  SKU COLLISION: Product ${conflictingProduct.id} (${conflictingProduct.name}) already has SKU '${targetSku}'`);
+        console.log(`   🔒 SAFE MODE: Will create new product with fallback SKU and maintain alias`);
+        console.log(`   🔗 Will maintain alias: ${targetSku} → New Product`);
+        // Generate collision-safe SKU: RSR-{originalSKU}-{timestamp}
+        actualSku = `RSR-${targetSku}-${Date.now()}`;
+        skuConflictDetected = true;
+      }
+    }
     
     // Calculate Gold pricing correctly
     const goldPrice = this.calculateGoldPrice(record.retailMAP, record.rsrPricing, record.retailPrice);
@@ -248,7 +275,7 @@ class RSRFileProcessor {
       description: record.expandedDescription || record.description,
       category: this.mapDepartmentToCategory(record.departmentNumber),
       manufacturer: record.fullManufacturerName,
-      sku: productSku,                               // Product SKU (RSR stock number for compatibility)
+      sku: actualSku,                                // COLLISION-SAFE: Use actualSku (may be existing SKU or fallback)
       rsrStockNumber: record.stockNumber,            // RSR distributor code for ordering  
       manufacturerPartNumber: record.manufacturerPartNumber, // Store MPN separately
       upcCode: record.upcCode,
@@ -260,7 +287,7 @@ class RSRFileProcessor {
       pricePlatinum: record.rsrPricing || "0", // Platinum = Dealer price
       inStock: parseInt(record.inventoryQuantity) > 0,
       stockQuantity: parseInt(record.inventoryQuantity) || 0,
-      allocated: record.allocatedCloseoutDeleted || null,
+      allocated: record.allocatedCloseoutDeleted || undefined,
       newItem: record.promo?.includes('NEW') || false,
       promo: record.promo || null,
       accessories: record.accessories || null,
@@ -295,14 +322,22 @@ class RSRFileProcessor {
     if (existingProduct) {
       await storage.updateProduct(existingProduct.id, productData);
       productId = existingProduct.id;
-      console.log(`🔄 Updated: ${productSku} (UPC: ${record.upcCode}) - prevented duplicate`);
+      if (skuConflictDetected) {
+        console.log(`🔄 Updated: ${existingProduct.sku} (UPC: ${record.upcCode}) - COLLISION SAFE: SKU preserved`);
+      } else {
+        console.log(`🔄 Updated: ${targetSku} (UPC: ${record.upcCode}) - prevented duplicate`);
+      }
     } else {
       const newProduct = await storage.createProduct(productData);
       productId = newProduct.id;
-      console.log(`➕ Created: ${productSku} (UPC: ${record.upcCode})`);
+      if (skuConflictDetected) {
+        console.log(`➕ Created: ${actualSku} (UPC: ${record.upcCode}) - COLLISION SAFE: Used fallback SKU`);
+      } else {
+        console.log(`➕ Created: ${targetSku} (UPC: ${record.upcCode})`);
+      }
     }
     
-    // Maintain SKU alias tracking for UPC-based lookups (only if UPC exists)
+    // COLLISION SAFETY: Always maintain SKU alias tracking for RSR stock numbers
     if (record.upcCode && record.upcCode.trim()) {
       try {
         // First, mark all other aliases for this UPC as not current
@@ -311,12 +346,21 @@ class RSRFileProcessor {
         // Then upsert this stock number as the current alias
         await storage.upsertSkuAlias(record.stockNumber, record.upcCode, productId, true);
         
-        console.log(`   🔗 SKU alias: ${record.stockNumber} → UPC ${record.upcCode} (Product ID: ${productId})`);
+        if (skuConflictDetected) {
+          console.log(`   🔗 COLLISION ALIAS: ${record.stockNumber} → UPC ${record.upcCode} (Product ID: ${productId}) - SKU conflict resolved via alias`);
+        } else {
+          console.log(`   🔗 SKU alias: ${record.stockNumber} → UPC ${record.upcCode} (Product ID: ${productId})`);
+        }
       } catch (error) {
-        console.warn(`   ⚠️  Failed to create SKU alias for ${record.stockNumber}: ${error.message}`);
+        console.error(`   ❌ CRITICAL: Failed to create SKU alias for ${record.stockNumber}: ${error.message}`);
+        console.error(`      This could cause lookup failures for RSR stock number ${record.stockNumber}`);
+        throw error; // Re-throw to prevent silent alias failures
       }
     } else {
       console.log(`   ⚠️  No UPC for ${record.stockNumber} - skipping alias creation`);
+      if (skuConflictDetected) {
+        console.warn(`   🚨 WARNING: SKU collision detected but no UPC for fallback alias creation`);
+      }
     }
     
     // Log field correction when manufacturer part number differs from RSR stock number
@@ -329,8 +373,8 @@ class RSRFileProcessor {
    * Process inventory quantities file (IM-QTY-CSV.csv)
    * 2 fields, comma delimited, updates every 5 minutes
    */
-  async processQuantityFile(filePath: string): Promise<{ updated: number }> {
-    console.log('Processing RSR quantity file:', filePath);
+  async processQuantityFile(filePath: string): Promise<{ updated: number; errors: number }> {
+    console.log('🔄 Processing RSR quantity file:', filePath);
     
     if (!existsSync(filePath)) {
       throw new Error(`RSR quantity file not found: ${filePath}`);
@@ -339,40 +383,74 @@ class RSRFileProcessor {
     const fileContent = readFileSync(filePath, 'utf-8');
     const lines = fileContent.split('\n').filter(line => line.trim());
     
-    console.log(`Processing ${lines.length} RSR quantity records`);
+    console.log(`📊 Processing ${lines.length} RSR quantity records`);
     
     let updated = 0;
+    let errors = 0;
     
     for (const line of lines) {
       try {
         const [stockNumber, quantity] = line.split(',');
         
         if (stockNumber && quantity) {
-          const product = await storage.getProductBySku(stockNumber.trim());
-          if (product) {
-            const qty = parseInt(quantity.trim()) || 0;
-            await storage.updateProduct(product.id, {
-              stockQuantity: qty,
-              inStock: qty > 0
-            });
-            updated++;
+          const stockNum = stockNumber.trim();
+          const qty = parseInt(quantity.trim()) || 0;
+          
+          // COLLISION-SAFE: Try multiple lookup strategies to handle existing duplicates
+          let product = await storage.getProductBySku(stockNum);
+          
+          // If not found, try alias lookup (handles RSR stock number changes and collisions)
+          if (!product) {
+            product = await storage.findProductByAlias(stockNum);
+            if (product) {
+              console.log(`   🔗 COLLISION-SAFE: Found product via alias: ${stockNum} → Product ID ${product.id} (${product.name})`);
+            }
           }
+          
+          if (product) {
+            try {
+              await storage.updateProduct(product.id, {
+                stockQuantity: qty,
+                inStock: qty > 0
+              });
+              updated++;
+              
+              if (updated % 100 === 0) {
+                console.log(`   📈 Updated ${updated} product quantities...`);
+              }
+            } catch (updateError) {
+              console.error(`   ❌ Failed to update quantity for product ${product.id} (${stockNum}):`, updateError);
+              errors++;
+            }
+          } else {
+            console.log(`   ⚠️  Product not found for stock number: ${stockNum} (quantity: ${qty})`);
+            errors++;
+          }
+        } else {
+          console.log(`   ⚠️  Invalid quantity record: ${line}`);
+          errors++;
         }
       } catch (error) {
-        console.error('Error processing RSR quantity record:', error);
+        console.error(`❌ Error processing RSR quantity record '${line}':`, error);
+        errors++;
       }
     }
 
-    console.log(`RSR quantity processing complete: ${updated} products updated`);
-    return { updated };
+    console.log(`✅ RSR quantity processing complete: ${updated} products updated, ${errors} errors`);
+    
+    if (errors > 0) {
+      console.warn(`⚠️  ${errors} quantity update errors occurred. This may indicate missing products or data issues.`);
+    }
+    
+    return { updated, errors };
   }
 
   /**
    * Process deleted products file (rsrdeletedinv.txt)
    * 3 fields, semicolon delimited
    */
-  async processDeletedFile(filePath: string): Promise<{ deleted: number }> {
-    console.log('Processing RSR deleted products file:', filePath);
+  async processDeletedFile(filePath: string): Promise<{ deleted: number; errors: number }> {
+    console.log('🗑️  Processing RSR deleted products file:', filePath);
     
     if (!existsSync(filePath)) {
       throw new Error(`RSR deleted file not found: ${filePath}`);
@@ -384,29 +462,57 @@ class RSRFileProcessor {
     console.log(`Processing ${lines.length} RSR deleted records`);
     
     let deleted = 0;
+    let errors = 0;
     
     for (const line of lines) {
       try {
         const [stockNumber, description, status] = line.split(';');
         
         if (stockNumber && status === 'DELETED') {
-          const product = await storage.getProductBySku(stockNumber.trim());
+          const stockNum = stockNumber.trim();
+          
+          // COLLISION-SAFE: Try direct SKU lookup first
+          let product = await storage.getProductBySku(stockNum);
+          
+          // If not found, try alias lookup (handles RSR stock number changes and collisions)
+          if (!product) {
+            product = await storage.findProductByAlias(stockNum);
+            if (product) {
+              console.log(`   🔗 COLLISION-SAFE: Found product via alias for deletion: ${stockNum} → Product ID ${product.id} (${product.name})`);
+            }
+          }
+          
           if (product) {
-            // Mark as out of stock instead of deleting
-            await storage.updateProduct(product.id, {
-              inStock: false,
-              stockQuantity: 0
-            });
-            deleted++;
+            try {
+              // Mark as out of stock instead of deleting
+              await storage.updateProduct(product.id, {
+                inStock: false,
+                stockQuantity: 0
+              });
+              deleted++;
+              console.log(`   ✅ Marked as out of stock: ${product.name} (ID: ${product.id})`);
+            } catch (updateError) {
+              console.error(`   ❌ Failed to mark product ${product.id} as deleted:`, updateError);
+              errors++;
+            }
+          } else {
+            console.log(`   ⚠️  Product not found for deletion: ${stockNum}`);
+            errors++;
           }
         }
       } catch (error) {
-        console.error('Error processing RSR deleted record:', error);
+        console.error(`❌ Error processing RSR deleted record '${line}':`, error);
+        errors++;
       }
     }
 
-    console.log(`RSR deleted processing complete: ${deleted} products marked as out of stock`);
-    return { deleted };
+    console.log(`✅ RSR deleted processing complete: ${deleted} products marked as out of stock, ${errors} errors`);
+    
+    if (errors > 0) {
+      console.warn(`⚠️  ${errors} deletion processing errors occurred. This may indicate missing products or data issues.`);
+    }
+    
+    return { deleted, errors };
   }
 
   private mapDepartmentToCategory(departmentNumber: string): string {
