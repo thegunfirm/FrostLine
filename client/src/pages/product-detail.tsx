@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
+import { getComprehensivePricing, getCartTierPrice, getAllTierPrices, formatPrice } from "@/lib/pricing-utils";
 import { 
   ArrowLeft, 
   Heart, 
@@ -54,6 +55,7 @@ interface Product {
   manufacturer: string;
   manufacturerPartNumber: string;
   sku: string;
+  rsrStockNumber?: string;
   priceWholesale: string;
   priceMAP: string;
   priceMSRP: string;
@@ -167,51 +169,20 @@ export default function ProductDetail() {
 
   // Auto-populate user ZIP if logged in
   useEffect(() => {
-    if (user && 'shippingAddress' in user && user.shippingAddress && 'zip' in user.shippingAddress) {
+    if (user && user.shippingAddress && user.shippingAddress.zip) {
       setUserZip(user.shippingAddress.zip);
     }
   }, [user]);
 
-  // Pricing logic based on your specification
-  const getCurrentPrice = () => {
-    if (!product) return 0;
-    if (!user) {
-      // For non-authenticated users: show MSRP if present, else dealerPrice
-      const price = parseFloat(product.priceMSRP || product.priceBronze || '0');
-      return isNaN(price) ? 0 : price;
-    }
-    
-    switch (user.subscriptionTier) {
-      case "Bronze":
-        const bronzePrice = parseFloat(product.priceMSRP || product.priceBronze || '0');
-        return isNaN(bronzePrice) ? 0 : bronzePrice;
-      case "Gold":
-        const goldPrice = parseFloat(product.priceGold || '0');
-        return isNaN(goldPrice) ? 0 : goldPrice;
-      case "Platinum":
-        const platinumPrice = parseFloat(product.pricePlatinum || '0');
-        return isNaN(platinumPrice) ? 0 : platinumPrice;
-      default:
-        const defaultPrice = parseFloat(product.priceMSRP || product.priceBronze || '0');
-        return isNaN(defaultPrice) ? 0 : defaultPrice;
-    }
-  };
+  // Fetch hide Gold pricing setting for consistent pricing logic
+  const { data: hideGoldSetting } = useQuery({
+    queryKey: ["/api/admin/system-settings/hide_gold_when_equal_map"],
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
 
-  const getSavings = () => {
-    if (!product) return 0;
-    const basePrice = parseFloat(product.priceBronze || '0');
-    const currentPrice = getCurrentPrice();
-    const savings = (isNaN(basePrice) ? 0 : basePrice) - currentPrice;
-    return Math.max(0, savings);
-  };
-
-  const getTierSavings = (tier: string) => {
-    if (!product) return 0;
-    const tierPrice = tier === "Gold" ? parseFloat(product.priceGold || '0') : parseFloat(product.pricePlatinum || '0');
-    const basePrice = parseFloat(product.priceBronze || '0');
-    const savings = (isNaN(basePrice) ? 0 : basePrice) - (isNaN(tierPrice) ? 0 : tierPrice);
-    return Math.max(0, savings);
-  };
+  // Get comprehensive pricing using centralized utility
+  const pricingInfo = product ? getComprehensivePricing(product, user as any, 'public', hideGoldSetting) : null;
+  const allTierPrices = product ? getAllTierPrices(product) : null;
 
   // Image handling with multiple angles - Use RSR stock number for images
   const getImageUrl = (angle: number = 1) => {
@@ -283,7 +254,7 @@ export default function ProductDetail() {
     if (!product) return;
 
     // Add item to cart with pricing based on user tier or Bronze if not logged in
-    const currentPrice = user ? getCurrentPrice() : parseFloat(product.priceBronze || "0");
+    const currentPrice = pricingInfo?.price || 0;
     
     addItem({
       productId: product.id,
@@ -613,7 +584,7 @@ export default function ProductDetail() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-2xl font-bold text-gray-900">
-                          ${(getCurrentPrice() || 0).toFixed(2)}
+                          {pricingInfo?.price ? formatPrice(pricingInfo.price) : 'N/A'}
                         </div>
                         <div className="text-sm text-gray-600">
                           {user.subscriptionTier} Member Price
@@ -626,9 +597,9 @@ export default function ProductDetail() {
                             MSRP: ${(parseFloat(product.priceMSRP || '0') || 0).toFixed(2)}
                           </div>
                         )}
-                        {getSavings() > 0 && (
+                        {pricingInfo?.savings && pricingInfo.savings > 0 && (
                           <div className="text-sm font-medium text-green-600">
-                            You Save ${(getSavings() || 0).toFixed(2)}
+                            You Save {formatPrice(pricingInfo.savings)}
                           </div>
                         )}
                       </div>
@@ -714,8 +685,8 @@ export default function ProductDetail() {
                         <span className="text-sm font-medium text-yellow-800">Upgrade & Save More</span>
                       </div>
                       <div className="text-sm text-yellow-700">
-                        <div>Gold: ${(parseFloat(product.priceGold || '0') || 0).toFixed(2)} (Save ${(getTierSavings("Gold") || 0).toFixed(2)})</div>
-                        <div>Platinum: ${(parseFloat(product.pricePlatinum || '0') || 0).toFixed(2)} (Save ${(getTierSavings("Platinum") || 0).toFixed(2)})</div>
+                        <div>Gold: {allTierPrices?.gold ? formatPrice(allTierPrices.gold) : 'N/A'} {allTierPrices?.gold && allTierPrices.bronze && allTierPrices.gold < allTierPrices.bronze ? `(Save ${formatPrice(allTierPrices.bronze - allTierPrices.gold)})` : ''}</div>
+                        <div>Platinum: {allTierPrices?.platinum ? formatPrice(allTierPrices.platinum) : 'N/A'} {allTierPrices?.platinum && allTierPrices.bronze && allTierPrices.platinum < allTierPrices.bronze ? `(Save ${formatPrice(allTierPrices.bronze - allTierPrices.platinum)})` : ''}</div>
                       </div>
                       <Link href="/membership">
                         <Button size="sm" variant="outline" className="w-full transition-all duration-200 hover:scale-[1.02]">
