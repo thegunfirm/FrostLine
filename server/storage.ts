@@ -368,8 +368,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProductByUpc(upc: string): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.upcCode, upc));
-    return product || undefined;
+    // FIXED: Handle duplicate UPCs by prioritizing FFL-required records
+    const allProducts = await db.select().from(products).where(eq(products.upcCode, upc));
+    if (!allProducts.length) return undefined;
+    
+    // If multiple products with same UPC, prefer the one that requires FFL
+    const fflProduct = allProducts.find(p => p.requires_ffl);
+    console.log(`🔧 DB Lookup ${upc}: Found ${allProducts.length} records, FFL record: ${fflProduct ? fflProduct.id : 'none'}`);
+    return fflProduct || allProducts[0];
   }
 
   async getProductByMpn(mpn: string): Promise<Product | undefined> {

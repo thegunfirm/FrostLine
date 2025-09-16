@@ -1227,7 +1227,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   };
                 }));
                 
-                // Process shipping outcomes
+                // FIXED: Enrich items with fulfillment types based on product properties
+                for (const item of orderItems) {
+                  try {
+                    // Look up product to get FFL requirement and drop-ship eligibility
+                    const product = await storage.getProductBySku(item.sku);
+                    const requiresFFL = product?.requires_ffl || false;
+                    const canDropShip = product?.dropShipEligible || false;
+                    
+                    // Set fulfillment type based on product properties
+                    if (requiresFFL && canDropShip) {
+                      item.fulfillmentType = 'ffl_dropship';        // → DS>FFL
+                    } else if (requiresFFL && !canDropShip) {
+                      item.fulfillmentType = 'ffl_non_dropship';    // → IH>FFL
+                    } else if (!requiresFFL && canDropShip) {
+                      item.fulfillmentType = 'direct_dropship';     // → DS>Customer
+                    } else {
+                      item.fulfillmentType = 'direct';              // → IH>Customer
+                    }
+                    
+                    console.log(`✅ Item ${item.sku}: FFL=${requiresFFL}, DropShip=${canDropShip}, Type=${item.fulfillmentType}`);
+                  } catch (error) {
+                    console.error(`❌ Failed to lookup product ${item.sku} for fulfillment type:`, error);
+                    // Fallback for lookup failures
+                    item.fulfillmentType = 'direct';
+                  }
+                }
+                
+                // Process shipping outcomes (now with correct fulfillment types)
                 const outcomes = splitOutcomes(orderItems.map(item => 
                   item.fulfillmentType === 'ffl_non_dropship' ? 'IH>FFL' : 
                   item.fulfillmentType === 'ffl_dropship' ? 'DS>FFL' :

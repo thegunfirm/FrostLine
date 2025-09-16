@@ -183,7 +183,9 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
       const upc = item.upc || item.product?.upc;
       if (upc) {
         const product = await storage.getProductByUpc(upc);
-        return product?.fflRequired || false;
+        const result = product?.requires_ffl || false;
+        console.log(`🎯 FFL Check: ${upc} → ${product?.name || 'Not Found'} → FFL: ${result}`);
+        return result;
       }
       return false;
     } catch (error) {
