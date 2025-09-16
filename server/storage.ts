@@ -365,6 +365,11 @@ export class DatabaseStorage implements IStorage {
     return product || undefined;
   }
 
+  async getProductByUpc(upc: string): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.upcCode, upc));
+    return product || undefined;
+  }
+
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
     const [product] = await db.insert(products).values(insertProduct).returning();
     return product;

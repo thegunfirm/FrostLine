@@ -7500,6 +7500,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint for systematic order enrichment
+  app.post("/api/admin/enrich-orders", async (req, res) => {
+    try {
+      console.log('🚀 Starting systematic order enrichment via admin endpoint...');
+      
+      const { scanAndEnrichOrders } = await import('./scripts/enrich-orders.js');
+      
+      // Capture console output for response
+      const originalLog = console.log;
+      const logs: string[] = [];
+      console.log = (...args: any[]) => {
+        logs.push(args.join(' '));
+        originalLog(...args);
+      };
+
+      await scanAndEnrichOrders();
+
+      // Restore original console.log
+      console.log = originalLog;
+
+      res.json({
+        success: true,
+        message: 'Systematic order enrichment completed',
+        logs: logs,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error: any) {
+      console.error('❌ Enrichment failed:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   // RSR FTP Directory Explorer - Find correct image paths
   app.get("/api/rsr-ftp/explore/:imageName", async (req, res) => {
     try {

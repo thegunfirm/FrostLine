@@ -9,7 +9,6 @@
   "items": [
     {
       "upc": "810100237950",
-      "mpn": "UX4350204FRN-BB",
       "sku": "UX4350204FRN-BB",
       "name": "GLOCK 43X 9MM 10RD BB FRONT RAIL",
       "qty": 1,
@@ -18,8 +17,7 @@
     },
     {
       "upc": "813628014522",
-      "mpn": "XSI-BL-222",
-      "sku": "XSI-BL-222",
+      "sku": "XSI-BL-222", 
       "name": "SME SIGHT RITE BORE SGHTR .223REM",
       "qty": 1,
       "price": 42.99,
@@ -27,7 +25,6 @@
     },
     {
       "upc": "047700067100",
-      "mpn": "REM23712",
       "sku": "REM23712",
       "name": "REM UMC 30CARB 110GR FMJ 50/500",
       "qty": 1,

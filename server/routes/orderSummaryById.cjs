@@ -46,6 +46,7 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
   
   // ENRICHMENT: Detect and fix old placeholder data before validation
   let needsEnrichment = false;
+  let actualItemsChanged = 0;
   for (let idx = 0; idx < rawItems.length; idx++) {
     const it = rawItems[idx];
     const name = firstNonEmpty(it.name, it.title, it.product?.name);
@@ -62,30 +63,50 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
         const lookupSku = firstNonEmpty(it.sku, it.SKU);
         
         if (lookupUpc && !lookupUpc.startsWith('UNKNOWN')) {
-          const products = await storage.getProductsByUpc(lookupUpc);
-          product = products && products.length > 0 ? products[0] : null;
+          product = await storage.getProductByUpc(lookupUpc);
         } else if (lookupSku) {
           product = await storage.getProductBySku(lookupSku);
         }
         
         if (product) {
-          // Enrich the item with real product data
-          rawItems[idx] = {
-            ...it,
-            upc: product.upcCode || lookupUpc,
-            mpn: product.manufacturerPartNumber || it.mpn,
-            sku: product.sku || lookupSku,
-            name: product.name,
-            imageUrl: `/images/${product.sku}.jpg`,
-            product: {
+          // CRITICAL: Only replace placeholder data, NEVER overwrite authentic values
+          const enrichedItem = { ...it };
+          let actuallyChanged = false;
+          
+          // Only update name if it's a placeholder
+          if (!name || name.startsWith('UNKNOWN') || name.includes('Product name missing')) {
+            enrichedItem.name = product.name;
+            actuallyChanged = true;
+          }
+          
+          // Only update UPC if it's a placeholder  
+          if (!upc || upc.startsWith('UNKNOWN')) {
+            enrichedItem.upc = product.upcCode || lookupUpc;
+            actuallyChanged = true;
+          }
+          
+          // Only update image if using placeholder
+          if (it.imageUrl?.includes('placeholder') || !it.imageUrl) {
+            enrichedItem.imageUrl = `/images/${product.sku}.jpg`;
+            actuallyChanged = true;
+          }
+          
+          // Update product sub-object only for placeholder fields
+          if (it.product && actuallyChanged) {
+            enrichedItem.product = {
               ...it.product,
-              upc: product.upcCode,
-              mpn: product.manufacturerPartNumber,
-              sku: product.sku,
-              name: product.name,
-              imageUrl: `/images/${product.sku}.jpg`
-            }
-          };
+              upc: (!it.product.upc || it.product.upc.startsWith('UNKNOWN')) ? product.upcCode : it.product.upc,
+              name: (!it.product.name || it.product.name.startsWith('UNKNOWN')) ? product.name : it.product.name,
+              sku: it.product.sku || product.sku,
+              mpn: it.product.mpn || product.manufacturerPartNumber,
+              imageUrl: (it.product.imageUrl?.includes('placeholder') || !it.product.imageUrl) ? `/images/${product.sku}.jpg` : it.product.imageUrl
+            };
+          }
+          
+          if (actuallyChanged) {
+            rawItems[idx] = enrichedItem;
+            actualItemsChanged++;
+          }
         }
       } catch (error) {
         console.error(`Failed to enrich item ${idx + 1} for order ${orderId}:`, error);
@@ -94,12 +115,13 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
     }
   }
   
-  // Save enriched data back to snapshot if any changes were made
-  if (needsEnrichment) {
+  // Save enriched data back to snapshot ONLY if actual changes were made
+  if (actualItemsChanged > 0) {
     snap.items = rawItems;
     snap.enrichedAt = new Date().toISOString();
     snap.updatedAt = new Date().toISOString();
     writeSnapshot(orderId, snap);
+    console.log(`✅ Order ${orderId}: Enriched ${actualItemsChanged} items with authentic RSR data`);
   }
   
   // Validate all items first - fail fast if any item is invalid
