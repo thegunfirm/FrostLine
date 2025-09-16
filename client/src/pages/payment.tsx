@@ -160,29 +160,11 @@ function PaymentPageContent() {
         setPaymentSuccess(true);
         clearCart();
         
-        try {
-          // Use finalizeOrder to write snapshot and redirect
-          await finalizeOrder({
-            orderId: response.orderId,
-            txnId: response.transactionId,
-            customer: {
-              email: user?.email || 'unknown@example.com',
-              name: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName || 'Customer'
-            },
-            lines: items.map(item => ({
-              upc: item.upc || '',
-              mpn: item.mpn || '',
-              sku: item.rsrStock || '',
-              name: item.description || '',
-              qty: item.quantity || 1,
-              price: parseFloat(item.price || '0')
-            })),
-            // Check if any items require FFL shipping
-            shippingOutcomes: items.some(item => item.needsFfl) ? ['DS>FFL'] : ['IH>Customer']
-          });
-        } catch (error) {
-          console.error('Failed to finalize order:', error);
-          // Fall back to manual redirect if finalizeOrder fails
+        // Check if data was enriched on backend (new flow)
+        if (response.dataEnriched) {
+          console.log('✅ Products already clean - backend handled enrichment');
+          console.log('🎯 Direct redirect to order confirmation');
+          // Direct redirect since backend already processed everything
           setTimeout(() => {
             if (response.orderId) {
               setLocation(`/order-confirmation?orderId=${response.orderId}`);
@@ -190,6 +172,39 @@ function PaymentPageContent() {
               setLocation('/order-confirmation');
             }
           }, 2000);
+        } else {
+          // Legacy fallback: use finalizeOrder for older payment flows
+          try {
+            console.log('⚠️ Falling back to frontend finalization');
+            await finalizeOrder({
+              orderId: response.orderId,
+              txnId: response.transactionId,
+              customer: {
+                email: user?.email || 'unknown@example.com',
+                name: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName || 'Customer'
+              },
+              lines: items.map(item => ({
+                upc: item.upc || '',
+                mpn: item.mpn || '',
+                sku: item.rsrStock || '',
+                name: item.description || '',
+                qty: item.quantity || 1,
+                price: parseFloat(item.price || '0')
+              })),
+              // Check if any items require FFL shipping
+              shippingOutcomes: items.some(item => item.needsFfl) ? ['DS>FFL'] : ['IH>Customer']
+            });
+          } catch (error) {
+            console.error('Failed to finalize order:', error);
+            // Fall back to manual redirect if finalizeOrder fails
+            setTimeout(() => {
+              if (response.orderId) {
+                setLocation(`/order-confirmation?orderId=${response.orderId}`);
+              } else {
+                setLocation('/order-confirmation');
+              }
+            }, 2000);
+          }
         }
       }
     },
