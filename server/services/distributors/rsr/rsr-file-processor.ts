@@ -291,12 +291,32 @@ class RSRFileProcessor {
         .map(([state, _]) => state)
     };
 
+    let productId: number;
     if (existingProduct) {
       await storage.updateProduct(existingProduct.id, productData);
+      productId = existingProduct.id;
       console.log(`🔄 Updated: ${productSku} (UPC: ${record.upcCode}) - prevented duplicate`);
     } else {
-      await storage.createProduct(productData);
+      const newProduct = await storage.createProduct(productData);
+      productId = newProduct.id;
       console.log(`➕ Created: ${productSku} (UPC: ${record.upcCode})`);
+    }
+    
+    // Maintain SKU alias tracking for UPC-based lookups (only if UPC exists)
+    if (record.upcCode && record.upcCode.trim()) {
+      try {
+        // First, mark all other aliases for this UPC as not current
+        await storage.markCurrentSku(productId, record.stockNumber);
+        
+        // Then upsert this stock number as the current alias
+        await storage.upsertSkuAlias(record.stockNumber, record.upcCode, productId, true);
+        
+        console.log(`   🔗 SKU alias: ${record.stockNumber} → UPC ${record.upcCode} (Product ID: ${productId})`);
+      } catch (error) {
+        console.warn(`   ⚠️  Failed to create SKU alias for ${record.stockNumber}: ${error.message}`);
+      }
+    } else {
+      console.log(`   ⚠️  No UPC for ${record.stockNumber} - skipping alias creation`);
     }
     
     // Log field correction when manufacturer part number differs from RSR stock number
