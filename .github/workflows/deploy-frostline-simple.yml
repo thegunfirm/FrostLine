@@ -70,6 +70,26 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Find the restart script in common locations.
+          LOCAL_RESTART=""
+          if   [ -f "scripts/restart.sh" ]; then
+            LOCAL_RESTART="scripts/restart.sh"
+          elif [ -f "FrostLine/scripts/restart.sh" ]; then
+            LOCAL_RESTART="FrostLine/scripts/restart.sh"
+          elif [ -f ".github/scripts/restart.sh" ]; then
+            LOCAL_RESTART=".github/scripts/restart.sh"
+          fi
+
+          if [ -z "$LOCAL_RESTART" ]; then
+            echo "::error::restart.sh not found. Expected at one of:"
+            echo "  - scripts/restart.sh"
+            echo "  - FrostLine/scripts/restart.sh"
+            echo "  - .github/scripts/restart.sh"
+            echo "Repo tree (top-level):"
+            ls -la
+            exit 1
+          fi
+
           # Ensure remote folder exists (private perms)
           ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'install -d -m 700 /root/pm2'
 
@@ -97,12 +117,11 @@ jobs:
             if [ -n "${ALGOLIA_ADMIN_API_KEY:-}" ];         then printf 'ALGOLIA_ADMIN_API_KEY=%s\n' "$ALGOLIA_ADMIN_API_KEY"; fi
           } > "$envfile"
 
-          # Ship env + restart script from repo (path is case-sensitive!)
+          # Ship env + restart script (strip CRLF just in case on the remote)
           scp -P "$SSH_PORT" "$envfile" "$SSH_USER@$SSH_HOST:/root/pm2/frostline.env"
-          scp -P "$SSH_PORT" "FrostLine/scripts/restart.sh" "$SSH_USER@$SSH_HOST:/root/pm2/restart.sh"
+          scp -P "$SSH_PORT" "$LOCAL_RESTART" "$SSH_USER@$SSH_HOST:/root/pm2/restart.sh"
           rm -f "$envfile"
 
-          # Normalize line endings, make executable, run
           ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" '
             set -euo pipefail
             sed -i "s/\r$//" /root/pm2/restart.sh
