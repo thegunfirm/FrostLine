@@ -234,11 +234,11 @@ class RSRFileProcessor {
       return;
     }
 
-    // FIXED: Use manufacturer part number as product SKU
-    const customerSku = record.manufacturerPartNumber || record.stockNumber;
+    // Use RSR stock number as product SKU for system compatibility
+    const productSku = record.stockNumber;
     
-    // Check if product exists by customer SKU
-    const existingProduct = await storage.getProductBySku(customerSku);
+    // Check if product exists by SKU
+    const existingProduct = await storage.getProductBySku(productSku);
     
     // Calculate Gold pricing correctly
     const goldPrice = this.calculateGoldPrice(record.retailMAP, record.rsrPricing, record.retailPrice);
@@ -248,8 +248,9 @@ class RSRFileProcessor {
       description: record.expandedDescription || record.description,
       category: this.mapDepartmentToCategory(record.departmentNumber),
       manufacturer: record.fullManufacturerName,
-      sku: customerSku,                              // FIXED: Product SKU (manufacturer part number)
-      rsrStockNumber: record.stockNumber,            // RSR distributor code for ordering
+      sku: productSku,                               // Product SKU (RSR stock number for compatibility)
+      rsrStockNumber: record.stockNumber,            // RSR distributor code for ordering  
+      manufacturerPartNumber: record.manufacturerPartNumber, // Store MPN separately
       upcCode: record.upcCode,
       priceWholesale: record.rsrPricing || "0",
       priceMSRP: record.retailPrice || "0",
