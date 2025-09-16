@@ -57,7 +57,7 @@ jobs:
           RSR_FTP_PORT:                  ${{ secrets.RSR_FTP_PORT }}
           RSR_FTPS:                      ${{ secrets.RSR_FTPS }}
 
-          # RSR “Standard” (API/feed) – distinct from FTP (optional)
+          # RSR “Standard” (optional, distinct from FTP)
           RSR_STANDARD_USERNAME:         ${{ secrets.RSR_STANDARD_USERNAME }}
           RSR_STANDARD_PASSWORD:         ${{ secrets.RSR_STANDARD_PASSWORD }}
 
@@ -70,26 +70,22 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Ensure remote folder exists (private perms)
+          # Ensure remote dir
           ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'install -d -m 700 /root/pm2'
 
-          # Build a temp .env locally (masked in logs)
+          # Build env file locally
           envfile="$(mktemp)"; umask 077
           {
             printf 'PORT=5000\n'
             printf 'NODE_ENV=production\n'
             printf 'DATABASE_URL=%s\n' "$DATABASE_URL"
-            # --- RSR FTPS (explicit TLS on 2222) ---
             printf 'RSR_FTP_HOST=%s\n' "${RSR_FTP_HOST:-ftps.rsrgroup.com}"
             printf 'RSR_FTP_PORT=%s\n' "${RSR_FTP_PORT:-2222}"
             printf 'RSR_FTPS=%s\n'     "${RSR_FTPS:-1}"
-            # FTP creds ONLY (dealer login)
             printf 'RSR_USERNAME=%s\n' "$RSR_USERNAME"
             printf 'RSR_PASSWORD=%s\n' "$RSR_PASSWORD"
-            # --- RSR "Standard" feed/API creds (separate from FTP) ---
             if [ -n "${RSR_STANDARD_USERNAME:-}" ]; then printf 'RSR_STANDARD_USERNAME=%s\n' "$RSR_STANDARD_USERNAME"; fi
             if [ -n "${RSR_STANDARD_PASSWORD:-}" ]; then printf 'RSR_STANDARD_PASSWORD=%s\n' "$RSR_STANDARD_PASSWORD"; fi
-            # Optional integrations
             if [ -n "${AUTHORIZE_NET_API_LOGIN_ID:-}" ];    then printf 'AUTHORIZE_NET_API_LOGIN_ID=%s\n' "$AUTHORIZE_NET_API_LOGIN_ID"; fi
             if [ -n "${AUTHORIZE_NET_TRANSACTION_KEY:-}" ]; then printf 'AUTHORIZE_NET_TRANSACTION_KEY=%s\n' "$AUTHORIZE_NET_TRANSACTION_KEY"; fi
             if [ -n "${SENDGRID_API_KEY:-}" ];              then printf 'SENDGRID_API_KEY=%s\n' "$SENDGRID_API_KEY"; fi
@@ -97,67 +93,75 @@ jobs:
             if [ -n "${ALGOLIA_ADMIN_API_KEY:-}" ];         then printf 'ALGOLIA_ADMIN_API_KEY=%s\n' "$ALGOLIA_ADMIN_API_KEY"; fi
           } >"$envfile"
 
-          # Ship env file
-          scp -P "$SSH_PORT" "$envfile" "$SSH_USER@$SSH_HOST:/root/pm2/frostline.env"
-          rm -f "$envfile"
-
-          # Execute the restart and DB self-heal remotely (single-quoted heredoc: no local interpolation)
-          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'bash -seu' <<'EOF'
-set -euo pipefail
+          # Build restart script locally (pure ASCII)
+          cat > restart.sh <<'SCRIPT'
+#!/usr/bin/env bash
+set -Eeuo pipefail
 set +H
 
-chmod 600 /root/pm2/frostline.env
+chmod 600 /root/pm2/frostline.env || true
 set -a; . /root/pm2/frostline.env; set +a
 
-# -------- Parse DATABASE_URL (pure shell; no external tools) --------
+# -------- Parse DATABASE_URL (shell only) --------
 DBURL="$DATABASE_URL"
 DB_NO_SCHEME="${DBURL#*://}"
 
-DB_USER="${DB_NO_SCHEME%%:*}"          # before first :
+DB_USER="${DB_NO_SCHEME%%:*}"
 REST="${DB_NO_SCHEME#*:}"
-DB_PASS="${REST%%@*}"                  # before @
+DB_PASS="${REST%%@*}"
 
 REST="${DB_NO_SCHEME#*@}"
 DB_HOST_AND_DB="${REST}"
-DB_HOST="${DB_HOST_AND_DB%%/*}"        # host[:port]
-DB_HOST="${DB_HOST%%:*}"               # bare host
+DB_HOST="${DB_HOST_AND_DB%%/*}"
+DB_HOST="${DB_HOST%%:*}"
+DB_NAME="${DB_HOST_AND_DB#*/}"
+DB_NAME="${DB_NAME%%\?*}"
 
-DB_NAME="${DB_HOST_AND_DB#*/}"         # after first /
-DB_NAME="${DB_NAME%%\?*}"              # strip ?query
-
-# Escape single-quotes for SQL
+# Escape single quotes for SQL
 ESC_PASS="${DB_PASS//\'/\'\'}"
 
 # -------- Ensure role/db exist; set password to match secret --------
-sudo -u postgres psql -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$DB_USER') THEN CREATE ROLE \"$DB_USER\" LOGIN PASSWORD '$ESC_PASS'; END IF; END \$\$;"
+sudo -u postgres psql -v ON_ERROR_STOP=1 -c "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$DB_USER') THEN CREATE ROLE \"$DB_USER\" LOGIN PASSWORD '$ESC_PASS'; END IF; END $$;"
 sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER ROLE \"$DB_USER\" WITH LOGIN PASSWORD '$ESC_PASS';"
-sudo -u postgres psql -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '$DB_NAME') THEN CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\"; END IF; END \$\$;"
+sudo -u postgres psql -v ON_ERROR_STOP=1 -c "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '$DB_NAME') THEN CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\"; END IF; END $$;"
 
-# Connectivity check as the app user
-PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -Atqc "select 1" >/dev/null
+# -------- Safe backup (keep last 5) --------
+install -d -m 700 /root/pm2/backups
+if command -v pg_dump >/dev/null 2>&1; then
+  PGPASSWORD="$DB_PASS" pg_dump -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -Fc -f "/root/pm2/backups/frostline-$(date +%F-%H%M%S).dump" || true
+  ls -1t /root/pm2/backups/frostline-*.dump 2>/dev/null | sed -n '6,$p' | xargs -r rm -f
+fi
 
-# -------- Restart app & persist --------
+# -------- Restart PM2 and persist --------
 cd /var/www/frostline
 pm2 restart frostline --update-env --cwd /var/www/frostline
 pm2 save
 
-# Wait up to 30s for :5000
+# Wait up to 30s for :5000 listener
 for i in $(seq 1 30); do
   if ss -ltnp | grep -qE ':5000\b'; then break; fi
   sleep 1
 done
 ss -ltnp | grep -qE ':5000\b' || { echo "::error::app is not listening on :5000"; exit 1; }
 
-# Origins
+# Origin checks
 curl -fsSI http://127.0.0.1:5000/ | head -1 || true
 if command -v nginx >/dev/null 2>&1; then
   curl -fsSI -H "Host: thegunfirm.com" http://127.0.0.1/ | head -1 || true
 fi
 
-# RSR FTPS handshake & status
+# RSR FTPS and import status
 pm2 logs frostline --lines 200 --nostream | egrep -i 'Connecting FTPS|> USER|< 331|< 230|< 530|IM-QTY|FULL|download|insert|upsert|error' || true
 
-# Best-effort kick of a full import
+# Kick a full RSR import if supported
 pm2 trigger frostline rsr:full >/dev/null 2>&1 || \
   curl -fsS -X POST http://127.0.0.1:5000/_internal/rsr/full >/dev/null 2>&1 || true
-EOF
+SCRIPT
+
+          # Upload env and script
+          scp -P "$SSH_PORT" "$envfile" "$SSH_USER@$SSH_HOST:/root/pm2/frostline.env"
+          scp -P "$SSH_PORT" restart.sh "$SSH_USER@$SSH_HOST:/root/pm2/restart.sh"
+          rm -f "$envfile" restart.sh
+
+          # Run remotely with bash
+          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'bash /root/pm2/restart.sh'
