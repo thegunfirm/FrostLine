@@ -203,6 +203,7 @@ class AlgoliaSearchService {
         image: `https://www.rsrgroup.com/images/inventory/${rsrProduct.imgName}`,
         id: rsrProduct.imgName
       }] : [],
+      isActive: true, // RSR products are always active when indexed
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -333,6 +334,10 @@ class AlgoliaSearchService {
 
     // Build filters
     const filterParts: string[] = [];
+    
+    // CRITICAL: Always filter for active products only
+    filterParts.push('isActive:true');
+    
     if (filters?.category) {
       filterParts.push(`category:"${filters.category}"`);
     }
@@ -576,6 +581,7 @@ class AlgoliaSearchService {
       sightType: dbProduct.sightType,
       newItem: dbProduct.newItem || false,
       dropShippable: dbProduct.dropShippable !== false,
+      isActive: dbProduct.isActive !== false, // CRITICAL: Include isActive for filtering
       popularityScore, // Add popularity boost for ranking
       searchableText, // Enhanced searchable text with both SKU and MPN
       tags: this.generateTags(dbProduct)
@@ -612,6 +618,43 @@ class AlgoliaSearchService {
       await this.adminIndex.partialUpdateObject(updates);
     } catch (error) {
       console.error('Error updating product inventory in Algolia:', error);
+      throw error;
+    }
+  }
+
+  // Remove product from Algolia index (for deduplication)
+  async removeProduct(objectID: string): Promise<void> {
+    if (!this.adminIndex) {
+      throw new Error('Admin API key required for deletions');
+    }
+
+    try {
+      await this.adminIndex.deleteObject(objectID);
+      console.log(`Removed product ${objectID} from Algolia index`);
+    } catch (error) {
+      console.error('Error removing product from Algolia:', error);
+      throw error;
+    }
+  }
+
+  // Mark product as inactive in Algolia (alternative to removal)
+  async markProductInactive(objectID: string): Promise<void> {
+    if (!this.adminIndex) {
+      throw new Error('Admin API key required for updates');
+    }
+
+    try {
+      await this.adminIndex.partialUpdateObject({
+        objectID,
+        isActive: false,
+        inStock: false,
+        quantity: 0,
+        searchableText: '', // Clear searchable text to prevent search results
+        _archived: true
+      });
+      console.log(`Marked product ${objectID} as inactive in Algolia index`);
+    } catch (error) {
+      console.error('Error marking product as inactive in Algolia:', error);
       throw error;
     }
   }

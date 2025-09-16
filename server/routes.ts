@@ -38,6 +38,7 @@ import { ZohoService } from "./zoho-service";
 import { OrderZohoIntegration } from "./order-zoho-integration";
 import zohoAuthRoutes from "./zoho-auth-routes";
 import { importErrorRoutes } from "./routes/import-errors";
+import { cartCanonicalizationMiddleware } from "./middleware/cart-canonicalization";
 
 // Zoho authentication removed - starting fresh
 
@@ -411,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/firearms-compliance', (await import('./routes/firearms-compliance-routes')).default);
 
   // Direct checkout endpoint for legacy calls that use /api/checkout/process
-  app.post('/api/checkout/process', async (req, res) => {
+  app.post('/api/checkout/process', cartCanonicalizationMiddleware(), async (req, res) => {
     try {
       console.log('🔧 Processing checkout via direct endpoint...');
       console.log('🔍 Received checkout data:', JSON.stringify(req.body, null, 2));
@@ -7900,7 +7901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced cart persistence endpoints
-  app.post("/api/cart/sync", async (req, res) => {
+  app.post("/api/cart/sync", cartCanonicalizationMiddleware(), async (req, res) => {
     try {
       const { items } = req.body;
       

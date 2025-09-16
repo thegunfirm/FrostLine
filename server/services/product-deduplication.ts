@@ -2,6 +2,7 @@ import { db } from '../db';
 import { products, dedupLog, rsrSkuAliases } from '@shared/schema';
 import type { Product, InsertDedupLog } from '@shared/schema';
 import { eq, and, ne, isNotNull, sql } from 'drizzle-orm';
+import { algoliaSearch } from './algolia-search';
 
 /**
  * UPC-Based Product Deduplication Service
@@ -43,7 +44,7 @@ export class ProductDeduplicationService {
    * 6. Highest product ID (prefer most recent)
    * 7. Most recent created_at (fallback tie-breaker)
    */
-  public static selectCanonicalProduct(duplicateProducts: Product[]): Product {
+  public static async selectCanonicalProduct(duplicateProducts: Product[]): Promise<Product> {
     if (duplicateProducts.length === 0) {
       throw new Error('Cannot select canonical product from empty array');
     }
@@ -52,8 +53,29 @@ export class ProductDeduplicationService {
       return duplicateProducts[0];
     }
 
+    // Get RSR alias information for each product to inform tie-breaker
+    const productsWithAliases = await Promise.all(
+      duplicateProducts.map(async (product) => {
+        const alias = await db
+          .select({ isCurrent: rsrSkuAliases.isCurrent })
+          .from(rsrSkuAliases)
+          .where(
+            and(
+              eq(rsrSkuAliases.productId, product.id),
+              eq(rsrSkuAliases.isCurrent, true)
+            )
+          )
+          .limit(1);
+        
+        return {
+          ...product,
+          hasCurrentAlias: alias.length > 0
+        };
+      })
+    );
+
     // Sort by criteria priority
-    const sortedProducts = duplicateProducts.sort((a, b) => {
+    const sortedProducts = productsWithAliases.sort((a, b) => {
       // 1. Has images (true > false)
       const aHasImages = a.images && Array.isArray(a.images) && a.images.length > 0;
       const bHasImages = b.images && Array.isArray(b.images) && b.images.length > 0;
@@ -73,17 +95,22 @@ export class ProductDeduplicationService {
         return bComplete ? 1 : -1;
       }
 
-      // 4. Higher stock quantity
+      // 4. Has current RSR alias (prefer products with active RSR mapping)
+      if (a.hasCurrentAlias !== b.hasCurrentAlias) {
+        return b.hasCurrentAlias ? 1 : -1;
+      }
+
+      // 5. Higher stock quantity
       if (a.stockQuantity !== b.stockQuantity) {
         return b.stockQuantity - a.stockQuantity;
       }
 
-      // 5. Highest product ID (prefer most recent)
+      // 6. Highest product ID (prefer most recent)
       if (a.id !== b.id) {
         return b.id - a.id;
       }
 
-      // 6. Most recent created_at (fallback)
+      // 7. Most recent created_at (fallback)
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
@@ -135,7 +162,7 @@ export class ProductDeduplicationService {
       throw new Error(`UPC ${upcCode} does not have duplicates`);
     }
 
-    const canonicalProduct = this.selectCanonicalProduct(duplicateProducts);
+    const canonicalProduct = await this.selectCanonicalProduct(duplicateProducts);
     const duplicatesForArchival = duplicateProducts.filter(p => p.id !== canonicalProduct.id);
 
     return {
@@ -149,7 +176,7 @@ export class ProductDeduplicationService {
   /**
    * Generate a detailed reason for why a product was selected as canonical vs archived
    */
-  public static generateDedupReason(canonical: Product, archived: Product): string {
+  public static async generateDedupReason(canonical: Product, archived: Product): Promise<string> {
     const reasons: string[] = [];
 
     // Check images
@@ -171,6 +198,33 @@ export class ProductDeduplicationService {
     
     if (canonicalComplete && !archivedComplete) {
       reasons.push('canonical has complete classification, archived does not');
+    }
+
+    // Check RSR alias status
+    const canonicalAlias = await db
+      .select({ isCurrent: rsrSkuAliases.isCurrent })
+      .from(rsrSkuAliases)
+      .where(
+        and(
+          eq(rsrSkuAliases.productId, canonical.id),
+          eq(rsrSkuAliases.isCurrent, true)
+        )
+      )
+      .limit(1);
+    
+    const archivedAlias = await db
+      .select({ isCurrent: rsrSkuAliases.isCurrent })
+      .from(rsrSkuAliases)
+      .where(
+        and(
+          eq(rsrSkuAliases.productId, archived.id),
+          eq(rsrSkuAliases.isCurrent, true)
+        )
+      )
+      .limit(1);
+
+    if (canonicalAlias.length > 0 && archivedAlias.length === 0) {
+      reasons.push('canonical has current RSR alias, archived does not');
     }
 
     // Check stock quantity
@@ -311,6 +365,21 @@ export class ProductDeduplicationService {
             // Archive the duplicate product
             await this.archiveProduct(duplicate.id);
 
+            // Remove from Algolia index or mark as inactive
+            try {
+              if (duplicate.rsrStockNumber) {
+                // Use RSR stock number as Algolia objectID
+                await algoliaSearch.markProductInactive(duplicate.rsrStockNumber);
+              } else if (duplicate.sku) {
+                // Fallback to SKU as objectID
+                await algoliaSearch.markProductInactive(duplicate.sku);
+              }
+            } catch (algoliaError) {
+              console.warn(`Failed to update Algolia for product ${duplicate.id}: ${algoliaError}`);
+              // Don't fail the transaction for Algolia errors, but log them
+              errors.push(`Algolia update failed for product ${duplicate.id}: ${algoliaError}`);
+            }
+
             // Create SKU alias for archived product
             if (duplicate.rsrStockNumber) {
               await this.createArchivedSkuAlias(duplicate.id, duplicate.rsrStockNumber, upcCode);
@@ -323,7 +392,7 @@ export class ProductDeduplicationService {
               archivedProductId: duplicate.id,
               archivedProductSku: duplicate.sku,
               archivedProductName: duplicate.name,
-              dedupReason: this.generateDedupReason(duplicateGroup.canonicalProduct, duplicate),
+              dedupReason: await this.generateDedupReason(duplicateGroup.canonicalProduct, duplicate),
               batchId,
               canRollback: true,
               processedBy: 'system'
