@@ -1235,7 +1235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   try {
                     // Look up product to get FFL requirement and drop-ship eligibility
                     const product = await storage.getProductBySku(item.sku);
-                    const requiresFFL = product?.requires_ffl || false;
+                    const requiresFFL = product?.requiresFFL || product?.requires_ffl || false;
                     const canDropShip = product?.dropShipEligible || false;
                     
                     // Set fulfillment type based on product properties

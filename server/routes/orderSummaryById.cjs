@@ -194,36 +194,34 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
     }
   };
   
-  // Split items by FFL requirement for each shipment outcome
+  // FIXED: Show ALL items in order confirmation, split by FFL for shipment planning
   const shipments = await Promise.all(parts.map(async (p, idx) => {
     const outcome = p.outcome || outcomes[0];
-    let filteredItems = normItems;
     
-    // Filter items based on outcome type
-    if (outcome.includes('FFL')) {
-      // FFL shipments: only include items that require FFL
-      filteredItems = [];
-      for (const item of normItems) {
-        if (await needsFFL(item)) {
-          filteredItems.push(item);
-        }
-      }
-    } else {
-      // Non-FFL shipments: only include items that don't require FFL  
-      filteredItems = [];
-      for (const item of normItems) {
-        if (!(await needsFFL(item))) {
-          filteredItems.push(item);
-        }
+    // Determine correct fulfillment type based on actual FFL requirements
+    let actualOutcome = outcome;
+    if (normItems.length > 0) {
+      const hasFFLItems = await Promise.all(normItems.map(item => needsFFL(item)));
+      const fflItemsExist = hasFFLItems.some(Boolean);
+      const nonFFLItemsExist = hasFFLItems.some(ffl => !ffl);
+      
+      // Correct fulfillment type based on actual item requirements
+      if (fflItemsExist && nonFFLItemsExist) {
+        actualOutcome = 'Mixed>FFL'; // Mixed order
+      } else if (fflItemsExist) {
+        actualOutcome = 'IH>FFL'; // All items need FFL
+      } else {
+        actualOutcome = 'IH>Customer'; // No FFL items
       }
     }
     
+    // ALWAYS show ALL items in order confirmation - don't filter by outcome
     return {
       idx,
-      outcome,
+      outcome: actualOutcome,
       orderNumber: p.orderNumber || minted.main,
-      lines: filteredItems,
-      totals: computeTotals(filteredItems)
+      lines: normItems, // Show ALL items, not filtered
+      totals: computeTotals(normItems)
     };
   }));
 
