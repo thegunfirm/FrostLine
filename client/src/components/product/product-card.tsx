@@ -80,7 +80,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
           <div className="space-y-2 sm:space-y-1">
             <h3 className="font-medium text-sm sm:text-sm leading-tight line-clamp-2">{product.name}</h3>
             <div className="flex items-center justify-between text-sm sm:text-xs">
-              <span className="text-gray-600 font-medium">{product.manufacturer}</span>
+              <span className="text-gray-600 font-medium">{productData.manufacturer}</span>
               <div className="flex items-center gap-1">
                 {pricingInfo.isStockAvailable ? (
                   <CheckCircle className="w-3 h-3 text-green-500" />
