@@ -6,6 +6,7 @@ import express from 'express';
 import { splitOutcomes } from '../lib/shippingSplit.js';
 import { mintOrderNumber } from '../lib/orderNumbers.js';
 import { readSnapshot, writeSnapshot } from '../lib/storage.js';
+import { storage } from '../storage.js';
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ function firstNonEmpty(...vals: any[]): any {
   return undefined;
 }
 
-router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
+router.post('/api/orders/:orderId/snapshot', express.json(), async (req, res) => {
   const orderId = String(req.params.orderId || '').trim();
   if (!orderId) return res.status(400).json({ error: 'orderId required' });
 
@@ -27,25 +28,52 @@ router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
   if (!rawItems.length) return res.status(422).json({ error: 'items[] required' });
 
   // Normalize every line, tolerate missing fields, use safe defaults
-  const items = rawItems.map((it: any, idx: number) => {
-    const upc = String(firstNonEmpty(
+  const items = await Promise.all(rawItems.map(async (it: any, idx: number) => {
+    let upc = String(firstNonEmpty(
       it.upc, it.UPC, it.upc_code, it.barcode,
       it.product?.upc, it.product?.UPC
-    ) || `UNKNOWN-${idx+1}`);
+    ) || '');
 
-    const mpn = String(firstNonEmpty(
+    let mpn = String(firstNonEmpty(
       it.mpn, it.MPN, it.MNP, it.manufacturerPart, it.manufacturerPartNumber,
       it.product?.mpn
     ) || '');
 
-    const sku = String(firstNonEmpty(
+    let sku = String(firstNonEmpty(
       it.sku, it.SKU, it.stock, it.stockNo, it.stock_num, it.rsrStock,
       it.product?.sku
     ) || '');
 
-    const name = String(firstNonEmpty(
+    let name = String(firstNonEmpty(
       it.name, it.title, it.description, it.product?.name
-    ) || `Item ${upc}`);
+    ) || '');
+    
+    // FIXED: If UPC/name is missing, look up complete product data from database
+    if (!upc || !name || upc.startsWith('UNKNOWN')) {
+      try {
+        let product = null;
+        if (it.productId) {
+          product = await storage.getProduct(it.productId);
+        } else if (sku) {
+          product = await storage.getProductBySku(sku);
+        }
+        
+        if (product) {
+          upc = product.upcCode || upc || `UNKNOWN-${idx+1}`;
+          mpn = product.manufacturerPartNumber || mpn;
+          sku = product.sku || sku;
+          name = product.name || name || `Item ${upc}`;
+        } else {
+          // Last resort fallback only if product lookup fails
+          upc = upc || `UNKNOWN-${idx+1}`;
+          name = name || `Item ${upc}`;
+        }
+      } catch (error) {
+        console.error(`Failed to lookup product data for item ${idx+1}:`, error);
+        upc = upc || `UNKNOWN-${idx+1}`;
+        name = name || `Item ${upc}`;
+      }
+    }
 
     const qty = Number(firstNonEmpty(it.qty, it.quantity, it.count, 1));
     const price = Number(firstNonEmpty(
@@ -62,7 +90,7 @@ router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
     return { upc, mpn, sku, name, qty: Number.isFinite(qty) && qty > 0 ? qty : 1,
              price: Number.isFinite(price) && price >= 0 ? price : 0,
              imageUrl };
-  });
+  }));
 
   // Outcomes (default single shipment)
   let outcomes: any[] = [];
