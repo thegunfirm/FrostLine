@@ -9839,9 +9839,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🔄 Starting complete Algolia sync from database...');
       
-      // Get all products from database (no limit)
-      const allProducts = await db.select().from(products);
-      console.log(`📦 Found ${allProducts.length} products in database`);
+      // Get only active products from database for search index
+      const allProducts = await db.select().from(products).where(eq(products.isActive, true));
+      console.log(`📦 Found ${allProducts.length} active products in database`);
       
       if (allProducts.length === 0) {
         return res.json({ message: "No products found in database to sync", synced: 0 });
