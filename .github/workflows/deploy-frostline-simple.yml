@@ -125,8 +125,14 @@ jobs:
           # ---- Connectivity check (now that creds are synced) ----
           printf '%s\n' 'PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -Atqc "select 1" >/dev/null' >> "$restart"
 
-          # ---- Best-effort backup (never fail deploy) ----
-          printf '%s\n' 'if command -v pg_dump >/dev/null 2>&1; then ts=$(date +%F-%H%M%S); install -d -m 700 /root/backups; PGPASSWORD="$DB_PASS" pg_dump -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" --no-owner --format=custom -f "/root/backups/frostline-$ts.dump" || echo "::warning::pg_dump failed (backup skipped)"; fi' >> "$restart"
+          # ---- Best-effort backup (multiline, no parentheses in message) ----
+          printf '%s\n' 'if command -v pg_dump >/dev/null 2>&1; then' >> "$restart"
+          printf '%s\n' '  ts="$(date +%Y%m%d-%H%M%S)"' >> "$restart"
+          printf '%s\n' '  install -d -m 700 /root/backups' >> "$restart"
+          printf '%s\n' '  if ! PGPASSWORD="$DB_PASS" pg_dump -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" --no-owner --format=custom -f "/root/backups/frostline-$ts.dump"; then' >> "$restart"
+          printf '%s\n' '    echo "::warning::pg_dump failed - backup skipped"' >> "$restart"
+          printf '%s\n' '  fi' >> "$restart"
+          printf '%s\n' 'fi' >> "$restart"
 
           # ---- Restart app & persist ----
           printf '%s\n' 'cd /var/www/frostline' >> "$restart"
