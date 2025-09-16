@@ -1022,6 +1022,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create direct HTTP request payload with unique transaction ID (max 20 chars for Authorize.Net)
       const uniqueTransactionId = `${Date.now().toString().slice(-8)}${Math.random().toString(36).substr(2, 4)}`;
       
+      // Format amount to exactly 2 decimal places to prevent floating point precision errors
+      const formattedAmount = parseFloat(amount).toFixed(2);
+      
       const requestPayload = {
         createTransactionRequest: {
           merchantAuthentication: {
@@ -1030,7 +1033,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           transactionRequest: {
             transactionType: "authCaptureTransaction",
-            amount: amount,
+            amount: formattedAmount,
             payment: {
               creditCard: {
                 cardNumber: cardNumber,

@@ -585,8 +585,10 @@ class RSRFileProcessor {
     let dbTotalQuantity = 0;
     
     for (const product of dbProducts) {
-      dbInventory.set(product.sku, product.stockQuantity || 0);
-      dbTotalQuantity += product.stockQuantity || 0;
+      if (product.sku) {
+        dbInventory.set(product.sku, product.stockQuantity || 0);
+        dbTotalQuantity += product.stockQuantity || 0;
+      }
     }
     
     console.log(`📂 RSR File: ${rsrInventory.size.toLocaleString()} products, ${rsrTotalQuantity.toLocaleString()} total units`);
@@ -595,7 +597,7 @@ class RSRFileProcessor {
     // Find discrepancies
     const discrepancies = [];
     
-    for (const [sku, rsrQty] of rsrInventory) {
+    for (const [sku, rsrQty] of rsrInventory.entries()) {
       const dbQty = dbInventory.get(sku) || 0;
       if (rsrQty !== dbQty) {
         discrepancies.push({
