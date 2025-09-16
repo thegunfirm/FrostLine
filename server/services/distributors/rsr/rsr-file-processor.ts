@@ -237,8 +237,8 @@ class RSRFileProcessor {
     // Use RSR stock number as product SKU for system compatibility
     const productSku = record.stockNumber;
     
-    // Check if product exists by SKU
-    const existingProduct = await storage.getProductBySku(productSku);
+    // Check if product exists by UPC to prevent duplicates (RSR changes SKUs for same products)
+    const existingProduct = record.upcCode ? await storage.getProductByUpc(record.upcCode) : null;
     
     // Calculate Gold pricing correctly
     const goldPrice = this.calculateGoldPrice(record.retailMAP, record.rsrPricing, record.retailPrice);
@@ -293,10 +293,10 @@ class RSRFileProcessor {
 
     if (existingProduct) {
       await storage.updateProduct(existingProduct.id, productData);
-      console.log(`🔄 Updated: ${customerSku} (RSR: ${record.stockNumber})`);
+      console.log(`🔄 Updated: ${productSku} (UPC: ${record.upcCode}) - prevented duplicate`);
     } else {
       await storage.createProduct(productData);
-      console.log(`➕ Created: ${customerSku} (RSR: ${record.stockNumber})`);
+      console.log(`➕ Created: ${productSku} (UPC: ${record.upcCode})`);
     }
     
     // Log field correction when manufacturer part number differs from RSR stock number
