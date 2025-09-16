@@ -31,7 +31,43 @@ export function CartSheet() {
     }).format(price);
   };
 
-  const total = getTotalPrice();
+  // Helper function to get the correct tier price for display in cart
+  const getCartTierPrice = (item: any) => {
+    if (!user) {
+      // Non-logged users see Bronze pricing
+      return item.priceBronze || item.price;
+    }
+
+    // Helper function to safely parse and validate tier prices
+    const getSafePrice = (priceValue: number | null | undefined): number | null => {
+      if (priceValue == null) return null;
+      return (isFinite(priceValue) && priceValue > 0) ? priceValue : null;
+    };
+
+    // For logged users, show their tier-appropriate pricing
+    switch (user.subscriptionTier) {
+      case 'Platinum':
+        // Platinum users see their actual Platinum pricing in cart
+        return getSafePrice(item.pricePlatinum) || 
+               getSafePrice(item.priceGold) || 
+               getSafePrice(item.priceBronze) || 
+               item.price;
+      case 'Gold':
+        return getSafePrice(item.priceGold) || 
+               getSafePrice(item.priceBronze) || 
+               item.price;
+      case 'Bronze':
+      default:
+        return getSafePrice(item.priceBronze) || item.price;
+    }
+  };
+
+  // Calculate tier-aware total instead of using stored item.price
+  const tierAwareTotal = items.reduce((sum, item) => {
+    return sum + getCartTierPrice(item) * item.quantity;
+  }, 0);
+  
+  const total = tierAwareTotal; // Use tier-aware total for consistency
   const itemCount = getItemCount();
 
   // Calculate potential savings for membership upsell
@@ -51,9 +87,9 @@ export function CartSheet() {
       const savings = bronzeCost - platinumCost;
       return { savings: Math.max(0, savings) };
     } else {
-      // For logged users: compare their current price vs Platinum pricing
+      // For logged users: compare their current tier price vs Platinum pricing
       const currentCost = items.reduce((sum, item) => {
-        return sum + item.price * item.quantity;
+        return sum + getCartTierPrice(item) * item.quantity;
       }, 0);
       
       const platinumCost = items.reduce((sum, item) => {
@@ -126,7 +162,7 @@ export function CartSheet() {
                     <div className="flex items-center justify-between mt-1">
                       <div className="flex flex-col">
                         <span className="text-sm font-semibold">
-                          {formatPrice(item.price)}
+                          {formatPrice(getCartTierPrice(item))}
                         </span>
                         {/* Show tier pricing indicator */}
                         {user?.subscriptionTier && (
