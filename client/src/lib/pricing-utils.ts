@@ -45,11 +45,11 @@ export function getSafePrice(priceValue: string | number | null | undefined): nu
 export function shouldHideGoldPricing(product: ProductPricing, hideGoldSetting?: { value: string }): boolean {
   if (hideGoldSetting?.value !== "true") return false;
   
-  const bronzePrice = getSafePrice(product.priceBronze);
-  const goldPrice = getSafePrice(product.priceGold);
+  const msrpPrice = getSafePrice(product.priceMSRP);
+  const mapPrice = getSafePrice(product.priceMAP);
   
-  // If Bronze (MSRP) equals Gold (MAP), hide Gold pricing
-  if (bronzePrice && goldPrice && Math.abs(bronzePrice - goldPrice) < 0.01) {
+  // If MSRP equals MAP, hide Gold pricing
+  if (msrpPrice && mapPrice && Math.abs(msrpPrice - mapPrice) < 0.01) {
     return true;
   }
   
