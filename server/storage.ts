@@ -368,14 +368,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProductByUpc(upc: string): Promise<Product | undefined> {
-    // FIXED: Handle duplicate UPCs by prioritizing FFL-required records
-    const allProducts = await db.select().from(products).where(eq(products.upcCode, upc));
-    if (!allProducts.length) return undefined;
+    console.log(`🔧 SIMPLE UPC LOOKUP for: ${upc}`);
     
-    // If multiple products with same UPC, prefer the one that requires FFL
-    const fflProduct = allProducts.find(p => p.requires_ffl);
-    console.log(`🔧 DB Lookup ${upc}: Found ${allProducts.length} records, FFL record: ${fflProduct ? fflProduct.id : 'none'}`);
-    return fflProduct || allProducts[0];
+    // Get all products with UPC - ensure we select all fields including requiresFFL
+    const allProducts = await db.select().from(products).where(eq(products.upcCode, upc));
+    
+    if (!allProducts.length) {
+      console.log(`❌ No product found for UPC: ${upc}`);
+      return undefined;
+    }
+    
+    console.log(`🔍 Found ${allProducts.length} products for UPC ${upc}`);
+    
+    // Find FFL-required product first
+    const fflProduct = allProducts.find(p => p.requiresFFL === true);
+    if (fflProduct) {
+      console.log(`✅ Found FFL-required product: ${fflProduct.name} (ID: ${fflProduct.id})`);
+      return fflProduct;
+    }
+    
+    // Fallback to first product
+    const firstProduct = allProducts[0];
+    console.log(`📦 Using first product: ${firstProduct.name} (ID: ${firstProduct.id}, FFL: ${firstProduct.requiresFFL})`);
+    return firstProduct;
   }
 
   async getProductByMpn(mpn: string): Promise<Product | undefined> {

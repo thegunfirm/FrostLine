@@ -6,7 +6,7 @@ const express = require('express');
 const { readSnapshot, writeSnapshot } = require('../lib/storage');
 const { splitOutcomes } = require('../lib/shippingSplit');
 const { mintOrderNumber } = require('../lib/orderNumbers');
-const { storage } = require('../storage');
+const { storage } = require('../storage.ts');
 
 const router = express.Router();
 
@@ -183,7 +183,7 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
       const upc = item.upc || item.product?.upc;
       if (upc) {
         const product = await storage.getProductByUpc(upc);
-        const result = product?.requires_ffl || false;
+        const result = (product?.requiresFFL === true) || ((product && product.requires_ffl) === true) || false;
         console.log(`🎯 FFL Check: ${upc} → ${product?.name || 'Not Found'} → FFL: ${result}`);
         return result;
       }
