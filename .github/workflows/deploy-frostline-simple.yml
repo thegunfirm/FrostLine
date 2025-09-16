@@ -101,26 +101,47 @@ jobs:
           scp -P "$SSH_PORT" "$envfile" "$SSH_USER@$SSH_HOST:/root/pm2/frostline.env"
           rm -f "$envfile"
 
-          # --- Create a small remote restart script locally (no heredocs in YAML) ---
+          # --- Create the remote restart script locally (no heredocs) ---
           restart="$(mktemp)"; umask 077
-          printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail' 'set +H' > "$restart"
+          printf '%s\n' '#!/usr/bin/env bash' >> "$restart"
+          printf '%s\n' 'set -euo pipefail' >> "$restart"
+          printf '%s\n' 'set +H' >> "$restart"
           printf '%s\n' 'chmod 600 /root/pm2/frostline.env' >> "$restart"
           printf '%s\n' 'set -a; . /root/pm2/frostline.env; set +a' >> "$restart"
-          # Optional DB snapshot if pg_dump exists (pre-restart safety net)
-          printf '%s\n' 'if command -v pg_dump >/dev/null 2>&1; then ts=$(date +%F-%H%M%S); install -d -m 700 /root/backups; pg_dump --no-owner --format=custom "$DATABASE_URL" > "/root/backups/frostline-$ts.dump"; fi' >> "$restart"
-          # Optional DB connectivity check if psql exists
-          printf '%s\n' 'if command -v psql >/dev/null 2>&1; then psql "$DATABASE_URL" -Atqc "select 1" >/dev/null || { echo "::error::DB connection failed"; exit 1; }; fi' >> "$restart"
-          # Restart & persist
+
+          # ---- Parse DATABASE_URL into parts (user, pass, host, db) ----
+          printf '%s\n' 'DBURL="$DATABASE_URL"' >> "$restart"
+          printf '%s\n' 'DB_USER=$(printf "%s" "$DBURL" | sed -n '"'"'s~^[a-zA-Z0-9+]*://\([^:]*\):.*$~\1~p'"'"')' >> "$restart"
+          printf '%s\n' 'DB_PASS=$(printf "%s" "$DBURL" | sed -n '"'"'s~^[a-zA-Z0-9+]*://[^:]*:\([^@]*\)@.*$~\1~p'"'"')' >> "$restart"
+          printf '%s\n' 'DB_HOST=$(printf "%s" "$DBURL" | sed -n '"'"'s~^[a-zA-Z0-9+]*://[^@]*@\([^:/?]*\).*~\1~p'"'"')' >> "$restart"
+          printf '%s\n' 'DB_NAME=$(printf "%s" "$DBURL" | sed -n '"'"'s~^.*/\([^/?]*\).*$~\1~p'"'"')' >> "$restart"
+          printf '%s\n' 'ESC_PASS=$(printf "%s" "$DB_PASS" | sed "s/'"'"'/'"'"'"'"'"'"'"'"'/g")' >> "$restart"
+
+          # ---- Ensure role + DB exist, and password matches secret (self-heal) ----
+          printf '%s\n' 'sudo -u postgres psql -v ON_ERROR_STOP=1 -tc "SELECT 1 FROM pg_roles WHERE rolname='\''$DB_USER'\''" | grep -q 1 || sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE ROLE \"$DB_USER\" LOGIN PASSWORD '\''$ESC_PASS'\'';"' >> "$restart"
+          printf '%s\n' 'sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER ROLE \"$DB_USER\" WITH LOGIN PASSWORD '\''$ESC_PASS'\'';"' >> "$restart"
+          printf '%s\n' 'sudo -u postgres psql -v ON_ERROR_STOP=1 -tc "SELECT 1 FROM pg_database WHERE datname='\''$DB_NAME'\''" | grep -q 1 || sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\";"' >> "$restart"
+
+          # ---- Connectivity check (now that creds are synced) ----
+          printf '%s\n' 'PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -Atqc "select 1" >/dev/null' >> "$restart"
+
+          # ---- Best-effort backup (never fail deploy) ----
+          printf '%s\n' 'if command -v pg_dump >/dev/null 2>&1; then ts=$(date +%F-%H%M%S); install -d -m 700 /root/backups; PGPASSWORD="$DB_PASS" pg_dump -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" --no-owner --format=custom -f "/root/backups/frostline-$ts.dump" || echo "::warning::pg_dump failed (backup skipped)"; fi' >> "$restart"
+
+          # ---- Restart app & persist ----
           printf '%s\n' 'cd /var/www/frostline' >> "$restart"
           printf '%s\n' 'pm2 restart frostline --update-env --cwd /var/www/frostline' >> "$restart"
           printf '%s\n' 'pm2 save' >> "$restart"
-          # Health checks
+
+          # ---- Health checks ----
           printf '%s\n' 'ss -ltnp | grep -E ":5000\\b" >/dev/null || { echo "::error::app is not listening on :5000"; exit 1; }' >> "$restart"
           printf '%s\n' 'curl -fsSI http://127.0.0.1:5000/ | head -1' >> "$restart"
           printf '%s\n' 'if command -v nginx >/dev/null 2>&1; then curl -fsSI -H "Host: thegunfirm.com" http://127.0.0.1/ | head -1 || true; fi' >> "$restart"
-          # Quick FTPS handshake trace from app logs (should see < 230 at least once)
-          printf '%s\n' 'pm2 logs frostline --lines 150 --nostream | egrep -i "Connecting FTPS|> USER|< 331|< 230|< 530" || true' >> "$restart"
-          # Best-effort kick of a full RSR import (won't fail the deploy)
+
+          # ---- FTPS handshake trace from app logs ----
+          printf '%s\n' 'pm2 logs frostline --lines 180 --nostream | egrep -i '"'"'Connecting FTPS|> USER|< 331|< 230|< 530|rsr|IM-QTY|FULL|download|insert|upsert|error'"'"' || true' >> "$restart"
+
+          # ---- Kick a full RSR import (best-effort) ----
           printf '%s\n' 'pm2 trigger frostline rsr:full >/dev/null 2>&1 || curl -fsS -X POST http://127.0.0.1:5000/_internal/rsr/full >/dev/null 2>&1 || true' >> "$restart"
 
           # Ship & execute restart script
