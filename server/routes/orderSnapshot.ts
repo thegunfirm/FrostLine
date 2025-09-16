@@ -48,7 +48,7 @@ router.post('/api/orders/:orderId/snapshot', express.json(), async (req, res) =>
       it.name, it.title, it.description, it.product?.name
     ) || '');
     
-    // FIXED: If UPC/name is missing, look up complete product data from database
+    // ZERO TOLERANCE: Block orders missing authentic RSR data
     if (!upc || !name || upc.startsWith('UNKNOWN')) {
       try {
         let product = null;
@@ -58,20 +58,25 @@ router.post('/api/orders/:orderId/snapshot', express.json(), async (req, res) =>
           product = await storage.getProductBySku(sku);
         }
         
-        if (product) {
-          upc = product.upcCode || upc || `UNKNOWN-${idx+1}`;
+        if (product && product.upcCode && product.name) {
+          // Use authentic product data from database
+          upc = product.upcCode;
           mpn = product.manufacturerPartNumber || mpn;
           sku = product.sku || sku;
-          name = product.name || name || `Item ${upc}`;
+          name = product.name;
+          console.log(`✅ Recovered authentic data for ${sku}: ${name} (UPC: ${upc})`);
         } else {
-          // Last resort fallback only if product lookup fails
-          upc = upc || `UNKNOWN-${idx+1}`;
-          name = name || `Item ${upc}`;
+          // BLOCK ORDER: Cannot proceed without authentic RSR data
+          console.error(`❌ BLOCKING ORDER: Item ${idx+1} lacks authentic RSR data`);
+          console.error(`   - Missing UPC: ${!upc}`);
+          console.error(`   - Missing Name: ${!name}`);
+          console.error(`   - Product ID: ${it.productId || 'none'}`);
+          console.error(`   - SKU: ${sku || 'none'}`);
+          throw new Error(`Order blocked: Item ${idx+1} missing authentic RSR data (UPC: ${upc || 'missing'}, Name: ${name || 'missing'})`);
         }
       } catch (error) {
-        console.error(`Failed to lookup product data for item ${idx+1}:`, error);
-        upc = upc || `UNKNOWN-${idx+1}`;
-        name = name || `Item ${upc}`;
+        console.error(`❌ Product lookup failed for item ${idx+1}:`, error);
+        throw new Error(`Order blocked: Cannot verify authentic RSR data for item ${idx+1}: ${error.message}`);
       }
     }
 
@@ -81,10 +86,10 @@ router.post('/api/orders/:orderId/snapshot', express.json(), async (req, res) =>
       it.retail, it.pricingSnapshot?.retail, 0
     ));
 
-    // Images are irrelevant to processing; force local placeholder if not local
+    // Generate image URL using authentic UPC (no synthetic UPCs allowed)
     let imageUrl = String(firstNonEmpty(it.imageUrl, it.product?.imageUrl, '') || '');
     if (!imageUrl.startsWith('/images/')) {
-      imageUrl = upc.startsWith('UNKNOWN-') ? '/images/placeholder.jpg' : `/images/${upc}.jpg`;
+      imageUrl = `/images/${upc}.jpg`; // UPC is guaranteed authentic at this point
     }
 
     return { upc, mpn, sku, name, qty: Number.isFinite(qty) && qty > 0 ? qty : 1,
