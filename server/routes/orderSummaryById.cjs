@@ -164,24 +164,65 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
       unitPrice: unit,
       extendedPrice: round2(unit * qty),
       product: {
-        sku, upc, mpn, name,
+        sku, upc, name,
         image: { url: imageUrl },
-        imageUrl,   // product-level alias
-        UPC: upc, MPN: mpn, SKU: sku, NAME: name // uppercase aliases some code paths use
+        imageUrl,   // product-level alias  
+        UPC: upc, SKU: sku, NAME: name // uppercase aliases some code paths use (MPN removed)
       },
-      // line-level aliases (many legacy components look here)
-      sku, upc, mpn, name, imageUrl
+      // line-level aliases (many legacy components look here) - MPN removed
+      sku, upc, name, imageUrl
     };
   });
 
-  // Shipments (Amazon-style): v1 shows same lines per outcome unless allocations are present
+  // FIXED: Split items by shipping outcome (FFL vs non-FFL)
   const parts = (minted.parts.length ? minted.parts : [{ outcome: outcomes[0], orderNumber: minted.main }]);
-  const shipments = parts.map((p, idx) => ({
-    idx,
-    outcome: p.outcome || outcomes[0],
-    orderNumber: p.orderNumber || minted.main,
-    lines: normItems,
-    totals: computeTotals(normItems)
+  
+  // Helper function to determine if item needs FFL based on product data
+  const needsFFL = async (item) => {
+    try {
+      const upc = item.upc || item.product?.upc;
+      if (upc) {
+        const product = await storage.getProductByUpc(upc);
+        return product?.fflRequired || false;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking FFL requirement:', error);
+      return false; // Default to no FFL if lookup fails
+    }
+  };
+  
+  // Split items by FFL requirement for each shipment outcome
+  const shipments = await Promise.all(parts.map(async (p, idx) => {
+    const outcome = p.outcome || outcomes[0];
+    let filteredItems = normItems;
+    
+    // Filter items based on outcome type
+    if (outcome.includes('FFL')) {
+      // FFL shipments: only include items that require FFL
+      filteredItems = [];
+      for (const item of normItems) {
+        if (await needsFFL(item)) {
+          filteredItems.push(item);
+        }
+      }
+    } else {
+      // Non-FFL shipments: only include items that don't require FFL  
+      filteredItems = [];
+      for (const item of normItems) {
+        if (!(await needsFFL(item))) {
+          filteredItems.push(item);
+        }
+      }
+    }
+    
+    return {
+      idx,
+      outcome,
+      orderNumber: p.orderNumber || minted.main,
+      lines: filteredItems,
+      totals: computeTotals(filteredItems)
+    };
   }));
 
   const totals = computeTotals(normItems);
