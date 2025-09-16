@@ -1,4 +1,4 @@
-import AuthorizeNet from 'authorizenet';
+import * as AuthorizeNet from 'authorizenet';
 const { APIContracts, APIControllers } = AuthorizeNet;
 
 export interface AuthOnlyResult {

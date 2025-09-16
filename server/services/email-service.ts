@@ -1,5 +1,5 @@
 import { MailService } from '@sendgrid/mail';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 if (!process.env.SENDGRID_API_KEY) {
   throw new Error("SENDGRID_API_KEY environment variable must be set");

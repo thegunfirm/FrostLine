@@ -6,7 +6,7 @@ import { createServer, type Server } from "http";
 import { join } from "path";
 import { readFileSync, existsSync } from "fs";
 import { storage } from "./storage";
-import bcrypt from "bcrypt";
+import * as bcrypt from "bcrypt";
 import { insertUserSchema, insertProductSchema, insertOrderSchema, type InsertProduct, type Product, tierPricingRules, products, heroCarouselSlides, categoryRibbons, adminSettings, systemSettings, membershipTierSettings, type User, type FFL, ffls, orders, carts, checkoutSettings, fulfillmentSettings, users } from "@shared/schema";
 import { pricingEngine } from "./services/pricing-engine";
 import { resolveImageUrl } from "../lib/imageResolver";
@@ -29,7 +29,7 @@ import { registerAuthRoutes } from './auth-routes';
 import { syncHealthMonitor } from "./services/sync-health-monitor";
 import { sendVerificationEmail, generateVerificationToken, sendPasswordResetEmail } from "./services/email-service";
 // Zoho integration removed - starting fresh
-import crypto from "crypto";
+import * as crypto from "crypto";
 import axios from "axios";
 import multer from "multer";
 import { billingAuditLogger } from "./services/billing-audit-logger";
@@ -1263,8 +1263,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`✅ Enriched order snapshot saved: ${savedOrder.id} (${minted.main})`);
                 console.log(`🎯 Products are clean - no placeholders, authentic RSR data only`);
                 
-                // Store the order number for response
-                savedOrder.orderNumber = minted.main;
+                // Store the order number for response and database
+                savedOrder.rsrOrderNumber = minted.main;
+                
+                // Update order in database with RSR order number
+                await storage.updateOrder(savedOrder.id, {
+                  rsrOrderNumber: minted.main
+                });
                 
               } catch (snapshotError) {
                 console.error('❌ Failed to save enriched order snapshot:', snapshotError);
@@ -1318,7 +1323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               messageCode: transactionResponse.messages[0]?.code,
               description: transactionResponse.messages[0]?.description || 'Payment processed successfully',
               orderId: savedOrder?.id || 'N/A', // Fallback if order creation failed
-              orderNumber: savedOrder?.orderNumber || null, // TGF order number (e.g., "100012-0")
+              orderNumber: savedOrder?.rsrOrderNumber || null, // TGF order number (e.g., "100012-0")
               dataEnriched: true // Signal that products are already clean
             });
           } else {
@@ -1935,7 +1940,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get order items with product details
-      const orderLines = await storage.getOrderLines(order.id);
+      const orderLines = await storage.getOrderItems(order.id);
       
       // Get user for membership tier info
       let membershipTier = 'Guest';

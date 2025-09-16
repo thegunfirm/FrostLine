@@ -1,5 +1,5 @@
-import bcrypt from 'bcrypt';
-import crypto from 'crypto';
+import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { ZohoService } from './zoho-service';
 // Email service will be imported dynamically when needed
 
