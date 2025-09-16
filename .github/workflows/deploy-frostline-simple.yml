@@ -76,38 +76,38 @@ jobs:
           # Build env file locally (masked; no secrets echoed)
           envfile="$(mktemp)"; umask 077
           {
-            printf 'PORT=5000\n'
-            printf 'NODE_ENV=production\n'
-            printf 'DATABASE_URL=%s\n' "$DATABASE_URL"
+            echo "PORT=5000"
+            echo "NODE_ENV=production"
+            echo "DATABASE_URL=${DATABASE_URL}"
 
             # --- RSR FTPS (explicit TLS on 2222) ---
-            printf 'RSR_FTP_HOST=%s\n' "${RSR_FTP_HOST:-ftps.rsrgroup.com}"
-            printf 'RSR_FTP_PORT=%s\n' "${RSR_FTP_PORT:-2222}"
-            printf 'RSR_PORT=%s\n'     "${RSR_FTP_PORT:-2222}"   # alias to avoid NaN in logs
-            printf 'RSR_FTPS=%s\n'     "${RSR_FTPS:-1}"
+            echo "RSR_FTP_HOST=${RSR_FTP_HOST:-ftps.rsrgroup.com}"
+            echo "RSR_FTP_PORT=${RSR_FTP_PORT:-2222}"
+            echo "RSR_PORT=${RSR_FTP_PORT:-2222}"   # alias to avoid NaN in logs
+            echo "RSR_FTPS=${RSR_FTPS:-1}"
 
             # FTP creds ONLY (dealer login)
-            printf 'RSR_USERNAME=%s\n' "$RSR_USERNAME"
-            printf 'RSR_PASSWORD=%s\n' "$RSR_PASSWORD"
+            echo "RSR_USERNAME=${RSR_USERNAME}"
+            echo "RSR_PASSWORD=${RSR_PASSWORD}"
 
             # RSR “Standard” API creds (separate from FTP)
-            if [ -n "${RSR_STANDARD_USERNAME:-}" ]; then printf 'RSR_STANDARD_USERNAME=%s\n' "$RSR_STANDARD_USERNAME"; fi
-            if [ -n "${RSR_STANDARD_PASSWORD:-}" ]; then printf 'RSR_STANDARD_PASSWORD=%s\n' "$RSR_STANDARD_PASSWORD"; fi
+            if [ -n "${RSR_STANDARD_USERNAME:-}" ]; then echo "RSR_STANDARD_USERNAME=${RSR_STANDARD_USERNAME}"; fi
+            if [ -n "${RSR_STANDARD_PASSWORD:-}" ]; then echo "RSR_STANDARD_PASSWORD=${RSR_STANDARD_PASSWORD}"; fi
 
             # Optional integrations
-            if [ -n "${AUTHORIZE_NET_API_LOGIN_ID:-}" ];    then printf 'AUTHORIZE_NET_API_LOGIN_ID=%s\n' "$AUTHORIZE_NET_API_LOGIN_ID"; fi
-            if [ -n "${AUTHORIZE_NET_TRANSACTION_KEY:-}" ]; then printf 'AUTHORIZE_NET_TRANSACTION_KEY=%s\n' "$AUTHORIZE_NET_TRANSACTION_KEY"; fi
-            if [ -n "${SENDGRID_API_KEY:-}" ];              then printf 'SENDGRID_API_KEY=%s\n' "$SENDGRID_API_KEY"; fi
-            if [ -n "${ALGOLIA_APP_ID:-}" ];                then printf 'ALGOLIA_APP_ID=%s\n' "$ALGOLIA_APP_ID"; fi
-            if [ -n "${ALGOLIA_ADMIN_API_KEY:-}" ];         then printf 'ALGOLIA_ADMIN_API_KEY=%s\n' "$ALGOLIA_ADMIN_API_KEY"; fi
+            if [ -n "${AUTHORIZE_NET_API_LOGIN_ID:-}" ]; then echo "AUTHORIZE_NET_API_LOGIN_ID=${AUTHORIZE_NET_API_LOGIN_ID}"; fi
+            if [ -n "${AUTHORIZE_NET_TRANSACTION_KEY:-}" ]; then echo "AUTHORIZE_NET_TRANSACTION_KEY=${AUTHORIZE_NET_TRANSACTION_KEY}"; fi
+            if [ -n "${SENDGRID_API_KEY:-}" ]; then echo "SENDGRID_API_KEY=${SENDGRID_API_KEY}"; fi
+            if [ -n "${ALGOLIA_APP_ID:-}" ]; then echo "ALGOLIA_APP_ID=${ALGOLIA_APP_ID}"; fi
+            if [ -n "${ALGOLIA_ADMIN_API_KEY:-}" ]; then echo "ALGOLIA_ADMIN_API_KEY=${ALGOLIA_ADMIN_API_KEY}"; fi
           } > "$envfile"
 
-          # Verify restart script exists in repo at FrostLine/scripts/restart.sh
-          [ -f "FrostLine/scripts/restart.sh" ] || { echo "::error::FrostLine/scripts/restart.sh missing in repo"; rm -f "$envfile"; exit 1; }
+          # Verify restart script exists in repo root at scripts/restart.sh
+          [ -f "scripts/restart.sh" ] || { echo "::error::scripts/restart.sh missing in repo"; rm -f "$envfile"; exit 1; }
 
           # Push env + restart script
           scp -P "$SSH_PORT" "$envfile" "$SSH_USER@$SSH_HOST:/root/pm2/frostline.env"
-          scp -P "$SSH_PORT" "FrostLine/scripts/restart.sh" "$SSH_USER@$SSH_HOST:/root/pm2/restart.sh"
+          scp -P "$SSH_PORT" "scripts/restart.sh" "$SSH_USER@$SSH_HOST:/root/pm2/restart.sh"
           rm -f "$envfile"
 
           # Run restart script on the host
