@@ -15,6 +15,7 @@ export RSR_PORT="${RSR_PORT:-${RSR_FTP_PORT:-2222}}"
 
 APP_HOST="${APP_HOST:-${ORIGIN_HOST:-thegunfirm.com}}"
 APP_PORT="${PORT:-5000}"
+REQUIRE_PRODUCTS="${REQUIRE_PRODUCTS:-1}"   # 1 = hard fail if products missing; 0 = warn & continue
 
 echo "==> Using DATABASE_URL from env"
 DBURL="${DATABASE_URL:?DATABASE_URL is required}"
@@ -45,13 +46,13 @@ run_migrations() {
     if [[ -f knexfile.js || -f knexfile.ts ]]; then
       npx --yes knex migrate:latest || true
     fi
-    # TypeORM (generic)
+    # TypeORM
     if ls dist/**/migrations/*.js >/dev/null 2>&1; then
       npx --yes typeorm migration:run || true
     fi
   fi
 
-  # SQL fallbacks (common locations)
+  # SQL fallbacks
   for f in migrations/*.sql server/db/schema.sql db/schema.sql; do
     if [[ -f "$f" ]]; then
       echo "==> Applying $f"
@@ -60,7 +61,7 @@ run_migrations() {
   done
 }
 
-# --- If DB is local, ensure role/db and align password; take a backup ---
+# --- Local DB: ensure role/db/password; backup into postgres-owned dir ---
 if [[ "$db_host" == "127.0.0.1" || "$db_host" == "localhost" ]]; then
   echo "==> Waiting for local PostgreSQL…"
   timeout 30 bash -c "until pg_isready -h 127.0.0.1 -p ${db_port} -U postgres >/dev/null 2>&1; do sleep 1; done" || {
@@ -87,24 +88,28 @@ SQL
   tag="pw$(date +%s%N)"
   sql="ALTER ROLE \"${db_user}\" WITH LOGIN PASSWORD \$${tag}\$${db_pass}\$${tag}\$;"
   sudo -u postgres psql -v ON_ERROR_STOP=1 -c "$sql"
-
   sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER DATABASE \"${db_name}\" OWNER TO \"${db_user}\";"
 
   echo "==> Taking pg_dump backup (custom format)"
-  backup_dir="/root/pm2/backups"; mkdir -p "$backup_dir"
+  backup_dir="/var/backups/frostline"
+  sudo install -d -o postgres -g postgres -m 700 "$backup_dir"
   sudo -u postgres pg_dump -Fc -Z9 -f "${backup_dir}/$(date +%Y%m%d%H%M%S)-${db_name}.dump" "${db_name}" || true
   ls -1t "${backup_dir}"/*-"${db_name}".dump 2>/dev/null | tail -n +6 | xargs -r rm -f || true
 else
   echo "==> Skipping DB maintenance (non-local host: ${db_host})"
 fi
 
-# --- Schema preflight: require products table, try migrations if missing ---
+# --- Schema preflight for products table ---
 if ! has_table products; then
   echo "::warning::Required table 'products' is missing; attempting migrations…"
   run_migrations
   if ! has_table products; then
-    echo "::error::DB schema is missing 'products'. Add/run your migrations (Prisma/Knex/TypeORM or an SQL schema) and re-deploy."
-    exit 1
+    if [[ "$REQUIRE_PRODUCTS" = "1" ]]; then
+      echo "::error::DB schema is missing 'products'. Add/run your migrations (Prisma/Knex/TypeORM or an SQL schema) and re-deploy."
+      exit 1
+    else
+      echo "::warning::Continuing without 'products'. RSR quantity/full imports will log errors until migrations are in place."
+    fi
   fi
 fi
 
@@ -116,7 +121,7 @@ pm2 save
 
 # --- Wait for app and probe nginx ---
 echo "==> Waiting for app on :${APP_PORT}"
-for i in {1..60}; do
+for _ in {1..60}; do
   curl -sS -m 1 "http://127.0.0.1:${APP_PORT}/" >/dev/null && break
   sleep 1
 done
