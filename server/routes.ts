@@ -7778,27 +7778,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
             items = [];
           }
           
-          // Create cart item
+          // Create cart item with complete tier pricing and product schema
           const cartItem = {
             id: `${product.sku}-${Date.now()}`, // Unique item ID
             productId: product.id,
-            sku: product.sku,
+            sku: product.sku, // CRITICAL: Required for existing item detection
             name: product.name,
             price: currentPrice,
             quantity: parseInt(quantity),
-            requiresFFL: product.requiresFfl,
-            manufacturer: product.manufacturer,
-            imageUrl: product.imageUrl
+            // Complete tier pricing structure
+            tierPricing: {
+              bronze: parseFloat(product.priceBronze || "0"),
+              gold: parseFloat(product.priceGold || "0"),
+              platinum: parseFloat(product.pricePlatinum || "0")
+            },
+            // Essential product schema for FFL shipping and enrichment
+            upc: product.upcCode || '',
+            mpn: product.manufacturerPartNumber || '',
+            fflRequired: product.requiresFfl || false,
+            requiresFFL: product.requiresFfl || false, // Keep legacy field for compatibility
+            manufacturer: product.manufacturer || '',
+            imageUrl: product.imageUrl || '',
+            // Additional product information
+            category: product.category || '',
+            subcategory: product.subcategory || '',
+            weight: product.weight || null,
+            caliber: product.caliber || '',
+            barrelLength: product.barrelLength || '',
+            capacity: product.capacity || '',
+            // Pricing reference information
+            msrp: parseFloat(product.priceMSRP || "0"),
+            retailMap: parseFloat(product.priceMAP || "0")
           };
           
-          // Check if item already exists in cart
-          const existingItemIndex = items.findIndex((item: any) => item.sku === product.sku);
+          // Check if item already exists in cart (handle legacy items without sku field)
+          const existingItemIndex = items.findIndex((item: any) => 
+            item.sku === product.sku || item.productId === product.id
+          );
           
           if (existingItemIndex >= 0) {
-            // Update quantity AND price of existing item (in case tier pricing changed)
+            // Update quantity AND preserve all product information (in case data has changed)
             items[existingItemIndex].quantity += parseInt(quantity);
-            items[existingItemIndex].price = currentPrice; // Update price to current tier pricing
-            items[existingItemIndex].requiresFFL = product.requiresFfl; // Update FFL requirement
+            items[existingItemIndex].price = currentPrice; // Update current calculated price
+            // Update tier pricing structure
+            items[existingItemIndex].tierPricing = {
+              bronze: parseFloat(product.priceBronze || "0"),
+              gold: parseFloat(product.priceGold || "0"),
+              platinum: parseFloat(product.pricePlatinum || "0")
+            };
+            // Update essential product fields
+            items[existingItemIndex].upc = product.upcCode || '';
+            items[existingItemIndex].mpn = product.manufacturerPartNumber || '';
+            items[existingItemIndex].fflRequired = product.requiresFfl || false;
+            items[existingItemIndex].requiresFFL = product.requiresFfl || false;
+            items[existingItemIndex].name = product.name || '';
+            items[existingItemIndex].imageUrl = product.imageUrl || '';
             console.log(`📦 Updated existing cart item: ${product.sku} (new qty: ${items[existingItemIndex].quantity}, price: $${currentPrice})`);
           } else {
             // Add new item to cart
@@ -7846,8 +7880,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate each item has required fields
       for (const item of items) {
-        if (!item.id || !item.productId || !item.quantity || !item.price) {
-          return res.status(400).json({ error: "Invalid cart item structure" });
+        if (!item.id || !item.productId || !item.quantity || typeof item.price !== 'number') {
+          return res.status(400).json({ error: "Invalid cart item structure: missing required fields" });
+        }
+        
+        // Validate tier pricing structure if present (backward compatible)
+        if (item.tierPricing && 
+            (typeof item.tierPricing.bronze !== 'number' || 
+             typeof item.tierPricing.gold !== 'number' || 
+             typeof item.tierPricing.platinum !== 'number')) {
+          return res.status(400).json({ error: "Invalid cart item structure: invalid tier pricing" });
+        }
+        
+        // Validate quantity is positive
+        if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+          return res.status(400).json({ error: "Invalid cart item structure: quantity must be positive integer" });
+        }
+        
+        // Validate essential product schema fields if present (maintain backward compatibility)
+        if (item.upc !== undefined && typeof item.upc !== 'string') {
+          return res.status(400).json({ error: "Invalid cart item structure: upc must be string" });
+        }
+        
+        if (item.mpn !== undefined && typeof item.mpn !== 'string') {
+          return res.status(400).json({ error: "Invalid cart item structure: mpn must be string" });
+        }
+        
+        if (item.fflRequired !== undefined && typeof item.fflRequired !== 'boolean') {
+          return res.status(400).json({ error: "Invalid cart item structure: fflRequired must be boolean" });
+        }
+        
+        if (item.requiresFFL !== undefined && typeof item.requiresFFL !== 'boolean') {
+          return res.status(400).json({ error: "Invalid cart item structure: requiresFFL must be boolean" });
         }
       }
       
@@ -7947,7 +8011,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Allow access if user is authenticated and accessing their own cart
       const sessionUser = (req.session as any)?.user;
-      if (sessionUser && sessionUser.id !== requestedUserId) {
+      if (sessionUser && sessionUser.id !== parseInt(requestedUserId)) {
         return res.status(403).json({ error: "Access denied" });
       }
       
