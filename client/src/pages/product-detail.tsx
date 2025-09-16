@@ -174,14 +174,9 @@ export default function ProductDetail() {
     }
   }, [user]);
 
-  // Fetch hide Gold pricing setting for consistent pricing logic
-  const { data: hideGoldSetting } = useQuery({
-    queryKey: ["/api/admin/system-settings/hide_gold_when_equal_map"],
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-  });
 
   // Get comprehensive pricing using centralized utility
-  const pricingInfo = product ? getComprehensivePricing(product, user as any, 'public', hideGoldSetting) : null;
+  const pricingInfo = product ? getComprehensivePricing(product, user as any, 'public') : null;
   const allTierPrices = product ? getAllTierPrices(product) : null;
 
   // Image handling with multiple angles - Use RSR stock number for images

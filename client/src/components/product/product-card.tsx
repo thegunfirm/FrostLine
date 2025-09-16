@@ -5,7 +5,7 @@ import { ImageIcon, CheckCircle, XCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import { getAllTierPrices, formatPrice, getComprehensivePricing, shouldHideGoldPricing } from "@/lib/pricing-utils";
+import { getAllTierPrices, formatPrice, getComprehensivePricing } from "@/lib/pricing-utils";
 
 interface ProductCardProps {
   product: Product | any; // Allow both database Product and Algolia search result types
@@ -28,11 +28,6 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
     staleTime: 30 * 1000, // 30 seconds - same as product detail page
   });
 
-  // Fetch hide Gold pricing setting
-  const { data: hideGoldSetting } = useQuery({
-    queryKey: ["/api/admin/system-settings/hide_gold_when_equal_map"],
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-  });
 
   // Fetch dynamic fallback image from CMS
   const { data: fallbackImageSetting } = useQuery({
@@ -60,7 +55,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
   const productData = dbProduct || product;
   
   // Get comprehensive pricing using centralized utility
-  const pricingInfo = getComprehensivePricing(productData, user as any, 'public', hideGoldSetting);
+  const pricingInfo = getComprehensivePricing(productData, user as any, 'public');
   const allTierPrices = getAllTierPrices(productData);
 
 
@@ -105,8 +100,8 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
                 </span>
               )}
               
-              {/* Gold Price - only show if available and not hidden */}
-              {allTierPrices.gold && !shouldHideGoldPricing(productData, hideGoldSetting) && (
+              {/* Gold Price - always show if available */}
+              {allTierPrices.gold && (
                 <span className="text-black px-2 py-1 sm:px-1 sm:py-0.5 rounded text-xs font-medium" style={{background: 'linear-gradient(135deg, rgb(254 240 138) 0%, rgb(250 204 21) 50%, rgb(234 179 8) 100%)'}}>
                   {formatPrice(allTierPrices.gold)}
                 </span>

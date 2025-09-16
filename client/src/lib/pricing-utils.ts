@@ -60,7 +60,7 @@ export function shouldHideGoldPricing(product: ProductPricing, hideGoldSetting?:
  * Get the appropriate price for a user's tier in public contexts (product pages, search)
  * NEVER shows Platinum pricing publicly - only Gold pricing for Platinum users
  */
-export function getPublicTierPrice(product: ProductPricing, user: User | null, hideGoldSetting?: { value: string }): number | null {
+export function getPublicTierPrice(product: ProductPricing, user: User | null): number | null {
   if (!user) {
     // Public users only see Bronze pricing
     return getSafePrice(product.priceBronze);
@@ -73,10 +73,6 @@ export function getPublicTierPrice(product: ProductPricing, user: User | null, h
       return getSafePrice(product.priceGold) || getSafePrice(product.priceBronze);
       
     case 'Gold':
-      // Check if Gold pricing should be hidden when MSRP equals MAP
-      if (shouldHideGoldPricing(product, hideGoldSetting)) {
-        return getSafePrice(product.priceBronze);
-      }
       // Gold users get Gold pricing, fallback to Bronze if Gold unavailable
       return getSafePrice(product.priceGold) || getSafePrice(product.priceBronze);
       
@@ -117,12 +113,11 @@ export function getCartTierPrice(product: ProductPricing, user: User | null): nu
 export function getComprehensivePricing(
   product: ProductPricing, 
   user: User | null, 
-  context: 'public' | 'cart' = 'public',
-  hideGoldSetting?: { value: string }
+  context: 'public' | 'cart' = 'public'
 ): PricingResult {
   const basePrice = context === 'cart' 
     ? getCartTierPrice(product, user)
-    : getPublicTierPrice(product, user, hideGoldSetting);
+    : getPublicTierPrice(product, user);
 
   const bronzePrice = getSafePrice(product.priceBronze);
   const goldPrice = getSafePrice(product.priceGold);
@@ -140,8 +135,8 @@ export function getComprehensivePricing(
     ? bronzePrice - goldPrice
     : null;
 
-  // Determine if should show upgrade prompt
-  const showUpgrade = !user || (userTier === 'Bronze' && !!upgradeSavings && !shouldHideGoldPricing(product, hideGoldSetting));
+  // Determine if should show upgrade prompt (Gold pricing is never hidden)
+  const showUpgrade = !user || (userTier === 'Bronze' && !!upgradeSavings);
 
   // Stock availability
   const isStockAvailable = product.inStock === true || (product.stockQuantity && product.stockQuantity > 0) || false;
