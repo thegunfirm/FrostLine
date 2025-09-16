@@ -8,6 +8,8 @@ import { Link } from 'wouter';
 import { useFapAuth } from '@/hooks/use-fap-auth';
 import { useLocation } from 'wouter';
 import { CheckoutButton } from './checkout-button';
+import { getCartTierPrice, formatPrice } from '@/lib/pricing-utils';
+import type { CartItem } from '@/hooks/use-cart';
 
 export function CartSheet() {
   const { user } = useFapAuth();
@@ -24,47 +26,18 @@ export function CartSheet() {
     hasFirearms 
   } = useCart();
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(price);
-  };
+  // Helper function to convert CartItem to ProductPricing for centralized utility
+  const cartItemToProduct = (item: CartItem) => ({
+    priceBronze: item.priceBronze?.toString() || '0',
+    priceGold: item.priceGold?.toString() || '0', 
+    pricePlatinum: item.pricePlatinum?.toString() || '0',
+    priceMSRP: item.priceBronze?.toString() || '0', // Use Bronze as fallback for MSRP
+  });
 
-  // Helper function to get the correct tier price for display in cart
-  const getCartTierPrice = (item: any) => {
-    if (!user) {
-      // Non-logged users see Bronze pricing
-      return item.priceBronze || item.price;
-    }
-
-    // Helper function to safely parse and validate tier prices
-    const getSafePrice = (priceValue: number | null | undefined): number | null => {
-      if (priceValue == null) return null;
-      return (isFinite(priceValue) && priceValue > 0) ? priceValue : null;
-    };
-
-    // For logged users, show their tier-appropriate pricing
-    switch (user.subscriptionTier) {
-      case 'Platinum':
-        // Platinum users see their actual Platinum pricing in cart
-        return getSafePrice(item.pricePlatinum) || 
-               getSafePrice(item.priceGold) || 
-               getSafePrice(item.priceBronze) || 
-               item.price;
-      case 'Gold':
-        return getSafePrice(item.priceGold) || 
-               getSafePrice(item.priceBronze) || 
-               item.price;
-      case 'Bronze':
-      default:
-        return getSafePrice(item.priceBronze) || item.price;
-    }
-  };
-
-  // Calculate tier-aware total instead of using stored item.price
+  // Calculate tier-aware total using centralized pricing utility
   const tierAwareTotal = items.reduce((sum, item) => {
-    return sum + getCartTierPrice(item) * item.quantity;
+    const productPricing = cartItemToProduct(item);
+    return sum + getCartTierPrice(productPricing, user as any) * item.quantity;
   }, 0);
   
   const total = tierAwareTotal; // Use tier-aware total for consistency
