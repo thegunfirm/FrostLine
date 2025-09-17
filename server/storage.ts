@@ -66,7 +66,7 @@ import {
   type InsertTierLabelSetting
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, ilike, and, or, desc, asc, ne, sql, gt, gte, lte, inArray } from "drizzle-orm";
+import { eq, like, ilike, and, or, desc, asc, ne, sql, gt, gte, lte, inArray, isNotNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -336,7 +336,12 @@ export class DatabaseStorage implements IStorage {
   }): Promise<Product[]> {
     // For now, use the same pattern as getFeaturedProducts but apply filters after
     const allProducts = await db.select().from(products)
-      .where(eq(products.isActive, true))
+      .where(
+        and(
+          eq(products.isActive, true),
+          isNotNull(products.departmentNumber)
+        )
+      )
       .orderBy(desc(products.createdAt));
     
     // Apply client-side filtering for now to test functionality
@@ -370,12 +375,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProduct(id: number): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.id, id));
+    const [product] = await db.select().from(products).where(
+      and(
+        eq(products.id, id),
+        isNotNull(products.departmentNumber)
+      )
+    );
     return product || undefined;
   }
 
   async getProductBySku(sku: string): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.sku, sku));
+    const [product] = await db.select().from(products).where(
+      and(
+        eq(products.sku, sku),
+        isNotNull(products.departmentNumber)
+      )
+    );
     return product || undefined;
   }
 
@@ -383,7 +398,12 @@ export class DatabaseStorage implements IStorage {
     console.log(`🔧 DETERMINISTIC UPC LOOKUP for: ${upc}`);
     
     // Get all products with UPC - ensure we select all fields including requiresFFL
-    const allProducts = await db.select().from(products).where(eq(products.upcCode, upc));
+    const allProducts = await db.select().from(products).where(
+      and(
+        eq(products.upcCode, upc),
+        isNotNull(products.departmentNumber)
+      )
+    );
     
     if (!allProducts.length) {
       console.log(`❌ No product found for UPC: ${upc}`);
@@ -436,7 +456,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProductByMpn(mpn: string): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.manufacturerPartNumber, mpn));
+    const [product] = await db.select().from(products).where(
+      and(
+        eq(products.manufacturerPartNumber, mpn),
+        isNotNull(products.departmentNumber)
+      )
+    );
     return product || undefined;
   }
 
@@ -522,7 +547,8 @@ export class DatabaseStorage implements IStorage {
             like(products.description, `%${query}%`),
             like(products.manufacturer, `%${query}%`)
           ),
-          eq(products.isActive, true)
+          eq(products.isActive, true),
+          isNotNull(products.departmentNumber)
         )
       )
       .limit(limit)
@@ -531,20 +557,36 @@ export class DatabaseStorage implements IStorage {
 
   async getProductsByCategory(category: string): Promise<Product[]> {
     return await db.select().from(products)
-      .where(and(eq(products.category, category), eq(products.isActive, true)))
+      .where(
+        and(
+          eq(products.category, category),
+          eq(products.isActive, true),
+          isNotNull(products.departmentNumber)
+        )
+      )
       .orderBy(desc(products.createdAt));
   }
 
   async getFeaturedProducts(limit = 8): Promise<Product[]> {
     return await db.select().from(products)
-      .where(eq(products.isActive, true))
+      .where(
+        and(
+          eq(products.isActive, true),
+          isNotNull(products.departmentNumber)
+        )
+      )
       .orderBy(desc(products.createdAt))
       .limit(limit);
   }
 
   async getRelatedProducts(productId: number, category: string, manufacturer: string): Promise<Product[]> {
     // Get the current product to extract attributes
-    const [currentProduct] = await db.select().from(products).where(eq(products.id, productId));
+    const [currentProduct] = await db.select().from(products).where(
+      and(
+        eq(products.id, productId),
+        isNotNull(products.departmentNumber)
+      )
+    );
     if (!currentProduct) return [];
 
     // Extract caliber and firearm type using the enhanced extractors
@@ -572,7 +614,8 @@ export class DatabaseStorage implements IStorage {
         .where(and(
           eq(products.isActive, true),
           eq(products.category, category),
-          ne(products.id, productId)
+          ne(products.id, productId),
+          isNotNull(products.departmentNumber)
         ))
         .orderBy(sql`RANDOM()`)
         .limit(200); // Random sample to ensure diverse products
@@ -634,7 +677,8 @@ export class DatabaseStorage implements IStorage {
         .where(and(
           eq(products.isActive, true),
           eq(products.category, category),
-          ne(products.id, productId)
+          ne(products.id, productId),
+          isNotNull(products.departmentNumber)
         ))
         .limit(8);
     }
@@ -646,7 +690,12 @@ export class DatabaseStorage implements IStorage {
     manufacturer: string
   ): Promise<any[]> {
     // Get the reference product for caliber/firearm type extraction
-    const referenceProduct = await db.select().from(products).where(eq(products.id, productId)).limit(1);
+    const referenceProduct = await db.select().from(products).where(
+      and(
+        eq(products.id, productId),
+        isNotNull(products.departmentNumber)
+      )
+    ).limit(1);
     if (!referenceProduct.length) return [];
     
     const caliber = this.extractCaliber(referenceProduct[0].name);
@@ -657,7 +706,8 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(products.isActive, true),
         eq(products.category, category),
-        ne(products.id, productId)
+        ne(products.id, productId),
+        isNotNull(products.departmentNumber)
       ))
       .orderBy(sql`RANDOM()`)
       .limit(200);
