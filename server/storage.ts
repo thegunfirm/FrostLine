@@ -336,7 +336,12 @@ export class DatabaseStorage implements IStorage {
   }): Promise<Product[]> {
     // For now, use the same pattern as getFeaturedProducts but apply filters after
     const allProducts = await db.select().from(products)
-      .where(eq(products.isActive, true))
+      .where(
+        and(
+          eq(products.isActive, true),
+          isNotNull(products.rsrStockNumber)
+        )
+      )
       .orderBy(desc(products.createdAt));
     
     // Apply client-side filtering for now to test functionality
@@ -522,7 +527,8 @@ export class DatabaseStorage implements IStorage {
             like(products.description, `%${query}%`),
             like(products.manufacturer, `%${query}%`)
           ),
-          eq(products.isActive, true)
+          eq(products.isActive, true),
+          isNotNull(products.rsrStockNumber)
         )
       )
       .limit(limit)
@@ -534,7 +540,8 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(products.category, category),
-          eq(products.isActive, true)
+          eq(products.isActive, true),
+          isNotNull(products.rsrStockNumber)
         )
       )
       .orderBy(desc(products.createdAt));
@@ -542,7 +549,12 @@ export class DatabaseStorage implements IStorage {
 
   async getFeaturedProducts(limit = 8): Promise<Product[]> {
     return await db.select().from(products)
-      .where(eq(products.isActive, true))
+      .where(
+        and(
+          eq(products.isActive, true),
+          isNotNull(products.rsrStockNumber)
+        )
+      )
       .orderBy(desc(products.createdAt))
       .limit(limit);
   }
