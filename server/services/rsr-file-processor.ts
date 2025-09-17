@@ -191,7 +191,7 @@ class RSRFileProcessor {
       priceMSRP: record.retailPrice || "0",
       priceMAP: record.retailMAP || record.retailPrice || "0",
       priceBronze: record.retailPrice || "0", // Bronze = MSRP
-      priceGold: record.retailMAP || record.retailPrice || "0", // Gold = MAP
+      priceGold: this.calculateGoldPrice(record.retailPrice, record.rsrPricing), // Gold = (MSRP + Dealer)/2
       pricePlatinum: record.rsrPricing || "0", // Platinum = Dealer price
       inStock: parseInt(record.inventoryQuantity) > 0,
       stockQuantity: parseInt(record.inventoryQuantity) || 0,
@@ -306,6 +306,9 @@ class RSRFileProcessor {
   }
 
   private mapDepartmentToCategory(departmentNumber: string): string {
+    // Normalize department number by removing leading zeros
+    const normalizedDept = departmentNumber.replace(/^0+/, '') || '0';
+    
     const categoryMap: Record<string, string> = {
       '1': 'Handguns',
       '2': 'Used Handguns',
@@ -351,12 +354,14 @@ class RSRFileProcessor {
       '43': 'Upper Receivers & Conversion Kits - High Capacity'
     };
 
-    return categoryMap[departmentNumber] || 'Accessories';
+    return categoryMap[normalizedDept] || 'Accessories';
   }
 
   private requiresFFL(departmentNumber: string): boolean {
+    // Normalize department number by removing leading zeros
+    const normalizedDept = departmentNumber.replace(/^0+/, '') || '0';
     const fflRequiredDepartments = ['1', '2', '3', '5', '6', '7', '41', '42', '43'];
-    return fflRequiredDepartments.includes(departmentNumber);
+    return fflRequiredDepartments.includes(normalizedDept);
   }
 
   private generateTags(record: RSRInventoryRecord): string[] {
@@ -383,6 +388,19 @@ class RSRFileProcessor {
     }
     
     return tags;
+  }
+
+  private calculateGoldPrice(msrp: string, wholesale: string): string {
+    const msrpNum = parseFloat(msrp) || 0;
+    const wholesaleNum = parseFloat(wholesale) || 0;
+    
+    if (msrpNum === 0 && wholesaleNum === 0) {
+      return "0";
+    }
+    
+    // Gold = (MSRP + Dealer)/2
+    const goldPrice = (msrpNum + wholesaleNum) / 2;
+    return goldPrice.toFixed(2);
   }
 
   /**
