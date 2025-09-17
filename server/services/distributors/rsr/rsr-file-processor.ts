@@ -516,6 +516,9 @@ class RSRFileProcessor {
   }
 
   private mapDepartmentToCategory(departmentNumber: string): string {
+    // Normalize department number - remove leading zeros for mapping
+    const normalizedDept = departmentNumber?.replace(/^0+/, '') || departmentNumber;
+    
     const categoryMap: Record<string, string> = {
       '1': 'Handguns',
       '2': 'Used Handguns',
@@ -561,7 +564,11 @@ class RSRFileProcessor {
       '43': 'Upper Receivers & Conversion Kits - High Capacity'
     };
 
-    return categoryMap[departmentNumber] || 'Accessories';
+    const mappedCategory = categoryMap[normalizedDept];
+    if (!mappedCategory) {
+      console.warn(`⚠️ Unmapped department number: ${departmentNumber} (normalized: ${normalizedDept}) - using Accessories fallback`);
+    }
+    return mappedCategory || 'Accessories';
   }
 
   private requiresFFL(departmentNumber: string): boolean {

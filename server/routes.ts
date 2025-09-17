@@ -5729,7 +5729,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sku: hit.objectID || hit.sku,
           rsrStockNumber: hit.rsrStockNumber || hit.stockNumber || hit.objectID,
           stockNumber: hit.stockNumber || hit.rsrStockNumber || hit.objectID,
-          manufacturer: hit.manufacturer || hit.manufacturerName || 'UNKNOWN',
+          manufacturer: hit.manufacturer || hit.manufacturerName,
           categoryName: hit.categoryName || hit.category,
           // Extract individual pricing tiers for frontend compatibility  
           priceBronze: bronzePrice.toString(),
@@ -9860,8 +9860,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: product.description,
         sku: product.sku,
         upc: product.upcCode || '',
-        manufacturer: product.manufacturer || '',
-        categoryName: product.category || '',
+        manufacturer: product.manufacturer,
+        categoryName: product.category,
         subcategoryName: product.category || '', // Use same as category for now
         inventoryQuantity: product.stockQuantity || 0,
         inventory: {
@@ -9871,8 +9871,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         price: {
           msrp: parseFloat(product.priceBronze || '0'),
-          retailMap: parseFloat(product.priceBronze || '0'),
-          dealerPrice: parseFloat(product.priceGold || '0'),
+          retailMap: parseFloat(product.priceMAP || product.priceBronze || '0'),
+          dealerPrice: parseFloat(product.pricePlatinum || '0'),
           dealerCasePrice: parseFloat(product.pricePlatinum || '0')
         },
         images: product.images || [],
