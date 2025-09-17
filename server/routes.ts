@@ -6286,7 +6286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return `(categoryName:"Rifles" OR categoryName:"Shotguns")`;
           }
         } else if (department === "18") {
-          return `departmentNumber:"18"`;
+          return `categoryName:"Ammunition"`;
         } else if (department === "08") {
           return `departmentNumber:"08"`;
         } else if (department === "34") {
@@ -6294,11 +6294,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (department === "06") {
           return `departmentNumber:"06"`;
         } else if (department === "10") {
-          return `departmentNumber:"10"`;
+          return `categoryName:"Magazines"`;
         } else if (department === "uppers_lowers_multi") {
           return `(departmentNumber:"41" OR departmentNumber:"42" OR departmentNumber:"43")`;
         } else if (department === "accessories_multi") {
-          return `(departmentNumber:"09" OR departmentNumber:"11" OR departmentNumber:"12" OR departmentNumber:"13" OR departmentNumber:"14" OR departmentNumber:"17" OR departmentNumber:"20" OR departmentNumber:"21" OR departmentNumber:"25" OR departmentNumber:"26" OR departmentNumber:"27" OR departmentNumber:"30" OR departmentNumber:"31" OR departmentNumber:"35")`;
+          return `(categoryName:"Accessories" OR categoryName:"Misc. Accessories")`;
         } else {
           return `categoryName:"${category}"`;
         }
