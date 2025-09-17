@@ -5362,30 +5362,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Price range filters
+      // Price range filters - USE CONSISTENT PLATINUM PRICING
       const priceFilters = [];
       if (cleanedFilters.priceMin && cleanedFilters.priceMax) {
-        priceFilters.push(`retailPrice:${cleanedFilters.priceMin} TO ${cleanedFilters.priceMax}`);
+        priceFilters.push(`tierPricing.platinum:${cleanedFilters.priceMin} TO ${cleanedFilters.priceMax}`);
       } else if (cleanedFilters.priceMin) {
-        priceFilters.push(`retailPrice:${cleanedFilters.priceMin} TO 99999`);
+        priceFilters.push(`tierPricing.platinum:${cleanedFilters.priceMin} TO 99999`);
       } else if (cleanedFilters.priceMax) {
-        priceFilters.push(`retailPrice:0 TO ${cleanedFilters.priceMax}`);
+        priceFilters.push(`tierPricing.platinum:0 TO ${cleanedFilters.priceMax}`);
       }
       
-      // Price tier filters (convert to price ranges)
+      // Price tier filters (convert to price ranges) - USE PLATINUM PRICING
       if (cleanedFilters.priceTier) {
         switch (cleanedFilters.priceTier) {
           case 'budget':
-            priceFilters.push('retailPrice:0 TO 300');
+            priceFilters.push('tierPricing.platinum:0 TO 300');
             break;
           case 'mid-range':
-            priceFilters.push('retailPrice:300 TO 800');
+            priceFilters.push('tierPricing.platinum:300 TO 800');
             break;
           case 'premium':
-            priceFilters.push('retailPrice:800 TO 1500');
+            priceFilters.push('tierPricing.platinum:800 TO 1500');
             break;
           case 'high-end':
-            priceFilters.push('retailPrice:1500 TO 99999');
+            priceFilters.push('tierPricing.platinum:1500 TO 99999');
             break;
         }
       }
@@ -5574,56 +5574,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchParams.sort = Array.isArray(sortParam) ? sortParam : [sortParam];
       }
       
-      // Boost popular handgun manufacturers and calibers in handgun searches
+      // Apply moderate popularity boosts for handgun searches (FIXED - no extreme scores)
       if (cleanedFilters.category === "Handguns" || cleanedFilters.productType === "handgun" || cleanedFilters.departmentNumber === "01") {
-        // Use extremely aggressive optionalFilters for category browsing
-        if (!searchQuery || searchQuery.trim() === '') {
-          // Remove query entirely, use massive boosts only
-          searchParams.optionalFilters = [
-            "manufacturer:GLOCK<score=50000>",    // Extreme boost for GLOCK
-            "manufacturer:SPGFLD<score=45000>",   // Extreme boost for Springfield  
-            "manufacturer:SIG<score=40000>",      // Extreme boost for SIG
-            "manufacturer:BERSA<score=20000>",    // High boost for other good brand
-            "manufacturer:FUSION<score=15000>",   // High boost for existing brand
-            "manufacturer:ZENITH<score=-10000>",  // Massive negative boost for ZENITH
-            "manufacturer:MKS<score=-8000>",      // Large negative boost for Hi-Point/MKS
-            "caliber:9mm<score=60000>",           // HIGHEST PRIORITY - 9mm handguns first
-            "caliber:45 ACP<score=4000>",
-            "caliber:40 S&W<score=3000>"
-          ];
-        } else {
-          // For text searches, still use optionalFilters
-          searchParams.optionalFilters = [
-            "manufacturer:GLOCK<score=10000>",    // Top handgun brand - astronomical boost
-            "manufacturer:SPGFLD<score=9500>",    // Springfield Armory
-            "manufacturer:SIG<score=9000>",       // Sig Sauer
-            "manufacturer:FUSION<score=1000>",    // Decent boost for existing brand
-            "caliber:9mm<score=3000>",            // Most popular caliber
-            "caliber:45 ACP<score=2500>",
-            "caliber:380 ACP<score=2000>",
-            "caliber:357 Magnum<score=1500>",
-            "caliber:40 S&W<score=1000>",
-            "caliber:22 LR<score=800>"
-          ];
-        }
+        // Use moderate optionalFilters to boost popular items without filtering out others
+        searchParams.optionalFilters = [
+          "manufacturer:GLOCK<score=10>",     // Moderate boost for popular brands
+          "manufacturer:SPGFLD<score=8>",    // Springfield Armory
+          "manufacturer:SIG<score=7>",       // Sig Sauer  
+          "manufacturer:RUGER<score=6>",     // Ruger
+          "caliber:9mm<score=15>",           // Popular calibers get moderate boost
+          "caliber:45 ACP<score=12>",
+          "caliber:40 S&W<score=10>",
+          "caliber:380 ACP<score=8>",
+          "caliber:357 Magnum<score=6>"
+        ];
       }
       
-      // Add rifle popularity boosts based on actual DB data
+      // Add moderate rifle popularity boosts (FIXED - no extreme scores)
       if (cleanedFilters.category === "Rifles" || cleanedFilters.productType === "rifle" || cleanedFilters.departmentNumber === "02") {
-        // Force minimal query to trigger boosts when browsing category
-        if (!searchQuery || searchQuery.trim() === '') {
-          searchParams.query = '*';  // Wildcard query to trigger optionalFilters
-        }
-        
+        // Use moderate boosts for rifles without filtering out other results
         searchParams.optionalFilters = [
-          "manufacturer:SIG<score=1000>",       // Has 6 rifles, popular brand - massive boost
-          "manufacturer:IWI<score=950>",        // Most rifles in DB (12)
-          "manufacturer:SOLGW<score=900>",      // 9 rifles in DB
-          "manufacturer:SANTAN<score=850>",     // 6 rifles in DB
-          "caliber:5.56<score=500>",            // AR-15 caliber - high boost
-          "caliber:223<score=450>",             // Common rifle caliber
-          "caliber:308<score=400>",             // Popular hunting caliber
-          "caliber:22 LR<score=350>"            // Popular training caliber
+          "manufacturer:SIG<score=8>",        // Popular rifle brand
+          "manufacturer:IWI<score=7>",        // IWI rifles
+          "manufacturer:SOLGW<score=6>",      // SOLGW rifles
+          "manufacturer:SANTAN<score=5>",     // Santan rifles
+          "caliber:5.56<score=12>",           // AR-15 caliber - moderate boost
+          "caliber:223<score=10>",            // Common rifle caliber
+          "caliber:308<score=8>",             // Hunting caliber
+          "caliber:22 LR<score=6>"            // Training caliber
         ];
       }
       

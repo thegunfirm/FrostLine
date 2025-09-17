@@ -273,7 +273,7 @@ class RSRFileProcessor {
     const productData: InsertProduct = {
       name: record.description,
       description: record.expandedDescription || record.description,
-      category: this.mapDepartmentToCategory(record.departmentNumber),
+      category: this.mapDepartmentToCategory(record.departmentNumber, record.description),
       manufacturer: record.fullManufacturerName,
       sku: actualSku,                                // COLLISION-SAFE: Use actualSku (may be existing SKU or fallback)
       rsrStockNumber: record.stockNumber,            // RSR distributor code for ordering  
@@ -296,7 +296,7 @@ class RSRFileProcessor {
       dropShippable: record.blockedFromDropShip !== 'Y', // Critical: "Y" means blocked, blank means allowed
       prop65: record.prop65 === 'Y',
       distributor: "RSR",
-      requiresFFL: this.requiresFFL(record.departmentNumber),
+      requiresFFL: this.requiresFFL(record.departmentNumber, record.description),
       images: record.imageName ? [record.imageName] : [],
       tags: this.generateTags(record),
       caliber: this.extractCaliber(record.description), // CRITICAL: Add caliber field
@@ -515,7 +515,7 @@ class RSRFileProcessor {
     return { deleted, errors };
   }
 
-  private mapDepartmentToCategory(departmentNumber: string): string {
+  private mapDepartmentToCategory(departmentNumber: string, productDescription?: string): string {
     // Normalize department number - remove leading zeros for mapping
     const normalizedDept = departmentNumber?.replace(/^0+/, '') || departmentNumber;
     
@@ -566,14 +566,73 @@ class RSRFileProcessor {
 
     const mappedCategory = categoryMap[normalizedDept];
     if (!mappedCategory) {
-      console.warn(`⚠️ Unmapped department number: ${departmentNumber} (normalized: ${normalizedDept}) - using Accessories fallback`);
+      console.warn(`⚠️ Unmapped department number: ${departmentNumber} (normalized: ${normalizedDept}) - checking if firearm`);
+      // CRITICAL FIX: Check if it's a firearm before defaulting to Accessories
+      const firearmCategory = this.detectFirearmCategory(productDescription || '');
+      if (firearmCategory) {
+        console.warn(`🔫 FIREARM DETECTED: Classified as ${firearmCategory} based on product name`);
+        return firearmCategory;
+      }
+      console.warn(`📦 NON-FIREARM: Defaulting to Accessories`);
     }
     return mappedCategory || 'Accessories';
   }
 
-  private requiresFFL(departmentNumber: string): boolean {
+  private requiresFFL(departmentNumber: string, productDescription?: string): boolean {
     const fflRequiredDepartments = ['1', '2', '3', '5', '6', '7', '41', '42', '43'];
-    return fflRequiredDepartments.includes(departmentNumber);
+    
+    // First check department number
+    if (fflRequiredDepartments.includes(departmentNumber)) {
+      return true;
+    }
+    
+    // CRITICAL FALLBACK: Check if product description indicates it's a firearm
+    if (productDescription && this.detectFirearmCategory(productDescription)) {
+      console.warn(`🔫 FFL REQUIRED: Product detected as firearm based on description`);
+      return true;
+    }
+    
+    return false;
+  }
+
+  // CRITICAL: Detect firearm category from product description as fallback
+  private detectFirearmCategory(productDescription: string): string | null {
+    if (!productDescription) return null;
+    
+    const description = productDescription.toLowerCase();
+    
+    // Rifle keywords (most specific first)
+    const rifleKeywords = ['rifle', 'rpk', 'ar-15', 'ar15', 'm4', 'ak-47', 'ak47', 'carbine', 'sbr'];
+    if (rifleKeywords.some(keyword => description.includes(keyword))) {
+      return 'Rifles';
+    }
+    
+    // Handgun/pistol keywords  
+    const handgunKeywords = ['pistol', 'handgun', 'revolver', 'semi-auto pistol'];
+    if (handgunKeywords.some(keyword => description.includes(keyword))) {
+      return 'Handguns';
+    }
+    
+    // Shotgun keywords
+    const shotgunKeywords = ['shotgun', 'gauge', 'ga ', '12ga', '20ga', '16ga', '28ga', '410'];
+    if (shotgunKeywords.some(keyword => description.includes(keyword))) {
+      return 'Shotguns';
+    }
+    
+    // Upper receivers (require FFL but different category)
+    const upperKeywords = ['upper receiver', 'upper', 'receiver'];
+    if (upperKeywords.some(keyword => description.includes(keyword))) {
+      return 'Upper Receivers & Conversion Kits';
+    }
+    
+    // Generic firearm indicators (default to rifles for safety)
+    const genericFirearmKeywords = ['caliber', 'barrel', 'trigger', 'stock', 'semi-automatic', 'bolt action'];
+    if (genericFirearmKeywords.some(keyword => description.includes(keyword))) {
+      console.warn(`⚠️ Generic firearm detected - defaulting to Rifles for safety`);
+      return 'Rifles';
+    }
+    
+    return null; // Not detected as firearm
   }
 
   private generateTags(record: RSRInventoryRecord): string[] {
@@ -586,7 +645,7 @@ class RSRFileProcessor {
     }
     
     // Category-based tags
-    const category = this.mapDepartmentToCategory(record.departmentNumber);
+    const category = this.mapDepartmentToCategory(record.departmentNumber, record.description);
     tags.push(category);
     
     // Manufacturer
