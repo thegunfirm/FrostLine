@@ -177,53 +177,80 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
   // FIXED: Split items by shipping outcome (FFL vs non-FFL)
   const parts = (minted.parts.length ? minted.parts : [{ outcome: outcomes[0], orderNumber: minted.main }]);
   
-  // Helper function to determine if item needs FFL based on product data
-  const needsFFL = async (item) => {
+  // Helper function to get shipping outcome for each item based on product data
+  const getShippingOutcome = async (item) => {
+    let upc; // Hoist to function scope for catch block access
     try {
-      const upc = item.upc || item.product?.upc;
+      upc = item.upc || item.product?.upc;
       if (upc) {
         const product = await storage.getProductByUpc(upc);
-        const result = (product?.requiresFFL === true) || ((product && product.requires_ffl) === true) || false;
-        console.log(`🎯 FFL Check: ${upc} → ${product?.name || 'Not Found'} → FFL: ${result}`);
-        return result;
+        
+        // Conservative fallback for compliance - unknown products must go to FFL
+        if (!product) {
+          console.warn(`⚠️ Product not found for UPC ${upc} - defaulting to IH>FFL for compliance safety`);
+          return 'IH>FFL';
+        }
+        
+        const requiresFFL = (product?.requiresFFL === true) || ((product && product.requires_ffl) === true);
+        const dropShippable = (product?.dropShippable === true) || ((product && product.drop_shippable) === true);
+        
+        // Determine shipping outcome based on product properties
+        let outcome;
+        if (dropShippable && requiresFFL) outcome = 'DS>FFL';
+        else if (dropShippable && !requiresFFL) outcome = 'DS>Customer'; 
+        else if (!dropShippable && requiresFFL) outcome = 'IH>FFL';
+        else outcome = 'IH>Customer';
+        
+        console.log(`🎯 Shipping: ${upc} → ${product?.name || 'Not Found'} → DS:${dropShippable} FFL:${requiresFFL} → ${outcome}`);
+        return outcome;
       }
-      return false;
+      console.warn(`⚠️ Missing UPC for item - defaulting to IH>FFL for compliance safety`);
+      return 'IH>FFL'; // Conservative fallback for compliance
     } catch (error) {
-      console.error('Error checking FFL requirement:', error);
-      return false; // Default to no FFL if lookup fails
+      console.error('Error determining shipping outcome:', error);
+      console.warn(`⚠️ Product lookup failed for UPC ${upc ?? 'unknown'} - defaulting to IH>FFL for compliance safety`);
+      return 'IH>FFL'; // Conservative fallback for compliance
     }
   };
   
-  // FIXED: Show ALL items in order confirmation, split by FFL for shipment planning
-  const shipments = await Promise.all(parts.map(async (p, idx) => {
-    const outcome = p.outcome || outcomes[0];
-    
-    // Determine correct fulfillment type based on actual FFL requirements
-    let actualOutcome = outcome;
-    if (normItems.length > 0) {
-      const hasFFLItems = await Promise.all(normItems.map(item => needsFFL(item)));
-      const fflItemsExist = hasFFLItems.some(Boolean);
-      const nonFFLItemsExist = hasFFLItems.some(ffl => !ffl);
-      
-      // Correct fulfillment type based on actual item requirements
-      if (fflItemsExist && nonFFLItemsExist) {
-        actualOutcome = 'Mixed>FFL'; // Mixed order
-      } else if (fflItemsExist) {
-        actualOutcome = 'IH>FFL'; // All items need FFL
-      } else {
-        actualOutcome = 'IH>Customer'; // No FFL items
-      }
-    }
-    
-    // ALWAYS show ALL items in order confirmation - don't filter by outcome
-    return {
-      idx,
-      outcome: actualOutcome,
-      orderNumber: p.orderNumber || minted.main,
-      lines: normItems, // Show ALL items, not filtered
-      totals: computeTotals(normItems)
-    };
+  // FIXED: Split items by shipping outcome and create proper shipments
+  // Step 1: Determine shipping outcome for each item
+  const itemsWithOutcomes = await Promise.all(normItems.map(async (item) => {
+    const outcome = await getShippingOutcome(item);
+    return { item, outcome };
   }));
+  
+  // Step 2: Group items by shipping outcome
+  const outcomeGroups = {};
+  for (const { item, outcome } of itemsWithOutcomes) {
+    if (!outcomeGroups[outcome]) {
+      outcomeGroups[outcome] = [];
+    }
+    outcomeGroups[outcome].push(item);
+  }
+  
+  // Step 3: Create shipments for each unique outcome
+  const shipments = [];
+  
+  // Build outcome-to-orderNumber mapping deterministically by outcome value
+  const outcomeToOrderNumber = Object.fromEntries(
+    minted.parts.map(part => [part.outcome, part.orderNumber])
+  );
+  
+  let shipmentIdx = 0;
+  for (const [outcome, items] of Object.entries(outcomeGroups)) {
+    const orderNumber = outcomeToOrderNumber[outcome] || minted.main;
+    
+    shipments.push({
+      idx: shipmentIdx,
+      outcome,
+      orderNumber,
+      lines: items, // Only items for this specific outcome
+      totals: computeTotals(items)
+    });
+    
+    shipmentIdx++;
+  }
 
   const totals = computeTotals(normItems);
 
