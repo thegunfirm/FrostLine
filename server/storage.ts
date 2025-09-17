@@ -336,12 +336,7 @@ export class DatabaseStorage implements IStorage {
   }): Promise<Product[]> {
     // For now, use the same pattern as getFeaturedProducts but apply filters after
     const allProducts = await db.select().from(products)
-      .where(
-        and(
-          eq(products.isActive, true),
-          isNotNull(products.departmentNumber)
-        )
-      )
+      .where(eq(products.isActive, true))
       .orderBy(desc(products.createdAt));
     
     // Apply client-side filtering for now to test functionality
@@ -375,22 +370,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProduct(id: number): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(
-      and(
-        eq(products.id, id),
-        isNotNull(products.departmentNumber)
-      )
-    );
+    const [product] = await db.select().from(products).where(eq(products.id, id));
     return product || undefined;
   }
 
   async getProductBySku(sku: string): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(
-      and(
-        eq(products.sku, sku),
-        isNotNull(products.departmentNumber)
-      )
-    );
+    const [product] = await db.select().from(products).where(eq(products.sku, sku));
     return product || undefined;
   }
 
@@ -398,12 +383,7 @@ export class DatabaseStorage implements IStorage {
     console.log(`🔧 DETERMINISTIC UPC LOOKUP for: ${upc}`);
     
     // Get all products with UPC - ensure we select all fields including requiresFFL
-    const allProducts = await db.select().from(products).where(
-      and(
-        eq(products.upcCode, upc),
-        isNotNull(products.departmentNumber)
-      )
-    );
+    const allProducts = await db.select().from(products).where(eq(products.upcCode, upc));
     
     if (!allProducts.length) {
       console.log(`❌ No product found for UPC: ${upc}`);
@@ -456,12 +436,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProductByMpn(mpn: string): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(
-      and(
-        eq(products.manufacturerPartNumber, mpn),
-        isNotNull(products.departmentNumber)
-      )
-    );
+    const [product] = await db.select().from(products).where(eq(products.manufacturerPartNumber, mpn));
     return product || undefined;
   }
 
@@ -547,8 +522,7 @@ export class DatabaseStorage implements IStorage {
             like(products.description, `%${query}%`),
             like(products.manufacturer, `%${query}%`)
           ),
-          eq(products.isActive, true),
-          isNotNull(products.departmentNumber)
+          eq(products.isActive, true)
         )
       )
       .limit(limit)
@@ -560,8 +534,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(products.category, category),
-          eq(products.isActive, true),
-          isNotNull(products.departmentNumber)
+          eq(products.isActive, true)
         )
       )
       .orderBy(desc(products.createdAt));
@@ -569,24 +542,14 @@ export class DatabaseStorage implements IStorage {
 
   async getFeaturedProducts(limit = 8): Promise<Product[]> {
     return await db.select().from(products)
-      .where(
-        and(
-          eq(products.isActive, true),
-          isNotNull(products.departmentNumber)
-        )
-      )
+      .where(eq(products.isActive, true))
       .orderBy(desc(products.createdAt))
       .limit(limit);
   }
 
   async getRelatedProducts(productId: number, category: string, manufacturer: string): Promise<Product[]> {
     // Get the current product to extract attributes
-    const [currentProduct] = await db.select().from(products).where(
-      and(
-        eq(products.id, productId),
-        isNotNull(products.departmentNumber)
-      )
-    );
+    const [currentProduct] = await db.select().from(products).where(eq(products.id, productId));
     if (!currentProduct) return [];
 
     // Extract caliber and firearm type using the enhanced extractors
@@ -614,8 +577,7 @@ export class DatabaseStorage implements IStorage {
         .where(and(
           eq(products.isActive, true),
           eq(products.category, category),
-          ne(products.id, productId),
-          isNotNull(products.departmentNumber)
+          ne(products.id, productId)
         ))
         .orderBy(sql`RANDOM()`)
         .limit(200); // Random sample to ensure diverse products
