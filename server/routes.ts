@@ -5499,18 +5499,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         algoliaFilters.push(`manufacturerName:"${filters.ammunitionManufacturer}"`);
       }
       
-      // Handle sorting
-      let sortParam = undefined;
+      // Handle sorting - Algolia uses different approach for sorting
+      let algoliaIndexName = 'products'; // Default index
       if (sort && sort !== 'relevance') {
         switch (sort) {
           case 'price_low_to_high':
-            sortParam = 'tierPricing.platinum:asc';
+            // Use numeric filters for price sorting instead of sort parameter
+            algoliaIndexName = 'products'; // Keep default index
             break;
           case 'price_high_to_low':
-            sortParam = 'tierPricing.platinum:desc';
+            // Use numeric filters for price sorting instead of sort parameter
+            algoliaIndexName = 'products'; // Keep default index
             break;
           default:
-            sortParam = undefined;
+            algoliaIndexName = 'products';
         }
       }
 
@@ -5570,8 +5572,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchParams.filters = algoliaFilters.join(' AND ');
       }
       
-      if (sortParam) {
-        searchParams.sort = Array.isArray(sortParam) ? sortParam : [sortParam];
+      // Apply sorting via optionalFilters and custom ranking instead of sort parameter
+      if (sort === 'price_high_to_low') {
+        // Boost higher priced items for "high to low" sorting
+        if (!searchParams.optionalFilters) {
+          searchParams.optionalFilters = [];
+        }
+        // Add price-based ranking boosts
+        searchParams.optionalFilters.push(
+          "tierPricing.platinum>100<score=100>",
+          "tierPricing.platinum>50<score=50>",
+          "tierPricing.platinum>25<score=25>"
+        );
+      } else if (sort === 'price_low_to_high') {
+        // Boost lower priced items for "low to high" sorting  
+        if (!searchParams.optionalFilters) {
+          searchParams.optionalFilters = [];
+        }
+        searchParams.optionalFilters.push(
+          "tierPricing.platinum<25<score=100>",
+          "tierPricing.platinum<50<score=50>", 
+          "tierPricing.platinum<100<score=25>"
+        );
       }
       
       // Apply moderate popularity boosts for handgun searches (FIXED - no extreme scores)
