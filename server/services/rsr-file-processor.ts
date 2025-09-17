@@ -183,7 +183,8 @@ class RSRFileProcessor {
     const productData: InsertProduct = {
       name: record.description,
       description: record.expandedDescription || record.description,
-      category: this.mapDepartmentToCategory(record.departmentNumber),
+      category: this.mapDepartmentToCategory(record.departmentNumber, record.description),
+      departmentNumber: record.departmentNumber,
       manufacturer: record.fullManufacturerName,
       sku: record.stockNumber,
       upcCode: record.upcCode,
@@ -305,7 +306,12 @@ class RSRFileProcessor {
     console.log(`Deleted processing complete: ${deleted} products marked as out of stock`);
   }
 
-  private mapDepartmentToCategory(departmentNumber: string): string {
+  private mapDepartmentToCategory(departmentNumber: string, productDescription?: string): string {
+    // If no department number, try to categorize by product description
+    if (!departmentNumber || departmentNumber.trim() === '') {
+      return this.categorizeByDescription(productDescription || '');
+    }
+    
     // Normalize department number by removing leading zeros
     const normalizedDept = departmentNumber.replace(/^0+/, '') || '0';
     
@@ -401,6 +407,57 @@ class RSRFileProcessor {
     // Gold = (MSRP + Dealer)/2
     const goldPrice = (msrpNum + wholesaleNum) / 2;
     return goldPrice.toFixed(2);
+  }
+
+  private categorizeByDescription(description: string): string {
+    const desc = description.toLowerCase();
+    
+    // NFA Items (highest priority)
+    if (desc.includes('suppressor') || desc.includes('silencer') || 
+        desc.includes('sbr') || desc.includes('short barrel') ||
+        desc.includes('sbs') || desc.includes('short barreled shotgun') ||
+        desc.includes('aow') || desc.includes('any other weapon') ||
+        desc.includes('machine gun') || desc.includes('full auto')) {
+      return 'NFA Products';
+    }
+    
+    // Firearms
+    if (desc.includes('pistol') || desc.includes('handgun') || 
+        desc.includes('revolver') || desc.includes('1911') ||
+        (desc.includes('9mm') && (desc.includes('gun') || desc.includes('firearm'))) ||
+        (desc.includes('45acp') && (desc.includes('gun') || desc.includes('firearm'))) ||
+        (desc.includes('40sw') && (desc.includes('gun') || desc.includes('firearm')))) {
+      return 'Handguns';
+    }
+    
+    if (desc.includes('rifle') || desc.includes('carbine') || 
+        desc.includes('ar-15') || desc.includes('ar15') ||
+        desc.includes('shotgun') || desc.includes('12ga') || desc.includes('20ga')) {
+      return 'Long Guns';
+    }
+    
+    // Ammunition
+    if (desc.includes('rounds') || desc.includes('cartridge') ||
+        desc.includes('ammo') || desc.includes('ammunition') ||
+        (desc.includes('grain') && (desc.includes('fmj') || desc.includes('jhp') || desc.includes('ball'))) ||
+        desc.includes('brass') && desc.includes('case')) {
+      return 'Ammunition';
+    }
+    
+    // Optics
+    if (desc.includes('scope') || desc.includes('red dot') ||
+        desc.includes('sight') || desc.includes('optic')) {
+      return 'Optics';
+    }
+    
+    // Magazines
+    if (desc.includes('magazine') || desc.includes('mag ') ||
+        (desc.includes('round') && desc.includes('capacity'))) {
+      return 'Magazines';
+    }
+    
+    // Default to Accessories for everything else
+    return 'Accessories';
   }
 
   /**
