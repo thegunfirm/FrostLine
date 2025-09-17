@@ -339,7 +339,11 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(products.isActive, true),
-          isNotNull(products.rsrStockNumber)
+          or(
+            isNotNull(products.rsrStockNumber),
+            eq(products.category, 'Ammunition'),
+            eq(products.category, 'Accessories')
+          )
         )
       )
       .orderBy(desc(products.createdAt));
@@ -528,7 +532,11 @@ export class DatabaseStorage implements IStorage {
             like(products.manufacturer, `%${query}%`)
           ),
           eq(products.isActive, true),
-          isNotNull(products.rsrStockNumber)
+          or(
+            isNotNull(products.rsrStockNumber),
+            eq(products.category, 'Ammunition'),
+            eq(products.category, 'Accessories')
+          )
         )
       )
       .limit(limit)
@@ -541,7 +549,11 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(products.category, category),
           eq(products.isActive, true),
-          isNotNull(products.rsrStockNumber)
+          or(
+            isNotNull(products.rsrStockNumber),
+            eq(products.category, 'Ammunition'),
+            eq(products.category, 'Accessories')
+          )
         )
       )
       .orderBy(desc(products.createdAt));
@@ -552,7 +564,11 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(products.isActive, true),
-          isNotNull(products.rsrStockNumber)
+          or(
+            isNotNull(products.rsrStockNumber),
+            eq(products.category, 'Ammunition'),
+            eq(products.category, 'Accessories')
+          )
         )
       )
       .orderBy(desc(products.createdAt))
