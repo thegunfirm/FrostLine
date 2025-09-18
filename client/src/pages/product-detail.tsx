@@ -574,115 +574,102 @@ export default function ProductDetail() {
             <Card className="animate-in fade-in slide-in-from-bottom duration-500 delay-300">
               <CardContent className="pt-6">
                 <div className="space-y-4">
-                  {user ? (
-                    /* Logged in user - show their current tier price */
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-2xl font-bold text-gray-900">
-                          {pricingInfo?.price ? formatPrice(pricingInfo.price) : 'N/A'}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {user.subscriptionTier} Member Price
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        {/* Show MSRP with retailMap strikethrough if retailMap is lower */}
-                        {product.priceMSRP && product.priceMAP && !isNaN(parseFloat(product.priceMAP || '0')) && !isNaN(parseFloat(product.priceMSRP || '0')) && parseFloat(product.priceMAP || '0') < parseFloat(product.priceMSRP || '0') && (
-                          <div className="text-sm text-gray-500 line-through">
-                            MSRP: ${(parseFloat(product.priceMSRP || '0') || 0).toFixed(2)}
-                          </div>
-                        )}
-                        {pricingInfo?.savings && pricingInfo.savings > 0 && (
-                          <div className="text-sm font-medium text-green-600">
-                            You Save {formatPrice(pricingInfo.savings)}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    /* Non-logged in user - show Bronze, Gold, and asterisked Platinum */
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        {/* Bronze Pricing */}
-                        <div className="p-3 border border-gray-200 rounded-lg flex justify-between items-center">
-                          <div className="text-sm text-gray-600">Bronze Members</div>
-                          <div className="text-xl font-bold text-gray-900">
-                            ${(parseFloat(product.priceBronze || '0') || 0).toFixed(2)}
-                          </div>
-                        </div>
-                        
-                        {/* Gold Pricing */}
-                        <div className="p-3 border border-yellow-400 rounded-lg bg-yellow-50 flex justify-between items-center">
-                          <div className="text-sm text-yellow-700 font-medium">Gold Members</div>
-                          <div className="text-xl font-bold text-yellow-700">
-                            ${(parseFloat(product.priceGold || '0') || 0).toFixed(2)}
-                          </div>
-                        </div>
-                        
-                        {/* Platinum Pricing */}
-                        <div className="p-4 border-2 border-gray-400 rounded-lg bg-gradient-to-br from-gray-800 to-black relative overflow-hidden">
-                          <div className="flex justify-between items-center mb-3">
-                            <div className="text-lg text-gray-300 font-semibold">Platinum Members</div>
-                            <div className="text-right relative z-10">
-                              <div className="text-2xl font-bold text-gray-200 mb-1">
-                                ${(() => {
-                                  // Use actual Platinum pricing from pricing engine (with markup applied)
-                                  const platinumPrice = parseFloat(product.pricePlatinum || '0') || 0;
-                                  const priceStr = platinumPrice.toFixed(2);
-                                  return priceStr.replace(/\d/g, '*');
-                                })()}
-                              </div>
-                              <div className="text-xs text-gray-400">
-                                Add to Cart to See Price
-                              </div>
-                            </div>
-                          </div>
-                          <div className="relative z-10">
-                            <Button
-                              onClick={handleAddToCart}
-                              disabled={!product.inStock}
-                              className="w-full bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-500 hover:to-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2"
-                            >
-                              <ShoppingCart className="w-4 h-4" />
-                              {product.inStock ? "Add to Cart" : "Out of Stock"}
-                            </Button>
-                          </div>
-                          <div className="absolute inset-0 bg-gradient-to-r from-gray-400/20 to-gray-300/20 animate-pulse"></div>
-                        </div>
-                      </div>
-                      
-                      {/* CTA Section */}
-                      <div className="text-center p-4 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border-2 border-yellow-600">
-                        <p className="text-yellow-300 mb-3">
-                          Sign up to unlock Platinum dealer pricing and add to cart
-                        </p>
-                        <Link href="/register">
-                          <Button 
-                            size="lg" 
-                            className="w-full bg-gradient-to-r from-gray-700 to-black hover:from-gray-600 hover:to-gray-800 text-yellow-300 font-semibold px-4 sm:px-8 py-3 relative overflow-hidden transition-all duration-200 hover:scale-[1.02] text-sm sm:text-base"
-                          >
-                            <span className="relative z-10">
-                              <span className="hidden sm:inline">Sign Up for Free to View Member Savings</span>
-                              <span className="sm:hidden">Sign Up for Free</span>
-                            </span>
-                            <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/20 to-amber-500/20 animate-pulse"></div>
-                          </Button>
-                        </Link>
+                  {/* MSRP - Show if available */}
+                  {product.priceMSRP && parseFloat(product.priceMSRP || '0') > 0 && (
+                    <div className="flex justify-between items-center pb-2 border-b">
+                      <div className="text-sm text-gray-500">MSRP</div>
+                      <div className="text-lg text-gray-500 line-through">
+                        ${(parseFloat(product.priceMSRP || '0') || 0).toFixed(2)}
                       </div>
                     </div>
                   )}
 
-                  {/* Tier Upgrade Incentives for logged in Bronze users */}
-                  {user && user.subscriptionTier === "Bronze" && (
+                  {/* Always show all three tier prices */}
+                  <div className="space-y-2">
+                    {/* Bronze Pricing */}
+                    <div className={`p-3 border rounded-lg flex justify-between items-center ${user?.subscriptionTier === 'Bronze' ? 'border-green-500 bg-green-50' : 'border-gray-200'}`}>
+                      <div className="flex items-center gap-2">
+                        <div className={`text-sm ${user?.subscriptionTier === 'Bronze' ? 'text-green-700 font-medium' : 'text-gray-600'}`}>
+                          Bronze {user?.subscriptionTier === 'Bronze' && '(Your Tier)'}
+                        </div>
+                      </div>
+                      <div className={`text-xl font-bold ${user?.subscriptionTier === 'Bronze' ? 'text-green-700' : 'text-gray-900'}`}>
+                        ${(parseFloat(product.priceBronze || '0') || 0).toFixed(2)}
+                      </div>
+                    </div>
+                    
+                    {/* Gold Pricing */}
+                    <div className={`p-3 border rounded-lg flex justify-between items-center ${user?.subscriptionTier === 'Gold' ? 'border-green-500 bg-green-50' : 'border-yellow-400 bg-yellow-50'}`}>
+                      <div className="flex items-center gap-2">
+                        <div className={`text-sm font-medium ${user?.subscriptionTier === 'Gold' ? 'text-green-700' : 'text-yellow-700'}`}>
+                          Gold {user?.subscriptionTier === 'Gold' && '(Your Tier)'}
+                        </div>
+                      </div>
+                      <div className={`text-xl font-bold ${user?.subscriptionTier === 'Gold' ? 'text-green-700' : 'text-yellow-700'}`}>
+                        ${(parseFloat(product.priceGold || '0') || 0).toFixed(2)}
+                      </div>
+                    </div>
+                    
+                    {/* Platinum Pricing */}
+                    <div className={`p-3 border-2 rounded-lg ${user?.subscriptionTier === 'Platinum' ? 'border-green-500 bg-green-50' : 'border-gray-400 bg-gradient-to-br from-gray-100 to-gray-50'}`}>
+                      <div className="flex justify-between items-center">
+                        <div className={`text-sm font-semibold ${user?.subscriptionTier === 'Platinum' ? 'text-green-700' : 'text-gray-700'}`}>
+                          Platinum {user?.subscriptionTier === 'Platinum' && '(Your Tier)'}
+                        </div>
+                        <div className={`text-xl font-bold ${user?.subscriptionTier === 'Platinum' ? 'text-green-700' : 'text-gray-900'}`}>
+                          ${(parseFloat(product.pricePlatinum || '0') || 0).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Show savings for logged in users */}
+                  {user && pricingInfo?.savings && pricingInfo.savings > 0 && (
+                    <div className="text-center p-2 bg-green-50 rounded-lg">
+                      <div className="text-sm font-medium text-green-700">
+                        You Save {formatPrice(pricingInfo.savings)} with {user.subscriptionTier} Membership
+                      </div>
+                    </div>
+                  )}
+
+                  {/* CTA Section for non-logged in users */}
+                  {!user && (
+                    <div className="text-center p-4 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border-2 border-yellow-600">
+                      <p className="text-yellow-300 mb-3">
+                        Sign up to unlock member pricing
+                      </p>
+                      <Link href="/register">
+                        <Button 
+                          size="lg" 
+                          className="w-full bg-gradient-to-r from-gray-700 to-black hover:from-gray-600 hover:to-gray-800 text-yellow-300 font-semibold px-4 sm:px-8 py-3 relative overflow-hidden transition-all duration-200 hover:scale-[1.02] text-sm sm:text-base"
+                        >
+                          <span className="relative z-10">
+                            Sign Up for Free
+                          </span>
+                          <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/20 to-amber-500/20 animate-pulse"></div>
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+
+                  {/* Tier Upgrade Incentives for logged in Bronze/Gold users */}
+                  {user && (user.subscriptionTier === "Bronze" || user.subscriptionTier === "Gold") && (
                     <div className="space-y-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                       <div className="flex items-center gap-2">
                         <TrendingUp className="w-4 h-4 text-yellow-600" />
                         <span className="text-sm font-medium text-yellow-800">Upgrade & Save More</span>
                       </div>
-                      <div className="text-sm text-yellow-700">
-                        <div>Gold: {allTierPrices?.gold ? formatPrice(allTierPrices.gold) : 'N/A'} {allTierPrices?.gold && allTierPrices.bronze && allTierPrices.gold < allTierPrices.bronze ? `(Save ${formatPrice(allTierPrices.bronze - allTierPrices.gold)})` : ''}</div>
-                        <div>Platinum: {allTierPrices?.platinum ? formatPrice(allTierPrices.platinum) : 'N/A'} {allTierPrices?.platinum && allTierPrices.bronze && allTierPrices.platinum < allTierPrices.bronze ? `(Save ${formatPrice(allTierPrices.bronze - allTierPrices.platinum)})` : ''}</div>
-                      </div>
+                      {user.subscriptionTier === "Bronze" && (
+                        <div className="text-sm text-yellow-700">
+                          <div>Upgrade to Gold and save {allTierPrices?.gold && allTierPrices.bronze ? formatPrice(allTierPrices.bronze - allTierPrices.gold) : 'N/A'} on this item</div>
+                          <div>Upgrade to Platinum and save {allTierPrices?.platinum && allTierPrices.bronze ? formatPrice(allTierPrices.bronze - allTierPrices.platinum) : 'N/A'} on this item</div>
+                        </div>
+                      )}
+                      {user.subscriptionTier === "Gold" && (
+                        <div className="text-sm text-yellow-700">
+                          <div>Upgrade to Platinum and save {allTierPrices?.platinum && allTierPrices.gold ? formatPrice(allTierPrices.gold - allTierPrices.platinum) : 'N/A'} on this item</div>
+                        </div>
+                      )}
                       <Link href="/membership">
                         <Button size="sm" variant="outline" className="w-full transition-all duration-200 hover:scale-[1.02]">
                           Upgrade Membership
