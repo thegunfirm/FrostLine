@@ -72,6 +72,7 @@ import FAPTierTest from "@/pages/FAPTierTest";
 import OrderToZohoTest from "@/pages/OrderToZohoTest";
 import CreateTestUsers from "@/pages/CreateTestUsers";
 import ApiFieldDiscovery from "@/pages/cms/admin/api-field-discovery";
+import OrdersManagement from "@/pages/cms/admin/orders-management";
 
 // Global scroll-to-top component that monitors route changes
 function ScrollToTop() {
@@ -143,6 +144,7 @@ function Router() {
         <Route path="/cms/admin/fap-customer-profiles" component={FAPCustomerProfiles} />
         <Route path="/cms/admin/tier-labels" component={TierLabels} />
         <Route path="/cms/admin/api-field-discovery" component={ApiFieldDiscovery} />
+        <Route path="/cms/admin/orders" component={OrdersManagement} />
         <Route path="/cms/subscription-management" component={SubscriptionManagement} />
         <Route path="/cms/role-management" component={RoleManagement} />
         <Route path="/fap-membership" component={FAPMembership} />
