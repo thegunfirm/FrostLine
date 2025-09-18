@@ -395,8 +395,7 @@ class AlgoliaSearchService {
     // Build filters
     const filterParts: string[] = [];
     
-    // CRITICAL: Always filter for active products only
-    filterParts.push('isActive:true');
+    // Removed isActive filter to show all products
     
     if (filters?.category) {
       filterParts.push(`category:"${filters.category}"`);
