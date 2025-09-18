@@ -4885,6 +4885,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // RSR Image Gap Analysis Endpoint (NO AUTHENTICATION REQUIRED)
   app.get("/api/rsr-image-gap", rsrImageGapHandler);
+  
+  // RSR Image Backfill Endpoints (server-only, manual trigger)
+  const { 
+    runBackfillHandler, 
+    getBackfillStatusHandler, 
+    pauseBackfillHandler,
+    resetBackfillHandler
+  } = await import('./routes/rsr-image-backfill.js');
+  
+  app.post("/api/rsr-image-backfill/run", runBackfillHandler);
+  app.get("/api/rsr-image-backfill/status", getBackfillStatusHandler);
+  app.post("/api/rsr-image-backfill/pause", pauseBackfillHandler);
+  app.post("/api/rsr-image-backfill/reset", resetBackfillHandler);
 
   // RSR System Status (comprehensive dashboard)
   app.get("/api/admin/rsr/comprehensive-status", async (req, res) => {

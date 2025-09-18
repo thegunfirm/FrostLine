@@ -1,0 +1,90 @@
+Paste for Replit — Step 3: Build a resumable RSR image backfill worker (no UI/perms changes)
+
+Goal
+Create a manual, idempotent, resumable backfill that fills the Hetzner bucket for active RSR SKUs using the same fetch logic our /api/image/:sku?angle= route already uses. No public ACLs, no customer-facing changes.
+
+Interfaces (server-only)
+
+POST /api/rsr-image-backfill/run
+
+params:
+
+limitSkus (int, default 2000)
+
+angles (string, default 1-3, supports 1, 1-4, or 1,2,3)
+
+concurrency (int, default 3, max 6)
+
+onlyMissing (bool, default true) — skip if S3 already has the object
+
+dryRun (bool, default false) — compute plan and metrics, don’t download/upload
+
+GET /api/rsr-image-backfill/status
+
+returns live counters + last checkpoint
+
+POST /api/rsr-image-backfill/pause
+
+graceful stop; persist checkpoint
+
+Behavior Requirements
+
+SKU source: Use the same “active RSR SKU” query as /api/rsr-image-gap (30,392 today).
+
+Naming: Write to rsr/highres/<SKU>_<angle>_HR.jpg (exactly the same naming the proxy uses).
+
+Idempotency: Before each download, do an S3 HEAD for the key; if exists → count skippedExists.
+
+Fetching: Reuse the existing resolver/fetcher our image proxy uses (same credentials, same URL/FTP logic).
+
+Retries: Up to 3 attempts per image with exponential backoff and jitter; 404 counts as noRemote (no retry).
+
+Concurrency/Throttle: Default 3 parallel image fetches; cap bandwidth if your fetcher supports it.
+
+Checkpointing: After each N SKUs (e.g., 200), persist {lastSku, completedAngles} so resumes don’t rework finished angles.
+
+Timeouts: Per fetch hard timeout (e.g., 15–30s) to avoid stalls; record as errorsByCode.timeout.
+
+No side-effects: No DB writes, no product changes, no bucket policy changes.
+
+Status JSON (exact keys)
+
+startedAt (ISO), lastUpdateAt (ISO)
+
+scannedSkus (number)
+
+attemptedDownloads (number)
+
+uploaded (number)
+
+skippedExists (number)
+
+noRemote (number)
+
+errorsTotal (number), errorsByCode (object)
+
+anglesPlanned (e.g., "1-3")
+
+concurrency (number)
+
+checkpoint (object: lastSku, completedAngles)
+
+etaSkusRemaining (number, best-effort)
+
+Acceptance
+
+A dry run: POST /api/rsr-image-backfill/run { limitSkus: 500, angles: "1-3", dryRun: true } returns a plan and non-zero scannedSkus without downloads.
+
+A real run: POST /api/rsr-image-backfill/run { limitSkus: 2000, angles: "1-3" } begins work; GET /status shows counters increasing and a valid checkpoint.
+
+Re-running after pause resumes from the checkpoint with no duplicate uploads.
+
+After a run, /api/rsr-image-stats and /api/rsr-image-gap both reflect improved coverage.
+
+Non-Goals
+
+No scheduler/cron yet. Manual trigger only.
+
+No changes to Algolia or product data.
+
+No public bucket URLs.
