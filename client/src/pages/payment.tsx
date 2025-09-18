@@ -10,12 +10,21 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CreditCard, Shield, CheckCircle, Star, AlertTriangle } from "lucide-react";
+import { ArrowLeft, CreditCard, Shield, CheckCircle, Star, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { SubscriptionEnforcement } from "@/components/auth/subscription-enforcement";
 import { apiRequest } from "@/lib/queryClient";
 import { finalizeOrder } from "@/lib/finalizeOrder";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 const paymentSchema = z.object({
   cardNumber: z.string().min(15, "Card number must be at least 15 digits").max(19, "Card number must be at most 19 digits"),
@@ -112,9 +121,17 @@ function FinalUpgradeBenefits({ user }: { user: any }) {
 
 function PaymentPageContent() {
   const { items, getTotalPrice, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const [, setLocation] = useLocation();
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const { toast } = useToast();
+  const [pendingPaymentData, setPendingPaymentData] = useState<PaymentFormData | null>(null);
 
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
@@ -223,13 +240,68 @@ function PaymentPageContent() {
         }
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Payment error:', error);
+      
+      // Check if it's an authentication error (401)
+      const errorMessage = error?.message || '';
+      if (errorMessage.includes('401') || errorMessage.includes('Authentication required')) {
+        // Store the payment data to retry after login
+        setPendingPaymentData(form.getValues());
+        setShowLoginDialog(true);
+        toast({
+          title: "Session Expired",
+          description: "Please log in to continue with your payment.",
+          variant: "default",
+        });
+      } else {
+        // Show other errors
+        toast({
+          title: "Payment Failed",
+          description: errorMessage || "An error occurred while processing your payment.",
+          variant: "destructive",
+        });
+      }
     }
   });
 
   const onSubmit = (data: PaymentFormData) => {
     paymentMutation.mutate(data);
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    setLoginLoading(true);
+
+    try {
+      await login(loginEmail, loginPassword);
+      setShowLoginDialog(false);
+      setLoginEmail("");
+      setLoginPassword("");
+      
+      toast({
+        title: "Login Successful",
+        description: "Processing your payment now...",
+        variant: "default",
+      });
+      
+      // Retry the payment with the stored data
+      if (pendingPaymentData) {
+        setTimeout(() => {
+          paymentMutation.mutate(pendingPaymentData);
+          setPendingPaymentData(null);
+        }, 500);
+      }
+    } catch (error: any) {
+      let errorMessage = error.message || "Login failed. Please try again.";
+      if (errorMessage.includes('401') || errorMessage.includes('Invalid credentials')) {
+        errorMessage = "Invalid email or password. Please try again.";
+      }
+      setLoginError(errorMessage);
+    } finally {
+      setLoginLoading(false);
+    }
   };
 
   if (paymentSuccess) {
@@ -247,9 +319,78 @@ function PaymentPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <>
+      {/* Login Dialog */}
+      <Dialog open={showLoginDialog} onOpenChange={(open) => {
+        if (!open && !loginLoading) {
+          setShowLoginDialog(false);
+          setLoginEmail("");
+          setLoginPassword("");
+          setLoginError("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Login Required</DialogTitle>
+            <DialogDescription>
+              Your session has expired. Please log in to continue with your payment.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <Label htmlFor="login-email">Email</Label>
+              <Input
+                id="login-email"
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+                disabled={loginLoading}
+              />
+            </div>
+            <div>
+              <Label htmlFor="login-password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="login-password"
+                  type={showPassword ? "text" : "password"}
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  disabled={loginLoading}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            {loginError && (
+              <Alert variant="destructive">
+                <AlertDescription>{loginError}</AlertDescription>
+              </Alert>
+            )}
+            <Button type="submit" className="w-full" disabled={loginLoading}>
+              {loginLoading ? "Logging in..." : "Login & Continue Payment"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Final Upgrade Alert - Full Width */}
           <div className="lg:col-span-3 mb-6">
@@ -450,6 +591,7 @@ function PaymentPageContent() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
