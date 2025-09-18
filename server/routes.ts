@@ -937,10 +937,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post('/api/process-payment', async (req, res) => {
     console.log('💳 Processing payment request...');
-    // TODO: Re-enable authentication for production
-    // if (!req.session?.user) {
-    //   return res.status(401).json({ success: false, error: 'Authentication required' });
-    // }
+    
+    // Require authentication for payment processing
+    const sessionUser = (req.session as any)?.user;
+    if (!sessionUser) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+    
     try {
       const { 
         cardNumber, 
@@ -959,6 +962,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         billingInfo: billingInfo ? 'present' : 'missing',
         orderItems: orderItems ? `${orderItems.length} items` : 'missing'
       });
+      
+      // CRITICAL: Recalculate total based on user's tier to prevent pricing errors
+      let serverCalculatedTotal = 0;
+      const userTier = (sessionUser.membershipTier || 'Bronze').toLowerCase();
+      console.log(`💰 Recalculating payment total for ${userTier} tier member`);
+      
+      if (orderItems && Array.isArray(orderItems)) {
+        for (const item of orderItems) {
+          try {
+            // Get product from database to get tier prices
+            const product = await storage.getProductBySku(item.productSku);
+            if (product) {
+              let itemPrice = parseFloat(product.priceBronze || "0"); // Default to Bronze
+              
+              if (userTier === 'gold' && product.priceGold) {
+                itemPrice = parseFloat(product.priceGold);
+              } else if (userTier === 'platinum' && product.pricePlatinum) {
+                itemPrice = parseFloat(product.pricePlatinum);
+              }
+              
+              const itemTotal = itemPrice * (item.quantity || 1);
+              serverCalculatedTotal += itemTotal;
+              console.log(`  - ${item.productSku}: $${itemPrice.toFixed(2)} x ${item.quantity} = $${itemTotal.toFixed(2)}`);
+            }
+          } catch (error) {
+            console.error(`Failed to calculate price for item ${item.productSku}:`, error);
+          }
+        }
+      }
+      
+      // Round to 2 decimal places to avoid floating point issues
+      serverCalculatedTotal = Math.round(serverCalculatedTotal * 100) / 100;
+      const clientAmount = Math.round(parseFloat(amount) * 100) / 100;
+      
+      console.log(`💳 Price verification: Client sent $${clientAmount}, Server calculated $${serverCalculatedTotal}`);
+      
+      // Use server-calculated amount for payment to ensure correct tier pricing
+      const finalAmount = serverCalculatedTotal;
 
       // Use direct HTTP request instead of SDK to avoid hanging issues
       console.log('🌐 Using direct HTTP request to Authorize.Net API...');
@@ -1023,8 +1064,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create direct HTTP request payload with unique transaction ID (max 20 chars for Authorize.Net)
       const uniqueTransactionId = `${Date.now().toString().slice(-8)}${Math.random().toString(36).substr(2, 4)}`;
       
-      // Format amount to exactly 2 decimal places to prevent floating point precision errors
-      const formattedAmount = parseFloat(amount).toFixed(2);
+      // Format server-calculated amount to exactly 2 decimal places to prevent floating point precision errors
+      const formattedAmount = finalAmount.toFixed(2);
+      
+      // Log if there's a mismatch
+      if (Math.abs(clientAmount - serverCalculatedTotal) > 0.01) {
+        console.log(`⚠️ Price mismatch detected: Using server price $${formattedAmount} instead of client price $${clientAmount}`);
+      }
       
       const requestPayload = {
         createTransactionRequest: {
@@ -8022,17 +8068,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid user ID" });
       }
       
-      // Allow access if user is authenticated and accessing their own cart
+      // Allow guest carts temporarily (for order confirmation page)
+      // But still require authentication for logged-in user carts
       const sessionUser = (req.session as any)?.user;
+      
+      // If user is authenticated, verify they're accessing their own cart
       if (sessionUser && sessionUser.id !== parseInt(requestedUserId)) {
-        return res.status(403).json({ error: "Access denied" });
+        return res.status(403).json({ error: "Access denied - cannot access other users' carts" });
       }
+      
+      // For guest carts (no sessionUser), allow access for now
+      // TODO: Implement better guest cart security
       
       // Convert string user ID to numeric equivalent for cart storage compatibility
       const numericUserId = stringToNumericUserId(requestedUserId);
       console.log(`📦 Fetching cart for user ${requestedUserId} (numeric: ${numericUserId})`);
       const cart = await storage.getUserCart(numericUserId);
-      res.json({ items: cart?.items || [] });
+      
+      // Recalculate prices based on user's current tier
+      let items = cart?.items || [];
+      
+      if (sessionUser && sessionUser.membershipTier && items.length > 0) {
+        const tier = sessionUser.membershipTier.toLowerCase();
+        console.log(`🎯 Recalculating cart prices for ${tier} tier`);
+        
+        // Update each item with correct tier pricing
+        items = await Promise.all(items.map(async (item: any) => {
+          try {
+            // Get the product from database to get tier prices
+            const product = await storage.getProduct(item.productId);
+            
+            if (product) {
+              let updatedPrice = parseFloat(product.priceBronze || "0"); // Default to Bronze
+              
+              if (tier === 'gold' && product.priceGold) {
+                updatedPrice = parseFloat(product.priceGold);
+              } else if (tier === 'platinum' && product.pricePlatinum) {
+                updatedPrice = parseFloat(product.pricePlatinum);
+              }
+              
+              console.log(`💰 Item ${item.productSku}: old price ${item.price}, new price ${updatedPrice}`);
+              
+              return {
+                ...item,
+                price: updatedPrice,
+                // Also update tier pricing info for transparency
+                priceBronze: parseFloat(product.priceBronze || "0"),
+                priceGold: parseFloat(product.priceGold || "0"),
+                pricePlatinum: parseFloat(product.pricePlatinum || "0")
+              };
+            }
+          } catch (error) {
+            console.error(`Failed to update price for item ${item.productId}:`, error);
+          }
+          return item; // Return original if update fails
+        }));
+        
+        // Save updated cart with recalculated prices
+        await storage.updateUserCart(numericUserId, items);
+      }
+      
+      res.json({ items });
     } catch (error: any) {
       console.error("Cart fetch error:", error);
       res.status(500).json({ error: "Failed to fetch cart" });

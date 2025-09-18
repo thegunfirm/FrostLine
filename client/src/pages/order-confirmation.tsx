@@ -81,10 +81,6 @@ function getUPC(p?: ProductSnapshot): string | undefined {
   if (!p) return undefined;
   return p.upc || (p as any).UPC || (p as any).upc_code || undefined;
 }
-function getMPN(p?: ProductSnapshot): string | undefined {
-  if (!p) return undefined;
-  return p.mpn || (p as any).MNP || p.manufacturerPart || (p as any).manufacturerPartNumber || undefined;
-}
 function fmtMoney(v?: number): string {
   if (typeof v !== 'number' || Number.isNaN(v)) return '—';
   return v.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
@@ -238,71 +234,78 @@ const OrderConfirmationPage: React.FC = () => {
           <div style={{ fontWeight: 700, fontSize: 18 }}>{displayNumber}</div>
         </div>
         <div style={{ border: '1px solid #e3e3e3', borderRadius: 8, padding: 12 }}>
-          <div style={{ color: '#666', fontSize: 12 }}>Transaction ID</div>
-          <div style={{ fontWeight: 700, fontSize: 18 }}>{txnId || '—'}</div>
-        </div>
-        <div style={{ border: '1px solid #e3e3e3', borderRadius: 8, padding: 12 }}>
           <div style={{ color: '#666', fontSize: 12 }}>Order Status</div>
           <div style={{ fontWeight: 700, fontSize: 18 }}>{summary.status || 'Processing'}</div>
           {summary.pipeline && <div style={{ color: '#777', fontSize: 12 }}>Pipeline: {summary.pipeline}</div>}
         </div>
       </div>
 
-      {/* Membership & Savings */}
-      <div style={{ marginTop: 20, border: '1px solid #e3e3e3', borderRadius: 8, padding: 16, background: '#fafafa' }}>
-        <div style={{ fontWeight: 700, marginBottom: 6 }}>Membership & Savings</div>
-        {savings ? (
-          <>
-            {membershipTier === 'Guest' ? (
-              <>
-                <div>You could have saved <strong>{fmtMoney(savings.potential)}</strong> on this order.</div>
-                <div style={{ marginTop: 8 }}>
-                  <a href="/account/subscribe" style={{ textDecoration: 'none', border: '1px solid #333', padding: '8px 12px', borderRadius: 6, display: 'inline-block' }}>
-                    Join now for member pricing
-                  </a>
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  You saved <strong>{fmtMoney(savings.actual)}</strong> with {tierLabels[tierKey] || membershipTier}.
-                </div>
-                {savings.potential > 0 && (
-                  <>
-                    <div style={{ marginTop: 6 }}>
-                      You could have saved <strong>{fmtMoney(savings.potential)}</strong> more by upgrading.
-                    </div>
-                    <div style={{ marginTop: 8 }}>
-                      <a href="/account/subscribe" style={{ textDecoration: 'none', border: '1px solid #333', padding: '8px 12px', borderRadius: 6, display: 'inline-block' }}>
-                        Upgrade membership
-                      </a>
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-          </>
-        ) : (
-          <div>Sign in to see your membership savings.</div>
-        )}
-      </div>
 
       {/* Items */}
       <div style={{ marginTop: 24 }}>
         <h2 style={{ fontSize: 20, marginBottom: 8 }}>Order Items</h2>
 
         {isSplit ? (
-          (summary.shipments || []).map((sh, idx) => (
-            <div key={idx} style={{ border: '1px solid #e3e3e3', borderRadius: 8, marginBottom: 16 }}>
-              <div style={{ padding: '10px 12px', background: '#f2f2f2', borderBottom: '1px solid #e3e3e3', borderTopLeftRadius: 8, borderTopRightRadius: 8 }}>
-                <strong>Shipment {sh.suffix || String.fromCharCode(65 + idx)}</strong>
-                {sh.outcome ? <span style={{ color: '#666' }}> — {sh.outcome}</span> : null}
+          (summary.shipments || []).map((sh, idx) => {
+            const shipmentSuffix = sh.suffix || String.fromCharCode(65 + idx);
+            const fullOrderNumber = `${displayNumber.replace('-0', '')}-${shipmentSuffix}`;
+            
+            // Determine destination based on outcome
+            let destinationText = '';
+            let destinationAddress = null;
+            if (sh.outcome === 'DS>FFL' || sh.outcome === 'IH>FFL') {
+              if (sh.ffl) {
+                destinationAddress = {
+                  name: sh.ffl.name || 'FFL Dealer',
+                  address1: sh.ffl.address1,
+                  city: sh.ffl.city,
+                  state: sh.ffl.state,
+                  zip: sh.ffl.zip
+                };
+                destinationText = sh.outcome === 'IH>FFL' 
+                  ? 'Ships to our warehouse first, then to FFL'
+                  : 'Ships directly to FFL';
+              } else {
+                destinationText = 'Ships to FFL (dealer information pending)';
+              }
+            } else if (sh.outcome === 'DS>Customer' || sh.outcome === 'IH>Customer') {
+              if (summary.customer?.address) {
+                destinationAddress = {
+                  name: `${summary.customer.firstName || ''} ${summary.customer.lastName || ''}`.trim() || 'Customer',
+                  address1: summary.customer.address,
+                  city: summary.customer.city,
+                  state: summary.customer.state,
+                  zip: summary.customer.zip
+                };
+                destinationText = sh.outcome === 'IH>Customer'
+                  ? 'Ships from our warehouse'
+                  : 'Ships directly to you';
+              } else {
+                destinationText = 'Ships to customer address';
+              }
+            }
+            
+            return (
+              <div key={idx} style={{ border: '1px solid #e3e3e3', borderRadius: 8, marginBottom: 16 }}>
+                <div style={{ padding: '10px 12px', background: '#f2f2f2', borderBottom: '1px solid #e3e3e3', borderTopLeftRadius: 8, borderTopRightRadius: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong>Shipment {fullOrderNumber}</strong>
+                    <span style={{ color: '#666', fontSize: 14 }}>{destinationText}</span>
+                  </div>
+                  {destinationAddress && (
+                    <div style={{ marginTop: 8, fontSize: 13, color: '#555' }}>
+                      <strong>Destination:</strong> {destinationAddress.name}<br />
+                      {destinationAddress.address1}<br />
+                      {destinationAddress.city}, {destinationAddress.state} {destinationAddress.zip}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  {sh.lines.map((ln, i) => <ItemRow key={i} line={ln} membershipTier={membershipTier} tierLabels={tierLabels} />)}
+                </div>
               </div>
-              <div>
-                {sh.lines.map((ln, i) => <ItemRow key={i} line={ln} membershipTier={membershipTier} tierLabels={tierLabels} />)}
-              </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <div style={{ border: '1px solid #e3e3e3', borderRadius: 8 }}>
             {(summary.lines || []).map((ln, i) => <ItemRow key={i} line={ln} membershipTier={membershipTier} tierLabels={tierLabels} />)}
@@ -345,7 +348,6 @@ const ItemRow: React.FC<{ line: SummaryLine; membershipTier: string; tierLabels:
   const name = p.name || 'Item';
   const img = p.imageUrl;
   const upc = getUPC(p) || '—';
-  const mpn = getMPN(p) || '—';
   const qty = line.qty || 0;
 
   const tiers = line.pricingSnapshot?.tiers || {};
@@ -367,7 +369,6 @@ const ItemRow: React.FC<{ line: SummaryLine; membershipTier: string; tierLabels:
         <div style={{ fontWeight: 600 }}>{name}</div>
         <div style={{ marginTop: 2, color: '#555', fontSize: 13 }}>
           <div>UPC: {upc}</div>
-          <div>MPN: {mpn}</div>
         </div>
         <div style={{ marginTop: 2, color: '#555', fontSize: 13 }}>
           Qty: {qty}
