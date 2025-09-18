@@ -103,6 +103,63 @@ function isRifle(product: ProductData): boolean {
 }
 
 /**
+ * Determines if a product is an accessory (not a firearm)
+ */
+function isAccessory(product: ProductData): boolean {
+  const name = product.name?.toLowerCase() || '';
+  const subcategory = product.subcategory_name?.toLowerCase() || '';
+  
+  // Accessory keywords that clearly indicate non-firearm products
+  const accessoryKeywords = [
+    // Triggers and parts
+    'trigger', 'spring', 'pin', 'bolt carrier', 'buffer', 'handguard',
+    'stock', 'rail', 'grip', 'barrel', 'upper', 'lower', 'receiver',
+    // Sights and optics  
+    'sight', 'scope', 'optic', 'red dot', 'laser', 'light', 'flashlight',
+    // Containers and carrying
+    'holster', 'case', 'sling', 'bag', 'pouch', 'strap',
+    // Cleaning and maintenance
+    'cleaning', 'oil', 'solvent', 'brush', 'kit', 'tool', 'wrench', 'gauge',
+    // Targets and training
+    'target', 'bullseye', 'snap cap', 'dummy', 'speed loader',
+    // Attachments
+    'mount', 'bipod', 'adapter', 'conversion', 'plug', 'cap', 'cover', 'protector',
+    // Recoil and muzzle devices
+    'recoil pad', 'butt pad', 'cheek rest', 'flash hider', 'muzzle brake', 'compensator',
+    // Magazines
+    'magazine', 'mag ', 'mags', ' mag'
+  ];
+  
+  // Check if product name contains accessory keywords
+  const hasAccessoryKeyword = accessoryKeywords.some(keyword => 
+    name.includes(keyword) || subcategory.includes(keyword)
+  );
+  
+  // If it has accessory keywords but NO firearm model identifiers, it's an accessory
+  if (hasAccessoryKeyword) {
+    // Check for firearm model patterns that would indicate it's a complete firearm
+    const firearmModelPatterns = [
+      /glock\s*\d+/i,
+      /sig\s*(p\d+|m\d+)/i,
+      /smith.*wesson.*m&p/i,
+      /ruger\s*(lcp|sr\d+|gp\d+|security)/i,
+      /colt\s*(1911|python|anaconda)/i,
+      /beretta\s*(92|m9|apx)/i,
+      /\bar-?\d+/i,  // AR-15, AR-10
+      /\bak-?\d+/i,  // AK-47, AK-74
+      /\bm(1|4|16)\b/i,
+      /\d+(\.\d+)?\s*(mm|acp|mag|special|gauge|ga)\s+(pistol|rifle|shotgun|revolver|carbine)/i
+    ];
+    
+    const hasFirearmModel = firearmModelPatterns.some(pattern => pattern.test(name));
+    
+    return !hasFirearmModel;
+  }
+  
+  return false;
+}
+
+/**
  * Determines if a product is a parts/components item
  */
 function isPartsItem(product: ProductData): boolean {
@@ -133,13 +190,36 @@ export function applyCategoryRules(product: ProductData): string {
     return 'NFA Products';
   }
   
-  // Rule 2: Department 01 → Handguns
-  if (product.department_number === '01') {
+  // Rule 2: Check if this is an accessory BEFORE categorizing as firearm
+  if (isAccessory(product)) {
+    // Determine the specific type of accessory
+    const name = product.name?.toLowerCase() || '';
+    
+    if (name.includes('magazine') || name.includes(' mag ') || name.includes(' mags')) {
+      return 'Magazines';
+    }
+    if (name.includes('scope') || name.includes('optic') || name.includes('sight') || name.includes('red dot')) {
+      return 'Optics';
+    }
+    if (name.includes('trigger') || name.includes('spring') || name.includes('barrel') || 
+        name.includes('upper') || name.includes('lower') || name.includes('receiver')) {
+      return 'Parts';
+    }
+    if (name.includes('suppressor') || name.includes('silencer')) {
+      return 'NFA Products';
+    }
+    
+    // Default accessories
+    return 'Accessories';
+  }
+  
+  // Rule 3: Department 01 → Handguns (if not an accessory)
+  if (product.department_number === '01' && !isAccessory(product)) {
     return 'Handguns';
   }
   
-  // Rule 3: Department 05 → Split Rifles vs Shotguns
-  if (product.department_number === '05') {
+  // Rule 4: Department 05 → Split Rifles vs Shotguns (if not an accessory)
+  if (product.department_number === '05' && !isAccessory(product)) {
     // Check for parts first within long guns
     if (isPartsItem(product)) {
       if (product.receiver_type?.toLowerCase().includes('upper')) {
@@ -165,7 +245,7 @@ export function applyCategoryRules(product: ProductData): string {
     return 'Rifles';
   }
   
-  // Rule 4: Parts detection for other departments
+  // Rule 5: Parts detection for other departments
   if (isPartsItem(product)) {
     if (product.receiver_type?.toLowerCase().includes('upper')) {
       return 'Upper Receivers & Conversion Kits';
@@ -176,7 +256,7 @@ export function applyCategoryRules(product: ProductData): string {
     }
   }
   
-  // Rule 5: Never fallback to Accessories for firearms
+  // Rule 6: Never fallback to Accessories for firearms
   if (product.requires_ffl || product.is_firearm) {
     // If it's a firearm but we can't categorize it properly, 
     // make a best guess based on name analysis
