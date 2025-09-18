@@ -11,10 +11,6 @@ export default function CMSDashboard() {
     queryKey: ["/api/cms/dashboard/stats"],
   });
 
-  const { data: user } = useQuery({
-    queryKey: ["/api/user"],
-  });
-
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -23,27 +19,10 @@ export default function CMSDashboard() {
     );
   }
 
-  const userRole = user?.role || 'user';
-  
-  // Role-based access control
-  const hasAdminAccess = ['admin'].includes(userRole);
-  const hasManagerAccess = ['admin', 'manager'].includes(userRole);
-  const hasSupportAccess = ['admin', 'support', 'manager'].includes(userRole);
-
-  if (!hasSupportAccess) {
-    return (
-      <div className="max-w-2xl mx-auto mt-8 p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>
-              You don't have permission to access the CMS dashboard.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
+  // No authentication - CloudFlare handles security
+  const hasAdminAccess = true;
+  const hasManagerAccess = true;
+  const hasSupportAccess = true;
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -55,22 +34,21 @@ export default function CMSDashboard() {
           </p>
         </div>
         <Badge variant="outline" className="text-sm">
-          {userRole.charAt(0).toUpperCase() + userRole.slice(1)} Access
+          Full Access
         </Badge>
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          {hasSupportAccess && <TabsTrigger value="support">Support</TabsTrigger>}
-          {hasManagerAccess && <TabsTrigger value="emails">Email Templates</TabsTrigger>}
-          {hasAdminAccess && <TabsTrigger value="admin">Admin</TabsTrigger>}
+          <TabsTrigger value="support">Support</TabsTrigger>
+          <TabsTrigger value="emails">Email Templates</TabsTrigger>
+          <TabsTrigger value="admin">Admin</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {hasSupportAccess && (
-              <Card>
+            <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">My Tickets</CardTitle>
                   <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -82,9 +60,8 @@ export default function CMSDashboard() {
                   </p>
                 </CardContent>
               </Card>
-            )}
 
-            {hasManagerAccess && (
+            
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Email Templates</CardTitle>
@@ -97,9 +74,7 @@ export default function CMSDashboard() {
                   </p>
                 </CardContent>
               </Card>
-            )}
 
-            {hasAdminAccess && (
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -112,9 +87,7 @@ export default function CMSDashboard() {
                   </p>
                 </CardContent>
               </Card>
-            )}
 
-            {hasAdminAccess && (
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
@@ -127,7 +100,6 @@ export default function CMSDashboard() {
                   </p>
                 </CardContent>
               </Card>
-            )}
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -139,50 +111,44 @@ export default function CMSDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {hasSupportAccess && (
-                  <Link href="/cms/support/tickets">
+                <Link href="/cms/support/tickets">
                     <Button variant="outline" className="w-full justify-start">
                       <MessageSquare className="mr-2 h-4 w-4" />
                       View Support Tickets
                     </Button>
                   </Link>
-                )}
                 
-                {hasManagerAccess && (
+                
                   <Link href="/cms/emails/templates">
                     <Button variant="outline" className="w-full justify-start">
                       <Mail className="mr-2 h-4 w-4" />
                       Manage Email Templates
                     </Button>
                   </Link>
-                )}
 
-                {(hasSupportAccess || hasAdminAccess) && (
+                
                   <Link href="/cms/orders">
                     <Button variant="outline" className="w-full justify-start">
                       <FileText className="mr-2 h-4 w-4" />
                       Order Management
                     </Button>
                   </Link>
-                )}
                 
-                {hasAdminAccess && (
+                
                   <Link href="/cms/admin/settings">
                     <Button variant="outline" className="w-full justify-start">
                       <Settings className="mr-2 h-4 w-4" />
                       System Settings
                     </Button>
                   </Link>
-                )}
 
-                {hasAdminAccess && (
+                
                   <Link href="/cms/role-management">
                     <Button variant="outline" className="w-full justify-start">
                       <Crown className="mr-2 h-4 w-4" />
                       Role Permissions
                     </Button>
                   </Link>
-                )}
               </CardContent>
             </Card>
 
@@ -208,7 +174,6 @@ export default function CMSDashboard() {
           </div>
         </TabsContent>
 
-        {hasSupportAccess && (
           <TabsContent value="support" className="space-y-6">
             <Card>
               <CardHeader>
@@ -233,10 +198,9 @@ export default function CMSDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-        )}
 
-        {hasManagerAccess && (
-          <TabsContent value="emails" className="space-y-6">
+        
+        <TabsContent value="emails" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Email Template Management</CardTitle>
@@ -260,10 +224,9 @@ export default function CMSDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-        )}
 
-        {hasAdminAccess && (
-          <TabsContent value="admin" className="space-y-6">
+        
+        <TabsContent value="admin" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Website Administration</CardTitle>
@@ -335,7 +298,6 @@ export default function CMSDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-        )}
       </Tabs>
     </div>
   );
