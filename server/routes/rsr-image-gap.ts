@@ -40,19 +40,11 @@ export async function rsrImageGapHandler(req: Request, res: Response) {
 
     // Try to get active SKUs from the database first
     try {
-      console.log('Fetching RSR products from database, maxSkus:', maxSkus);
       const rsrProducts = await db
       .select()
       .from(products)
       .where(sql`rsr_stock_number IS NOT NULL AND rsr_stock_number != ''`)
       .limit(maxSkus);
-      
-      console.log('Fetched products count:', rsrProducts.length);
-      
-      // Log first few products to see the data structure
-      if (rsrProducts.length > 0) {
-        console.log('Sample product:', rsrProducts[0]);
-      }
 
       // Get unique SKUs
       const uniqueSkus = new Set<string>();
@@ -64,11 +56,8 @@ export async function rsrImageGapHandler(req: Request, res: Response) {
         }
       });
       
-      console.log('Unique SKUs found:', uniqueSkus.size);
-      
       activeSkus = Array.from(uniqueSkus);
       source = 'database (products.rsr_stock_number)';
-      console.log('Active SKUs count:', activeSkus.length);
       
     } catch (dbError) {
       console.error('Failed to fetch from database:', dbError);
