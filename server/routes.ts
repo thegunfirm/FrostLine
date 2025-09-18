@@ -40,6 +40,7 @@ import zohoAuthRoutes from "./zoho-auth-routes";
 import { importErrorRoutes } from "./routes/import-errors";
 import { cartCanonicalizationMiddleware } from "./middleware/cart-canonicalization";
 import { rsrImageStatsHandler } from "./routes/rsr-image-stats";
+import { rsrImageGapHandler } from "./routes/rsr-image-gap";
 import adminRoutes from "./routes/admin-routes";
 import cmsRoutes from "./routes/cms-routes";
 import backofficeRoutes from "./routes/backoffice-routes";
@@ -4881,6 +4882,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // RSR Image Stats Endpoint (NO AUTHENTICATION REQUIRED)
   app.get("/api/rsr-image-stats", rsrImageStatsHandler);
+  
+  // RSR Image Gap Analysis Endpoint (NO AUTHENTICATION REQUIRED)
+  app.get("/api/rsr-image-gap", rsrImageGapHandler);
 
   // RSR System Status (comprehensive dashboard)
   app.get("/api/admin/rsr/comprehensive-status", async (req, res) => {
