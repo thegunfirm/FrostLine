@@ -39,6 +39,11 @@ import { OrderZohoIntegration } from "./order-zoho-integration";
 import zohoAuthRoutes from "./zoho-auth-routes";
 import { importErrorRoutes } from "./routes/import-errors";
 import { cartCanonicalizationMiddleware } from "./middleware/cart-canonicalization";
+import { rsrImageStatsHandler } from "./routes/rsr-image-stats";
+import adminRoutes from "./routes/admin-routes";
+import cmsRoutes from "./routes/cms-routes";
+import backofficeRoutes from "./routes/backoffice-routes";
+import systemRoutes from "./routes/system-routes";
 
 // Zoho authentication removed - starting fresh
 
@@ -410,6 +415,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Firearms Compliance Routes
   app.use('/api/firearms-compliance', (await import('./routes/firearms-compliance-routes')).default);
+  
+  // ==== NO AUTHENTICATION REQUIRED - CloudFlare handles security ====
+  // Register reorganized admin routes (pricing, inventory, products, analytics, financial, compliance)
+  app.use('/admin', adminRoutes);
+  
+  // Register CMS routes (emails, notifications, content, campaigns, seo, media)
+  app.use('/cms', cmsRoutes);
+  
+  // Register backoffice routes (orders, customers, tickets, refunds, ffl-issues, reports)
+  app.use('/backoffice', backofficeRoutes);
+  
+  // Register system routes (logs, integrations, webhooks, api-discovery, database, users)
+  app.use('/system', systemRoutes);
 
   // Direct checkout endpoint for legacy calls that use /api/checkout/process
   app.post('/api/checkout/process', cartCanonicalizationMiddleware(), async (req, res) => {
@@ -4853,6 +4871,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { rsrSchedulerService } = await import('./services/rsr-scheduler-service.js');
   const { rsrFTPService } = await import('./services/rsr-ftp-service.js');
   const { rsrMonitoringService } = await import('./services/rsr-monitoring-service.js');
+
+  // RSR Image Stats Endpoint (NO AUTHENTICATION REQUIRED)
+  app.get("/api/rsr-image-stats", rsrImageStatsHandler);
 
   // RSR System Status (comprehensive dashboard)
   app.get("/api/admin/rsr/comprehensive-status", async (req, res) => {

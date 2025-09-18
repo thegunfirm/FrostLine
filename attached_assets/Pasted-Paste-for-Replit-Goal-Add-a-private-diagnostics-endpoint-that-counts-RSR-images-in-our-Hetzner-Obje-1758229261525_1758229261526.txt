@@ -1,0 +1,98 @@
+Paste for Replit
+
+Goal
+Add a private diagnostics endpoint that counts RSR images in our Hetzner Object Storage bucket and reports freshness + basic breakdowns. Do not make the bucket public. Do not modify the customer UI.
+
+Where
+Implement as a new server-side route in the same service that currently handles /api/image/:sku. Keep the new route internal-only (no SEO, no UI links).
+
+Route
+GET /api/rsr-image-stats?prefix=rsr/highres/&max=20000
+
+Inputs
+
+prefix (optional): default rsr/highres/
+
+max (optional): default 10000, upper bound 1000000 (protect against timeouts)
+
+Environment (already present for our image proxy)
+
+HETZNER_S3_ENDPOINT (example: https://nbg1.your-objectstorage.com)
+
+HETZNER_S3_BUCKET (example: tgf-images)
+
+HETZNER_S3_KEY / HETZNER_S3_SECRET
+
+Behavior Requirements
+
+Use our existing S3 client configuration (Hetzner/ceph S3-compatible) to list objects under prefix, paginating until reaching max or the end.
+
+Count only image files (extensions: .jpg, .jpeg, .png, .webp).
+
+Parse “angle” from filenames that match *_#_HR.<ext> (e.g., _1_HR, _2_HR). Tally counts by angle; anything not matching goes to unspecified.
+
+Track the newest object timestamp (UTC ISO 8601).
+
+Return the 10 newest object keys with timestamps as samples.
+
+Must not change bucket ACLs, policies, or make public links.
+
+Must time out safely and return partial results with a note if the cap is hit.
+
+Keep RAM use modest; stream/paginate — no loading massive key lists into memory at once.
+
+Response JSON (exact keys)
+
+{
+  "bucket": "<string>",
+  "prefix": "<string>",
+  "scanned": <number>,              // total images scanned (<= max)
+  "cap": <number>,                  // the max limit used
+  "newestUploadedAt": "<ISO string or null>",
+  "byAngle": { "<angle>": <count>, "unspecified": <count> },
+  "newestSamples": [
+    { "Key": "<string>", "LastModified": "<ISO string>" }
+  ],
+  "note": "<string>"                // e.g., "Reached scan cap; increase ?max="
+}
+
+
+Security
+
+Route is server-only; reuse our auth/guard pattern if present for internal diagnostics routes.
+
+Never include credentials in responses.
+
+No signed URLs in output.
+
+Success Criteria
+
+A request like:
+GET /api/rsr-image-stats?prefix=rsr/highres/&max=20000
+returns HTTP 200 with the schema above, showing:
+
+scanned in the thousands (reflecting what’s actually in the bucket today)
+
+a valid newestUploadedAt within recent hours/days
+
+byAngle with counts (e.g., "1": 4800, "2": 1200, "3": 300)
+
+newestSamples contains 10 most recent keys
+
+Non-Goals
+
+Do not alter customer-facing pages or image URLs.
+
+Do not refactor image proxy logic.
+
+No public bucket policy changes.
+
+No database writes.
+
+Test Instructions
+
+After deploying, call the route from the browser or curl (authenticated if needed).
+
+If note says “Reached scan cap,” repeat with a higher max to sweep deeper.
+
+Compare scanned vs. expected catalog scale to confirm coverage; use newestUploadedAt to confirm freshness.
