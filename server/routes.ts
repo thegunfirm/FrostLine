@@ -5499,18 +5499,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         algoliaFilters.push(`manufacturerName:"${filters.ammunitionManufacturer}"`);
       }
       
-      // Handle sorting with proper Algolia sorting parameter
-      let sortArray = [];
+      // Handle sorting with proper Algolia replica indexes
+      let indexName = 'products'; // Default to main index for relevance
       if (sort && sort !== 'relevance') {
         switch (sort) {
           case 'price_low_to_high':
-            sortArray = ['tierPricing.platinum:asc'];
+            indexName = 'products_price_asc';
             break;
           case 'price_high_to_low':
-            sortArray = ['tierPricing.platinum:desc'];
+            indexName = 'products_price_desc';
             break;
           default:
-            // Default to relevance (no sort parameter)
+            indexName = 'products'; // Default to relevance
             break;
         }
       }
@@ -5571,10 +5571,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchParams.filters = algoliaFilters.join(' AND ');
       }
       
-      // Apply proper Algolia sorting
-      if (sortArray.length > 0) {
-        searchParams.sort = sortArray;
-      }
+      // Note: Sorting is handled by using different Algolia replica indexes
+      // The indexName variable determines which index to use for sorting
       
       // Apply moderate popularity boosts only for relevance sorting (not price sorting)
       if (sort === 'relevance' || !sort) {
@@ -5612,10 +5610,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Note: Stock priority sorting would require index replica configuration
       // For now, using default relevance ranking
 
+      console.log(`🔍 Algolia sort debug: sort="${sort}", indexName="${indexName}"`);
       console.log('Algolia search params:', JSON.stringify(searchParams, null, 2));
 
-      // Make request to Algolia
-      const response = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/products/query`, {
+      // Make request to Algolia using the appropriate index for sorting
+      const response = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/${indexName}/query`, {
         method: 'POST',
         headers: {
           'X-Algolia-API-Key': process.env.ALGOLIA_API_KEY!,
