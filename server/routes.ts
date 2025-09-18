@@ -5499,7 +5499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         algoliaFilters.push(`manufacturerName:"${filters.ammunitionManufacturer}"`);
       }
       
-      // Handle sorting with proper Algolia replica indexes
+      // Handle sorting with replica indexes (preferred approach)
       let indexName = 'products'; // Default to main index for relevance
       if (sort && sort !== 'relevance') {
         switch (sort) {
@@ -5634,7 +5634,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const searchResults = await response.json();
 
       // Apply stock-based sorting to all category browsing first page
-      if ((cleanedFilters.category || cleanedFilters.productType) && (!searchQuery || searchQuery.trim() === '') && page === 0) {
+      // Skip stock sorting when user specifically requests price sorting
+      if ((cleanedFilters.category || cleanedFilters.productType) && (!searchQuery || searchQuery.trim() === '') && page === 0 && sort === 'relevance') {
         console.log(`🔍 Getting 100 results to apply inventory-based sorting for ${cleanedFilters.category || cleanedFilters.productType}...`);
         
         // Get more results to find popular brands
