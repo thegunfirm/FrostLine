@@ -1,20 +1,20 @@
 {
-  "startedAt": "2025-09-18T23:46:38.602Z",
-  "lastUpdateAt": "2025-09-18T23:46:15.521Z",
-  "scannedSkus": 498,
-  "attemptedDownloads": 0,
+  "startedAt": "2025-09-18T23:47:13.828Z",
+  "lastUpdateAt": "2025-09-18T23:47:56.415Z",
+  "scannedSkus": 30,
+  "attemptedDownloads": 90,
   "uploaded": 0,
   "skippedExists": 0,
-  "noRemote": 0,
+  "noRemote": 90,
   "errorsTotal": 0,
   "errorsByCode": {},
   "anglesPlanned": "1-3",
-  "concurrency": 3,
+  "concurrency": 2,
   "checkpoint": {
-    "lastSku": null,
+    "lastSku": "HK81001086",
     "completedAngles": []
   },
-  "etaSkusRemaining": 498,
+  "etaSkusRemaining": 0,
   "isRunning": false,
   "isPaused": false
 }
