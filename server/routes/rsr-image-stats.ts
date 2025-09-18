@@ -17,6 +17,8 @@ interface ImageStats {
   scanned: number;
   cap: number;
   newestUploadedAt: string | null;
+  oldestUploadedAt: string | null;
+  distinctBaseSkus: number;
   byAngle: { [key: string]: number };
   newestSamples: { Key: string; LastModified: string }[];
   note: string;
@@ -39,6 +41,8 @@ export async function rsrImageStatsHandler(req: Request, res: Response) {
       scanned: 0,
       cap: max,
       newestUploadedAt: null,
+      oldestUploadedAt: null,
+      distinctBaseSkus: 0,
       byAngle: { unspecified: 0 },
       newestSamples: [],
       note: ''
@@ -47,6 +51,8 @@ export async function rsrImageStatsHandler(req: Request, res: Response) {
     const allImages: { Key: string; LastModified: Date }[] = [];
     let continuationToken: string | undefined;
     let newestDate: Date | null = null;
+    let oldestDate: Date | null = null;
+    const baseSkuSet = new Set<string>();
 
     // Paginate through bucket
     while (stats.scanned < max) {
@@ -70,10 +76,13 @@ export async function rsrImageStatsHandler(req: Request, res: Response) {
 
         stats.scanned++;
         
-        // Track newest
+        // Track newest and oldest
         if (obj.LastModified) {
           if (!newestDate || obj.LastModified > newestDate) {
             newestDate = obj.LastModified;
+          }
+          if (!oldestDate || obj.LastModified < oldestDate) {
+            oldestDate = obj.LastModified;
           }
           allImages.push({
             Key: obj.Key,
@@ -81,10 +90,16 @@ export async function rsrImageStatsHandler(req: Request, res: Response) {
           });
         }
 
-        // Parse angle from filename
-        const angleMatch = obj.Key.match(/_(\d+)_HR\.\w+$/);
+        // Parse angle from filename and extract base SKU
+        const angleMatch = obj.Key.match(/^(.*)_(\d+)_HR\.\w+$/);
         if (angleMatch) {
-          const angle = angleMatch[1];
+          const baseSku = angleMatch[1];
+          const angle = angleMatch[2];
+          
+          // Track distinct base SKUs (only for items with angle pattern)
+          baseSkuSet.add(baseSku);
+          
+          // Count by angle
           stats.byAngle[angle] = (stats.byAngle[angle] || 0) + 1;
         } else {
           stats.byAngle.unspecified++;
@@ -102,10 +117,16 @@ export async function rsrImageStatsHandler(req: Request, res: Response) {
       if (stats.scanned >= max) break;
     }
 
-    // Set newest date
+    // Set newest and oldest dates
     if (newestDate) {
       stats.newestUploadedAt = newestDate.toISOString();
     }
+    if (oldestDate) {
+      stats.oldestUploadedAt = oldestDate.toISOString();
+    }
+    
+    // Set distinct base SKU count
+    stats.distinctBaseSkus = baseSkuSet.size;
 
     // Get 10 newest samples
     allImages.sort((a, b) => b.LastModified.getTime() - a.LastModified.getTime());
