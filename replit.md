@@ -60,6 +60,7 @@ RSR IMPORT STANDARD: RSR Comprehensive Import System is the ONLY active RSR syst
 - **RSR-Compliant Import Frequency System**: Full implementation of RSR's recommended import frequencies - inventory updates every 2 hours, quantity updates every 15 minutes, daily data integrity monitoring. Includes comprehensive scheduler service, FTP automation, admin controls, and emergency update capabilities. **CONSOLIDATED STANDARD** - All legacy RSR systems deprecated, single definitive system for all RSR operations.
 - **Enhanced Algolia Search Integration**: Complete dual indexing system supporting both manufacturer part number (SKU) and product name searches. Includes CMS admin management endpoints for search synchronization and status monitoring.
 - **RSR Image Integration - Age Verification Limitation**: Implemented comprehensive RSR image system with HTML detection and proper fallback handling using authentic RSR stock numbers from live database. System correctly serves authentic placeholder images when RSR images are inaccessible due to age verification.
+- **Category Cleanup System (September 18, 2025)**: Resolved critical categorization crisis through massive database backfill (10,529 products) and cleanup (6,100+ accessories removed from firearm categories). Achieved 80-90% category purity for Handguns/Rifles/Shotguns. Enhanced category-rules-engine.ts with isAccessory() function to prevent future contamination.
 
 ### Technical Stack
 - **Frontend**: React 18 (TypeScript), Wouter, TanStack Query, React Context, Shadcn/ui (Radix UI), Tailwind CSS, Vite.
