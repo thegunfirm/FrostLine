@@ -1314,6 +1314,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Generate order number
                 const minted = mintOrderNumber(outcomes);
                 
+                // Extract FFL ID from fulfillmentGroups
+                let fflId = null;
+                const fulfillmentGroups = orderData.fulfillmentGroups || [];
+                for (const group of fulfillmentGroups) {
+                  if (group.fflId) {
+                    fflId = group.fflId;
+                    break; // Use the first FFL ID found
+                  }
+                }
+                
                 const snapshotData = {
                   orderId: savedOrder.id.toString(),
                   txnId: transactionResponse.transId,
@@ -1332,6 +1342,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   shippingOutcomes: outcomes,
                   minted, // Professional order numbering
                   allocations: null,
+                  fflId: fflId, // Store FFL ID in snapshot
+                  fulfillmentGroups: fulfillmentGroups, // Store fulfillment groups for reference
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString()
                 };

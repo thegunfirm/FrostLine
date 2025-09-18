@@ -241,14 +241,63 @@ router.get('/api/orders/:orderId/summary', async (req, res) => {
   for (const [outcome, items] of Object.entries(outcomeGroups)) {
     const orderNumber = outcomeToOrderNumber[outcome] || minted.main;
     
-    shipments.push({
+    // Create shipment object
+    const shipment = {
       idx: shipmentIdx,
       outcome,
       orderNumber,
       lines: items, // Only items for this specific outcome
       totals: computeTotals(items)
-    });
+    };
     
+    // Add FFL information if this is an FFL shipment
+    if (outcome === 'DS>FFL' || outcome === 'IH>FFL') {
+      // Check if FFL info is in the snapshot
+      if (snap.fflId || snap.fflRecipientId) {
+        const fflId = snap.fflId || snap.fflRecipientId;
+        try {
+          const fflData = await storage.getFFL(fflId);
+          if (fflData) {
+            shipment.ffl = {
+              id: fflData.id,
+              name: fflData.licenseName || fflData.businessName,
+              address1: fflData.premiseAddress,
+              city: fflData.premiseCity,
+              state: fflData.premiseState,
+              zip: fflData.premiseZip
+            };
+          }
+        } catch (error) {
+          console.error(`Failed to fetch FFL ${fflId}:`, error);
+        }
+      }
+      
+      // Also check fulfillmentGroups if present
+      if (!shipment.ffl && snap.fulfillmentGroups) {
+        for (const group of snap.fulfillmentGroups) {
+          if (group.fflId) {
+            try {
+              const fflData = await storage.getFFL(group.fflId);
+              if (fflData) {
+                shipment.ffl = {
+                  id: fflData.id,
+                  name: fflData.licenseName || fflData.businessName,
+                  address1: fflData.premiseAddress,
+                  city: fflData.premiseCity,
+                  state: fflData.premiseState,
+                  zip: fflData.premiseZip
+                };
+                break; // Use the first FFL found
+              }
+            } catch (error) {
+              console.error(`Failed to fetch FFL ${group.fflId}:`, error);
+            }
+          }
+        }
+      }
+    }
+    
+    shipments.push(shipment);
     shipmentIdx++;
   }
 
