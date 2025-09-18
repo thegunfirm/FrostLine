@@ -40,23 +40,35 @@ export async function rsrImageGapHandler(req: Request, res: Response) {
 
     // Try to get active SKUs from the database first
     try {
-      const rsrProducts = await db.select({
-        rsr_stock_number: products.rsr_stock_number
-      })
+      console.log('Fetching RSR products from database, maxSkus:', maxSkus);
+      const rsrProducts = await db
+      .select()
       .from(products)
-      .where(sql`${products.rsr_stock_number} IS NOT NULL AND ${products.rsr_stock_number} != ''`)
+      .where(sql`rsr_stock_number IS NOT NULL AND rsr_stock_number != ''`)
       .limit(maxSkus);
+      
+      console.log('Fetched products count:', rsrProducts.length);
+      
+      // Log first few products to see the data structure
+      if (rsrProducts.length > 0) {
+        console.log('Sample product:', rsrProducts[0]);
+      }
 
       // Get unique SKUs
       const uniqueSkus = new Set<string>();
       rsrProducts.forEach(p => {
-        if (p.rsr_stock_number) {
-          uniqueSkus.add(p.rsr_stock_number);
+        // Check both possible field names (camelCase and snake_case)
+        const rsrStockNumber = (p as any).rsrStockNumber || p.rsr_stock_number;
+        if (rsrStockNumber) {
+          uniqueSkus.add(rsrStockNumber);
         }
       });
       
+      console.log('Unique SKUs found:', uniqueSkus.size);
+      
       activeSkus = Array.from(uniqueSkus);
       source = 'database (products.rsr_stock_number)';
+      console.log('Active SKUs count:', activeSkus.length);
       
     } catch (dbError) {
       console.error('Failed to fetch from database:', dbError);
@@ -119,11 +131,11 @@ export async function rsrImageGapHandler(req: Request, res: Response) {
     const { S3Client, ListObjectsV2Command } = await import('@aws-sdk/client-s3');
     
     const s3Client = new S3Client({
-      endpoint: process.env.S3_ENDPOINT,
-      region: process.env.S3_REGION || 'auto',
+      endpoint: process.env.HETZNER_S3_ENDPOINT,
+      region: 'us-east-1',
       credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!
+        accessKeyId: process.env.HETZNER_S3_KEY || '',
+        secretAccessKey: process.env.HETZNER_S3_SECRET || ''
       },
       forcePathStyle: true
     });
@@ -134,10 +146,13 @@ export async function rsrImageGapHandler(req: Request, res: Response) {
     let scanned = 0;
     const maxScan = 100000;
 
+    const bucket = process.env.HETZNER_S3_BUCKET || 'tgf-images';
+    const prefix = 'rsr/highres/';
+    
     while (scanned < maxScan) {
       const listCommand = new ListObjectsV2Command({
-        Bucket: 'tgf-images',
-        Prefix: 'rsr/highres/',
+        Bucket: bucket,
+        Prefix: prefix,
         MaxKeys: 1000,
         ContinuationToken: continuationToken
       });
