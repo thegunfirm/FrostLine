@@ -412,27 +412,49 @@ class RSRFileProcessor {
   private categorizeByDescription(description: string): string {
     const desc = description.toLowerCase();
     
-    // NFA Items (highest priority)
-    if (desc.includes('suppressor') || desc.includes('silencer') || 
-        desc.includes('sbr') || desc.includes('short barrel') ||
+    // Exclude NON-NFA accessories/cases FIRST (prevents misclassification)
+    if (desc.includes('flash suppressor') || desc.includes('muzzle brake') ||
+        desc.includes('compensator') || desc.includes('thread protector') ||
+        desc.includes('suppressor cleaner') || desc.includes('suppressor adapter') ||
+        desc.includes('suppressor mount') || desc.includes('suppressor cover') ||
+        desc.includes('suppressor pouch') || desc.includes('suppressor case') ||
+        desc.includes('case') || desc.includes('pouch') || desc.includes('bag') ||
+        desc.includes('holster') || desc.includes('cover') || desc.includes('grip') ||
+        desc.includes('cleaning') || desc.includes('kit') || desc.includes('tool') ||
+        desc.includes('adapter') || desc.includes('mount')) {
+      return this.categorizeAccessory(desc);
+    }
+    
+    // ONLY actual NFA Items (after exclusions)
+    if (desc.includes('silencer') || 
+        (desc.includes('suppressor') && !desc.includes('flash')) ||
+        desc.includes('sbr') || desc.includes('short barrel rifle') ||
+        desc.includes('short barreled rifle') ||
         desc.includes('sbs') || desc.includes('short barreled shotgun') ||
         desc.includes('aow') || desc.includes('any other weapon') ||
         desc.includes('machine gun') || desc.includes('full auto')) {
       return 'NFA Products';
     }
     
-    // Firearms
-    if (desc.includes('pistol') || desc.includes('handgun') || 
-        desc.includes('revolver') || desc.includes('1911') ||
-        (desc.includes('9mm') && (desc.includes('gun') || desc.includes('firearm'))) ||
-        (desc.includes('45acp') && (desc.includes('gun') || desc.includes('firearm'))) ||
-        (desc.includes('40sw') && (desc.includes('gun') || desc.includes('firearm')))) {
+    // Actual Firearms (more strict criteria)
+    // For handguns, require specific patterns that indicate actual firearms
+    if ((desc.includes('pistol') || desc.includes('handgun') || desc.includes('revolver')) &&
+        !desc.includes('case') && !desc.includes('pouch') && !desc.includes('bag') &&
+        !desc.includes('holster') && !desc.includes('grip') && !desc.includes('cleaning') &&
+        (desc.includes('9mm') || desc.includes('45acp') || desc.includes('40sw') || 
+         desc.includes('357') || desc.includes('38') || desc.includes('380') ||
+         desc.includes('barrel') || desc.includes('trigger') || desc.includes('magazine') ||
+         desc.includes('round') || desc.includes('rd') || desc.includes('shot'))) {
       return 'Handguns';
     }
     
-    if (desc.includes('rifle') || desc.includes('carbine') || 
-        desc.includes('ar-15') || desc.includes('ar15') ||
-        desc.includes('shotgun') || desc.includes('12ga') || desc.includes('20ga')) {
+    if ((desc.includes('rifle') || desc.includes('carbine') || 
+         desc.includes('ar-15') || desc.includes('ar15') || desc.includes('shotgun')) &&
+        !desc.includes('case') && !desc.includes('bag') && !desc.includes('cover') &&
+        (desc.includes('barrel') || desc.includes('trigger') || desc.includes('stock') ||
+         desc.includes('round') || desc.includes('rd') || desc.includes('shot') ||
+         desc.includes('12ga') || desc.includes('20ga') || desc.includes('223') ||
+         desc.includes('308') || desc.includes('5.56'))) {
       return 'Long Guns';
     }
     
@@ -457,6 +479,30 @@ class RSRFileProcessor {
     }
     
     // Default to Accessories for everything else
+    return 'Accessories';
+  }
+
+  private categorizeAccessory(desc: string): string {
+    if (desc.includes('case') || desc.includes('bag')) {
+      if (desc.includes('hard')) {
+        return 'Hard Gun Cases';
+      } else {
+        return 'Soft Gun Cases, Packs, Bags';
+      }
+    }
+    
+    if (desc.includes('holster') || desc.includes('pouch')) {
+      return 'Holsters & Pouches';
+    }
+    
+    if (desc.includes('cleaning') || desc.includes('kit')) {
+      return 'Cleaning Equipment';
+    }
+    
+    if (desc.includes('grip') || desc.includes('stock') || desc.includes('pad')) {
+      return 'Grips, Pads, Stocks, Bipods';
+    }
+    
     return 'Accessories';
   }
 
