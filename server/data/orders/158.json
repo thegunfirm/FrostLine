@@ -1,0 +1,55 @@
+{
+  "orderId": "158",
+  "txnId": "120071259503",
+  "status": "processing",
+  "customer": {
+    "email": "ripmagicalbeast@gmail.com",
+    "name": "Rip Ripple",
+    "firstName": "Rip",
+    "lastName": "Ripple",
+    "address": "123 Test St",
+    "city": "Test City",
+    "state": "AZ",
+    "zip": "12345"
+  },
+  "items": [
+    {
+      "upc": "806703916705",
+      "mpn": "91670",
+      "sku": "CZ91670",
+      "name": "CZ P-09F NOCTURNE 9MM 19RD BLK",
+      "qty": 2,
+      "price": 649,
+      "imageUrl": "/images/806703916705.jpg"
+    },
+    {
+      "upc": "029757005991",
+      "mpn": "PWV1250",
+      "sku": "BSPWV1250X",
+      "name": "BUSHNELL POWER VIEW 2 12X50 BLK",
+      "qty": 1,
+      "price": 97.45,
+      "imageUrl": "/images/029757005991.jpg"
+    }
+  ],
+  "shippingOutcomes": [
+    "IH>FFL",
+    "IH>Customer"
+  ],
+  "minted": {
+    "main": "100037-Z",
+    "parts": [
+      {
+        "outcome": "IH>FFL",
+        "orderNumber": "100037-ZA"
+      },
+      {
+        "outcome": "IH>Customer",
+        "orderNumber": "100037-ZB"
+      }
+    ]
+  },
+  "allocations": null,
+  "createdAt": "2025-09-18T20:07:05.419Z",
+  "updatedAt": "2025-09-18T20:07:05.419Z"
+}
