@@ -5499,20 +5499,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         algoliaFilters.push(`manufacturerName:"${filters.ammunitionManufacturer}"`);
       }
       
-      // Handle sorting - Algolia uses different approach for sorting
-      let algoliaIndexName = 'products'; // Default index
+      // Handle sorting with proper Algolia sorting parameter
+      let sortArray = [];
       if (sort && sort !== 'relevance') {
         switch (sort) {
           case 'price_low_to_high':
-            // Use numeric filters for price sorting instead of sort parameter
-            algoliaIndexName = 'products'; // Keep default index
+            sortArray = ['tierPricing.platinum:asc'];
             break;
           case 'price_high_to_low':
-            // Use numeric filters for price sorting instead of sort parameter
-            algoliaIndexName = 'products'; // Keep default index
+            sortArray = ['tierPricing.platinum:desc'];
             break;
           default:
-            algoliaIndexName = 'products';
+            // Default to relevance (no sort parameter)
+            break;
         }
       }
 
@@ -5572,59 +5571,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchParams.filters = algoliaFilters.join(' AND ');
       }
       
-      // Apply sorting via optionalFilters and custom ranking instead of sort parameter
-      if (sort === 'price_high_to_low') {
-        // Boost higher priced items for "high to low" sorting
-        if (!searchParams.optionalFilters) {
-          searchParams.optionalFilters = [];
-        }
-        // Add price-based ranking boosts
-        searchParams.optionalFilters.push(
-          "tierPricing.platinum>100<score=100>",
-          "tierPricing.platinum>50<score=50>",
-          "tierPricing.platinum>25<score=25>"
-        );
-      } else if (sort === 'price_low_to_high') {
-        // Boost lower priced items for "low to high" sorting  
-        if (!searchParams.optionalFilters) {
-          searchParams.optionalFilters = [];
-        }
-        searchParams.optionalFilters.push(
-          "tierPricing.platinum<25<score=100>",
-          "tierPricing.platinum<50<score=50>", 
-          "tierPricing.platinum<100<score=25>"
-        );
+      // Apply proper Algolia sorting
+      if (sortArray.length > 0) {
+        searchParams.sort = sortArray;
       }
       
-      // Apply moderate popularity boosts for handgun searches (FIXED - no extreme scores)
-      if (cleanedFilters.category === "Handguns" || cleanedFilters.productType === "handgun" || cleanedFilters.departmentNumber === "01") {
-        // Use moderate optionalFilters to boost popular items without filtering out others
-        searchParams.optionalFilters = [
-          "manufacturer:GLOCK<score=10>",     // Moderate boost for popular brands
-          "manufacturer:SPGFLD<score=8>",    // Springfield Armory
-          "manufacturer:SIG<score=7>",       // Sig Sauer  
-          "manufacturer:RUGER<score=6>",     // Ruger
-          "caliber:9mm<score=15>",           // Popular calibers get moderate boost
-          "caliber:45 ACP<score=12>",
-          "caliber:40 S&W<score=10>",
-          "caliber:380 ACP<score=8>",
-          "caliber:357 Magnum<score=6>"
-        ];
-      }
-      
-      // Add moderate rifle popularity boosts (FIXED - no extreme scores)
-      if (cleanedFilters.category === "Rifles" || cleanedFilters.productType === "rifle" || cleanedFilters.departmentNumber === "02") {
-        // Use moderate boosts for rifles without filtering out other results
-        searchParams.optionalFilters = [
-          "manufacturer:SIG<score=8>",        // Popular rifle brand
-          "manufacturer:IWI<score=7>",        // IWI rifles
-          "manufacturer:SOLGW<score=6>",      // SOLGW rifles
-          "manufacturer:SANTAN<score=5>",     // Santan rifles
-          "caliber:5.56<score=12>",           // AR-15 caliber - moderate boost
-          "caliber:223<score=10>",            // Common rifle caliber
-          "caliber:308<score=8>",             // Hunting caliber
-          "caliber:22 LR<score=6>"            // Training caliber
-        ];
+      // Apply moderate popularity boosts only for relevance sorting (not price sorting)
+      if (sort === 'relevance' || !sort) {
+        if (cleanedFilters.category === "Handguns" || cleanedFilters.productType === "handgun" || cleanedFilters.departmentNumber === "01") {
+          // Use moderate optionalFilters to boost popular items without filtering out others
+          searchParams.optionalFilters = [
+            "manufacturer:GLOCK<score=10>",     // Moderate boost for popular brands
+            "manufacturer:SPGFLD<score=8>",    // Springfield Armory
+            "manufacturer:SIG<score=7>",       // Sig Sauer  
+            "manufacturer:RUGER<score=6>",     // Ruger
+            "caliber:9mm<score=15>",           // Popular calibers get moderate boost
+            "caliber:45 ACP<score=12>",
+            "caliber:40 S&W<score=10>",
+            "caliber:380 ACP<score=8>",
+            "caliber:357 Magnum<score=6>"
+          ];
+        }
+        
+        // Add moderate rifle popularity boosts (FIXED - no extreme scores)
+        if (cleanedFilters.category === "Rifles" || cleanedFilters.productType === "rifle" || cleanedFilters.departmentNumber === "02") {
+          // Use moderate boosts for rifles without filtering out other results
+          searchParams.optionalFilters = [
+            "manufacturer:SIG<score=8>",        // Popular rifle brand
+            "manufacturer:IWI<score=7>",        // IWI rifles
+            "manufacturer:SOLGW<score=6>",      // SOLGW rifles
+            "manufacturer:SANTAN<score=5>",     // Santan rifles
+            "caliber:5.56<score=12>",           // AR-15 caliber - moderate boost
+            "caliber:223<score=10>",            // Common rifle caliber
+            "caliber:308<score=8>",             // Hunting caliber
+            "caliber:22 LR<score=6>"            // Training caliber
+          ];
+        }
       }
       
       // Note: Stock priority sorting would require index replica configuration
