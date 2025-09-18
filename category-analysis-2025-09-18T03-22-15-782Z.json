@@ -1,0 +1,659 @@
+{
+  "timestamp": "2025-09-18T03:22:15.783Z",
+  "totalProducts": 60325,
+  "totalChanges": 10529,
+  "changesByCategory": {
+    "Rifles": {
+      "count": 4089,
+      "examples": [
+        {
+          "sku": "26922",
+          "name": "RUGER AMERICAN PRED 6.5GRN 22\" AR",
+          "from": "Long Guns",
+          "reason": "Department 05 + rifle indicators/default"
+        },
+        {
+          "sku": "ALN10928",
+          "name": "ALLEN BATTALION TAC RIFLE CASE BLK",
+          "from": "Soft Gun Cases, Packs, Bags",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "ZR7762UF",
+          "name": "ZASTAVA M70 762X39 30RD FL WOOD UF",
+          "from": "Accessories",
+          "reason": "Department 05 + rifle indicators/default"
+        },
+        {
+          "sku": "AVIDAVAR15FSA",
+          "name": "REAL AVID AR15 FRONT SIGHT ADJUSTER",
+          "from": "Knives & Tools",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "ALN10949",
+          "name": "ALLEN VELOCITY RIFLE CS 55\" BLK",
+          "from": "Soft Gun Cases, Packs, Bags",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "BABL65CR01P",
+          "name": "BALLISTIC BBL 6.5CM 18\" RIFLE .875",
+          "from": "Barrels, Choke Tubes & Muzzle Devices",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "BC3545CLN-KIT",
+          "name": "B/C RIFLE CLEANING KIT 350LGND/450BM",
+          "from": "Cleaning Equipment",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "70401",
+          "name": "MARLIN 1894 CLSC 44MAG 20.25\" 11RD",
+          "from": "Long Guns",
+          "reason": "Department 05 + rifle indicators/default"
+        },
+        {
+          "sku": "CR4042",
+          "name": "CVA CASCADE VARMNT HNTR 223 20\" 10RD",
+          "from": "Accessories",
+          "reason": "Department 05 + rifle indicators/default"
+        },
+        {
+          "sku": "OMENREC-G318",
+          "name": "NEMO OMEN RECON 300WIN 18\" 14RD",
+          "from": "Accessories",
+          "reason": "Department 05 + rifle indicators/default"
+        }
+      ],
+      "fromCategories": {
+        "Long Guns": 436,
+        "Soft Gun Cases, Packs, Bags": 76,
+        "Accessories": 3093,
+        "Knives & Tools": 20,
+        "Barrels, Choke Tubes & Muzzle Devices": 24,
+        "Cleaning Equipment": 55,
+        "NFA Products": 65,
+        "Parts": 100,
+        "Handguns": 49,
+        "Grips, Pads, Stocks, Bipods": 59,
+        "Targets": 1,
+        "Upper Receivers & Conversion Kits": 23,
+        "SBR Barrels & Upper Receivers": 40,
+        "Slings & Swivels": 6,
+        "Magazines": 3,
+        "Holsters & Pouches": 6,
+        "Misc. Accessories": 7,
+        "Ammunition": 4,
+        "Upper Receivers & Conversion Kits - High Capacity": 4,
+        "Uppers/Lowers": 2,
+        "Optical Accessories": 2,
+        "Hard Gun Cases": 7,
+        "Sights": 1,
+        "Shotguns": 1,
+        "Reloading Equipment": 1,
+        "Optics": 1,
+        "Airguns": 1,
+        "Safes & Security": 1,
+        "Lights, Lasers & Batteries": 1
+      }
+    },
+    "Handguns": {
+      "count": 4854,
+      "examples": [
+        {
+          "sku": "TDBGV-ML1-FDE",
+          "name": "TANGO DWN MLOK STUBBY VERT GRP FDE",
+          "from": "Long Guns",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "TDBG-AK",
+          "name": "TANGO DWN AK BATTLEGRIP BLK",
+          "from": "Long Guns",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "LAN01-HG-006-SPADA-ML",
+          "name": "LANTAC SPADA-ML 6.75\" M-LOK HNDGUARD",
+          "from": "Long Guns",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "ALN3628",
+          "name": "ALLEN PISTOL POUCH FULL SIZE BLACK",
+          "from": "Soft Gun Cases, Packs, Bags",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "LAN01-HG-010-SPADA-ML",
+          "name": "LANTAC SPADA-ML 10.5\" M-LOK HNDGUARD",
+          "from": "Long Guns",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "OCL-802",
+          "name": "OCL OPS/AE OTB FLASH HIDER HEAT TRT",
+          "from": "NFA Products",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "NAA-22LR-BBO-50",
+          "name": "NAA MINI REV 22LR 1 1/8\" 5RD 50TH A",
+          "from": "Accessories",
+          "reason": "Department 01 (Handguns)"
+        },
+        {
+          "sku": "ENEA51",
+          "name": "ENERGETIC VOX BLOX 1.10\" ODESSA9",
+          "from": "NFA Products",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "YHM-1241",
+          "name": "YHM MOD CHOKE CONE VICTRA-12 SLV",
+          "from": "NFA Products",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "YHM-4405-MB-24",
+          "name": "YHM SRX MUZZLE BRAKE 5/8-24 BLK",
+          "from": "NFA Products",
+          "reason": "Firearm requiring proper categorization"
+        }
+      ],
+      "fromCategories": {
+        "Long Guns": 280,
+        "Soft Gun Cases, Packs, Bags": 54,
+        "NFA Products": 905,
+        "Accessories": 2902,
+        "SBR Barrels & Upper Receivers": 122,
+        "Holsters & Pouches": 26,
+        "Upper Receivers & Conversion Kits": 109,
+        "Cleaning Equipment": 18,
+        "Grips, Pads, Stocks, Bipods": 78,
+        "Ammunition": 186,
+        "Safes & Security": 8,
+        "Parts": 57,
+        "Knives & Tools": 7,
+        "Used Handguns": 12,
+        "Upper Receivers & Conversion Kits - High Capacity": 8,
+        "Barrels, Choke Tubes & Muzzle Devices": 34,
+        "Targets": 4,
+        "Optics": 8,
+        "Misc. Accessories": 6,
+        "Rifles": 2,
+        "Magazines": 1,
+        "Hard Gun Cases": 10,
+        "Airguns": 3,
+        "Shotguns": 1,
+        "Slings & Swivels": 4,
+        "Clothing": 6,
+        "Non-Lethal Defense": 1,
+        "Reloading Equipment": 1,
+        "Lights, Lasers & Batteries": 1
+      }
+    },
+    "Shotguns": {
+      "count": 850,
+      "examples": [
+        {
+          "sku": "H018X-410",
+          "name": "HENRY LVR ACTION SHOTGUN X MODEL 410",
+          "from": "Accessories",
+          "reason": "Department 05 + shotgun indicators (gauges/keywords)"
+        },
+        {
+          "sku": "BRN018259304",
+          "name": "BRN CITORI HUNTER GRII 12GA 3\" 28\"",
+          "from": "Long Guns",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "BRS24032D",
+          "name": "BORESNAKE 28GA W/ DEN",
+          "from": "Cleaning Equipment",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "CD930-229",
+          "name": "C.DALY 601 SEMI 12GA-3\" 18.5\" 4RD BL",
+          "from": "Long Guns",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "REM17574",
+          "name": "REM FIELD CABLE CLEANING KIT SHOTGUN",
+          "from": "Long Guns",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "TI2-4410P31MAG",
+          "name": "TAURUS JDG 45C/410 3\" 5RD MBLK TOR",
+          "from": "Handguns",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "MS50700",
+          "name": "MSBRG 590 410/18.5 6RD SYN BLK",
+          "from": "NFA Products",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "MS57120",
+          "name": "MSBRG 505 CMP 410/20/MOD BL 4RD WD",
+          "from": "NFA Products",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "MS75479",
+          "name": "MSBRG SLV RES II FLD OU 410/26/3\"SLV",
+          "from": "NFA Products",
+          "reason": "Firearm requiring proper categorization"
+        },
+        {
+          "sku": "HEBL1218NI",
+          "name": "HERITAGE BADLANDER SXS 12GA 18.5\" NI",
+          "from": "Long Guns",
+          "reason": "Firearm requiring proper categorization"
+        }
+      ],
+      "fromCategories": {
+        "Accessories": 437,
+        "Long Guns": 237,
+        "Cleaning Equipment": 25,
+        "Handguns": 15,
+        "NFA Products": 13,
+        "Grips, Pads, Stocks, Bipods": 9,
+        "Soft Gun Cases, Packs, Bags": 15,
+        "Safety & Protection": 7,
+        "Ammunition": 76,
+        "Barrels, Choke Tubes & Muzzle Devices": 2,
+        "Parts": 6,
+        "Lights, Lasers & Batteries": 3,
+        "Upper Receivers & Conversion Kits": 1,
+        "Misc. Accessories": 3,
+        "Holsters & Pouches": 1
+      }
+    },
+    "Upper Receivers & Conversion Kits": {
+      "count": 245,
+      "examples": [
+        {
+          "sku": "BABL300002F",
+          "name": "BALLISTIC BBL 300BLK 8.3\" HNSN LPGB",
+          "from": "SBR Barrels & Upper Receivers",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "07000200",
+          "name": "NOVESKE BARREL 556 12.5 LEONIDAS STS",
+          "from": "SBR Barrels & Upper Receivers",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "APAR700701M1",
+          "name": "AERO M4E1-T UPPER 300BLK 8\" BLK",
+          "from": "SBR Barrels & Upper Receivers",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "AA0906BB28",
+          "name": "ANGSTADT 9MM 6\" AR BARREL 1/2X28",
+          "from": "SBR Barrels & Upper Receivers",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "AA0910BB28",
+          "name": "ANGSTADT 10.5\" BBL 9MM AR BLK",
+          "from": "SBR Barrels & Upper Receivers",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "BABL300001M-1",
+          "name": "BALLISTIC BBL 300BLK 8\" RIGID 1/7",
+          "from": "Uppers/Lowers",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "BABL556028F",
+          "name": "BALLISTIC BBL 5.56 13.7\" HNSN W/LPGB",
+          "from": "SBR Barrels & Upper Receivers",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "BRO-MUR-2-1",
+          "name": "BLACK RAIN UPPER RECEIVER 223REM BLK",
+          "from": "Uppers/Lowers",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "PB-145-SPR-6MM-7.5-I",
+          "name": "ROSCO PUREBRED BBL 6MM ARC 14.5 STS",
+          "from": "SBR Barrels & Upper Receivers",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "APAR502506M3",
+          "name": "AERO CMPLT UPPER 5.56 10.5\" MOE FDE",
+          "from": "SBR Barrels & Upper Receivers",
+          "reason": "Parts detection (receiver type/platform category)"
+        }
+      ],
+      "fromCategories": {
+        "SBR Barrels & Upper Receivers": 201,
+        "Uppers/Lowers": 15,
+        "Accessories": 12,
+        "Upper Receivers & Conversion Kits - High Capacity": 16,
+        "Long Guns": 1
+      }
+    },
+    "Uppers/Lowers": {
+      "count": 220,
+      "examples": [
+        {
+          "sku": "APAR620002AC",
+          "name": "AERO AR9 LOWER RECEIVER 9/40 FDE",
+          "from": "Long Guns",
+          "reason": "Department 05 + rifle indicators/default"
+        },
+        {
+          "sku": "BT-AR15LVB",
+          "name": "BCT AR15 LOWER VISE BLOCK W/PIVOT LK",
+          "from": "Cleaning Equipment",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "ICMKIIR5B16",
+          "name": "LWRC ICMKII 556NATO 16.1\" 30RD BLK",
+          "from": "Accessories",
+          "reason": "Department 05 + rifle indicators/default"
+        },
+        {
+          "sku": "APAR600032AC",
+          "name": "AERO M4E1 PRO STRIPPED LOWER KOD BRN",
+          "from": "Long Guns",
+          "reason": "Department 05 + rifle indicators/default"
+        },
+        {
+          "sku": "APAR600112",
+          "name": "AERO AR15 M4E1 COMPLETE LOWER BK",
+          "from": "Long Guns",
+          "reason": "Department 05 + rifle indicators/default"
+        },
+        {
+          "sku": "814",
+          "name": "ED BROWN 1911 LOWER REBUILD KIT BL",
+          "from": "Parts",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "12003-ADV",
+          "name": "RISE PREMIUM LOWER PARTS KIT",
+          "from": "Parts",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "APAR308005C",
+          "name": "AERO M5 AR10 STRIPPED LWR FDE",
+          "from": "Long Guns",
+          "reason": "Department 05 + rifle indicators/default"
+        },
+        {
+          "sku": "APAR501101C",
+          "name": "AERO X15 AR15 STRPD LOWER GEN2 BLACK",
+          "from": "Long Guns",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "APAR600196",
+          "name": "AERO M4E1 PRO COMP LOWER CARBINE BRN",
+          "from": "Long Guns",
+          "reason": "Parts detection (receiver type/platform category)"
+        }
+      ],
+      "fromCategories": {
+        "Long Guns": 39,
+        "Cleaning Equipment": 2,
+        "Accessories": 134,
+        "Parts": 26,
+        "Optical Accessories": 2,
+        "Holsters & Pouches": 1,
+        "Knives & Tools": 13,
+        "Grips, Pads, Stocks, Bipods": 3
+      }
+    },
+    "NFA Products": {
+      "count": 221,
+      "examples": [
+        {
+          "sku": "SD-987900-CT-US",
+          "name": "B&T HK MK 23 SUPPRESSOR 45ACP COY TN",
+          "from": "Accessories",
+          "reason": "NFA item type: Suppressor"
+        },
+        {
+          "sku": "MXM-48351",
+          "name": "MAXIM DRF22 DT SUPPRESSOR 22LR BLK",
+          "from": "Accessories",
+          "reason": "NFA item type: Suppressor"
+        },
+        {
+          "sku": "POL30",
+          "name": "OCL POLONIUM 30 SUPPRESSOR 762 BLK",
+          "from": "Accessories",
+          "reason": "NFA item type: Suppressor"
+        },
+        {
+          "sku": "HB-300BLK-7IN-HBSIL",
+          "name": "Q HONEY BADGER SBR 300BLK 7\" SPRSR",
+          "from": "Accessories",
+          "reason": "NFA item type: SBR"
+        },
+        {
+          "sku": "SP-001",
+          "name": "BAD SILENT PRO PDW SBR 7.5\" 300BLK",
+          "from": "Accessories",
+          "reason": "NFA item type: SBR"
+        },
+        {
+          "sku": "2971",
+          "name": "HUX FLOW 6K 6MM SUPPRESSOR FDE",
+          "from": "Accessories",
+          "reason": "NFA item type: Suppressor"
+        },
+        {
+          "sku": "MASK22FDE",
+          "name": "DEAD AIR MASK HD SUPPRESSOR 22LR FDE",
+          "from": "Accessories",
+          "reason": "NFA item type: Suppressor"
+        },
+        {
+          "sku": "11700",
+          "name": "SAV AC22 SUPPRESSOR 22LR BLK",
+          "from": "Accessories",
+          "reason": "NFA item type: Suppressor"
+        },
+        {
+          "sku": "BT-30105-N-SBR-OD-FS",
+          "name": "B&T TP9 SBR 9MM 5.11\" 30RD OD GREEN",
+          "from": "Accessories",
+          "reason": "NFA item type: SBR"
+        },
+        {
+          "sku": "V2-0090101",
+          "name": "PTR VENT TI SUPPRESSOR 9MM BLK",
+          "from": "Accessories",
+          "reason": "NFA item type: Suppressor"
+        }
+      ],
+      "fromCategories": {
+        "Accessories": 221
+      }
+    },
+    "Parts": {
+      "count": 50,
+      "examples": [
+        {
+          "sku": "SCOAC5065",
+          "name": "SCO SCO15 UPPER RECEIVER BLK",
+          "from": "NFA Products",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "SCOSU4766",
+          "name": "SCO SCO15 BILLET LOWER RECEIVER BLK",
+          "from": "NFA Products",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "BRO-MUR-2",
+          "name": "BLACK RAIN UPPER RECEIVER 223REM BLK",
+          "from": "Upper Receivers & Conversion Kits",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "LUTHFTT-EA",
+          "name": "LUTH AR A3 UPPER RECEIVER",
+          "from": "Upper Receivers & Conversion Kits",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "LAN01-RV-SET-N15-RAVEN",
+          "name": "LANTAC RAVEN BILLET RECEIVER SET BLK",
+          "from": "Long Guns",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "GGPSLIGHTRCVR",
+          "name": "GGP AR-15 RECEIVER SET",
+          "from": "Accessories",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "GGPSHEAVYRCVR",
+          "name": "GGP AR-10 RECEIVER SET",
+          "from": "Accessories",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "NSTARVTARUVB",
+          "name": "NCSTAR AR-15 UPPER RECEIVER BLOCK",
+          "from": "Knives & Tools",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "NSTARVTHAR10UVB",
+          "name": "NCSTAR AR10 UPPER RECEIVER BLOCK",
+          "from": "Knives & Tools",
+          "reason": "Parts detection (receiver type/platform category)"
+        },
+        {
+          "sku": "LAN01RVUPUSRSF15",
+          "name": "LANTAC USR FORGED UPPER RECEIVER BLK",
+          "from": "Upper Receivers & Conversion Kits",
+          "reason": "Parts detection (receiver type/platform category)"
+        }
+      ],
+      "fromCategories": {
+        "NFA Products": 2,
+        "Upper Receivers & Conversion Kits": 12,
+        "Long Guns": 5,
+        "Accessories": 22,
+        "Knives & Tools": 6,
+        "Magazines": 1,
+        "Lights, Lasers & Batteries": 2
+      }
+    }
+  },
+  "currentCategoryCounts": {
+    "Accessories": 16188,
+    "Grips, Pads, Stocks, Bipods": 4682,
+    "Ammunition": 4589,
+    "Parts": 4277,
+    "Holsters & Pouches": 3664,
+    "Long Guns": 2503,
+    "Barrels, Choke Tubes & Muzzle Devices": 2491,
+    "High Capacity Magazines": 1979,
+    "Handguns": 1816,
+    "Knives & Tools": 1811,
+    "Magazines": 1765,
+    "Cleaning Equipment": 1700,
+    "Lights, Lasers & Batteries": 1368,
+    "Soft Gun Cases, Packs, Bags": 1329,
+    "NFA Products": 1274,
+    "Sights": 1218,
+    "Safety & Protection": 856,
+    "Slings & Swivels": 811,
+    "Optics": 802,
+    "Optical Accessories": 780,
+    "Targets": 751,
+    "Reloading Equipment": 572,
+    "Clothing": 393,
+    "SBR Barrels & Upper Receivers": 363,
+    "Misc. Accessories": 342,
+    "Upper Receivers & Conversion Kits": 336,
+    "Non-Lethal Defense": 326,
+    "Airguns": 272,
+    "Hard Gun Cases": 267,
+    "Safes & Security": 225,
+    "Used Handguns": 171,
+    "Survival & Camping Supplies": 123,
+    "Rifles": 79,
+    "Handgun Ammunition": 49,
+    "Electronics": 48,
+    "Rifle Ammunition": 33,
+    "Upper Receivers & Conversion Kits - High Capacity": 28,
+    "Uppers/Lowers": 22,
+    "Shotguns": 8,
+    "Shotgun Ammunition": 6,
+    "Tasers": 5,
+    "Books, Software & DVDs": 2,
+    "Rimfire Ammunition": 1
+  },
+  "projectedCategoryCounts": {
+    "Accessories": 9367,
+    "Grips, Pads, Stocks, Bipods": 4533,
+    "Ammunition": 4323,
+    "Parts": 4138,
+    "Holsters & Pouches": 3630,
+    "Long Guns": 1505,
+    "Barrels, Choke Tubes & Muzzle Devices": 2431,
+    "High Capacity Magazines": 1979,
+    "Handguns": 6606,
+    "Knives & Tools": 1765,
+    "Magazines": 1760,
+    "Cleaning Equipment": 1600,
+    "Lights, Lasers & Batteries": 1361,
+    "Soft Gun Cases, Packs, Bags": 1184,
+    "NFA Products": 510,
+    "Sights": 1217,
+    "Safety & Protection": 849,
+    "Slings & Swivels": 801,
+    "Optics": 793,
+    "Optical Accessories": 776,
+    "Targets": 746,
+    "Reloading Equipment": 570,
+    "Clothing": 387,
+    "Misc. Accessories": 326,
+    "Upper Receivers & Conversion Kits": 436,
+    "Non-Lethal Defense": 325,
+    "Airguns": 268,
+    "Hard Gun Cases": 250,
+    "Safes & Security": 216,
+    "Used Handguns": 159,
+    "Survival & Camping Supplies": 123,
+    "Rifles": 4166,
+    "Handgun Ammunition": 49,
+    "Electronics": 48,
+    "Rifle Ammunition": 33,
+    "Uppers/Lowers": 225,
+    "Shotguns": 856,
+    "Shotgun Ammunition": 6,
+    "Tasers": 5,
+    "Books, Software & DVDs": 2,
+    "Rimfire Ammunition": 1
+  },
+  "allChanges": 10529
+}
