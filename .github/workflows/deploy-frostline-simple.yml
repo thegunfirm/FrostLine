@@ -21,14 +21,16 @@ jobs:
       - name: Validate required secrets
         run: |
           set -euo pipefail
-          test -n "${{ secrets.SSH_KEY }}"          || { echo "::error::SSH_KEY is empty"; exit 1; }
-          test -n "${SSH_HOST}"                     || { echo "::error::SSH_HOST is empty"; exit 1; }
-          test -n "${SSH_USER}"                     || { echo "::error::SSH_USER is empty"; exit 1; }
-          test -n "${SSH_PORT}"                     || { echo "::error::SSH_PORT is empty"; exit 1; }
-          test -n "${{ secrets.DATABASE_URL }}"     || { echo "::error::DATABASE_URL is empty"; exit 1; }
-          test -n "${{ secrets.RSR_USERNAME }}"     || { echo "::error::RSR_USERNAME is empty"; exit 1; }
-          test -n "${{ secrets.RSR_PASSWORD }}"     || { echo "::error::RSR_PASSWORD is empty"; exit 1; }
-          test -n "${{ secrets.INVENTORY_ORIGIN }}" || { echo "::error::INVENTORY_ORIGIN is empty"; exit 1; }
+          test -n "${{ secrets.SSH_KEY }}"      || { echo "::error::SSH_KEY is empty"; exit 1; }
+          test -n "${SSH_HOST}"                 || { echo "::error::SSH_HOST is empty"; exit 1; }
+          test -n "${SSH_USER}"                 || { echo "::error::SSH_USER is empty"; exit 1; }
+          test -n "${SSH_PORT}"                 || { echo "::error::SSH_PORT is empty"; exit 1; }
+          test -n "${{ secrets.DATABASE_URL }}" || { echo "::error::DATABASE_URL is empty"; exit 1; }
+          test -n "${{ secrets.RSR_USERNAME }}" || { echo "::error::RSR_USERNAME is empty"; exit 1; }
+          test -n "${{ secrets.RSR_PASSWORD }}" || { echo "::error::RSR_PASSWORD is empty"; exit 1; }
+          if [ -z "${{ secrets.INVENTORY_ORIGIN }}" ] && [ -z "${{ secrets.INVENTORY_DEV_PUBLIC_URL }}" ]; then
+            echo "::error::INVENTORY_ORIGIN or INVENTORY_DEV_PUBLIC_URL must be set"; exit 1;
+          fi
 
       - name: Start ssh-agent
         uses: webfactory/ssh-agent@v0.9.0
@@ -48,20 +50,24 @@ jobs:
 
       - name: Push env + restart script and run
         env:
-          DATABASE_URL:      ${{ secrets.DATABASE_URL }}
-          RSR_USERNAME:      ${{ secrets.RSR_USERNAME }}
-          RSR_PASSWORD:      ${{ secrets.RSR_PASSWORD }}
-          RSR_FTP_HOST:      ${{ secrets.RSR_FTP_HOST }}
-          RSR_FTP_PORT:      ${{ secrets.RSR_FTP_PORT }}
-          RSR_FTPS:          ${{ secrets.RSR_FTPS }}
+          DATABASE_URL:  ${{ secrets.DATABASE_URL }}
+          RSR_USERNAME:  ${{ secrets.RSR_USERNAME }}
+          RSR_PASSWORD:  ${{ secrets.RSR_PASSWORD }}
+          RSR_FTP_HOST:  ${{ secrets.RSR_FTP_HOST }}
+          RSR_FTP_PORT:  ${{ secrets.RSR_FTP_PORT }}
+          RSR_FTPS:      ${{ secrets.RSR_FTPS }}
+
           RSR_STANDARD_USERNAME: ${{ secrets.RSR_STANDARD_USERNAME }}
           RSR_STANDARD_PASSWORD: ${{ secrets.RSR_STANDARD_PASSWORD }}
+
           AUTHORIZE_NET_API_LOGIN_ID:    ${{ secrets.AUTHORIZE_NET_API_LOGIN_ID }}
           AUTHORIZE_NET_TRANSACTION_KEY: ${{ secrets.AUTHORIZE_NET_TRANSACTION_KEY }}
           SENDGRID_API_KEY:              ${{ secrets.SENDGRID_API_KEY }}
           ALGOLIA_APP_ID:                ${{ secrets.ALGOLIA_APP_ID }}
           ALGOLIA_ADMIN_API_KEY:         ${{ secrets.ALGOLIA_ADMIN_API_KEY }}
+
           INVENTORY_ORIGIN:              ${{ secrets.INVENTORY_ORIGIN }}
+          INVENTORY_DEV_PUBLIC_URL:      ${{ secrets.INVENTORY_DEV_PUBLIC_URL }}
           SERVICE_KEY:                   ${{ secrets.SERVICE_KEY }}
           SERVICE_KEY_HEADER:            ${{ secrets.SERVICE_KEY_HEADER }}
         run: |
@@ -91,8 +97,9 @@ jobs:
             if [ -n "${ALGOLIA_APP_ID:-}" ]; then echo "ALGOLIA_APP_ID=${ALGOLIA_APP_ID}"; fi
             if [ -n "${ALGOLIA_ADMIN_API_KEY:-}" ]; then echo "ALGOLIA_ADMIN_API_KEY=${ALGOLIA_ADMIN_API_KEY}"; fi
 
-            # Frostline Inventory connection
-            echo "INVENTORY_ORIGIN=${INVENTORY_ORIGIN}"
+            INV="${INVENTORY_ORIGIN:-${INVENTORY_DEV_PUBLIC_URL:-}}"
+            echo "INVENTORY_ORIGIN=${INV}"
+
             if [ -n "${SERVICE_KEY_HEADER:-}" ]; then echo "SERVICE_KEY_HEADER=${SERVICE_KEY_HEADER}"; fi
             if [ -n "${SERVICE_KEY:-}" ]; then echo "SERVICE_KEY=${SERVICE_KEY}"; fi
 
@@ -105,4 +112,22 @@ jobs:
           scp -P "$SSH_PORT" "scripts/restart.sh" "$SSH_USER@$SSH_HOST:/root/pm2/restart.sh"
           rm -f "$envfile"
 
-          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "chmod 700 /root/pm2/restart.sh && /root/pm2/restart.sh"
+          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" bash -se << 'EOF'
+          set -euo pipefail
+          chmod 700 /root/pm2/restart.sh
+          /root/pm2/restart.sh
+
+          # Sanity probe (does not fail deploy)
+          set +e
+          . /root/pm2/frostline.env 2>/dev/null
+          HDR_FLAG=""
+          if [ -n "${SERVICE_KEY_HEADER:-}" ] && [ -n "${SERVICE_KEY:-}" ]; then
+            HDR_FLAG="-H ${SERVICE_KEY_HEADER}: ${SERVICE_KEY}"
+          fi
+          echo "Probing ${INVENTORY_ORIGIN}/api/config ..."
+          curl -ksS -o /root/pm2/probe.json -w "\nHTTP:%{http_code} CT:%{content_type}\n" \
+            -H "Accept: application/json" ${HDR_FLAG} \
+            "${INVENTORY_ORIGIN}/api/config"
+          head -c 200 /root/pm2/probe.json; echo
+          set -e
+          EOF
