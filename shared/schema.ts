@@ -821,3 +821,85 @@ export const insertDedupLogSchema = createInsertSchema(dedupLog).omit({
 });
 export type DedupLog = typeof dedupLog.$inferSelect;
 export type InsertDedupLog = z.infer<typeof insertDedupLogSchema>;
+
+// Category Settings - For category-specific configuration
+export const categorySettings = pgTable("category_settings", {
+  id: serial("id").primaryKey(),
+  category: text("category").notNull().unique(),
+  value: text("value").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  isEditable: boolean("is_editable").default(true),
+});
+
+// Filter Configurations - For search and filter configurations
+export const filterConfigurations = pgTable("filter_configurations", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  category: text("category").notNull(),
+  value: text("value").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  isEditable: boolean("is_editable").default(true),
+});
+
+// Webhook Logs - For tracking webhook activity
+export const webhookLogs = pgTable("webhook_logs", {
+  id: serial("id").primaryKey(),
+  webhookType: text("webhook_type").notNull(),
+  source: text("source").notNull(), // 'authorize_net', 'zoho', 'rsr'
+  requestId: text("request_id"),
+  headers: json("headers"),
+  payload: json("payload"),
+  response: json("response"),
+  status: text("status").notNull(), // 'success', 'failed', 'processed'
+  processingTimeMs: integer("processing_time_ms"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+  processedAt: timestamp("processed_at"),
+});
+
+// Additional insert schemas that were missing
+export const insertHeroCarouselSlideSchema = createInsertSchema(heroCarouselSlides).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPricingRuleSchema = createInsertSchema(tierPricingRules).omit({
+  id: true,
+});
+
+export const insertCategorySettingSchema = createInsertSchema(categorySettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertFilterConfigurationSchema = createInsertSchema(filterConfigurations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWebhookLogSchema = createInsertSchema(webhookLogs).omit({
+  id: true,
+  createdAt: true,
+  processedAt: true,
+});
+
+// Additional type exports
+export type CategorySetting = typeof categorySettings.$inferSelect;
+export type InsertCategorySetting = z.infer<typeof insertCategorySettingSchema>;
+export type FilterConfiguration = typeof filterConfigurations.$inferSelect;
+export type InsertFilterConfiguration = z.infer<typeof insertFilterConfigurationSchema>;
+export type WebhookLog = typeof webhookLogs.$inferSelect;
+export type InsertWebhookLog = z.infer<typeof insertWebhookLogSchema>;
+
+// Add aliases for compatibility with existing route files
+export const orderItems = orderLines; // Alias for backward compatibility  
+export const activityLogs = userActivityLogs; // Alias for backward compatibility
+export const pricingRules = tierPricingRules; // Alias for backward compatibility

@@ -2008,7 +2008,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/orders/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const order = await storage.getOrder(parseInt(id));
+      const parsedId = parseInt(id);
+      
+      // Validate that the ID is a valid number
+      if (isNaN(parsedId) || parsedId <= 0) {
+        return res.status(400).json({ message: "Invalid order ID" });
+      }
+      
+      const order = await storage.getOrder(parsedId);
       
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
