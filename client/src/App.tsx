@@ -54,7 +54,7 @@ import TierPricing from "@/pages/cms/tier-pricing";
 import DeliverySettings from "@/pages/cms/delivery-settings";
 import AtfDirectoryManagement from "@/pages/management/atf-directory";
 import Account from "@/pages/account";
-import AccountOrders from "@/pages/account-orders";
+import AccountOrders from "@/pages/account/orders";
 import OrderDetail from "@/pages/order-detail";
 import ZohoSetup from "@/pages/ZohoSetup";
 import EmailVerificationSimulator from "@/pages/EmailVerificationSimulator";
