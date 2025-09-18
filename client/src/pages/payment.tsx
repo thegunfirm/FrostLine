@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, CreditCard, Shield, CheckCircle, Star, AlertTriangle } from "lucide-react";
-import { useCart } from "@/hooks/use-cart";
+import { useCart, type CartItem } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { SubscriptionEnforcement } from "@/components/auth/subscription-enforcement";
 import { apiRequest } from "@/lib/queryClient";
@@ -115,6 +115,16 @@ function PaymentPageContent() {
   const [, setLocation] = useLocation();
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
+  // Extend CartItem type for checkout processing
+  type CheckoutItem = CartItem & { 
+    rsrStock?: string; 
+    description?: string; 
+    price: number | string;
+    sku?: string;
+    name?: string;
+  };
+  const checkoutItems = items as CheckoutItem[];
+
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
@@ -143,11 +153,11 @@ function PaymentPageContent() {
           state: 'AZ',
           zip: '12345'
         },
-        orderItems: items.map(item => ({
-          rsrStock: item.rsrStock,
-          description: item.description,
+        orderItems: checkoutItems.map(item => ({
+          rsrStock: item.rsrStock ?? item.sku ?? item.name ?? String(item.id),
+          description: item.description ?? item.name ?? 'Item',
           quantity: item.quantity,
-          price: parseFloat(item.price)
+          price: Number(item.price)
         }))
       });
       
@@ -156,25 +166,30 @@ function PaymentPageContent() {
     onSuccess: (response) => {
       console.log('Payment response:', response);
       if (response?.success) {
-        // Store order data for confirmation page
-        const orderData = {
-          transactionId: response.transactionId,
-          amount: getTotalPrice() * 100, // Convert to cents for display
-          items: items.map(item => ({
-            description: item.description,
-            quantity: item.quantity,
-            price: parseFloat(item.price)
-          }))
-        };
-        sessionStorage.setItem('lastOrderData', JSON.stringify(orderData));
-        
         setPaymentSuccess(true);
-        clearCart();
         
-        // Redirect to confirmation page immediately
-        setTimeout(() => {
-          setLocation('/order-confirmation');
-        }, 2000);
+        // Navigate immediately using window.location to avoid any React router issues
+        if (response.orderId) {
+          // Use new order numbering system with direct navigation
+          window.location.href = `/order-confirmation?orderId=${response.orderId}`;
+        } else {
+          // Fallback to legacy system
+          const orderData = {
+            transactionId: response.transactionId,
+            tgfOrderNumber: response.tgfOrderNumber,
+            amount: getTotalPrice() * 100,
+            items: checkoutItems.map(item => ({
+              description: item.description ?? item.name ?? item.sku ?? 'Item',
+              quantity: item.quantity,
+              price: Number(item.price)
+            }))
+          };
+          sessionStorage.setItem('lastOrderData', JSON.stringify(orderData));
+          window.location.href = '/order-confirmation';
+        }
+        
+        // Clear cart after navigation to avoid side effects canceling navigation
+        setTimeout(() => clearCart(), 100);
       }
     },
     onError: (error) => {
@@ -374,18 +389,18 @@ function PaymentPageContent() {
                 <CardTitle className="text-lg">Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {items.map((item) => (
+                {checkoutItems.map((item) => (
                   <div key={item.id} className="flex justify-between items-start space-x-3 pb-3 border-b border-gray-200 last:border-b-0">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
-                        {item.description}
+                        {item.description ?? item.name ?? item.sku ?? 'Item'}
                       </p>
                       <p className="text-sm text-gray-600">
                         Qty: {item.quantity}
                       </p>
                     </div>
                     <p className="text-sm font-medium text-gray-900 flex-shrink-0">
-                      {formatPrice(parseFloat(item.price) * item.quantity)}
+                      {formatPrice(Number(item.price) * item.quantity)}
                     </p>
                   </div>
                 ))}

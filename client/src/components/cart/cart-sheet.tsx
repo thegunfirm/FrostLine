@@ -102,7 +102,7 @@ export function CartSheet() {
           ) : (
             <div className="py-2">
               {items.map((item, index) => (
-                <div key={`${item.productSku}-${item.productId}`} className="flex gap-2 py-2 border-b border-gray-100 last:border-b-0">
+                <div key={`${item.productMPN}-${item.productId}`} className="flex gap-2 py-2 border-b border-gray-100 last:border-b-0">
                   <div className="flex-shrink-0">
                     <img
                       src={item.productImage}

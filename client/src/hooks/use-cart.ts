@@ -6,7 +6,7 @@ import { apiRequest } from '@/lib/queryClient';
 export interface CartItem {
   id: string;
   productId: number;
-  productSku: string;
+  productMPN: string;
   productName: string;
   productImage: string;
   quantity: number;
@@ -24,7 +24,7 @@ export interface CartItem {
 
 interface AddToCartParams {
   productId: number;
-  productSku: string;
+  productMPN: string;
   productName: string;
   productImage: string;
   quantity: number;
@@ -76,7 +76,7 @@ export const useCart = create<CartState>()(
         const currentItems = get().items;
         const existingItem = currentItems.find(item => 
           item.productId === params.productId && 
-          item.productSku === params.productSku &&
+          item.productMPN === params.productMPN &&
           Math.abs(item.price - params.price) < 0.01 // Same price tier
         );
 
@@ -92,9 +92,9 @@ export const useCart = create<CartState>()(
 
           // Add new item
           const newItem: CartItem = {
-            id: `${params.productId}_${params.productSku}_${Date.now()}`,
+            id: `${params.productId}_${params.productMPN}_${Date.now()}`,
             productId: params.productId,
-            productSku: params.productSku,
+            productMPN: params.productMPN,
             productName: params.productName,
             productImage: params.productImage,
             quantity: params.quantity,
@@ -174,7 +174,7 @@ export const useCart = create<CartState>()(
           guestItems.forEach(guestItem => {
             const existingIndex = mergedItems.findIndex(item => 
               item.productId === guestItem.productId && 
-              item.productSku === guestItem.productSku &&
+              item.productMPN === guestItem.productMPN &&
               Math.abs(item.price - guestItem.price) < 0.01
             );
             
@@ -215,7 +215,7 @@ export const useCart = create<CartState>()(
             item.quantity > 0 && 
             item.quantity <= 10 &&
             item.productId &&
-            item.productSku
+            item.productMPN
           );
           
           // If server had corrupted data, sync the cleaned version back
@@ -273,7 +273,7 @@ export const useCart = create<CartState>()(
             item.quantity > 0 && 
             item.quantity <= 10 &&
             item.productId &&
-            item.productSku
+            item.productMPN
           );
           
           // If items were filtered out due to corruption, update local state

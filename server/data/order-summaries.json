@@ -1,0 +1,337 @@
+{
+  "ord_1757792125747_qbcg2beea": {
+    "orderId": "ord_1757792125747_qbcg2beea",
+    "baseNumber": "1757792125",
+    "paymentId": "pay-456",
+    "idempotencyKey": "test-key-3",
+    "totals": {
+      "items": 0,
+      "shipping": 0,
+      "tax": 0,
+      "grand": 0
+    },
+    "shipments": [
+      {
+        "outcome": "DS>Customer",
+        "lines": [
+          {
+            "sku": "TEST-SKU-1",
+            "qty": 2
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-09-13T19:35:25.747Z",
+    "customer": {
+      "email": null,
+      "customerId": null
+    }
+  },
+  "ord_1757792144381_50mv18pbv": {
+    "orderId": "ord_1757792144381_50mv18pbv",
+    "baseNumber": "1757792144",
+    "paymentId": "pay-multi",
+    "idempotencyKey": "test-key-multi",
+    "totals": {
+      "items": 0,
+      "shipping": 0,
+      "tax": 0,
+      "grand": 0
+    },
+    "shipments": [
+      {
+        "outcome": "DS>Customer",
+        "lines": [
+          {
+            "sku": "TEST-NON-REGULATED",
+            "qty": 1
+          }
+        ]
+      },
+      {
+        "outcome": "DS>FFL",
+        "lines": [
+          {
+            "sku": "TEST-REGULATED",
+            "qty": 1
+          }
+        ],
+        "ffl": {
+          "id": "ffl-test-123"
+        }
+      }
+    ],
+    "createdAt": "2025-09-13T19:35:44.381Z",
+    "customer": {
+      "email": null,
+      "customerId": null
+    }
+  },
+  "ord_1757793783798_7otrn37uu": {
+    "orderId": "ord_1757793783798_7otrn37uu",
+    "baseNumber": "1757793783",
+    "paymentId": "120070994163",
+    "idempotencyKey": "test-working",
+    "totals": {
+      "items": 0,
+      "shipping": 0,
+      "tax": 0,
+      "grand": 0
+    },
+    "shipments": [
+      {
+        "outcome": "DS>Customer",
+        "lines": [
+          {
+            "sku": "TEST-PRODUCT",
+            "qty": 1
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-09-13T20:03:03.798Z",
+    "customer": {
+      "email": null,
+      "customerId": null
+    }
+  },
+  "ord_1757863190379_zsz02fy4j": {
+    "orderId": "ord_1757863190379_zsz02fy4j",
+    "baseNumber": "1757863190",
+    "paymentId": "test_payment_123",
+    "idempotencyKey": "test_key_123",
+    "transactionId": "120071034100",
+    "totals": {
+      "items": 0,
+      "shipping": 0,
+      "tax": 0,
+      "grand": 0
+    },
+    "shipments": [
+      {
+        "outcome": "DS>Customer",
+        "lines": [
+          {
+            "sku": "TEST123",
+            "qty": 1
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-09-14T15:19:50.379Z",
+    "customer": {
+      "email": null,
+      "customerId": null
+    }
+  },
+  "ord_1757880984105_3r184ybh9": {
+    "orderId": "ord_1757880984105_3r184ybh9",
+    "baseNumber": "1757880984",
+    "displayNumber": "1757880984-0",
+    "totals": {
+      "items": 152.99,
+      "shipping": 0,
+      "tax": 0,
+      "grand": 152.99
+    },
+    "shipments": [
+      {
+        "outcome": "DS>Customer",
+        "lines": [
+          {
+            "sku": "ZAFZP19BG",
+            "qty": 1,
+            "regulated": false,
+            "fulfillment": "DS",
+            "price": 152.99,
+            "name": "ZAF BARREL FOR GLOCK 19 GEN 1-4 TIN"
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-09-14T20:16:24.113Z",
+    "customer": {
+      "email": null,
+      "customerId": 10
+    },
+    "authorizeNetTransactionId": "120071042697",
+    "paymentId": "120071042697",
+    "idempotencyKey": "payment-120071042697",
+    "transactionId": "120071042697"
+  },
+  "ord_1757884268645_7o467d8j5": {
+    "orderId": "ord_1757884268645_7o467d8j5",
+    "baseNumber": "1757884268",
+    "displayNumber": "1757884268-0",
+    "totals": {
+      "items": 750,
+      "shipping": 0,
+      "tax": 0,
+      "grand": 750
+    },
+    "shipments": [
+      {
+        "outcome": "DS>Customer",
+        "lines": [
+          {
+            "sku": "Item",
+            "qty": 1,
+            "regulated": false,
+            "fulfillment": "DS",
+            "price": 750,
+            "name": "Item"
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-09-14T21:11:08.653Z",
+    "customer": {
+      "email": "ripmagicalbeast@gmail.com",
+      "customerId": 19
+    },
+    "authorizeNetTransactionId": "120071043941",
+    "paymentId": "120071043941",
+    "idempotencyKey": "payment-120071043941",
+    "transactionId": "120071043941"
+  },
+  "ord_1757884436307_waa8kkrt1": {
+    "orderId": "ord_1757884436307_waa8kkrt1",
+    "baseNumber": "1757884436",
+    "displayNumber": "1757884436-0",
+    "totals": {
+      "items": 600,
+      "shipping": 0,
+      "tax": 0,
+      "grand": 600
+    },
+    "shipments": [
+      {
+        "outcome": "DS>Customer",
+        "lines": [
+          {
+            "sku": "Item",
+            "qty": 1,
+            "regulated": false,
+            "fulfillment": "DS",
+            "price": 600,
+            "name": "Item"
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-09-14T21:13:56.311Z",
+    "customer": {
+      "email": "ripmagicalbeast@gmail.com",
+      "customerId": 19
+    },
+    "authorizeNetTransactionId": "120071044003",
+    "paymentId": "120071044003",
+    "idempotencyKey": "payment-120071044003",
+    "transactionId": "120071044003"
+  },
+  "ord_1757884564818_0tdp0ap2n": {
+    "orderId": "ord_1757884564818_0tdp0ap2n",
+    "baseNumber": "1757884564",
+    "displayNumber": "1757884564-0",
+    "totals": {
+      "items": 152.99,
+      "shipping": 0,
+      "tax": 0,
+      "grand": 152.99
+    },
+    "shipments": [
+      {
+        "outcome": "DS>Customer",
+        "lines": [
+          {
+            "sku": "ZAFZP19BG",
+            "qty": 1,
+            "regulated": false,
+            "fulfillment": "DS",
+            "price": 152.99,
+            "name": "ZAF BARREL FOR GLOCK 19 GEN 1-4 TIN"
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-09-14T21:16:04.822Z",
+    "customer": {
+      "email": null,
+      "customerId": 10
+    },
+    "authorizeNetTransactionId": "120071044041",
+    "paymentId": "120071044041",
+    "idempotencyKey": "payment-120071044041",
+    "transactionId": "120071044041"
+  },
+  "ord_1757884910809_9gr9mrwr5": {
+    "orderId": "ord_1757884910809_9gr9mrwr5",
+    "baseNumber": "1757884910",
+    "displayNumber": "1757884910-0",
+    "totals": {
+      "items": 585,
+      "shipping": 0,
+      "tax": 0,
+      "grand": 585
+    },
+    "shipments": [
+      {
+        "outcome": "DS>Customer",
+        "lines": [
+          {
+            "sku": "Item",
+            "qty": 1,
+            "regulated": false,
+            "fulfillment": "DS",
+            "price": 585,
+            "name": "Item"
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-09-14T21:21:50.813Z",
+    "customer": {
+      "email": "ripmagicalbeast@gmail.com",
+      "customerId": 19
+    },
+    "authorizeNetTransactionId": "120071044181",
+    "paymentId": "120071044181",
+    "idempotencyKey": "payment-120071044181",
+    "transactionId": "120071044181"
+  },
+  "ord_1757889399331_l9nnqdgp8": {
+    "orderId": "ord_1757889399331_l9nnqdgp8",
+    "baseNumber": "1757889399",
+    "displayNumber": "1757889399-0",
+    "totals": {
+      "items": 600,
+      "shipping": 0,
+      "tax": 0,
+      "grand": 600
+    },
+    "shipments": [
+      {
+        "outcome": "DS>Customer",
+        "lines": [
+          {
+            "sku": "Item",
+            "qty": 1,
+            "regulated": false,
+            "fulfillment": "DS",
+            "price": 600,
+            "name": "Item"
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-09-14T22:36:39.335Z",
+    "customer": {
+      "email": "ripmagicalbeast@gmail.com",
+      "customerId": 19
+    },
+    "authorizeNetTransactionId": "120071045943",
+    "paymentId": "120071045943",
+    "idempotencyKey": "payment-120071045943",
+    "transactionId": "120071045943"
+  }
+}

@@ -38,6 +38,7 @@ import { ZohoService } from "./zoho-service";
 import { OrderZohoIntegration } from "./order-zoho-integration";
 import zohoAuthRoutes from "./zoho-auth-routes";
 import { importErrorRoutes } from "./routes/import-errors";
+import ordersRouter from './routes/orders';
 
 // Zoho authentication removed - starting fresh
 
@@ -940,6 +941,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // if (!req.session?.user) {
     //   return res.status(401).json({ success: false, error: 'Authentication required' });
     // }
+    
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     try {
       const { 
         cardNumber, 
@@ -962,9 +966,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use direct HTTP request instead of SDK to avoid hanging issues
       console.log('🌐 Using direct HTTP request to Authorize.Net API...');
 
-      // Validate environment variables
-      const apiLoginId = process.env.AUTHORIZE_NET_API_LOGIN_ID;
-      let transactionKey = process.env.AUTHORIZE_NET_TRANSACTION_KEY;
+      // Validate environment variables - use sandbox credentials
+      const apiLoginId = process.env.ANET_API_LOGIN_ID_SANDBOX || process.env.AUTHORIZE_NET_API_LOGIN_ID;
+      let transactionKey = process.env.ANET_TRANSACTION_KEY_SANDBOX || process.env.AUTHORIZE_NET_TRANSACTION_KEY;
       
       // Temporary fix: Use working credentials until environment updates
       if (transactionKey === '4kJd237rZu59qAZd') {
@@ -1065,7 +1069,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Use fetch with timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         controller.abort();
       }, 15000); // 15 second timeout
 
@@ -1121,6 +1125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log('✅ Payment successful');
             
             // Create order record in database
+            let orderDocument = null;
             try {
               // TODO: Get actual user ID from session when authentication is re-enabled
               const userId = req.session?.user?.id || 10; // Fallback for testing
@@ -1139,7 +1144,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }))
               };
               
-              const savedOrder = await storage.createOrder(orderData);
+              // Generate TGF order number using the order numbering system
+              try {
+                const { calculate: calculateTax } = await import('./lib/taxService');
+                const { deriveOutcomes } = await import('./lib/shippingOutcomes');
+                const { ordersStore } = await import('./lib/ordersStore');
+                
+                console.log('🔢 Starting TGF order number generation...');
+                
+                // Convert payment data to order finalization format
+                const finalizeRequest = {
+                  cartId: `payment-${transactionResponse.transId}`,
+                  paymentId: transactionResponse.transId,
+                  idempotencyKey: `payment-${transactionResponse.transId}`,
+                  shipTo: {
+                    name: `${billingInfo.firstName} ${billingInfo.lastName}`,
+                    address1: billingInfo.address,
+                    city: billingInfo.city,
+                    state: billingInfo.state,
+                    zip: billingInfo.zip
+                  },
+                  lines: orderItems.map(item => ({
+                    sku: item.productMPN || item.manufacturerPartNumber || item.sku || item.stockNumber || item.name || item.description || 'ITEM',
+                    qty: item.quantity || 1,
+                    regulated: item.requiresFFL || false,
+                    fulfillment: 'DS' // Default to drop-ship
+                  })),
+                  fflId: orderItems.find(item => item.selectedFFL)?.selectedFFL || null
+                };
+
+                // Generate TGF order number
+                let taxAmount = 0;
+                let taxBlocked = false;
+                try {
+                  taxAmount = calculateTax({
+                    shipTo: finalizeRequest.shipTo,
+                    lines: finalizeRequest.lines,
+                    items: parseFloat(amount.toString()),
+                    shipping: 0
+                  });
+                } catch (taxError: any) {
+                  if (taxError.code === 'NO_SHIP_CA') {
+                    taxBlocked = true;
+                    console.log('⚠️ Order would be blocked by CA restriction, but payment already processed');
+                  }
+                }
+
+                const outcomes = deriveOutcomes(finalizeRequest.lines);
+                const shipmentsArray = Object.values(outcomes.buckets);
+                const baseNumber = Math.floor(Date.now() / 1000).toString();
+                const orderId = `ord_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                const displayNumber = shipmentsArray.length === 1 ? `${baseNumber}-0` : `${baseNumber}-Z`;
+
+                // Create price and name lookup maps from order items
+                const priceMap = new Map();
+                const nameMap = new Map();
+                console.log('🔍 Creating price and name maps from order items:', orderItems.length, 'items');
+                orderItems.forEach(item => {
+                  const sku = item.productMPN || item.manufacturerPartNumber || item.sku || item.stockNumber || item.name || item.description || 'ITEM';
+                  const name = item.productName || item.name || item.description || 'Unknown Product';
+                  console.log('   Mapping SKU:', sku, '-> Price:', item.price, ', Name:', name);
+                  priceMap.set(sku, item.price || 0);
+                  nameMap.set(sku, name);
+                });
+
+                // Add prices and names to outcomes
+                console.log('🔍 Adding prices and names to outcomes. Shipments before:', shipmentsArray.length);
+                const shipmentsWithPrices = shipmentsArray.map(shipment => {
+                  console.log('   Processing shipment:', shipment.outcome, 'with', shipment.lines?.length, 'lines');
+                  return {
+                    ...shipment,
+                    lines: shipment.lines.map(line => {
+                      const price = priceMap.get(line.sku) || 0;
+                      const name = nameMap.get(line.sku) || 'Unknown Product';
+                      console.log('     Line SKU:', line.sku, '-> Price:', price, ', Name:', name);
+                      return {
+                        ...line,
+                        price: price,
+                        name: name
+                      };
+                    })
+                  };
+                });
+                console.log('🔍 Shipments with prices created:', shipmentsWithPrices.length);
+
+                orderDocument = {
+                  orderId,
+                  baseNumber,
+                  displayNumber,
+                  totals: {
+                    items: parseFloat(amount.toString()),
+                    shipping: 0,
+                    tax: taxAmount,
+                    grand: parseFloat(amount.toString()) + taxAmount
+                  },
+                  shipments: shipmentsWithPrices,
+                  createdAt: new Date().toISOString(),
+                  customer: {
+                    email: req.session?.user?.email || null,
+                    customerId: userId || null
+                  },
+                  authorizeNetTransactionId: transactionResponse.transId
+                };
+
+                // Save TGF order document to ordersStore for API access
+                console.log('🔄 Attempting to save TGF order to ordersStore...');
+                try {
+                  const { readFileSync, writeFileSync, existsSync } = await import('fs');
+                  const { join } = await import('path');
+                  
+                  console.log('📁 Reading existing orders file...');
+                  const ordersFilePath = join(process.cwd(), 'server', 'data', 'order-summaries.json');
+                  let orderData = {};
+                  
+                  if (existsSync(ordersFilePath)) {
+                    const ordersContent = readFileSync(ordersFilePath, 'utf-8');
+                    orderData = JSON.parse(ordersContent);
+                    console.log('📖 Existing orders file loaded, contains', Object.keys(orderData).length, 'orders');
+                  } else {
+                    console.log('📝 Orders file does not exist, creating new one');
+                  }
+                  
+                  const tgfOrderDoc = {
+                    ...orderDocument,
+                    paymentId: transactionResponse.transId,
+                    idempotencyKey: `payment-${transactionResponse.transId}`,
+                    transactionId: transactionResponse.transId,
+                    createdAt: new Date().toISOString()
+                  };
+                  
+                  console.log('💾 Saving order with ID:', orderDocument.orderId);
+                  console.log('📝 Order document preview:', JSON.stringify({
+                    orderId: tgfOrderDoc.orderId,
+                    baseNumber: tgfOrderDoc.baseNumber,
+                    shipmentCount: tgfOrderDoc.shipments?.length,
+                    hasPrice: tgfOrderDoc.shipments?.[0]?.lines?.[0]?.price !== undefined
+                  }));
+                  
+                  orderData[orderDocument.orderId] = tgfOrderDoc;
+                  
+                  writeFileSync(ordersFilePath, JSON.stringify(orderData, null, 2));
+                  console.log('✅ TGF order saved to ordersStore successfully');
+                } catch (ordersStoreError) {
+                  console.error('⚠️ Failed to save TGF order to ordersStore:', ordersStoreError);
+                  console.error('⚠️ Error details:', ordersStoreError.message, ordersStoreError.stack);
+                }
+
+                // TGF order document created successfully
+                console.log('✅ TGF order number generated:', orderDocument.displayNumber);
+              } catch (tgfError) {
+                console.error('⚠️ TGF order numbering failed:', tgfError);
+                // Continue with regular order processing
+              }
+
+              // Also save to the existing database system for compatibility
+              const savedOrder = await storage.createOrder({
+                ...orderData,
+                tgfOrderNumber: orderDocument?.displayNumber || null,
+                orderId: orderDocument?.orderId || null
+              });
               console.log('✅ Order saved to database:', savedOrder.id);
 
               // Create Zoho Deal for the order
@@ -1187,7 +1350,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               transactionId: transactionResponse.transId,
               authCode: transactionResponse.authCode,
               messageCode: transactionResponse.messages[0]?.code,
-              description: transactionResponse.messages[0]?.description || 'Payment processed successfully'
+              description: transactionResponse.messages[0]?.description || 'Payment processed successfully',
+              tgfOrderNumber: orderDocument?.displayNumber || null,
+              orderId: orderDocument?.orderId || null
             });
           } else {
             // Payment declined
@@ -1210,7 +1375,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       } catch (fetchError: any) {
-        clearTimeout(timeoutId);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
         if (fetchError.name === 'AbortError') {
           console.error('❌ Request timeout');
           res.status(408).json({
@@ -1774,6 +1941,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get order error:", error);
       res.status(500).json({ message: "Failed to fetch order" });
+    }
+  });
+
+  // Order Summary for Order Confirmation Page
+  app.get("/api/orders/:orderId/summary", async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      // First, try to find the order in TGF ordersStore (new system with pricing)
+      const { ordersStore } = await import('./lib/ordersStore');
+      const { toSummary } = await import('./lib/formatOrderSummary');
+      
+      const tgfOrder = ordersStore.findById(orderId);
+      if (tgfOrder) {
+        console.log('🔍 Found TGF order in ordersStore:', orderId);
+        const summary = toSummary(tgfOrder);
+        return res.json(summary);
+      }
+      
+      console.log('🔍 TGF order not found, falling back to database lookup for:', orderId);
+      
+      // Use direct SQL query to avoid Drizzle schema issues
+      const query = `
+        SELECT 
+          id, 
+          user_id, 
+          order_date, 
+          total_price, 
+          status, 
+          items, 
+          ffl_recipient_id,
+          shipping_address, 
+          authorize_net_transaction_id,
+          rsr_order_number,
+          notes,
+          created_at
+        FROM orders 
+        ORDER BY order_date DESC
+      `;
+      
+      const result = await db.execute(sql.raw(query));
+      const orders = result.rows as any[];
+      
+      let order = null;
+      let timestamp = null;
+      
+      // If orderId contains timestamp, try to match by time
+      if (orderId.startsWith('ord_')) {
+        timestamp = orderId.split('_')[1];
+        if (timestamp) {
+          const orderDate = new Date(parseInt(timestamp));
+          const timeTolerance = 5 * 60 * 1000; // 5 minutes tolerance
+          order = orders.find(o => {
+            if (!o.order_date && !o.created_at) return false;
+            const orderTime = new Date(o.order_date || o.created_at).getTime();
+            return Math.abs(orderTime - orderDate.getTime()) < timeTolerance;
+          });
+        }
+      }
+      
+      if (!order) {
+        return res.status(404).json({ message: "Order not found", orderId });
+      }
+      
+      // Parse order items
+      const orderItems = typeof order.items === 'string' ? JSON.parse(order.items) : order.items || [];
+      
+      // Calculate totals from order data
+      const totalPrice = parseFloat(order.total_price?.toString() || '0');
+      const itemsTotal = orderItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || totalPrice;
+      const shipping = 0; // Shipping was included in total for this order
+      const tax = 0; // Tax was included in total for this order  
+      const grand = totalPrice;
+      
+      // Generate TGF order number from RSR order number or create from ID
+      const baseNumber = order.rsr_order_number?.split('-')[0] || Math.floor(parseInt(timestamp || Date.now().toString()) / 1000).toString();
+      const displayNumber = order.rsr_order_number || `${baseNumber}-Z`;
+      
+      // Create shipments based on order items
+      const shipments = [{
+        suffix: 'A' as const,
+        outcome: orderItems.some((item: any) => item.requiresFFL) ? 'DS>FFL' : 'DS>Customer',
+        lines: orderItems.map((item: any) => ({
+          sku: item.productMPN || item.manufacturerPartNumber || item.sku || item.stockNumber,
+          qty: item.quantity || 1
+        })),
+        ffl: orderItems.some((item: any) => item.requiresFFL) ? 
+          { id: order.ffl_recipient_id?.toString() || '1062' } : undefined
+      }];
+      
+      const summaryResponse = {
+        orderId: orderId,
+        baseNumber: baseNumber,
+        displayNumber: displayNumber,
+        totals: {
+          items: itemsTotal,
+          shipping: shipping,
+          tax: tax,
+          grand: grand
+        },
+        shipments: shipments,
+        createdAt: order.order_date || order.created_at || new Date().toISOString(),
+        customer: {
+          email: order.customer_email || null,
+          customerId: order.user_id?.toString() || null
+        },
+        transactionId: order.authorize_net_transaction_id || null
+      };
+      
+      res.json(summaryResponse);
+    } catch (error) {
+      console.error("Get order summary error:", error);
+      res.status(500).json({ message: "Failed to fetch order summary" });
     }
   });
 
@@ -7056,6 +7336,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== ALGOLIA UPC/MPN TEST ENDPOINTS =====
+  
+  // Test UPC/MPN search improvements safely with replica index
+  app.post("/api/admin/test-algolia-upc-mpn", async (req, res) => {
+    try {
+      console.log('🧪 Starting Algolia UPC/MPN test suite...');
+      
+      const { algoliaSearchTest } = await import('./services/algolia-search-test');
+      const results = await algoliaSearchTest.runTestSuite();
+      
+      res.json({
+        success: true,
+        message: 'UPC/MPN test suite completed successfully',
+        results
+      });
+    } catch (error) {
+      console.error('❌ Algolia test suite failed:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Clean up test index
+  app.delete("/api/admin/test-algolia-cleanup", async (req, res) => {
+    try {
+      console.log('🗑️ Cleaning up Algolia test index...');
+      
+      const { algoliaSearchTest } = await import('./services/algolia-search-test');
+      await algoliaSearchTest.deleteTestIndex();
+      
+      res.json({
+        success: true,
+        message: 'Test index cleaned up successfully'
+      });
+    } catch (error) {
+      console.error('❌ Failed to cleanup test index:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   // ===== SEARCH ANALYTICS & AI LEARNING ADMIN =====
   
   // Get search analytics
@@ -9553,6 +9878,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register Zoho OAuth routes for tech@thegunfirm.com
   app.use('/api', zohoAuthRoutes);
+  
+  // Register orders endpoints
+  app.use('/api/orders', ordersRouter);
   
   // Register import error reporting routes
   app.use(importErrorRoutes);
