@@ -9,6 +9,7 @@ Code preservation: CRITICAL - Always verify what's actually broken before attemp
 Image policy: NEVER use Unsplash or any placeholder images. Only use authentic distributor images (RSR, etc.) even if they show "Image Coming Soon" placeholders.
 Code preservation: Always maintain working solutions - never overwrite functioning code without explicit user request.
 Email verification: Users must verify their email address before being able to sign in.
+PAYMENT PROCESSING: This platform uses AUTHORIZE.NET for all payment processing. WE DO NOT USE STRIPE. The Stripe integration may be listed but is NOT active. All payment transactions go through Authorize.Net (sandbox and production).
 CRITICAL INVENTORY POLICY: NEVER use fabricated, test, or placeholder product data. ONLY use products that exist in our live RSR feed. When working with inventory, verify products exist in the database first. No exceptions. No fallback data. No test SKUs like GLOCK17GEN5. FFL directory must use only authentic FFL data - no fake dealers should be added to the system.
 MANDATORY DATA VERIFICATION PROTOCOL:
 1. ALWAYS run `node check-product-upc.cjs` or query the products table BEFORE using ANY product data

@@ -3,7 +3,7 @@
 // Reads the saved snapshot, normalizes fields, fills defaults, and returns a stable payload.
 
 const express = require('express');
-const { readSnapshot, writeSnapshot } = require('../lib/storage');
+const { readSnapshot, writeSnapshot } = require('../lib/order-storage');
 const { splitOutcomes } = require('../lib/shippingSplit');
 const { mintOrderNumber } = require('../lib/orderNumbers');
 const { storage } = require('../storage.ts');
