@@ -1,0 +1,53 @@
+// server/fetchers.ts
+// Inventory fetch helpers — Frostline
+// Uses INVENTORY_ORIGIN and (optional) X_SERVICE_KEY from env. No host fallbacks.
+
+const INV_BASE = (() => {
+  const v = process.env.INVENTORY_ORIGIN;
+  if (!v) {
+    // Explicit fail so we never silently fall back to deleted hosts.
+    throw new Error("INVENTORY_ORIGIN is not set. Configure it in Replit/GitHub secrets before deploying.");
+  }
+  return v.replace(/\/+$/, ""); // trim trailing slash
+})();
+
+function baseHeaders() {
+  const h: Record<string, string> = { Accept: "application/json" };
+  const svc = process.env.X_SERVICE_KEY || process.env.X_SERVICEKEY || process.env.SERVICE_KEY;
+  if (svc) h["X-Service-Key"] = svc;
+  return h;
+}
+
+async function doFetch(method: string, path: string, body?: unknown, extraHeaders?: Record<string,string>) {
+  const url = path.startsWith("http") ? path : `${INV_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+  const headers: Record<string, string> = { ...baseHeaders(), ...(extraHeaders || {}) };
+  const opts: any = { method, headers };
+  if (body !== undefined) {
+    headers["Content-Type"] = headers["Content-Type"] || "application/json";
+    opts.body = typeof body === "string" ? body : JSON.stringify(body);
+  }
+  const res = await fetch(url, opts);
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Inventory fetch expected JSON but got "${ct}" (status ${res.status}) from ${url}. Body: ${text.slice(0,200)}`);
+  }
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Inventory fetch failed (${res.status}) ${url} :: ${text.slice(0,200)}`);
+  }
+  return res.json();
+}
+
+// Example exported helpers (adjust to your codebase)
+export async function getInventoryConfig() {
+  return doFetch("GET", "/api/config");
+}
+
+export async function getProductById(id: string) {
+  return doFetch("GET", `/api/products/${encodeURIComponent(id)}`);
+}
+
+export async function searchProducts(q: string) {
+  return doFetch("GET", `/api/products/search?q=${encodeURIComponent(q)}`);
+}
