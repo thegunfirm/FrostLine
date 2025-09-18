@@ -1,39 +1,96 @@
-name: Automerge replit-dev to main
+name: Automerge replit-dev → main
+
 on:
-  push: { branches: [ replit-dev ] }
-permissions: { contents: write, pull-requests: write }
+  push:
+    branches: [ replit-dev ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
 jobs:
   automerge:
     runs-on: ubuntu-latest
     steps:
-      - name: Create or update PR
+      - name: Checkout meta (no repo needed for API)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create or update PR (replit-dev → main)
         uses: actions/github-script@v7
         with:
           script: |
             const { owner, repo } = context.repo;
-            const head = 'replit-dev', base = 'main';
-            const prs = (await github.rest.pulls.list({ owner, repo, state: 'open', head: `${owner}:${head}`, base })).data;
-            if (!prs[0]) {
-              await github.rest.pulls.create({ owner, repo, head, base, title: 'Auto PR: replit-dev → main' });
+            const head = 'replit-dev';
+            const base = 'main';
+
+            // Find open PR from replit-dev to main
+            const list = await github.rest.pulls.list({ owner, repo, state: 'open', head: `${owner}:${head}`, base });
+            let pr = list.data[0];
+
+            // Create if missing
+            if (!pr) {
+              const created = await github.rest.pulls.create({
+                owner, repo, head, base, title: 'Auto PR: replit-dev → main'
+              });
+              pr = created.data;
             }
-      - name: Merge when checks pass
+
+            core.setOutput('pr_number', pr.number);
+
+      - name: Wait for branch checks on latest replit-dev commit
+        id: waitchecks
         uses: actions/github-script@v7
         with:
           script: |
             const { owner, repo } = context.repo;
-            const head = 'replit-dev', base = 'main';
+            const head = 'replit-dev';
             const sleep = ms => new Promise(r => setTimeout(r, ms));
-            let tries = 60;
-            while (tries--) {
-              const branch = (await github.rest.repos.getBranch({ owner, repo, branch: head })).data;
-              const sha = branch.commit.sha;
+
+            // Get latest commit on replit-dev
+            const branch = await github.rest.repos.getBranch({ owner, repo, branch: head });
+            const sha = branch.data.commit.sha;
+
+            // Poll checks until success or failure (10 min)
+            for (let i = 0; i < 60; i++) {
               const checks = await github.rest.checks.listForRef({ owner, repo, ref: sha });
-              const failed = checks.data.check_runs.some(cr => cr.conclusion === 'failure');
-              const allGreen = checks.data.total_count === 0 || checks.data.check_runs.every(cr => cr.conclusion === 'success');
-              if (failed) throw new Error('A required check failed.');
-              if (allGreen) break;
+              const runs = checks.data.check_runs;
+              const anyFail = runs.some(r => r.conclusion === 'failure' || r.conclusion === 'cancelled' || r.conclusion === 'timed_out');
+              if (anyFail) {
+                core.setFailed('A required check failed.');
+                return;
+              }
+              const allDone = runs.length === 0 || runs.every(r => r.status === 'completed' && r.conclusion === 'success');
+              if (allDone) {
+                core.info('All checks passed (or none configured).');
+                return;
+              }
               await sleep(10000);
             }
-            const prs = (await github.rest.pulls.list({ owner, repo, state: 'open', head: `${owner}:${head}`, base })).data;
-            if (!prs[0]) throw new Error('PR not found.');
-            await github.rest.pulls.merge({ owner, repo, pull_number: prs[0].number, merge_method: 'squash' });
+            core.setFailed('Checks did not complete within the time limit.');
+
+      - name: Merge PR (squash)
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const head = 'replit-dev';
+            const base = 'main';
+
+            // Find the PR again (in case number changed)
+            const list = await github.rest.pulls.list({ owner, repo, state: 'open', head: `${owner}:${head}`, base });
+            if (!list.data[0]) {
+              core.setFailed('PR not found.');
+              return;
+            }
+            const pr = list.data[0];
+
+            // Attempt merge (will respect branch protection)
+            await github.rest.pulls.merge({
+              owner, repo, pull_number: pr.number, merge_method: 'squash'
+            });
+            core.info(`Merged PR #${pr.number} replit-dev → main`);
