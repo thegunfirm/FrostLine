@@ -78,17 +78,19 @@ async function fixAlgolia() {
       id: p.id,
       sku: p.sku,
       name: p.name,
-      category: p.category,
-      manufacturer: p.manufacturer,
+      categoryName: p.category,  // Changed from 'category' to 'categoryName'
+      manufacturerName: p.manufacturer,  // Changed to match expected field
       description: p.description,
       price_bronze: p.price_bronze,
       price_gold: p.price_gold,
       price_platinum: p.price_platinum,
-      stock_quantity: p.stock_quantity,
-      requires_ffl: p.requires_ffl,
+      inventoryQuantity: p.stock_quantity,  // Changed to match expected field
+      inStock: p.stock_quantity > 0,  // Added inStock field
+      fflRequired: p.requires_ffl,  // Changed to match expected field  
       must_route_through_gun_firm: p.must_route_through_gun_firm,
       caliber: p.caliber,
-      rsr_stock_number: p.rsr_stock_number,
+      stockNumber: p.rsr_stock_number,  // Changed to match expected field
+      rsrStockNumber: p.rsr_stock_number,  // Keep both for compatibility
       tierPricing: {
         bronze: p.price_bronze,
         gold: p.price_gold,
