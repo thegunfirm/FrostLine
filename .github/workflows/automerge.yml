@@ -37,7 +37,6 @@ jobs:
         id: push_gh_token
         continue-on-error: true
         env:
-          # Use the built-in token instead of secrets.* to avoid policy blocks
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -e
@@ -45,10 +44,14 @@ jobs:
           git push origin main
 
       - name: Push to main (PAT fallback)
-        if: ${{ steps.push_gh_token.outcome == 'failure' && secrets.GH_PAT != '' }}
+        if: ${{ steps.push_gh_token.outcome == 'failure' }}
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           set -e
+          if [ -z "${GH_PAT:-}" ]; then
+            echo "::warning::GH_PAT not set; cannot fallback-push to main."
+            exit 0
+          fi
           git remote set-url origin "https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.git"
           git push origin main
