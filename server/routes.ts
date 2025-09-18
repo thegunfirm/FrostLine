@@ -971,21 +971,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (orderItems && Array.isArray(orderItems)) {
         for (const item of orderItems) {
           try {
-            // Get product from database to get tier prices
-            const product = await storage.getProductBySku(item.productSku);
-            if (product) {
-              let itemPrice = parseFloat(product.priceBronze || "0"); // Default to Bronze
-              
-              if (userTier === 'gold' && product.priceGold) {
-                itemPrice = parseFloat(product.priceGold);
-              } else if (userTier === 'platinum' && product.pricePlatinum) {
-                itemPrice = parseFloat(product.pricePlatinum);
-              }
-              
-              const itemTotal = itemPrice * (item.quantity || 1);
-              serverCalculatedTotal += itemTotal;
-              console.log(`  - ${item.productSku}: $${itemPrice.toFixed(2)} x ${item.quantity} = $${itemTotal.toFixed(2)}`);
+            // Use tier prices directly from cart item (they're already calculated and included)
+            let itemPrice = 0;
+            
+            if (userTier === 'platinum' && item.pricePlatinum) {
+              itemPrice = parseFloat(item.pricePlatinum);
+            } else if (userTier === 'gold' && item.priceGold) {
+              itemPrice = parseFloat(item.priceGold);
+            } else {
+              // Default to Bronze price or fallback to regular price
+              itemPrice = parseFloat(item.priceBronze || item.price || "0");
             }
+            
+            const itemTotal = itemPrice * (item.quantity || 1);
+            serverCalculatedTotal += itemTotal;
+            console.log(`  - ${item.productSku || item.productName}: $${itemPrice.toFixed(2)} x ${item.quantity} = $${itemTotal.toFixed(2)}`);
           } catch (error) {
             console.error(`Failed to calculate price for item ${item.productSku}:`, error);
           }
