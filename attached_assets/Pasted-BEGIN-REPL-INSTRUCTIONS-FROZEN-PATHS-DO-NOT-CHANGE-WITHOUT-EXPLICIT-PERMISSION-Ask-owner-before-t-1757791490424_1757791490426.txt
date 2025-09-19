@@ -1,0 +1,226 @@
+BEGIN REPL INSTRUCTIONS
+FROZEN PATHS — DO NOT CHANGE WITHOUT EXPLICIT PERMISSION
+(Ask owner before touching anything here.)
+
+client/src/pages/products/**
+
+client/src/pages/product/**
+
+client/src/components/products/**
+
+client/src/pages/ffl/**
+
+server/routes/ffl/**
+
+server/lib/ffl/**
+
+server/search/** # any Algolia mapping/indexer code
+
+server/integrations/algolia/** # leave Algolia alone
+
+SCOPE
+Implement customer Order Summary with real order numbers and totals
+by adding two API endpoints and one customer page.
+Checkout flow and FFL logic are considered complete; do not modify.
+CONTRACTS (LOCK THESE)
+1) POST /api/orders/finalize
+Purpose: Atomically finalize an order after successful payment.
+- Enforce No-CA restriction (backend control).
+- Compute tax totals server-side (minimal rules engine).
+- Determine shipping outcomes and assign display number:
+* Single outcome → <BASE>-0
+* Multiple outcomes among { DS>FFL, DS>Customer, IH>FFL, IH>Customer } → <BASE>-Z
+and sub-shipments suffixed A/B/C/D in response object.
+- Idempotent on (paymentId, idempotencyKey) — if re-hit, return existing order.
+Input (JSON):
+{
+"cartId": "string",
+"paymentId": "string", // ANet transaction ref
+"idempotencyKey": "string", // UUID from client
+"shipTo": { "name": "...", "address1": "...", "address2": null, "city": "...", "state": "XX", "zip": "..." },
+"lines": [
+{ "sku": "string", "qty": 1, "regulated": true|false, "fulfillment": "IH"|"DS" }
+],
+"fflId": "string|null" // required for regulated items
+}
+Response (JSON summary shape):
+{
+"orderId": "ord_xxx",
+"baseNumber": "123456",
+"displayNumber": "123456-0" | "123456-Z",
+"totals": { "items": 0, "shipping": 0, "tax": 0, "grand": 0 },
+"shipments": [
+{
+"suffix": "A", // only present when -Z
+"outcome": "DS>FFL|DS>Customer|IH>FFL|IH>Customer",
+"lines": [{ "sku": "", "qty": 1 }],
+"ffl": { "id": "..." } // when >FFL
+}
+],
+"createdAt": "ISO-8601",
+"customer": { "email": null, "customerId": null } // fill when accounts wire in
+}
+2) GET /api/orders/:orderId/summary
+Purpose: Read-only endpoint for the customer Order Summary page.
+Returns the exact JSON shape shown above for rendering.
+IMPLEMENTATION NOTES
+- Order Numbering:
+Use the existing minting you already have. Import and call your internal
+mint function if it exists (e.g., server/lib/orderNumbers.{ts|js} → mintBaseNumber()).
+If your project exposes /api/orders/number, call that internally instead.
+- Taxes:
+Add a minimal taxService on the backend:
+* Hard block: shipTo.state === "CA" → HTTP 422 with code "NO_SHIP_CA".
+* Return tax totals server-side (start with 0.00 or a simple table you already use).
+- Shipping Outcomes:
+Compute an array of outcomes from input lines:
+regulated + DS + FFL → "DS>FFL"
+regulated + IH + FFL → "IH>FFL"
+!regulated + DS → "DS>Customer"
+!regulated + IH → "IH>Customer"
+If unique outcome count === 1 → "-0"
+Else → "-Z" and enumerate sub-shipments A/B/C/D in deterministic order:
+["DS>FFL","DS>Customer","IH>FFL","IH>Customer"] → map to A/B/C/D respectively if present
+- Idempotency:
+Key on (paymentId, idempotencyKey). If found, return existing order summary.
+CHANGES TO MAKE
+(Create these files if missing; otherwise extend. Use .ts or .js to match repo.)
+
+SERVER — ROUTER
+File: server/routes/orders.{ts|js}
+
+Export an Express router that mounts:
+POST /api/orders/finalize
+GET /api/orders/:orderId/summary
+
+In finalize:
+a) Validate payload (cartId, paymentId, idempotencyKey, shipTo.state, lines[]).
+b) Enforce No-CA: if shipTo.state === 'CA' → return 422 JSON: { code: 'NO_SHIP_CA', message: 'We do not ship orders to CA.' }
+c) Compute totals:
+
+items = sum(linePrice * qty) // use your existing pricing lookups; DO NOT accept prices from client.
+
+shipping = 0 for now (placeholder or your current rule).
+
+tax = taxService.calculate({ shipTo, lines, items, shipping })
+
+grand = items + shipping + tax
+d) Determine outcomes and split lines into 1..4 shipment buckets using shippingOutcomes. If 1 bucket → "-0", else "-Z" and label A/B/C/D in the fixed order above.
+e) Get base order number via your existing mint:
+
+Preferred: import { mintBaseNumber } from '../lib/orderNumbers';
+
+Alternative: internal HTTP POST to your local /api/orders/number.
+f) Persist the order (use your existing store or simple JSON store; see #3). Ensure uniqueness on (paymentId, idempotencyKey).
+g) Build and return the summary JSON exactly as in the contract.
+
+In summary:
+Load by orderId from your store and return the same JSON shape. 404 if not found.
+
+SERVER — TAX SERVICE
+File: server/lib/taxService.{ts|js}
+
+Export calculate({ shipTo, lines, items, shipping }) → number
+
+Behavior:
+if (shipTo.state === 'CA') throw { code: 'NO_SHIP_CA' }
+else return 0 // placeholder; keep server-controlled for future provider integration.
+
+SERVER — SHIPPING OUTCOMES
+File: server/lib/shippingOutcomes.{ts|js}
+
+Export deriveOutcomes(lines) → { uniqueOutcomes: string[], buckets: Record<string, { outcome: string, lines: [...] }> }
+
+Map outcomes per the 4-case matrix listed above.
+
+Also export labelSuffix(outcome: string) → 'A'|'B'|'C'|'D' based on fixed order:
+DS>FFL → A, DS>Customer → B, IH>FFL → C, IH>Customer → D.
+
+SERVER — ORDER SUMMARY FORMATTER
+File: server/lib/formatOrderSummary.{ts|js}
+
+Export toSummary(orderDoc) → JSON matching the contract (displayNumber, shipments with suffix, totals, etc.)
+
+SERVER — STORAGE (NON-DESTRUCTIVE)
+
+If you already have an orders persistence layer, USE IT.
+Otherwise, create a simple JSON file store as an interim implementation.
+
+File: server/lib/ordersStore.{ts|js}
+
+Methods:
+findById(orderId)
+findByPaymentOrKey(paymentId, idempotencyKey)
+create(orderDoc) // assign orderId internally
+
+Backing file (if needed): server/data/orders.json (create directory/file if missing).
+
+Do not alter any other storage modules.
+
+SERVER — WIRE ROUTER
+File: server/index.{ts|js} (or wherever Express app is created)
+
+Ensure the new router is mounted once:
+app.use('/api/orders', require('./routes/orders')); // CommonJS
+// or
+import ordersRouter from './routes/orders';
+app.use('/api/orders', ordersRouter); // ESM/TS
+
+Do not reorder or modify any FFL middleware or product/search middlewares.
+
+CLIENT — ORDER SUMMARY PAGE (CUSTOMER UI)
+
+Do not modify any products or FFL pages/components.
+Add a dedicated customer page that consumes GET /api/orders/:id/summary.
+
+A) Route
+
+If using file-based routing:
+Create: client/src/pages/order-confirmation.{tsx|jsx}
+(Alternative if you prefer param path: client/src/pages/orders/[orderId]/summary.{tsx|jsx})
+
+Ensure router adds a public route:
+Path: /order-confirmation?orderId=... (or /orders/:orderId/summary)
+
+B) Page behavior
+
+On mount, fetch GET /api/orders/:id/summary.
+
+Render:
+H1: “Order #<displayNumber>”
+Totals: Items, Shipping, Tax, Grand
+If displayNumber ends with “-Z”, render sub-sections for A/B/C/D that exist:
+Section title: “Shipment <Suffix> — <Outcome>”
+List its lines (sku, qty).
+If outcome ends with “>FFL”, render FFL block using existing read API (no flow changes).
+
+Copy indicating that separate tracking emails will be sent per shipment.
+
+RESPONSE/ERROR CODES (STANDARDIZE)
+
+NO_SHIP_CA → HTTP 422 for finalize attempts to CA.
+
+IDEMPOTENT_HIT → HTTP 200 with existing order summary (don’t create duplicates).
+
+ENV & SECURITY
+
+Do not add or change any Algolia env variables.
+
+Do not change any Cloudflare Access configuration.
+
+New code must NOT call public URLs that require CF Access; keep calls internal or via imported libs.
+
+If calling an internal /api/orders/number endpoint, call it on localhost (not the public hostname).
+
+TEST PLAN (REPL can run)
+
+Unit test: POST /api/orders/finalize with:
+a) Single outcome (only IH>Customer lines) → returns “-0”.
+b) Multiple outcomes (regulated DS>FFL + non-regulated IH>Customer) → returns “-Z” with A and D suffix sections.
+c) shipTo.state === “CA” → 422 NO_SHIP_CA.
+d) Same (paymentId, idempotencyKey) twice → second call returns same order summary (no duplicate).
+
+UI smoke: Navigate to /order-confirmation?orderId=<returned orderId>, verify rendering.
+
+================================================================
+END REPL INSTRUCTIONS

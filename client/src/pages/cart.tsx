@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Minus, Plus, X, ShoppingCart } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 const formatPrice = (price: number | string) => {
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
@@ -14,6 +14,7 @@ const formatPrice = (price: number | string) => {
 export default function CartPage() {
   const { items, removeItem, updateQuantity, getTotalPrice, getItemCount } = useCart();
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
 
   if (items.length === 0) {
     return (
@@ -48,7 +49,7 @@ export default function CartPage() {
                 
                 <div className="space-y-4">
                   {items.map((item) => (
-                    <div key={`${item.productSku}-${item.productId}`} className="border-b border-gray-200 pb-4 last:border-b-0">
+                    <div key={`${item.productMPN}-${item.productId}`} className="border-b border-gray-200 pb-4 last:border-b-0">
                       <div className="flex gap-4">
                         {/* Product Image */}
                         <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
@@ -112,7 +113,7 @@ export default function CartPage() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0"
-                                onClick={() => updateQuantity(item.productSku, Math.max(1, item.quantity - 1))}
+                                onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
                               >
                                 <Minus className="w-3 h-3" />
                               </Button>
@@ -123,7 +124,7 @@ export default function CartPage() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0"
-                                onClick={() => updateQuantity(item.productSku, Math.min(10, item.quantity + 1))}
+                                onClick={() => updateQuantity(item.id, Math.min(10, item.quantity + 1))}
                               >
                                 <Plus className="w-3 h-3" />
                               </Button>
@@ -133,7 +134,7 @@ export default function CartPage() {
                               variant="ghost"
                               size="sm"
                               className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => removeItem(item.productSku)}
+                              onClick={() => removeItem(item.id)}
                             >
                               <X className="w-4 h-4 mr-1" />
                               Remove
@@ -183,14 +184,22 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                <Link href="/order-summary">
-                  <Button 
-                    className="w-full mt-6 bg-amber-500 hover:bg-amber-600 text-white text-lg py-3"
-                    size="lg"
-                  >
-                    Proceed to Checkout
-                  </Button>
-                </Link>
+                <Button 
+                  className="w-full mt-6 bg-amber-500 hover:bg-amber-600 text-white text-lg py-3"
+                  size="lg"
+                  onClick={() => {
+                    if (user) {
+                      // User is authenticated, proceed to checkout
+                      setLocation('/order-summary');
+                    } else {
+                      // User not authenticated, redirect to login with return URL
+                      setLocation('/login?redirect=' + encodeURIComponent('/order-summary'));
+                    }
+                  }}
+                  data-testid="button-proceed-checkout"
+                >
+                  Proceed to Checkout
+                </Button>
 
                 <div className="mt-4 text-center">
                   <Link href="/">

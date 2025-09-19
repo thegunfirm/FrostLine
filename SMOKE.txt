@@ -1,0 +1,5 @@
+/                   # homepage loads fast
+/api/products?limit=1   # returns JSON with items[]
+/api/image/<stockNumber>?angle=1   # image loads
+(Place one sandbox checkout)  # completes; sequential order # increments
+/admin               # prompts via Cloudflare Access

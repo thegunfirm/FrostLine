@@ -21,10 +21,17 @@ export default function Login() {
   const { login } = useAuth();
   const { mergeGuestCart } = useCart();
 
-  // Get redirect parameter from URL
+  // Get redirect parameter from URL with security validation
   const getRedirectUrl = () => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('redirect') || '/';
+    const redirect = params.get('redirect');
+    
+    // Security: Only allow internal paths, reject absolute URLs
+    if (!redirect || !redirect.startsWith('/') || redirect.includes('//')) {
+      return '/';
+    }
+    
+    return redirect;
   };
 
   // Check if user was redirected after password reset
@@ -49,7 +56,7 @@ export default function Login() {
       setLocation(redirectUrl);
       
       // Show success message if redirecting to checkout
-      if (redirectUrl === '/checkout') {
+      if (redirectUrl === '/order-summary' || redirectUrl === '/checkout') {
         toast({
           title: "Login Successful",
           description: "Proceeding to checkout with your saved cart.",

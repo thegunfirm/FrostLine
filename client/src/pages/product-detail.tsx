@@ -253,7 +253,7 @@ export default function ProductDetail() {
     
     addItem({
       productId: product.id,
-      productSku: product.sku,
+      productMPN: product.sku, // Fixed: Use correct field name expected by cart
       productName: product.name,
       productImage: (product.rsrStockNumber || product.sku) ? `/api/image/${product.rsrStockNumber || product.sku}` : "/fallback-logo.png",
       quantity: quantity,
@@ -263,7 +263,8 @@ export default function ProductDetail() {
       pricePlatinum: parseFloat(product.pricePlatinum || "0"),
       requiresFFL: product.requiresFFL,
       selectedFFL: selectedFFL,
-      manufacturer: product.manufacturer
+      manufacturer: product.manufacturer,
+      dropShippable: product.dropShippable // Add missing field for fulfillment logic
     });
 
     // Open cart to show the item was added (removed toast notification to avoid blocking CTA)
