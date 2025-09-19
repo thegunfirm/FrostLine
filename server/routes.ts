@@ -4522,21 +4522,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Import and use shared RSR image fetcher
       const { rsrImageFetcher } = await import('./services/rsr-image-fetcher.js');
       
+      // Map size parameter to sizeMode
+      let sizeMode: 'hr' | 'std' | 'auto' = 'auto';
+      if (size === 'thumb' || size === 'thumbnail' || size === 'standard') {
+        sizeMode = 'std';
+      } else if (size === 'highres' || size === 'large') {
+        sizeMode = 'hr';
+      }
+      
       // Fetch from RSR using shared fetcher
       const result = await rsrImageFetcher.fetch({
         sku: imageName,
         angle: imageAngle,
-        size: size as 'thumb' | 'standard' | 'highres',
+        sizeMode: sizeMode,
         debug: enableDebug
       });
       
       if (result.success && result.buffer) {
-        console.log(`✅ RSR authenticated image loaded: ${imageName}_${imageAngle}.jpg (${result.buffer.length} bytes)`);
+        console.log(`✅ RSR authenticated image loaded: ${imageName}_${imageAngle}.jpg (${result.buffer.length} bytes, source=${result.source})`);
         res.set({
           'Content-Type': 'image/jpeg',
           'Cache-Control': 'public, max-age=86400',
           'Content-Length': result.buffer.length.toString(),
-          'X-Image-Source': 'rsr-authenticated'
+          'X-Image-Source': `rsr-${result.source}`
         });
         return res.send(result.buffer);
       }

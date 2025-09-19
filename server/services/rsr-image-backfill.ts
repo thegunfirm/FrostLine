@@ -13,8 +13,8 @@ import { join } from "path";
 
 // Initialize S3 client for Hetzner Object Storage
 const s3 = new S3Client({
-  region: process.env.HETZNER_S3_REGION || "eu-central-003",
-  endpoint: process.env.HETZNER_S3_ENDPOINT,
+  region: process.env.HETZNER_S3_REGION || "nbg1",
+  endpoint: process.env.HETZNER_S3_ENDPOINT || "https://nbg1.your-objectstorage.com",
   credentials: {
     accessKeyId: process.env.HETZNER_S3_ACCESS_KEY_ID!,
     secretAccessKey: process.env.HETZNER_S3_SECRET_ACCESS_KEY!,
@@ -254,6 +254,7 @@ class RSRImageBackfillService {
   }
 
   private async processImage(sku: string, angle: number, onlyMissing: boolean): Promise<void> {
+    // Always use canonical HR key for S3 storage, even if source was standard
     const s3Key = `rsr/highres/${sku}_${angle}_HR.jpg`;
 
     // Check if image already exists in S3
@@ -275,9 +276,10 @@ class RSRImageBackfillService {
 
     this.status.attemptedDownloads++;
 
-    // Download from RSR with retries using shared fetcher
+    // Download from RSR with retries using shared fetcher with auto fallback
     const { rsrImageFetcher } = await import('./rsr-image-fetcher.js');
     let imageBuffer: Buffer | null = null;
+    let imageSource: string | null = null;
     let attempts = 0;
     const maxAttempts = 3;
 
@@ -285,11 +287,11 @@ class RSRImageBackfillService {
       attempts++;
       
       try {
-        // Use shared fetcher with timeout wrapper
+        // Use shared fetcher with auto mode and timeout wrapper
         const fetchPromise = rsrImageFetcher.fetch({
           sku,
           angle,
-          size: 'highres',
+          sizeMode: 'auto', // Auto fallback: try HR first, then standard
           debug: process.env.RSR_IMAGE_DEBUG === '1'
         });
         
@@ -301,6 +303,7 @@ class RSRImageBackfillService {
         
         if (result.success && result.buffer && result.buffer.length > 1000) {
           imageBuffer = result.buffer;
+          imageSource = result.source;
         } else if (result.status === 404) {
           this.status.noRemote++;
           return;
@@ -330,7 +333,7 @@ class RSRImageBackfillService {
       return;
     }
 
-    // Upload to S3
+    // Upload to S3 with canonical HR key
     try {
       await s3.send(
         new PutObjectCommand({
@@ -343,9 +346,16 @@ class RSRImageBackfillService {
       );
       
       this.status.uploaded++;
-      console.log(`✅ Uploaded: ${s3Key} (${imageBuffer.length} bytes)`);
+      console.log(`✅ Uploaded: ${s3Key} (${imageBuffer.length} bytes, source=${imageSource})`);
     } catch (error: any) {
-      console.error(`❌ S3 upload failed for ${s3Key}:`, error.message);
+      console.error(`❌ S3 upload failed for ${s3Key}:`, error.message || error.name || 'Unknown error');
+      console.error('S3 Error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.Code || error.code,
+        statusCode: error.$metadata?.httpStatusCode,
+        requestId: error.$metadata?.requestId
+      });
       this.incrementError("s3_upload");
     }
   }
