@@ -66,9 +66,9 @@ jobs:
 
           # Algolia — exact names (include SEARCH + ADMIN keys)
           ALGOLIA_APP_ID:        ${{ secrets.ALGOLIA_APP_ID }}
-          ALGOLIA_API_KEY:       ${{ secrets.ALGOLIA_API_KEY }}
-          ALGOLIA_ADMIN_API_KEY: ${{ secrets.ALGOLIA_ADMIN_API_KEY }}
-          ALGOLIA_ADMIN_KEY:     ${{ secrets.ALGOLIA_ADMIN_KEY }}
+          ALGOLIA_API_KEY:       ${{ secrets.ALGOLIA_API_KEY }}        # search key (may be blank)
+          ALGOLIA_ADMIN_API_KEY: ${{ secrets.ALGOLIA_ADMIN_API_KEY }}  # admin key
+          ALGOLIA_ADMIN_KEY:     ${{ secrets.ALGOLIA_ADMIN_KEY }}      # alias (optional)
 
           # API base + auth header
           INVENTORY_ORIGIN:         ${{ secrets.INVENTORY_ORIGIN }}
@@ -79,6 +79,13 @@ jobs:
           set -euo pipefail
 
           ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'install -d -m 700 /root/pm2'
+
+          # Compute effective values for keys that may be unset
+          SEARCH_EFFECTIVE="${ALGOLIA_API_KEY:-}"
+          ADMIN_EFFECTIVE="${ALGOLIA_ADMIN_API_KEY:-${ALGOLIA_ADMIN_KEY:-}}"
+          if [ -z "${SEARCH_EFFECTIVE}" ]; then
+            SEARCH_EFFECTIVE="${ADMIN_EFFECTIVE}"
+          fi
 
           envfile="$(mktemp)"; umask 077
           {
@@ -99,17 +106,16 @@ jobs:
             [ -n "${AUTHORIZE_NET_TRANSACTION_KEY:-}" ] && echo "AUTHORIZE_NET_TRANSACTION_KEY=${AUTHORIZE_NET_TRANSACTION_KEY}"
             [ -n "${SENDGRID_API_KEY:-}" ] && echo "SENDGRID_API_KEY=${SENDGRID_API_KEY}"
 
-            # Algolia (write SEARCH + ADMIN keys)
+            # Algolia — write SEARCH + ADMIN keys
             [ -n "${ALGOLIA_APP_ID:-}" ] && echo "ALGOLIA_APP_ID=${ALGOLIA_APP_ID}"
-            echo "ALGOLIA_API_KEY=${ALGOLIA_API_KEY}"
-            ADMIN_EFFECTIVE="${ALGOLIA_ADMIN_API_KEY:-${ALGOLIA_ADMIN_KEY:-}}"
-            if [ -n "${ADMIN_EFFECTIVE:-}" ]; then
-              echo "ALGOLIA_ADMIN_API_KEY=${ADMIN_EFFECTIVE}"
-              echo "ALGOLIA_ADMIN_KEY=${ADMIN_EFFECTIVE}"
-            fi
+            [ -n "${ADMIN_EFFECTIVE:-}" ] && { echo "ALGOLIA_ADMIN_API_KEY=${ADMIN_EFFECTIVE}"; echo "ALGOLIA_ADMIN_KEY=${ADMIN_EFFECTIVE}"; }
+            [ -n "${SEARCH_EFFECTIVE:-}" ] && echo "ALGOLIA_API_KEY=${SEARCH_EFFECTIVE}"
 
+            # API base
             INV="${INVENTORY_ORIGIN:-${INVENTORY_DEV_PUBLIC_URL:-}}"
             echo "INVENTORY_ORIGIN=${INV}"
+
+            # Auth header for upstream, if used
             [ -n "${SERVICE_KEY_HEADER:-}" ] && echo "SERVICE_KEY_HEADER=${SERVICE_KEY_HEADER}"
             [ -n "${SERVICE_KEY:-}" ] && echo "SERVICE_KEY=${SERVICE_KEY}"
 
@@ -127,7 +133,7 @@ jobs:
           chmod 700 /root/pm2/restart.sh
           /root/pm2/restart.sh
 
-          # Sanity probes (non-fatal): expect JSON
+          # Non-fatal probes (for quick visibility)
           set +e
           . /root/pm2/frostline.env 2>/dev/null
           HDR=()
@@ -135,15 +141,11 @@ jobs:
             HDR+=(--header "$(printf '%s: %s' "$SERVICE_KEY_HEADER" "$SERVICE_KEY")")
           fi
           echo "Probe 1: ${INVENTORY_ORIGIN%/}/api/firearms-compliance/config"
-          curl -ksS -o /root/pm2/probe1.json -w "\nHTTP:%{http_code} CT:%{content_type}\n" \
-            -H "Accept: application/json" "${HDR[@]}" \
-            "${INVENTORY_ORIGIN%/}/api/firearms-compliance/config"
+          curl -ksS -o /root/pm2/probe1.json -w "\nHTTP:%{http_code} CT:%{content_type}\n" -H "Accept: application/json" "${HDR[@]}" "${INVENTORY_ORIGIN%/}/api/firearms-compliance/config"
           head -c 200 /root/pm2/probe1.json; echo
 
           echo "Probe 2: ${INVENTORY_ORIGIN%/}/api/products?limit=1"
-          curl -ksS -o /root/pm2/probe2.json -w "\nHTTP:%{http_code} CT:%{content_type}\n" \
-            -H "Accept: application/json" "${HDR[@]}" \
-            "${INVENTORY_ORIGIN%/}/api/products?limit=1"
+          curl -ksS -o /root/pm2/probe2.json -w "\nHTTP:%{http_code} CT:%{content_type}\n" -H "Accept: application/json" "${HDR[@]}" "${INVENTORY_ORIGIN%/}/api/products?limit=1"
           head -c 200 /root/pm2/probe2.json; echo
           set -e
           EOF
