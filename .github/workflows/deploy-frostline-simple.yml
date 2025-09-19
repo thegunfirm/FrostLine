@@ -64,7 +64,7 @@ jobs:
           AUTHORIZE_NET_TRANSACTION_KEY: ${{ secrets.AUTHORIZE_NET_TRANSACTION_KEY }}
           SENDGRID_API_KEY:              ${{ secrets.SENDGRID_API_KEY }}
 
-          # Algolia — exact names (include SEARCH + ADMIN keys)
+          # Algolia — exact names (search + admin)
           ALGOLIA_APP_ID:        ${{ secrets.ALGOLIA_APP_ID }}
           ALGOLIA_API_KEY:       ${{ secrets.ALGOLIA_API_KEY }}        # search key (may be blank)
           ALGOLIA_ADMIN_API_KEY: ${{ secrets.ALGOLIA_ADMIN_API_KEY }}  # admin key
@@ -80,7 +80,7 @@ jobs:
 
           ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'install -d -m 700 /root/pm2'
 
-          # Compute effective values for keys that may be unset
+          # Compute effective Algolia keys
           SEARCH_EFFECTIVE="${ALGOLIA_API_KEY:-}"
           ADMIN_EFFECTIVE="${ALGOLIA_ADMIN_API_KEY:-${ALGOLIA_ADMIN_KEY:-}}"
           if [ -z "${SEARCH_EFFECTIVE}" ]; then
@@ -106,7 +106,7 @@ jobs:
             [ -n "${AUTHORIZE_NET_TRANSACTION_KEY:-}" ] && echo "AUTHORIZE_NET_TRANSACTION_KEY=${AUTHORIZE_NET_TRANSACTION_KEY}"
             [ -n "${SENDGRID_API_KEY:-}" ] && echo "SENDGRID_API_KEY=${SENDGRID_API_KEY}"
 
-            # Algolia — write SEARCH + ADMIN keys
+            # Algolia (write APP_ID + ADMIN; ensure SEARCH exists via fallback)
             [ -n "${ALGOLIA_APP_ID:-}" ] && echo "ALGOLIA_APP_ID=${ALGOLIA_APP_ID}"
             [ -n "${ADMIN_EFFECTIVE:-}" ] && { echo "ALGOLIA_ADMIN_API_KEY=${ADMIN_EFFECTIVE}"; echo "ALGOLIA_ADMIN_KEY=${ADMIN_EFFECTIVE}"; }
             [ -n "${SEARCH_EFFECTIVE:-}" ] && echo "ALGOLIA_API_KEY=${SEARCH_EFFECTIVE}"
@@ -115,7 +115,7 @@ jobs:
             INV="${INVENTORY_ORIGIN:-${INVENTORY_DEV_PUBLIC_URL:-}}"
             echo "INVENTORY_ORIGIN=${INV}"
 
-            # Auth header for upstream, if used
+            # Optional upstream auth header
             [ -n "${SERVICE_KEY_HEADER:-}" ] && echo "SERVICE_KEY_HEADER=${SERVICE_KEY_HEADER}"
             [ -n "${SERVICE_KEY:-}" ] && echo "SERVICE_KEY=${SERVICE_KEY}"
 
@@ -133,7 +133,7 @@ jobs:
           chmod 700 /root/pm2/restart.sh
           /root/pm2/restart.sh
 
-          # Non-fatal probes (for quick visibility)
+          # Non-fatal probes (for visibility)
           set +e
           . /root/pm2/frostline.env 2>/dev/null
           HDR=()
