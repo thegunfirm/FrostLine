@@ -10,11 +10,21 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CreditCard, Shield, CheckCircle, Star, AlertTriangle } from "lucide-react";
-import { useCart, type CartItem } from "@/hooks/use-cart";
+import { ArrowLeft, CreditCard, Shield, CheckCircle, Star, AlertTriangle, Eye, EyeOff } from "lucide-react";
+import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { SubscriptionEnforcement } from "@/components/auth/subscription-enforcement";
 import { apiRequest } from "@/lib/queryClient";
+import { finalizeOrder } from "@/lib/finalizeOrder";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 const paymentSchema = z.object({
   cardNumber: z.string().min(15, "Card number must be at least 15 digits").max(19, "Card number must be at most 19 digits"),
@@ -111,19 +121,17 @@ function FinalUpgradeBenefits({ user }: { user: any }) {
 
 function PaymentPageContent() {
   const { items, getTotalPrice, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const [, setLocation] = useLocation();
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-
-  // Extend CartItem type for checkout processing
-  type CheckoutItem = CartItem & { 
-    rsrStock?: string; 
-    description?: string; 
-    price: number | string;
-    sku?: string;
-    name?: string;
-  };
-  const checkoutItems = items as CheckoutItem[];
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const { toast } = useToast();
+  const [pendingPaymentData, setPendingPaymentData] = useState<PaymentFormData | null>(null);
 
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
@@ -153,52 +161,147 @@ function PaymentPageContent() {
           state: 'AZ',
           zip: '12345'
         },
-        orderItems: checkoutItems.map(item => ({
-          rsrStock: item.rsrStock ?? item.sku ?? item.name ?? String(item.id),
-          description: item.description ?? item.name ?? 'Item',
+        orderItems: items.map(item => ({
+          // Product identifiers for backend lookup
+          productId: item.productId,
+          upc: item.upc || item.UPC,
+          mpn: item.mpn || item.MPN,
+          sku: item.productSku || item.rsrStock,
+          rsrStock: item.rsrStock,
+          
+          // Product details
+          name: item.productName || item.description,
+          description: item.description,
           quantity: item.quantity,
-          price: Number(item.price)
+          price: parseFloat(item.price),
+          
+          // Additional data for order processing
+          imageUrl: item.productImage,
+          manufacturer: item.manufacturer,
+          fulfillmentType: item.fulfillmentType || 'direct',
+          selectedFFL: item.selectedFFL || null,
+          requiresFFL: item.requiresFFL || false
         }))
       });
       
       return await response.json();
     },
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       console.log('Payment response:', response);
       if (response?.success) {
         setPaymentSuccess(true);
+        clearCart();
         
-        // Navigate immediately using window.location to avoid any React router issues
-        if (response.orderId) {
-          // Use new order numbering system with direct navigation
-          window.location.href = `/order-confirmation?orderId=${response.orderId}`;
+        // Check if data was enriched on backend (new flow)
+        if (response.dataEnriched) {
+          console.log('✅ Products already clean - backend handled enrichment');
+          console.log('🎯 Direct redirect to order confirmation');
+          // Direct redirect since backend already processed everything
+          setTimeout(() => {
+            if (response.orderId) {
+              setLocation(`/order-confirmation?orderId=${response.orderId}`);
+            } else {
+              setLocation('/order-confirmation');
+            }
+          }, 2000);
         } else {
-          // Fallback to legacy system
-          const orderData = {
-            transactionId: response.transactionId,
-            tgfOrderNumber: response.tgfOrderNumber,
-            amount: getTotalPrice() * 100,
-            items: checkoutItems.map(item => ({
-              description: item.description ?? item.name ?? item.sku ?? 'Item',
-              quantity: item.quantity,
-              price: Number(item.price)
-            }))
-          };
-          sessionStorage.setItem('lastOrderData', JSON.stringify(orderData));
-          window.location.href = '/order-confirmation';
+          // Legacy fallback: use finalizeOrder for older payment flows
+          try {
+            console.log('⚠️ Falling back to frontend finalization');
+            await finalizeOrder({
+              orderId: response.orderId,
+              txnId: response.transactionId,
+              customer: {
+                email: user?.email || 'unknown@example.com',
+                name: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName || 'Customer'
+              },
+              lines: items.map(item => ({
+                upc: item.upc || '',
+                mpn: item.mpn || '',
+                sku: item.rsrStock || '',
+                name: item.description || '',
+                qty: item.quantity || 1,
+                price: parseFloat(item.price || '0')
+              })),
+              // Check if any items require FFL shipping
+              shippingOutcomes: items.some(item => item.needsFfl) ? ['DS>FFL'] : ['IH>Customer']
+            });
+          } catch (error) {
+            console.error('Failed to finalize order:', error);
+            // Fall back to manual redirect if finalizeOrder fails
+            setTimeout(() => {
+              if (response.orderId) {
+                setLocation(`/order-confirmation?orderId=${response.orderId}`);
+              } else {
+                setLocation('/order-confirmation');
+              }
+            }, 2000);
+          }
         }
-        
-        // Clear cart after navigation to avoid side effects canceling navigation
-        setTimeout(() => clearCart(), 100);
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Payment error:', error);
+      
+      // Check if it's an authentication error (401)
+      const errorMessage = error?.message || '';
+      if (errorMessage.includes('401') || errorMessage.includes('Authentication required')) {
+        // Store the payment data to retry after login
+        setPendingPaymentData(form.getValues());
+        setShowLoginDialog(true);
+        toast({
+          title: "Session Expired",
+          description: "Please log in to continue with your payment.",
+          variant: "default",
+        });
+      } else {
+        // Show other errors
+        toast({
+          title: "Payment Failed",
+          description: errorMessage || "An error occurred while processing your payment.",
+          variant: "destructive",
+        });
+      }
     }
   });
 
   const onSubmit = (data: PaymentFormData) => {
     paymentMutation.mutate(data);
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    setLoginLoading(true);
+
+    try {
+      await login(loginEmail, loginPassword);
+      setShowLoginDialog(false);
+      setLoginEmail("");
+      setLoginPassword("");
+      
+      toast({
+        title: "Login Successful",
+        description: "Processing your payment now...",
+        variant: "default",
+      });
+      
+      // Retry the payment with the stored data
+      if (pendingPaymentData) {
+        setTimeout(() => {
+          paymentMutation.mutate(pendingPaymentData);
+          setPendingPaymentData(null);
+        }, 500);
+      }
+    } catch (error: any) {
+      let errorMessage = error.message || "Login failed. Please try again.";
+      if (errorMessage.includes('401') || errorMessage.includes('Invalid credentials')) {
+        errorMessage = "Invalid email or password. Please try again.";
+      }
+      setLoginError(errorMessage);
+    } finally {
+      setLoginLoading(false);
+    }
   };
 
   if (paymentSuccess) {
@@ -216,9 +319,78 @@ function PaymentPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <>
+      {/* Login Dialog */}
+      <Dialog open={showLoginDialog} onOpenChange={(open) => {
+        if (!open && !loginLoading) {
+          setShowLoginDialog(false);
+          setLoginEmail("");
+          setLoginPassword("");
+          setLoginError("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Login Required</DialogTitle>
+            <DialogDescription>
+              Your session has expired. Please log in to continue with your payment.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <Label htmlFor="login-email">Email</Label>
+              <Input
+                id="login-email"
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+                disabled={loginLoading}
+              />
+            </div>
+            <div>
+              <Label htmlFor="login-password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="login-password"
+                  type={showPassword ? "text" : "password"}
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  disabled={loginLoading}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            {loginError && (
+              <Alert variant="destructive">
+                <AlertDescription>{loginError}</AlertDescription>
+              </Alert>
+            )}
+            <Button type="submit" className="w-full" disabled={loginLoading}>
+              {loginLoading ? "Logging in..." : "Login & Continue Payment"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Final Upgrade Alert - Full Width */}
           <div className="lg:col-span-3 mb-6">
@@ -389,18 +561,18 @@ function PaymentPageContent() {
                 <CardTitle className="text-lg">Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {checkoutItems.map((item) => (
+                {items.map((item) => (
                   <div key={item.id} className="flex justify-between items-start space-x-3 pb-3 border-b border-gray-200 last:border-b-0">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
-                        {item.description ?? item.name ?? item.sku ?? 'Item'}
+                        {item.description}
                       </p>
                       <p className="text-sm text-gray-600">
                         Qty: {item.quantity}
                       </p>
                     </div>
                     <p className="text-sm font-medium text-gray-900 flex-shrink-0">
-                      {formatPrice(Number(item.price) * item.quantity)}
+                      {formatPrice(parseFloat(item.price) * item.quantity)}
                     </p>
                   </div>
                 ))}
@@ -419,6 +591,7 @@ function PaymentPageContent() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

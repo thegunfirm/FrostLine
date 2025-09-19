@@ -1,0 +1,34 @@
+{
+  "orderId": "147",
+  "txnId": "120071142232",
+  "status": "processing",
+  "customer": {
+    "email": "customer@example.com",
+    "name": "undefined undefined",
+    "address": "123 Test St",
+    "city": "Test City",
+    "state": "AZ",
+    "zip": "12345"
+  },
+  "items": [
+    {
+      "upc": "810100237684",
+      "mpn": "",
+      "sku": "UX4350204FRNMOO",
+      "name": "GLOCK 43X 9MM 10RD COW PRINT FRTRAIL",
+      "qty": 1,
+      "price": 600,
+      "imageUrl": "/images/810100237684.jpg"
+    }
+  ],
+  "shippingOutcomes": [
+    "IH>Customer"
+  ],
+  "minted": {
+    "main": "100026-0",
+    "parts": []
+  },
+  "allocations": null,
+  "createdAt": "2025-09-16T19:11:43.745Z",
+  "updatedAt": "2025-09-16T19:11:43.745Z"
+}

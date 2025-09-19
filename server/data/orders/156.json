@@ -1,0 +1,36 @@
+{
+  "orderId": "156",
+  "txnId": "120071256267",
+  "status": "processing",
+  "customer": {
+    "email": "ripmagicalbeast@gmail.com",
+    "name": "Rip Ripple",
+    "firstName": "Rip",
+    "lastName": "Ripple",
+    "address": "123 Test St",
+    "city": "Test City",
+    "state": "AZ",
+    "zip": "12345"
+  },
+  "items": [
+    {
+      "upc": "810188100825",
+      "mpn": "PX4350201FRMOS",
+      "sku": "GLPX4350201FRMOSLBSCT",
+      "name": "GLOCK 43X 9MM 10RD MOS FS LADY BUG",
+      "qty": 1,
+      "price": 835,
+      "imageUrl": "/images/810188100825.jpg"
+    }
+  ],
+  "shippingOutcomes": [
+    "IH>FFL"
+  ],
+  "minted": {
+    "main": "100035-0",
+    "parts": []
+  },
+  "allocations": null,
+  "createdAt": "2025-09-18T18:31:03.726Z",
+  "updatedAt": "2025-09-18T18:31:03.726Z"
+}

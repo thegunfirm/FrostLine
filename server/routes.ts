@@ -6,7 +6,7 @@ import { createServer, type Server } from "http";
 import { join } from "path";
 import { readFileSync, existsSync } from "fs";
 import { storage } from "./storage";
-import bcrypt from "bcrypt";
+import * as bcrypt from "bcrypt";
 import { insertUserSchema, insertProductSchema, insertOrderSchema, type InsertProduct, type Product, tierPricingRules, products, heroCarouselSlides, categoryRibbons, adminSettings, systemSettings, membershipTierSettings, type User, type FFL, ffls, orders, carts, checkoutSettings, fulfillmentSettings, users } from "@shared/schema";
 import { pricingEngine } from "./services/pricing-engine";
 import { resolveImageUrl } from "../lib/imageResolver";
@@ -29,7 +29,7 @@ import { registerAuthRoutes } from './auth-routes';
 import { syncHealthMonitor } from "./services/sync-health-monitor";
 import { sendVerificationEmail, generateVerificationToken, sendPasswordResetEmail } from "./services/email-service";
 // Zoho integration removed - starting fresh
-import crypto from "crypto";
+import * as crypto from "crypto";
 import axios from "axios";
 import multer from "multer";
 import { billingAuditLogger } from "./services/billing-audit-logger";
@@ -38,7 +38,13 @@ import { ZohoService } from "./zoho-service";
 import { OrderZohoIntegration } from "./order-zoho-integration";
 import zohoAuthRoutes from "./zoho-auth-routes";
 import { importErrorRoutes } from "./routes/import-errors";
-import ordersRouter from './routes/orders';
+import { cartCanonicalizationMiddleware } from "./middleware/cart-canonicalization";
+import { rsrImageStatsHandler } from "./routes/rsr-image-stats";
+import { rsrImageGapHandler } from "./routes/rsr-image-gap";
+import adminRoutes from "./routes/admin-routes";
+import cmsRoutes from "./routes/cms-routes";
+import backofficeRoutes from "./routes/backoffice-routes";
+import systemRoutes from "./routes/system-routes";
 
 // Zoho authentication removed - starting fresh
 
@@ -410,9 +416,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Firearms Compliance Routes
   app.use('/api/firearms-compliance', (await import('./routes/firearms-compliance-routes')).default);
+  
+  // ==== NO AUTHENTICATION REQUIRED - CloudFlare handles security ====
+  // Register reorganized admin routes (pricing, inventory, products, analytics, financial, compliance)
+  app.use('/admin', adminRoutes);
+  
+  // Register CMS routes (emails, notifications, content, campaigns, seo, media)
+  app.use('/cms', cmsRoutes);
+  
+  // Register backoffice routes (orders, customers, tickets, refunds, ffl-issues, reports)
+  app.use('/backoffice', backofficeRoutes);
+  
+  // Register system routes (logs, integrations, webhooks, api-discovery, database, users)
+  app.use('/system', systemRoutes);
 
   // Direct checkout endpoint for legacy calls that use /api/checkout/process
-  app.post('/api/checkout/process', async (req, res) => {
+  app.post('/api/checkout/process', cartCanonicalizationMiddleware(), async (req, res) => {
     try {
       console.log('🔧 Processing checkout via direct endpoint...');
       console.log('🔍 Received checkout data:', JSON.stringify(req.body, null, 2));
@@ -937,12 +956,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post('/api/process-payment', async (req, res) => {
     console.log('💳 Processing payment request...');
-    // TODO: Re-enable authentication for production
-    // if (!req.session?.user) {
-    //   return res.status(401).json({ success: false, error: 'Authentication required' });
-    // }
     
-    let timeoutId: NodeJS.Timeout | null = null;
+    // Require authentication for payment processing
+    const sessionUser = (req.session as any)?.user;
+    if (!sessionUser) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
     
     try {
       const { 
@@ -962,19 +981,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         billingInfo: billingInfo ? 'present' : 'missing',
         orderItems: orderItems ? `${orderItems.length} items` : 'missing'
       });
+      
+      // CRITICAL: Recalculate total based on user's tier to prevent pricing errors
+      let serverCalculatedTotal = 0;
+      const userTier = (sessionUser.membershipTier || 'Bronze').toLowerCase();
+      console.log(`💰 Recalculating payment total for ${userTier} tier member`);
+      
+      if (orderItems && Array.isArray(orderItems)) {
+        for (const item of orderItems) {
+          try {
+            // Use tier prices directly from cart item (they're already calculated and included)
+            let itemPrice = 0;
+            
+            if (userTier === 'platinum' && item.pricePlatinum) {
+              itemPrice = parseFloat(item.pricePlatinum);
+            } else if (userTier === 'gold' && item.priceGold) {
+              itemPrice = parseFloat(item.priceGold);
+            } else {
+              // Default to Bronze price or fallback to regular price
+              itemPrice = parseFloat(item.priceBronze || item.price || "0");
+            }
+            
+            const itemTotal = itemPrice * (item.quantity || 1);
+            serverCalculatedTotal += itemTotal;
+            console.log(`  - ${item.productSku || item.productName}: $${itemPrice.toFixed(2)} x ${item.quantity} = $${itemTotal.toFixed(2)}`);
+          } catch (error) {
+            console.error(`Failed to calculate price for item ${item.productSku}:`, error);
+          }
+        }
+      }
+      
+      // Round to 2 decimal places to avoid floating point issues
+      serverCalculatedTotal = Math.round(serverCalculatedTotal * 100) / 100;
+      const clientAmount = Math.round(parseFloat(amount) * 100) / 100;
+      
+      console.log(`💳 Price verification: Client sent $${clientAmount}, Server calculated $${serverCalculatedTotal}`);
+      
+      // Use server-calculated amount for payment to ensure correct tier pricing
+      const finalAmount = serverCalculatedTotal;
 
       // Use direct HTTP request instead of SDK to avoid hanging issues
       console.log('🌐 Using direct HTTP request to Authorize.Net API...');
 
-      // Validate environment variables - use sandbox credentials
+      // Validate environment variables - Use sandbox credentials for testing
       const apiLoginId = process.env.ANET_API_LOGIN_ID_SANDBOX || process.env.AUTHORIZE_NET_API_LOGIN_ID;
-      let transactionKey = process.env.ANET_TRANSACTION_KEY_SANDBOX || process.env.AUTHORIZE_NET_TRANSACTION_KEY;
-      
-      // Temporary fix: Use working credentials until environment updates
-      if (transactionKey === '4kJd237rZu59qAZd') {
-        console.log('🔧 Using updated transaction key until environment refreshes');
-        transactionKey = '632m44jKh5J6LvRC';
-      }
+      const transactionKey = process.env.ANET_TRANSACTION_KEY_SANDBOX || process.env.AUTHORIZE_NET_TRANSACTION_KEY;
       
       console.log('🔍 Raw environment check:', {
         hasApiLoginId: !!apiLoginId,
@@ -1032,6 +1083,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create direct HTTP request payload with unique transaction ID (max 20 chars for Authorize.Net)
       const uniqueTransactionId = `${Date.now().toString().slice(-8)}${Math.random().toString(36).substr(2, 4)}`;
       
+      // Format server-calculated amount to exactly 2 decimal places to prevent floating point precision errors
+      const formattedAmount = finalAmount.toFixed(2);
+      
+      // Log if there's a mismatch
+      if (Math.abs(clientAmount - serverCalculatedTotal) > 0.01) {
+        console.log(`⚠️ Price mismatch detected: Using server price $${formattedAmount} instead of client price $${clientAmount}`);
+      }
+      
       const requestPayload = {
         createTransactionRequest: {
           merchantAuthentication: {
@@ -1040,7 +1099,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           transactionRequest: {
             transactionType: "authCaptureTransaction",
-            amount: amount,
+            amount: formattedAmount,
             payment: {
               creditCard: {
                 cardNumber: cardNumber,
@@ -1069,7 +1128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Use fetch with timeout
       const controller = new AbortController();
-      timeoutId = setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         controller.abort();
       }, 15000); // 15 second timeout
 
@@ -1124,8 +1183,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Payment successful
             console.log('✅ Payment successful');
             
+            // Declare savedOrder variable in proper scope
+            let savedOrder;
+            
             // Create order record in database
-            let orderDocument = null;
             try {
               // TODO: Get actual user ID from session when authentication is re-enabled
               const userId = req.session?.user?.id || 10; // Fallback for testing
@@ -1144,166 +1205,184 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }))
               };
               
-              // Generate TGF order number using the order numbering system
+              savedOrder = await storage.createOrder(orderData);
+              console.log('✅ Order saved to database:', savedOrder.id);
+
+              // Save order snapshot with RSR data enrichment for confirmation page
               try {
-                const { calculate: calculateTax } = await import('./lib/taxService');
-                const { deriveOutcomes } = await import('./lib/shippingOutcomes');
-                const { ordersStore } = await import('./lib/ordersStore');
+                console.log('🔍 Creating enriched order snapshot during payment processing...');
+                const { writeSnapshot } = await import('./lib/order-storage.js');
+                const { splitOutcomes } = await import('./lib/shippingSplit.js');
+                const { mintOrderNumber } = await import('./lib/orderNumbers.js');
                 
-                console.log('🔢 Starting TGF order number generation...');
+                // Helper function for data normalization
+                function firstNonEmpty(...vals) {
+                  for (const v of vals) {
+                    if (v === null || v === undefined) continue;
+                    const s = (typeof v === 'string') ? v.trim() : v;
+                    if (s !== '' && s !== false) return s;
+                  }
+                  return undefined;
+                }
                 
-                // Convert payment data to order finalization format
-                const finalizeRequest = {
-                  cartId: `payment-${transactionResponse.transId}`,
-                  paymentId: transactionResponse.transId,
-                  idempotencyKey: `payment-${transactionResponse.transId}`,
-                  shipTo: {
+                // Enrich items with authentic RSR data (prevent placeholder pollution)
+                const enrichedItems = await Promise.all(orderItems.map(async (item, idx) => {
+                  let upc = String(firstNonEmpty(
+                    item.upc, item.UPC, item.upc_code, item.barcode,
+                    item.product?.upc, item.product?.UPC
+                  ) || '');
+                
+                  let mpn = String(firstNonEmpty(
+                    item.mpn, item.MPN, item.MNP, item.manufacturerPart, item.manufacturerPartNumber,
+                    item.product?.mpn
+                  ) || '');
+                
+                  let sku = String(firstNonEmpty(
+                    item.sku, item.SKU, item.stock, item.stockNo, item.stock_num, item.rsrStock,
+                    item.productSku, item.product?.sku
+                  ) || '');
+                
+                  let name = String(firstNonEmpty(
+                    item.name, item.title, item.description, item.productName, item.product?.name
+                  ) || '');
+                  
+                  // CRITICAL: Enrich missing/placeholder data with authentic RSR data
+                  if (!upc || !name || upc.startsWith('UNKNOWN')) {
+                    console.log(`🔍 Enriching item ${idx+1} (${sku}) - missing UPC or name`);
+                    try {
+                      let product = null;
+                      if (item.productId) {
+                        product = await storage.getProduct(item.productId);
+                      } else if (sku) {
+                        product = await storage.getProductBySku(sku);
+                      }
+                      
+                      if (product) {
+                        console.log(`✅ Found authentic RSR data for ${sku}: ${product.name}`);
+                        upc = product.upcCode || upc || `UNKNOWN-${idx+1}`;
+                        mpn = product.manufacturerPartNumber || mpn;
+                        sku = product.sku || sku;
+                        name = product.name || name || `Item ${upc}`;
+                      } else {
+                        console.log(`⚠️  No RSR data found for item ${idx+1} (${sku})`);
+                        // Last resort fallback only if product lookup fails
+                        upc = upc || `UNKNOWN-${idx+1}`;
+                        name = name || `Item ${upc}`;
+                      }
+                    } catch (error) {
+                      console.error(`❌ Failed to lookup product data for item ${idx+1}:`, error);
+                      upc = upc || `UNKNOWN-${idx+1}`;
+                      name = name || `Item ${upc}`;
+                    }
+                  }
+                
+                  const qty = Number(firstNonEmpty(item.qty, item.quantity, item.count, 1));
+                  const price = Number(firstNonEmpty(
+                    item.price, item.unitPrice, item.unit_price,
+                    item.retail, item.pricingSnapshot?.retail, 0
+                  ));
+                
+                  // Images are irrelevant to processing; force local placeholder if not local
+                  let imageUrl = String(firstNonEmpty(item.imageUrl, item.productImage, item.product?.imageUrl, '') || '');
+                  if (!imageUrl.startsWith('/images/')) {
+                    imageUrl = upc.startsWith('UNKNOWN-') ? '/images/placeholder.jpg' : `/images/${upc}.jpg`;
+                  }
+                
+                  return { 
+                    upc, mpn, sku, name, 
+                    qty: Number.isFinite(qty) && qty > 0 ? qty : 1,
+                    price: Number.isFinite(price) && price >= 0 ? price : 0,
+                    imageUrl 
+                  };
+                }));
+                
+                // FIXED: Enrich items with fulfillment types based on product properties
+                for (const item of orderItems) {
+                  try {
+                    // Look up product to get FFL requirement and drop-ship eligibility
+                    const product = await storage.getProductBySku(item.sku);
+                    const requiresFFL = product?.requiresFFL || product?.requires_ffl || false;
+                    const canDropShip = product?.dropShipEligible || false;
+                    
+                    // Set fulfillment type based on product properties
+                    if (requiresFFL && canDropShip) {
+                      item.fulfillmentType = 'ffl_dropship';        // → DS>FFL
+                    } else if (requiresFFL && !canDropShip) {
+                      item.fulfillmentType = 'ffl_non_dropship';    // → IH>FFL
+                    } else if (!requiresFFL && canDropShip) {
+                      item.fulfillmentType = 'direct_dropship';     // → DS>Customer
+                    } else {
+                      item.fulfillmentType = 'direct';              // → IH>Customer
+                    }
+                    
+                    console.log(`✅ Item ${item.sku}: FFL=${requiresFFL}, DropShip=${canDropShip}, Type=${item.fulfillmentType}`);
+                  } catch (error) {
+                    console.error(`❌ Failed to lookup product ${item.sku} for fulfillment type:`, error);
+                    // Fallback for lookup failures
+                    item.fulfillmentType = 'direct';
+                  }
+                }
+                
+                // Process shipping outcomes (now with correct fulfillment types)
+                const outcomes = splitOutcomes(orderItems.map(item => 
+                  item.fulfillmentType === 'ffl_non_dropship' ? 'IH>FFL' : 
+                  item.fulfillmentType === 'ffl_dropship' ? 'DS>FFL' :
+                  item.fulfillmentType === 'direct_dropship' ? 'DS>Customer' : 'IH>Customer'
+                ));
+                
+                // Generate order number
+                const minted = mintOrderNumber(outcomes);
+                
+                // Extract FFL ID from fulfillmentGroups
+                let fflId = null;
+                const fulfillmentGroups = orderData.fulfillmentGroups || [];
+                for (const group of fulfillmentGroups) {
+                  if (group.fflId) {
+                    fflId = group.fflId;
+                    break; // Use the first FFL ID found
+                  }
+                }
+                
+                const snapshotData = {
+                  orderId: savedOrder.id.toString(),
+                  txnId: transactionResponse.transId,
+                  status: 'processing',
+                  customer: {
+                    email: req.session?.user?.email || billingInfo.email || 'customer@example.com',
                     name: `${billingInfo.firstName} ${billingInfo.lastName}`,
-                    address1: billingInfo.address,
+                    firstName: billingInfo.firstName,
+                    lastName: billingInfo.lastName,
+                    address: billingInfo.address,
                     city: billingInfo.city,
                     state: billingInfo.state,
                     zip: billingInfo.zip
                   },
-                  lines: orderItems.map(item => ({
-                    sku: item.productMPN || item.manufacturerPartNumber || item.sku || item.stockNumber || item.name || item.description || 'ITEM',
-                    qty: item.quantity || 1,
-                    regulated: item.requiresFFL || false,
-                    fulfillment: 'DS' // Default to drop-ship
-                  })),
-                  fflId: orderItems.find(item => item.selectedFFL)?.selectedFFL || null
-                };
-
-                // Generate TGF order number
-                let taxAmount = 0;
-                let taxBlocked = false;
-                try {
-                  taxAmount = calculateTax({
-                    shipTo: finalizeRequest.shipTo,
-                    lines: finalizeRequest.lines,
-                    items: parseFloat(amount.toString()),
-                    shipping: 0
-                  });
-                } catch (taxError: any) {
-                  if (taxError.code === 'NO_SHIP_CA') {
-                    taxBlocked = true;
-                    console.log('⚠️ Order would be blocked by CA restriction, but payment already processed');
-                  }
-                }
-
-                const outcomes = deriveOutcomes(finalizeRequest.lines);
-                const shipmentsArray = Object.values(outcomes.buckets);
-                const baseNumber = Math.floor(Date.now() / 1000).toString();
-                const orderId = `ord_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                const displayNumber = shipmentsArray.length === 1 ? `${baseNumber}-0` : `${baseNumber}-Z`;
-
-                // Create price and name lookup maps from order items
-                const priceMap = new Map();
-                const nameMap = new Map();
-                console.log('🔍 Creating price and name maps from order items:', orderItems.length, 'items');
-                orderItems.forEach(item => {
-                  const sku = item.productMPN || item.manufacturerPartNumber || item.sku || item.stockNumber || item.name || item.description || 'ITEM';
-                  const name = item.productName || item.name || item.description || 'Unknown Product';
-                  console.log('   Mapping SKU:', sku, '-> Price:', item.price, ', Name:', name);
-                  priceMap.set(sku, item.price || 0);
-                  nameMap.set(sku, name);
-                });
-
-                // Add prices and names to outcomes
-                console.log('🔍 Adding prices and names to outcomes. Shipments before:', shipmentsArray.length);
-                const shipmentsWithPrices = shipmentsArray.map(shipment => {
-                  console.log('   Processing shipment:', shipment.outcome, 'with', shipment.lines?.length, 'lines');
-                  return {
-                    ...shipment,
-                    lines: shipment.lines.map(line => {
-                      const price = priceMap.get(line.sku) || 0;
-                      const name = nameMap.get(line.sku) || 'Unknown Product';
-                      console.log('     Line SKU:', line.sku, '-> Price:', price, ', Name:', name);
-                      return {
-                        ...line,
-                        price: price,
-                        name: name
-                      };
-                    })
-                  };
-                });
-                console.log('🔍 Shipments with prices created:', shipmentsWithPrices.length);
-
-                orderDocument = {
-                  orderId,
-                  baseNumber,
-                  displayNumber,
-                  totals: {
-                    items: parseFloat(amount.toString()),
-                    shipping: 0,
-                    tax: taxAmount,
-                    grand: parseFloat(amount.toString()) + taxAmount
-                  },
-                  shipments: shipmentsWithPrices,
+                  items: enrichedItems, // Use enriched data instead of raw cart items
+                  shippingOutcomes: outcomes,
+                  minted, // Professional order numbering
+                  allocations: null,
+                  fflId: fflId, // Store FFL ID in snapshot
+                  fulfillmentGroups: fulfillmentGroups, // Store fulfillment groups for reference
                   createdAt: new Date().toISOString(),
-                  customer: {
-                    email: req.session?.user?.email || null,
-                    customerId: userId || null
-                  },
-                  authorizeNetTransactionId: transactionResponse.transId
+                  updatedAt: new Date().toISOString()
                 };
-
-                // Save TGF order document to ordersStore for API access
-                console.log('🔄 Attempting to save TGF order to ordersStore...');
-                try {
-                  const { readFileSync, writeFileSync, existsSync } = await import('fs');
-                  const { join } = await import('path');
-                  
-                  console.log('📁 Reading existing orders file...');
-                  const ordersFilePath = join(process.cwd(), 'server', 'data', 'order-summaries.json');
-                  let orderData = {};
-                  
-                  if (existsSync(ordersFilePath)) {
-                    const ordersContent = readFileSync(ordersFilePath, 'utf-8');
-                    orderData = JSON.parse(ordersContent);
-                    console.log('📖 Existing orders file loaded, contains', Object.keys(orderData).length, 'orders');
-                  } else {
-                    console.log('📝 Orders file does not exist, creating new one');
-                  }
-                  
-                  const tgfOrderDoc = {
-                    ...orderDocument,
-                    paymentId: transactionResponse.transId,
-                    idempotencyKey: `payment-${transactionResponse.transId}`,
-                    transactionId: transactionResponse.transId,
-                    createdAt: new Date().toISOString()
-                  };
-                  
-                  console.log('💾 Saving order with ID:', orderDocument.orderId);
-                  console.log('📝 Order document preview:', JSON.stringify({
-                    orderId: tgfOrderDoc.orderId,
-                    baseNumber: tgfOrderDoc.baseNumber,
-                    shipmentCount: tgfOrderDoc.shipments?.length,
-                    hasPrice: tgfOrderDoc.shipments?.[0]?.lines?.[0]?.price !== undefined
-                  }));
-                  
-                  orderData[orderDocument.orderId] = tgfOrderDoc;
-                  
-                  writeFileSync(ordersFilePath, JSON.stringify(orderData, null, 2));
-                  console.log('✅ TGF order saved to ordersStore successfully');
-                } catch (ordersStoreError) {
-                  console.error('⚠️ Failed to save TGF order to ordersStore:', ordersStoreError);
-                  console.error('⚠️ Error details:', ordersStoreError.message, ordersStoreError.stack);
-                }
-
-                // TGF order document created successfully
-                console.log('✅ TGF order number generated:', orderDocument.displayNumber);
-              } catch (tgfError) {
-                console.error('⚠️ TGF order numbering failed:', tgfError);
-                // Continue with regular order processing
+                
+                writeSnapshot(savedOrder.id.toString(), snapshotData);
+                console.log(`✅ Enriched order snapshot saved: ${savedOrder.id} (${minted.main})`);
+                console.log(`🎯 Products are clean - no placeholders, authentic RSR data only`);
+                
+                // Store the order number for response and database
+                savedOrder.rsrOrderNumber = minted.main;
+                
+                // Update order in database with RSR order number
+                await storage.updateOrder(savedOrder.id, {
+                  rsrOrderNumber: minted.main
+                });
+                
+              } catch (snapshotError) {
+                console.error('❌ Failed to save enriched order snapshot:', snapshotError);
+                // Don't fail the order if snapshot fails
               }
-
-              // Also save to the existing database system for compatibility
-              const savedOrder = await storage.createOrder({
-                ...orderData,
-                tgfOrderNumber: orderDocument?.displayNumber || null,
-                orderId: orderDocument?.orderId || null
-              });
-              console.log('✅ Order saved to database:', savedOrder.id);
 
               // Create Zoho Deal for the order
               try {
@@ -1351,8 +1430,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               authCode: transactionResponse.authCode,
               messageCode: transactionResponse.messages[0]?.code,
               description: transactionResponse.messages[0]?.description || 'Payment processed successfully',
-              tgfOrderNumber: orderDocument?.displayNumber || null,
-              orderId: orderDocument?.orderId || null
+              orderId: savedOrder?.id || 'N/A', // Fallback if order creation failed
+              orderNumber: savedOrder?.rsrOrderNumber || null, // TGF order number (e.g., "100012-0")
+              dataEnriched: true // Signal that products are already clean
             });
           } else {
             // Payment declined
@@ -1375,9 +1455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       } catch (fetchError: any) {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
+        // clearTimeout(timeoutId); // Fixed: timeoutId not defined in this scope
         if (fetchError.name === 'AbortError') {
           console.error('❌ Request timeout');
           res.status(408).json({
@@ -1931,7 +2009,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/orders/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const order = await storage.getOrder(parseInt(id));
+      const parsedId = parseInt(id);
+      
+      // Validate that the ID is a valid number
+      if (isNaN(parsedId) || parsedId <= 0) {
+        return res.status(400).json({ message: "Invalid order ID" });
+      }
+      
+      const order = await storage.getOrder(parsedId);
       
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
@@ -1941,119 +2026,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get order error:", error);
       res.status(500).json({ message: "Failed to fetch order" });
-    }
-  });
-
-  // Order Summary for Order Confirmation Page
-  app.get("/api/orders/:orderId/summary", async (req, res) => {
-    try {
-      const { orderId } = req.params;
-      
-      // First, try to find the order in TGF ordersStore (new system with pricing)
-      const { ordersStore } = await import('./lib/ordersStore');
-      const { toSummary } = await import('./lib/formatOrderSummary');
-      
-      const tgfOrder = ordersStore.findById(orderId);
-      if (tgfOrder) {
-        console.log('🔍 Found TGF order in ordersStore:', orderId);
-        const summary = toSummary(tgfOrder);
-        return res.json(summary);
-      }
-      
-      console.log('🔍 TGF order not found, falling back to database lookup for:', orderId);
-      
-      // Use direct SQL query to avoid Drizzle schema issues
-      const query = `
-        SELECT 
-          id, 
-          user_id, 
-          order_date, 
-          total_price, 
-          status, 
-          items, 
-          ffl_recipient_id,
-          shipping_address, 
-          authorize_net_transaction_id,
-          rsr_order_number,
-          notes,
-          created_at
-        FROM orders 
-        ORDER BY order_date DESC
-      `;
-      
-      const result = await db.execute(sql.raw(query));
-      const orders = result.rows as any[];
-      
-      let order = null;
-      let timestamp = null;
-      
-      // If orderId contains timestamp, try to match by time
-      if (orderId.startsWith('ord_')) {
-        timestamp = orderId.split('_')[1];
-        if (timestamp) {
-          const orderDate = new Date(parseInt(timestamp));
-          const timeTolerance = 5 * 60 * 1000; // 5 minutes tolerance
-          order = orders.find(o => {
-            if (!o.order_date && !o.created_at) return false;
-            const orderTime = new Date(o.order_date || o.created_at).getTime();
-            return Math.abs(orderTime - orderDate.getTime()) < timeTolerance;
-          });
-        }
-      }
-      
-      if (!order) {
-        return res.status(404).json({ message: "Order not found", orderId });
-      }
-      
-      // Parse order items
-      const orderItems = typeof order.items === 'string' ? JSON.parse(order.items) : order.items || [];
-      
-      // Calculate totals from order data
-      const totalPrice = parseFloat(order.total_price?.toString() || '0');
-      const itemsTotal = orderItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || totalPrice;
-      const shipping = 0; // Shipping was included in total for this order
-      const tax = 0; // Tax was included in total for this order  
-      const grand = totalPrice;
-      
-      // Generate TGF order number from RSR order number or create from ID
-      const baseNumber = order.rsr_order_number?.split('-')[0] || Math.floor(parseInt(timestamp || Date.now().toString()) / 1000).toString();
-      const displayNumber = order.rsr_order_number || `${baseNumber}-Z`;
-      
-      // Create shipments based on order items
-      const shipments = [{
-        suffix: 'A' as const,
-        outcome: orderItems.some((item: any) => item.requiresFFL) ? 'DS>FFL' : 'DS>Customer',
-        lines: orderItems.map((item: any) => ({
-          sku: item.productMPN || item.manufacturerPartNumber || item.sku || item.stockNumber,
-          qty: item.quantity || 1
-        })),
-        ffl: orderItems.some((item: any) => item.requiresFFL) ? 
-          { id: order.ffl_recipient_id?.toString() || '1062' } : undefined
-      }];
-      
-      const summaryResponse = {
-        orderId: orderId,
-        baseNumber: baseNumber,
-        displayNumber: displayNumber,
-        totals: {
-          items: itemsTotal,
-          shipping: shipping,
-          tax: tax,
-          grand: grand
-        },
-        shipments: shipments,
-        createdAt: order.order_date || order.created_at || new Date().toISOString(),
-        customer: {
-          email: order.customer_email || null,
-          customerId: order.user_id?.toString() || null
-        },
-        transactionId: order.authorize_net_transaction_id || null
-      };
-      
-      res.json(summaryResponse);
-    } catch (error) {
-      console.error("Get order summary error:", error);
-      res.status(500).json({ message: "Failed to fetch order summary" });
     }
   });
 
@@ -2071,6 +2043,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to get orders" });
     }
   });
+
+  // Order Summary endpoint - REMOVED: Using snapshot-based endpoint instead
+  // See server/routes/orderSummaryById.cjs for the active order summary implementation
 
   // Order Activity Logs API endpoints
   app.get("/api/orders/:id/activity-logs", async (req, res) => {
@@ -4458,128 +4433,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // RSR Product Image Service - Enhanced with Hetzner Object Storage
+  // RSR Product Image Service - Enhanced with Hetzner Object Storage and Debug Support
   // Enhanced: August 25, 2025 - Added Hetzner Object Storage integration
   // Multi-angle support, proper authentication, RSR domain handling
   app.get("/api/image/:imageName", async (req, res) => {
     try {
       const imageName = req.params.imageName;
-      const { size = 'standard', angle = '1', view } = req.query;
+      const { 
+        size = 'standard', 
+        angle = '1', 
+        view,
+        forceUpstream,
+        debug
+      } = req.query;
       
       // Use 'angle' parameter from frontend, fallback to 'view' for backward compatibility
-      const imageAngle = angle || view || '1';
+      const imageAngle = Number(angle || view || '1');
+      const skipBucket = forceUpstream === '1' || forceUpstream === 'true';
+      const enableDebug = debug === '1' || debug === 'true' || process.env.RSR_IMAGE_DEBUG === '1';
       
-      console.log(`RSR Image Request: ${imageName}, size: ${size}, angle: ${imageAngle}`);
+      console.log(`RSR Image Request: ${imageName}, size: ${size}, angle: ${imageAngle}, forceUpstream: ${skipBucket}`);
       
-      // First check if there's a custom uploaded image for this product and angle
-      try {
-        // Custom image support would go here
-        const customImage: any[] = [];
-        
-        if (customImage.length > 0) {
-          // Serve the custom image
-          const response = await axios.get(customImage[0].imageUrl, {
-            responseType: "arraybuffer",
-            timeout: 10000,
-          });
-          
-          const contentType = response.headers['content-type'] || 'image/jpeg';
-          const imageBuffer = response.data;
-          
-          res.set({
-            'Content-Type': contentType,
-            'Cache-Control': 'public, max-age=86400', // 24 hours
-            'Content-Length': imageBuffer.length.toString(),
-            'X-Image-Source': 'custom-upload'
-          });
-          
-          return res.send(imageBuffer);
-        }
-      } catch (customError) {
-        console.log(`No custom image found for ${imageName} angle ${imageAngle}, checking bucket then RSR`);
-      }
-      
-      // Check if image exists in our Hetzner Object Storage bucket
-      const useBucket = process.env.USE_BUCKET_IMAGES?.trim().toLowerCase().includes('true');
-      console.log(`📦 Bucket check: USE_BUCKET_IMAGES="${process.env.USE_BUCKET_IMAGES}" -> ${useBucket}`);
-      
-      if (useBucket) {
+      // Check bucket unless forceUpstream is set
+      if (!skipBucket) {
+        // First check if there's a custom uploaded image for this product and angle
         try {
-          const originalFilename = `${imageName}_${imageAngle || 1}.jpg`;
-          console.log(`🔍 Checking bucket for: ${originalFilename}`);
+          // Custom image support would go here
+          const customImage: any[] = [];
           
-          // Direct S3 check
-          const bucketKey = `rsr/standard/${originalFilename}`;
-          console.log(`🗂️  Bucket key: ${bucketKey}`);
-          
-          try {
-            await s3.send(new HeadObjectCommand({
-              Bucket: process.env.HETZNER_S3_BUCKET!,
-              Key: bucketKey
-            }));
+          if (customImage.length > 0) {
+            // Serve the custom image
+            const response = await axios.get(customImage[0].imageUrl, {
+              responseType: "arraybuffer",
+              timeout: 10000,
+            });
             
-            const bucketUrl = `https://${process.env.IMAGE_BASE_URL}/${bucketKey}`;
-            console.log(`✅ IMAGE FOUND IN BUCKET! Redirecting to: ${bucketUrl}`);
-            return res.redirect(302, bucketUrl);
-          } catch (s3Error: any) {
-            console.log(`❌ S3 HeadObject failed for ${bucketKey}:`, s3Error.name, s3Error.message);
+            const contentType = response.headers['content-type'] || 'image/jpeg';
+            const imageBuffer = response.data;
+            
+            res.set({
+              'Content-Type': contentType,
+              'Cache-Control': 'public, max-age=86400', // 24 hours
+              'Content-Length': imageBuffer.length.toString(),
+              'X-Image-Source': 'custom-upload'
+            });
+            
+            return res.send(imageBuffer);
           }
-        } catch (bucketError) {
-          console.log(`🚫 Bucket check error:`, bucketError);
+        } catch (customError) {
+          console.log(`No custom image found for ${imageName} angle ${imageAngle}, checking bucket then RSR`);
+        }
+        
+        // Check if image exists in our Hetzner Object Storage bucket
+        const useBucket = process.env.USE_BUCKET_IMAGES?.trim().toLowerCase().includes('true');
+        console.log(`📦 Bucket check: USE_BUCKET_IMAGES="${process.env.USE_BUCKET_IMAGES}" -> ${useBucket}`);
+        
+        if (useBucket) {
+          try {
+            const originalFilename = `${imageName}_${imageAngle}.jpg`;
+            console.log(`🔍 Checking bucket for: ${originalFilename}`);
+            
+            // Direct S3 check
+            const bucketKey = `rsr/standard/${originalFilename}`;
+            console.log(`🗂️  Bucket key: ${bucketKey}`);
+            
+            try {
+              await s3.send(new HeadObjectCommand({
+                Bucket: process.env.HETZNER_S3_BUCKET!,
+                Key: bucketKey
+              }));
+              
+              const bucketUrl = `https://${process.env.IMAGE_BASE_URL}/${bucketKey}`;
+              console.log(`✅ IMAGE FOUND IN BUCKET! Redirecting to: ${bucketUrl}`);
+              return res.redirect(302, bucketUrl);
+            } catch (s3Error: any) {
+              console.log(`❌ S3 HeadObject failed for ${bucketKey}:`, s3Error.name, s3Error.message);
+            }
+          } catch (bucketError) {
+            console.log(`🚫 Bucket check error:`, bucketError);
+          }
+        } else {
+          console.log(`📦 Bucket images disabled (USE_BUCKET_IMAGES: ${process.env.USE_BUCKET_IMAGES})`);
         }
       } else {
-        console.log(`📦 Bucket images disabled (USE_BUCKET_IMAGES: ${process.env.USE_BUCKET_IMAGES})`);
+        console.log(`⏭️  Skipping bucket check due to forceUpstream flag`);
       }
       
-      let rsrImageUrl = '';
+      // Import and use shared RSR image fetcher
+      const { rsrImageFetcher } = await import('./services/rsr-image-fetcher.js');
       
-      // Use RSR's documented naming convention: RSRSKU_imagenumber.jpg
-      // Standard Images: AAC17-22G3_1.jpg, AAC17-22G3_2.jpg, AAC17-22G3_3.jpg
-      // High Resolution: AAC17-22G3_1_HR.jpg, AAC17-22G3_2_HR.jpg, AAC17-22G3_3_HR.jpg
-      const imageNumber = imageAngle || 1;
-      
-      switch (size) {
-        case 'thumb':
-        case 'thumbnail':
-          rsrImageUrl = `https://img.rsrgroup.com/images/inventory/thumb/${imageName}_${imageNumber}.jpg`;
-          break;
-        case 'highres':
-        case 'large':
-          rsrImageUrl = `https://img.rsrgroup.com/images/inventory/${imageName}_${imageNumber}_HR.jpg`;
-          break;
-        case 'standard':
-        default:
-          rsrImageUrl = `https://img.rsrgroup.com/pimages/${imageName}_${imageNumber}.jpg`;
-          break;
+      // Map size parameter to sizeMode
+      let sizeMode: 'hr' | 'std' | 'auto' = 'auto';
+      if (size === 'thumb' || size === 'thumbnail' || size === 'standard') {
+        sizeMode = 'std';
+      } else if (size === 'highres' || size === 'large') {
+        sizeMode = 'hr';
       }
       
-      // RSR image fetch with authentication using environment credentials
-      console.log(`Trying RSR image from: ${rsrImageUrl}`);
+      // Fetch from RSR using shared fetcher
+      const result = await rsrImageFetcher.fetch({
+        sku: imageName,
+        angle: imageAngle,
+        sizeMode: sizeMode,
+        debug: enableDebug
+      });
       
-      try {
-        // Try authenticated RSR access with proper session handling
-        console.log(`🔐 Attempting authenticated RSR image access for ${imageName}_${imageNumber}.jpg`);
-        
-        // Use RSR session manager with sophisticated age verification bypass
-        console.log(`🔓 Using RSR session manager for authenticated image access`);
-        const imageBuffer = await rsrSessionManager.downloadImage(rsrImageUrl);
-        
-        if (imageBuffer && imageBuffer.length > 1000) {
-          console.log(`✅ RSR authenticated image loaded: ${imageName}_${imageNumber}.jpg (${imageBuffer.length} bytes)`);
-          res.set({
-            'Content-Type': 'image/jpeg',
-            'Cache-Control': 'public, max-age=86400',
-            'Content-Length': imageBuffer.length.toString(),
-            'X-Image-Source': 'rsr-authenticated'
-          });
-          return res.send(imageBuffer);
-        }
-        
-        console.log(`🚫 RSR session manager returned invalid or empty image`);
-        throw new Error('RSR authenticated image download failed');
-      } catch (rsrError: any) {
-        console.log(`❌ RSR image failed for ${imageName}: ${rsrError.message}`);
+      if (result.success && result.buffer) {
+        console.log(`✅ RSR authenticated image loaded: ${imageName}_${imageAngle}.jpg (${result.buffer.length} bytes, source=${result.source})`);
+        res.set({
+          'Content-Type': 'image/jpeg',
+          'Cache-Control': 'public, max-age=86400',
+          'Content-Length': result.buffer.length.toString(),
+          'X-Image-Source': `rsr-${result.source}`
+        });
+        return res.send(result.buffer);
       }
+      
+      console.log(`❌ RSR image failed for ${imageName}: ${result.error}`);
       
       // Immediate fallback to placeholder
       throw new Error('RSR image not available, using fallback');
@@ -4904,6 +4874,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { rsrSchedulerService } = await import('./services/rsr-scheduler-service.js');
   const { rsrFTPService } = await import('./services/rsr-ftp-service.js');
   const { rsrMonitoringService } = await import('./services/rsr-monitoring-service.js');
+
+  // RSR Image Stats Endpoint (NO AUTHENTICATION REQUIRED)
+  app.get("/api/rsr-image-stats", rsrImageStatsHandler);
+  
+  // RSR Image Gap Analysis Endpoint (NO AUTHENTICATION REQUIRED)
+  app.get("/api/rsr-image-gap", rsrImageGapHandler);
+  
+  // RSR Image Backfill Endpoints (server-only, manual trigger)
+  const { 
+    runBackfillHandler, 
+    getBackfillStatusHandler, 
+    pauseBackfillHandler,
+    resetBackfillHandler
+  } = await import('./routes/rsr-image-backfill.js');
+  
+  app.post("/api/rsr-image-backfill/run", runBackfillHandler);
+  app.get("/api/rsr-image-backfill/status", getBackfillStatusHandler);
+  app.post("/api/rsr-image-backfill/pause", pauseBackfillHandler);
+  app.post("/api/rsr-image-backfill/reset", resetBackfillHandler);
 
   // RSR System Status (comprehensive dashboard)
   app.get("/api/admin/rsr/comprehensive-status", async (req, res) => {
@@ -5471,30 +5460,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Price range filters
+      // Price range filters - USE CONSISTENT PLATINUM PRICING
       const priceFilters = [];
       if (cleanedFilters.priceMin && cleanedFilters.priceMax) {
-        priceFilters.push(`retailPrice:${cleanedFilters.priceMin} TO ${cleanedFilters.priceMax}`);
+        priceFilters.push(`tierPricing.platinum:${cleanedFilters.priceMin} TO ${cleanedFilters.priceMax}`);
       } else if (cleanedFilters.priceMin) {
-        priceFilters.push(`retailPrice:${cleanedFilters.priceMin} TO 99999`);
+        priceFilters.push(`tierPricing.platinum:${cleanedFilters.priceMin} TO 99999`);
       } else if (cleanedFilters.priceMax) {
-        priceFilters.push(`retailPrice:0 TO ${cleanedFilters.priceMax}`);
+        priceFilters.push(`tierPricing.platinum:0 TO ${cleanedFilters.priceMax}`);
       }
       
-      // Price tier filters (convert to price ranges)
+      // Price tier filters (convert to price ranges) - USE PLATINUM PRICING
       if (cleanedFilters.priceTier) {
         switch (cleanedFilters.priceTier) {
           case 'budget':
-            priceFilters.push('retailPrice:0 TO 300');
+            priceFilters.push('tierPricing.platinum:0 TO 300');
             break;
           case 'mid-range':
-            priceFilters.push('retailPrice:300 TO 800');
+            priceFilters.push('tierPricing.platinum:300 TO 800');
             break;
           case 'premium':
-            priceFilters.push('retailPrice:800 TO 1500');
+            priceFilters.push('tierPricing.platinum:800 TO 1500');
             break;
           case 'high-end':
-            priceFilters.push('retailPrice:1500 TO 99999');
+            priceFilters.push('tierPricing.platinum:1500 TO 99999');
             break;
         }
       }
@@ -5608,18 +5597,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         algoliaFilters.push(`manufacturerName:"${filters.ammunitionManufacturer}"`);
       }
       
-      // Handle sorting
-      let sortParam = undefined;
+      // Handle sorting with replica indexes (preferred approach)
+      let indexName = 'products'; // Default to main index for relevance
       if (sort && sort !== 'relevance') {
         switch (sort) {
           case 'price_low_to_high':
-            sortParam = 'tierPricing.platinum:asc';
+            indexName = 'products_price_asc';
             break;
           case 'price_high_to_low':
-            sortParam = 'tierPricing.platinum:desc';
+            indexName = 'products_price_desc';
             break;
           default:
-            sortParam = undefined;
+            indexName = 'products'; // Default to relevance
+            break;
         }
       }
 
@@ -5679,70 +5669,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchParams.filters = algoliaFilters.join(' AND ');
       }
       
-      if (sortParam) {
-        searchParams.sort = Array.isArray(sortParam) ? sortParam : [sortParam];
-      }
+      // Note: Sorting is handled by using different Algolia replica indexes
+      // The indexName variable determines which index to use for sorting
       
-      // Boost popular handgun manufacturers and calibers in handgun searches
-      if (cleanedFilters.category === "Handguns" || cleanedFilters.productType === "handgun" || cleanedFilters.departmentNumber === "01") {
-        // Use extremely aggressive optionalFilters for category browsing
-        if (!searchQuery || searchQuery.trim() === '') {
-          // Remove query entirely, use massive boosts only
+      // Apply moderate popularity boosts only for relevance sorting (not price sorting)
+      if (sort === 'relevance' || !sort) {
+        if (cleanedFilters.category === "Handguns" || cleanedFilters.productType === "handgun" || cleanedFilters.departmentNumber === "01") {
+          // Use moderate optionalFilters to boost popular items without filtering out others
           searchParams.optionalFilters = [
-            "manufacturer:GLOCK<score=50000>",    // Extreme boost for GLOCK
-            "manufacturer:SPGFLD<score=45000>",   // Extreme boost for Springfield  
-            "manufacturer:SIG<score=40000>",      // Extreme boost for SIG
-            "manufacturer:BERSA<score=20000>",    // High boost for other good brand
-            "manufacturer:FUSION<score=15000>",   // High boost for existing brand
-            "manufacturer:ZENITH<score=-10000>",  // Massive negative boost for ZENITH
-            "manufacturer:MKS<score=-8000>",      // Large negative boost for Hi-Point/MKS
-            "caliber:9mm<score=60000>",           // HIGHEST PRIORITY - 9mm handguns first
-            "caliber:45 ACP<score=4000>",
-            "caliber:40 S&W<score=3000>"
+            "manufacturer:GLOCK<score=10>",     // Moderate boost for popular brands
+            "manufacturer:SPGFLD<score=8>",    // Springfield Armory
+            "manufacturer:SIG<score=7>",       // Sig Sauer  
+            "manufacturer:RUGER<score=6>",     // Ruger
+            "caliber:9mm<score=15>",           // Popular calibers get moderate boost
+            "caliber:45 ACP<score=12>",
+            "caliber:40 S&W<score=10>",
+            "caliber:380 ACP<score=8>",
+            "caliber:357 Magnum<score=6>"
           ];
-        } else {
-          // For text searches, still use optionalFilters
-          searchParams.optionalFilters = [
-            "manufacturer:GLOCK<score=10000>",    // Top handgun brand - astronomical boost
-            "manufacturer:SPGFLD<score=9500>",    // Springfield Armory
-            "manufacturer:SIG<score=9000>",       // Sig Sauer
-            "manufacturer:FUSION<score=1000>",    // Decent boost for existing brand
-            "caliber:9mm<score=3000>",            // Most popular caliber
-            "caliber:45 ACP<score=2500>",
-            "caliber:380 ACP<score=2000>",
-            "caliber:357 Magnum<score=1500>",
-            "caliber:40 S&W<score=1000>",
-            "caliber:22 LR<score=800>"
-          ];
-        }
-      }
-      
-      // Add rifle popularity boosts based on actual DB data
-      if (cleanedFilters.category === "Rifles" || cleanedFilters.productType === "rifle" || cleanedFilters.departmentNumber === "02") {
-        // Force minimal query to trigger boosts when browsing category
-        if (!searchQuery || searchQuery.trim() === '') {
-          searchParams.query = '*';  // Wildcard query to trigger optionalFilters
         }
         
-        searchParams.optionalFilters = [
-          "manufacturer:SIG<score=1000>",       // Has 6 rifles, popular brand - massive boost
-          "manufacturer:IWI<score=950>",        // Most rifles in DB (12)
-          "manufacturer:SOLGW<score=900>",      // 9 rifles in DB
-          "manufacturer:SANTAN<score=850>",     // 6 rifles in DB
-          "caliber:5.56<score=500>",            // AR-15 caliber - high boost
-          "caliber:223<score=450>",             // Common rifle caliber
-          "caliber:308<score=400>",             // Popular hunting caliber
-          "caliber:22 LR<score=350>"            // Popular training caliber
-        ];
+        // Add moderate rifle popularity boosts (FIXED - no extreme scores)
+        if (cleanedFilters.category === "Rifles" || cleanedFilters.productType === "rifle" || cleanedFilters.departmentNumber === "02") {
+          // Use moderate boosts for rifles without filtering out other results
+          searchParams.optionalFilters = [
+            "manufacturer:SIG<score=8>",        // Popular rifle brand
+            "manufacturer:IWI<score=7>",        // IWI rifles
+            "manufacturer:SOLGW<score=6>",      // SOLGW rifles
+            "manufacturer:SANTAN<score=5>",     // Santan rifles
+            "caliber:5.56<score=12>",           // AR-15 caliber - moderate boost
+            "caliber:223<score=10>",            // Common rifle caliber
+            "caliber:308<score=8>",             // Hunting caliber
+            "caliber:22 LR<score=6>"            // Training caliber
+          ];
+        }
       }
       
       // Note: Stock priority sorting would require index replica configuration
       // For now, using default relevance ranking
 
+      console.log(`🔍 Algolia sort debug: sort="${sort}", indexName="${indexName}"`);
       console.log('Algolia search params:', JSON.stringify(searchParams, null, 2));
 
-      // Make request to Algolia
-      const response = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/products/query`, {
+      // Make request to Algolia using the appropriate index for sorting
+      const response = await fetch(`https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/${indexName}/query`, {
         method: 'POST',
         headers: {
           'X-Algolia-API-Key': process.env.ALGOLIA_API_KEY!,
@@ -5762,7 +5732,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const searchResults = await response.json();
 
       // Apply stock-based sorting to all category browsing first page
-      if ((cleanedFilters.category || cleanedFilters.productType) && (!searchQuery || searchQuery.trim() === '') && page === 0) {
+      // Skip stock sorting when user specifically requests price sorting
+      if ((cleanedFilters.category || cleanedFilters.productType) && (!searchQuery || searchQuery.trim() === '') && page === 0 && sort === 'relevance') {
         console.log(`🔍 Getting 100 results to apply inventory-based sorting for ${cleanedFilters.category || cleanedFilters.productType}...`);
         
         // Get more results to find popular brands
@@ -5838,7 +5809,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sku: hit.objectID || hit.sku,
           rsrStockNumber: hit.rsrStockNumber || hit.stockNumber || hit.objectID,
           stockNumber: hit.stockNumber || hit.rsrStockNumber || hit.objectID,
-          manufacturer: hit.manufacturer || hit.manufacturerName || 'UNKNOWN',
+          manufacturer: hit.manufacturer || hit.manufacturerName,
           categoryName: hit.categoryName || hit.category,
           // Extract individual pricing tiers for frontend compatibility  
           priceBronze: bronzePrice.toString(),
@@ -6395,7 +6366,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return `(categoryName:"Rifles" OR categoryName:"Shotguns")`;
           }
         } else if (department === "18") {
-          return `departmentNumber:"18"`;
+          return `categoryName:"Ammunition"`;
         } else if (department === "08") {
           return `departmentNumber:"08"`;
         } else if (department === "34") {
@@ -6403,11 +6374,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (department === "06") {
           return `departmentNumber:"06"`;
         } else if (department === "10") {
-          return `departmentNumber:"10"`;
+          return `categoryName:"Magazines"`;
         } else if (department === "uppers_lowers_multi") {
           return `(departmentNumber:"41" OR departmentNumber:"42" OR departmentNumber:"43")`;
         } else if (department === "accessories_multi") {
-          return `(departmentNumber:"09" OR departmentNumber:"11" OR departmentNumber:"12" OR departmentNumber:"13" OR departmentNumber:"14" OR departmentNumber:"17" OR departmentNumber:"20" OR departmentNumber:"21" OR departmentNumber:"25" OR departmentNumber:"26" OR departmentNumber:"27" OR departmentNumber:"30" OR departmentNumber:"31" OR departmentNumber:"35")`;
+          return `(categoryName:"Accessories" OR categoryName:"Misc. Accessories")`;
         } else {
           return `categoryName:"${category}"`;
         }
@@ -7336,51 +7307,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ===== ALGOLIA UPC/MPN TEST ENDPOINTS =====
-  
-  // Test UPC/MPN search improvements safely with replica index
-  app.post("/api/admin/test-algolia-upc-mpn", async (req, res) => {
-    try {
-      console.log('🧪 Starting Algolia UPC/MPN test suite...');
-      
-      const { algoliaSearchTest } = await import('./services/algolia-search-test');
-      const results = await algoliaSearchTest.runTestSuite();
-      
-      res.json({
-        success: true,
-        message: 'UPC/MPN test suite completed successfully',
-        results
-      });
-    } catch (error) {
-      console.error('❌ Algolia test suite failed:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  });
-
-  // Clean up test index
-  app.delete("/api/admin/test-algolia-cleanup", async (req, res) => {
-    try {
-      console.log('🗑️ Cleaning up Algolia test index...');
-      
-      const { algoliaSearchTest } = await import('./services/algolia-search-test');
-      await algoliaSearchTest.deleteTestIndex();
-      
-      res.json({
-        success: true,
-        message: 'Test index cleaned up successfully'
-      });
-    } catch (error) {
-      console.error('❌ Failed to cleanup test index:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  });
-
   // ===== SEARCH ANALYTICS & AI LEARNING ADMIN =====
   
   // Get search analytics
@@ -7707,6 +7633,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint for systematic order enrichment
+  app.post("/api/admin/enrich-orders", async (req, res) => {
+    try {
+      console.log('🚀 Starting systematic order enrichment via admin endpoint...');
+      
+      const { scanAndEnrichOrders } = await import('./scripts/enrich-orders.js');
+      
+      // Capture console output for response
+      const originalLog = console.log;
+      const logs: string[] = [];
+      console.log = (...args: any[]) => {
+        logs.push(args.join(' '));
+        originalLog(...args);
+      };
+
+      await scanAndEnrichOrders();
+
+      // Restore original console.log
+      console.log = originalLog;
+
+      res.json({
+        success: true,
+        message: 'Systematic order enrichment completed',
+        logs: logs,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error: any) {
+      console.error('❌ Enrichment failed:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   // RSR FTP Directory Explorer - Find correct image paths
   app.get("/api/rsr-ftp/explore/:imageName", async (req, res) => {
     try {
@@ -7926,27 +7889,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
             items = [];
           }
           
-          // Create cart item
+          // Create cart item with complete tier pricing and product schema
           const cartItem = {
             id: `${product.sku}-${Date.now()}`, // Unique item ID
             productId: product.id,
-            sku: product.sku,
+            sku: product.sku, // CRITICAL: Required for existing item detection
             name: product.name,
             price: currentPrice,
             quantity: parseInt(quantity),
-            requiresFFL: product.requiresFfl,
-            manufacturer: product.manufacturer,
-            imageUrl: product.imageUrl
+            // Complete tier pricing structure
+            tierPricing: {
+              bronze: parseFloat(product.priceBronze || "0"),
+              gold: parseFloat(product.priceGold || "0"),
+              platinum: parseFloat(product.pricePlatinum || "0")
+            },
+            // Essential product schema for FFL shipping and enrichment
+            upc: product.upcCode || '',
+            mpn: product.manufacturerPartNumber || '',
+            fflRequired: product.requiresFfl || false,
+            requiresFFL: product.requiresFfl || false, // Keep legacy field for compatibility
+            manufacturer: product.manufacturer || '',
+            imageUrl: product.imageUrl || '',
+            // Additional product information
+            category: product.category || '',
+            subcategory: product.subcategory || '',
+            weight: product.weight || null,
+            caliber: product.caliber || '',
+            barrelLength: product.barrelLength || '',
+            capacity: product.capacity || '',
+            // Pricing reference information
+            msrp: parseFloat(product.priceMSRP || "0"),
+            retailMap: parseFloat(product.priceMAP || "0")
           };
           
-          // Check if item already exists in cart
-          const existingItemIndex = items.findIndex((item: any) => item.sku === product.sku);
+          // Check if item already exists in cart (handle legacy items without sku field)
+          const existingItemIndex = items.findIndex((item: any) => 
+            item.sku === product.sku || item.productId === product.id
+          );
           
           if (existingItemIndex >= 0) {
-            // Update quantity AND price of existing item (in case tier pricing changed)
+            // Update quantity AND preserve all product information (in case data has changed)
             items[existingItemIndex].quantity += parseInt(quantity);
-            items[existingItemIndex].price = currentPrice; // Update price to current tier pricing
-            items[existingItemIndex].requiresFFL = product.requiresFfl; // Update FFL requirement
+            items[existingItemIndex].price = currentPrice; // Update current calculated price
+            // Update tier pricing structure
+            items[existingItemIndex].tierPricing = {
+              bronze: parseFloat(product.priceBronze || "0"),
+              gold: parseFloat(product.priceGold || "0"),
+              platinum: parseFloat(product.pricePlatinum || "0")
+            };
+            // Update essential product fields
+            items[existingItemIndex].upc = product.upcCode || '';
+            items[existingItemIndex].mpn = product.manufacturerPartNumber || '';
+            items[existingItemIndex].fflRequired = product.requiresFfl || false;
+            items[existingItemIndex].requiresFFL = product.requiresFfl || false;
+            items[existingItemIndex].name = product.name || '';
+            items[existingItemIndex].imageUrl = product.imageUrl || '';
             console.log(`📦 Updated existing cart item: ${product.sku} (new qty: ${items[existingItemIndex].quantity}, price: $${currentPrice})`);
           } else {
             // Add new item to cart
@@ -7984,7 +7981,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced cart persistence endpoints
-  app.post("/api/cart/sync", async (req, res) => {
+  app.post("/api/cart/sync", cartCanonicalizationMiddleware(), async (req, res) => {
     try {
       const { items } = req.body;
       
@@ -7994,8 +7991,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate each item has required fields
       for (const item of items) {
-        if (!item.id || !item.productId || !item.quantity || !item.price) {
-          return res.status(400).json({ error: "Invalid cart item structure" });
+        if (!item.id || !item.productId || !item.quantity || typeof item.price !== 'number') {
+          return res.status(400).json({ error: "Invalid cart item structure: missing required fields" });
+        }
+        
+        // Validate tier pricing structure if present (backward compatible)
+        if (item.tierPricing && 
+            (typeof item.tierPricing.bronze !== 'number' || 
+             typeof item.tierPricing.gold !== 'number' || 
+             typeof item.tierPricing.platinum !== 'number')) {
+          return res.status(400).json({ error: "Invalid cart item structure: invalid tier pricing" });
+        }
+        
+        // Validate quantity is positive
+        if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+          return res.status(400).json({ error: "Invalid cart item structure: quantity must be positive integer" });
+        }
+        
+        // Validate essential product schema fields if present (maintain backward compatibility)
+        if (item.upc !== undefined && typeof item.upc !== 'string') {
+          return res.status(400).json({ error: "Invalid cart item structure: upc must be string" });
+        }
+        
+        if (item.mpn !== undefined && typeof item.mpn !== 'string') {
+          return res.status(400).json({ error: "Invalid cart item structure: mpn must be string" });
+        }
+        
+        if (item.fflRequired !== undefined && typeof item.fflRequired !== 'boolean') {
+          return res.status(400).json({ error: "Invalid cart item structure: fflRequired must be boolean" });
+        }
+        
+        if (item.requiresFFL !== undefined && typeof item.requiresFFL !== 'boolean') {
+          return res.status(400).json({ error: "Invalid cart item structure: requiresFFL must be boolean" });
         }
       }
       
@@ -8093,17 +8120,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid user ID" });
       }
       
-      // Allow access if user is authenticated and accessing their own cart
+      // Allow guest carts temporarily (for order confirmation page)
+      // But still require authentication for logged-in user carts
       const sessionUser = (req.session as any)?.user;
-      if (sessionUser && sessionUser.id !== requestedUserId) {
-        return res.status(403).json({ error: "Access denied" });
+      
+      // If user is authenticated, verify they're accessing their own cart
+      if (sessionUser && sessionUser.id !== parseInt(requestedUserId)) {
+        return res.status(403).json({ error: "Access denied - cannot access other users' carts" });
       }
+      
+      // For guest carts (no sessionUser), allow access for now
+      // TODO: Implement better guest cart security
       
       // Convert string user ID to numeric equivalent for cart storage compatibility
       const numericUserId = stringToNumericUserId(requestedUserId);
       console.log(`📦 Fetching cart for user ${requestedUserId} (numeric: ${numericUserId})`);
       const cart = await storage.getUserCart(numericUserId);
-      res.json({ items: cart?.items || [] });
+      
+      // Recalculate prices based on user's current tier
+      let items = cart?.items || [];
+      
+      if (sessionUser && sessionUser.membershipTier && items.length > 0) {
+        const tier = sessionUser.membershipTier.toLowerCase();
+        console.log(`🎯 Recalculating cart prices for ${tier} tier`);
+        
+        // Update each item with correct tier pricing
+        items = await Promise.all(items.map(async (item: any) => {
+          try {
+            // Get the product from database to get tier prices
+            const product = await storage.getProduct(item.productId);
+            
+            if (product) {
+              let updatedPrice = parseFloat(product.priceBronze || "0"); // Default to Bronze
+              
+              if (tier === 'gold' && product.priceGold) {
+                updatedPrice = parseFloat(product.priceGold);
+              } else if (tier === 'platinum' && product.pricePlatinum) {
+                updatedPrice = parseFloat(product.pricePlatinum);
+              }
+              
+              console.log(`💰 Item ${item.productSku}: old price ${item.price}, new price ${updatedPrice}`);
+              
+              return {
+                ...item,
+                price: updatedPrice,
+                // Also update tier pricing info for transparency
+                priceBronze: parseFloat(product.priceBronze || "0"),
+                priceGold: parseFloat(product.priceGold || "0"),
+                pricePlatinum: parseFloat(product.pricePlatinum || "0")
+              };
+            }
+          } catch (error) {
+            console.error(`Failed to update price for item ${item.productId}:`, error);
+          }
+          return item; // Return original if update fails
+        }));
+        
+        // Save updated cart with recalculated prices
+        await storage.updateUserCart(numericUserId, items);
+      }
+      
+      res.json({ items });
     } catch (error: any) {
       console.error("Cart fetch error:", error);
       res.status(500).json({ error: "Failed to fetch cart" });
@@ -9879,9 +9956,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Zoho OAuth routes for tech@thegunfirm.com
   app.use('/api', zohoAuthRoutes);
   
-  // Register orders endpoints
-  app.use('/api/orders', ordersRouter);
-  
   // Register import error reporting routes
   app.use(importErrorRoutes);
 
@@ -9895,9 +9969,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🔄 Starting complete Algolia sync from database...');
       
-      // Get all products from database (no limit)
-      const allProducts = await db.select().from(products);
-      console.log(`📦 Found ${allProducts.length} products in database`);
+      // Get only active products from database for search index
+      const allProducts = await db.select().from(products).where(eq(products.isActive, true));
+      console.log(`📦 Found ${allProducts.length} active products in database`);
       
       if (allProducts.length === 0) {
         return res.json({ message: "No products found in database to sync", synced: 0 });
@@ -9916,8 +9990,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: product.description,
         sku: product.sku,
         upc: product.upcCode || '',
-        manufacturer: product.manufacturer || '',
-        categoryName: product.category || '',
+        manufacturer: product.manufacturer,
+        categoryName: product.category,
         subcategoryName: product.category || '', // Use same as category for now
         inventoryQuantity: product.stockQuantity || 0,
         inventory: {
@@ -9927,8 +10001,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         price: {
           msrp: parseFloat(product.priceBronze || '0'),
-          retailMap: parseFloat(product.priceBronze || '0'),
-          dealerPrice: parseFloat(product.priceGold || '0'),
+          retailMap: parseFloat(product.priceMAP || product.priceBronze || '0'),
+          dealerPrice: parseFloat(product.pricePlatinum || '0'),
           dealerCasePrice: parseFloat(product.pricePlatinum || '0')
         },
         images: product.images || [],

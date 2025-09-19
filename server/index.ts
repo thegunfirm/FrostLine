@@ -56,6 +56,16 @@ import { pricingService } from "./services/pricing-service";
 import { automaticZohoTokenManager } from "./services/automatic-zoho-token-manager";
 
 const app = express();
+
+// 🔎 Probe: log which /api/* endpoints the confirmation page hits
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api/')) {
+    const len = Number(req.headers['content-length'] || 0) || 0;
+    console.log(`[API] ${req.method} ${req.url} len=${len}`);
+  }
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -151,6 +161,20 @@ app.use((req, res, next) => {
   
   // Register SAML routes
   app.use('/sso/saml', samlRoutes);
+  
+  // NEW: mount the order routes
+  const { default: orderNumberRouter } = await import('./routes/orderNumber.js');
+  const { default: orderSummaryRouter } = await import('./routes/orderSummary.js');
+  const { default: orderSnapshotRouter } = await import('./routes/orderSnapshot.js');
+  const { default: orderSummaryByIdRouter } = await import('./routes/orderSummaryById.cjs');
+  app.use(orderNumberRouter);
+  app.use(orderSummaryRouter);
+  app.use(orderSnapshotRouter);
+  app.use(orderSummaryByIdRouter);
+  
+  // Image verifier for local /images/* URLs
+  const imageVerifyRouter = await import('./routes/imageVerify.cjs');
+  app.use(imageVerifyRouter.default);
   
   const server = await registerRoutes(app);
 

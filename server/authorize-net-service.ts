@@ -1,4 +1,4 @@
-import AuthorizeNet from 'authorizenet';
+import * as AuthorizeNet from 'authorizenet';
 const { APIContracts, APIControllers } = AuthorizeNet;
 
 export interface AuthOnlyResult {
@@ -28,7 +28,10 @@ export class AuthorizeNetService {
   private testMode: boolean;
 
   constructor() {
-    if (!process.env.AUTHORIZE_NET_API_LOGIN_ID || !process.env.AUTHORIZE_NET_TRANSACTION_KEY) {
+    const apiLoginId = process.env.ANET_API_LOGIN_ID_SANDBOX || process.env.AUTHORIZE_NET_API_LOGIN_ID;
+    const transactionKey = process.env.ANET_TRANSACTION_KEY_SANDBOX || process.env.AUTHORIZE_NET_TRANSACTION_KEY;
+    
+    if (!apiLoginId || !transactionKey) {
       throw new Error('Authorize.Net credentials not configured');
     }
 
@@ -44,11 +47,11 @@ export class AuthorizeNetService {
     process.env.AUTHORIZE_NET_ENDPOINT = 'https://apitest.authorize.net/xml/v1/request.api';
 
     this.merchantAuth = new APIContracts.MerchantAuthenticationType();
-    this.merchantAuth.setName(process.env.AUTHORIZE_NET_API_LOGIN_ID);
-    this.merchantAuth.setTransactionKey(process.env.AUTHORIZE_NET_TRANSACTION_KEY);
+    this.merchantAuth.setName(apiLoginId);
+    this.merchantAuth.setTransactionKey(transactionKey);
 
     console.log(`🏦 Authorize.Net configured for SANDBOX environment`);
-    console.log(`📋 Using API Login ID: ${process.env.AUTHORIZE_NET_API_LOGIN_ID}`);
+    console.log(`📋 Using API Login ID: ${apiLoginId}`);
   }
 
   /**

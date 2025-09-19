@@ -1,0 +1,82 @@
+Step 1 — Replace the snapshot writer with a lenient version (one file)
+
+Open: server/routes/orderSnapshot.js
+Replace the entire file with:
+
+// server/routes/orderSnapshot.js
+// POST /api/orders/:orderId/snapshot  (lenient v1 writer)
+// Accept minimal facts, fill safe defaults, mint once, persist.
+
+const express = require('express');
+const { splitOutcomes } = require('../lib/shippingSplit');
+const { mintOrderNumber } = require('../lib/orderNumbers');
+const { readSnapshot, writeSnapshot } = require('../lib/storage');
+
+const router = express.Router();
+
+router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
+  const orderId = String(req.params.orderId || '').trim();
+  if (!orderId) return res.status(400).json({ error: 'orderId required' });
+
+  const body = req.body || {};
+  const raw = Array.isArray(body.items) ? body.items : [];
+  if (!raw.length) return res.status(422).json({ error: 'items[] required' });
+
+  // Minimal, lenient validation: require UPC + qty + price only.
+  const missing = [];
+  const items = raw.map((it, i) => {
+    const upc = String(it.upc || '').trim();
+    if (!upc) missing.push(`items[${i}].upc`);
+
+    const qty = Number(it.qty ?? 1);
+    if (!Number.isFinite(qty) || qty <= 0) missing.push(`items[${i}].qty`);
+
+    const price = Number(it.price ?? 0);
+    if (!Number.isFinite(price) || price < 0) missing.push(`items[${i}].price`);
+
+    // Lenient defaults (name/sku/mpn optional):
+    const name = String(it.name || `Item ${upc}`);
+    const mpn  = String(it.mpn  || '');
+    const sku  = String(it.sku  || '');
+
+    // Image is irrelevant to processing; force safe local path (no external deps)
+    let imageUrl = String(it.imageUrl || '');
+    if (!imageUrl.startsWith('/images/')) imageUrl = '/images/placeholder.jpg';
+
+    return { upc, qty, price, name, mpn, sku, imageUrl };
+  });
+
+  if (missing.length) {
+    return res.status(422).json({ error: 'Snapshot incomplete', fields: missing });
+  }
+
+  // Outcomes (default IH>Customer)
+  let outcomes = [];
+  try {
+    outcomes = splitOutcomes(body.shippingOutcomes || ['IH>Customer']);
+  } catch (e) {
+    return res.status(400).json({ error: e.message || 'invalid outcomes' });
+  }
+
+  // Preserve any prior snapshot + minted numbers
+  const existing = readSnapshot(orderId) || {};
+  const minted = existing.minted || mintOrderNumber(outcomes);
+
+  const snapshot = {
+    orderId,
+    txnId: String(body.txnId || existing.txnId || ''),
+    status: String(body.status || existing.status || 'processing'),
+    customer: body.customer || existing.customer || {},
+    items,
+    shippingOutcomes: outcomes,
+    allocations: body.allocations || existing.allocations || null,
+    minted, // { main, parts[] }
+    createdAt: existing.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  writeSnapshot(orderId, snapshot);
+  return res.json({ ok: true, orderId, orderNumber: minted.main });
+});
+
+module.exports = router;

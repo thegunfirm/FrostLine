@@ -183,7 +183,8 @@ class RSRFileProcessor {
     const productData: InsertProduct = {
       name: record.description,
       description: record.expandedDescription || record.description,
-      category: this.mapDepartmentToCategory(record.departmentNumber),
+      category: this.mapDepartmentToCategory(record.departmentNumber, record.description),
+      departmentNumber: record.departmentNumber,
       manufacturer: record.fullManufacturerName,
       sku: record.stockNumber,
       upcCode: record.upcCode,
@@ -191,7 +192,7 @@ class RSRFileProcessor {
       priceMSRP: record.retailPrice || "0",
       priceMAP: record.retailMAP || record.retailPrice || "0",
       priceBronze: record.retailPrice || "0", // Bronze = MSRP
-      priceGold: record.retailMAP || record.retailPrice || "0", // Gold = MAP
+      priceGold: this.calculateGoldPrice(record.retailPrice, record.rsrPricing), // Gold = (MSRP + Dealer)/2
       pricePlatinum: record.rsrPricing || "0", // Platinum = Dealer price
       inStock: parseInt(record.inventoryQuantity) > 0,
       stockQuantity: parseInt(record.inventoryQuantity) || 0,
@@ -305,7 +306,15 @@ class RSRFileProcessor {
     console.log(`Deleted processing complete: ${deleted} products marked as out of stock`);
   }
 
-  private mapDepartmentToCategory(departmentNumber: string): string {
+  private mapDepartmentToCategory(departmentNumber: string, productDescription?: string): string {
+    // If no department number, try to categorize by product description
+    if (!departmentNumber || departmentNumber.trim() === '') {
+      return this.categorizeByDescription(productDescription || '');
+    }
+    
+    // Normalize department number by removing leading zeros
+    const normalizedDept = departmentNumber.replace(/^0+/, '') || '0';
+    
     const categoryMap: Record<string, string> = {
       '1': 'Handguns',
       '2': 'Used Handguns',
@@ -351,12 +360,14 @@ class RSRFileProcessor {
       '43': 'Upper Receivers & Conversion Kits - High Capacity'
     };
 
-    return categoryMap[departmentNumber] || 'Accessories';
+    return categoryMap[normalizedDept] || 'Accessories';
   }
 
   private requiresFFL(departmentNumber: string): boolean {
+    // Normalize department number by removing leading zeros
+    const normalizedDept = departmentNumber.replace(/^0+/, '') || '0';
     const fflRequiredDepartments = ['1', '2', '3', '5', '6', '7', '41', '42', '43'];
-    return fflRequiredDepartments.includes(departmentNumber);
+    return fflRequiredDepartments.includes(normalizedDept);
   }
 
   private generateTags(record: RSRInventoryRecord): string[] {
@@ -383,6 +394,116 @@ class RSRFileProcessor {
     }
     
     return tags;
+  }
+
+  private calculateGoldPrice(msrp: string, wholesale: string): string {
+    const msrpNum = parseFloat(msrp) || 0;
+    const wholesaleNum = parseFloat(wholesale) || 0;
+    
+    if (msrpNum === 0 && wholesaleNum === 0) {
+      return "0";
+    }
+    
+    // Gold = (MSRP + Dealer)/2
+    const goldPrice = (msrpNum + wholesaleNum) / 2;
+    return goldPrice.toFixed(2);
+  }
+
+  private categorizeByDescription(description: string): string {
+    const desc = description.toLowerCase();
+    
+    // Exclude NON-NFA accessories/cases FIRST (prevents misclassification)
+    if (desc.includes('flash suppressor') || desc.includes('muzzle brake') ||
+        desc.includes('compensator') || desc.includes('thread protector') ||
+        desc.includes('suppressor cleaner') || desc.includes('suppressor adapter') ||
+        desc.includes('suppressor mount') || desc.includes('suppressor cover') ||
+        desc.includes('suppressor pouch') || desc.includes('suppressor case') ||
+        desc.includes('case') || desc.includes('pouch') || desc.includes('bag') ||
+        desc.includes('holster') || desc.includes('cover') || desc.includes('grip') ||
+        desc.includes('cleaning') || desc.includes('kit') || desc.includes('tool') ||
+        desc.includes('adapter') || desc.includes('mount')) {
+      return this.categorizeAccessory(desc);
+    }
+    
+    // ONLY actual NFA Items (after exclusions)
+    if (desc.includes('silencer') || 
+        (desc.includes('suppressor') && !desc.includes('flash')) ||
+        desc.includes('sbr') || desc.includes('short barrel rifle') ||
+        desc.includes('short barreled rifle') ||
+        desc.includes('sbs') || desc.includes('short barreled shotgun') ||
+        desc.includes('aow') || desc.includes('any other weapon') ||
+        desc.includes('machine gun') || desc.includes('full auto')) {
+      return 'NFA Products';
+    }
+    
+    // Actual Firearms (more strict criteria)
+    // For handguns, require specific patterns that indicate actual firearms
+    if ((desc.includes('pistol') || desc.includes('handgun') || desc.includes('revolver')) &&
+        !desc.includes('case') && !desc.includes('pouch') && !desc.includes('bag') &&
+        !desc.includes('holster') && !desc.includes('grip') && !desc.includes('cleaning') &&
+        (desc.includes('9mm') || desc.includes('45acp') || desc.includes('40sw') || 
+         desc.includes('357') || desc.includes('38') || desc.includes('380') ||
+         desc.includes('barrel') || desc.includes('trigger') || desc.includes('magazine') ||
+         desc.includes('round') || desc.includes('rd') || desc.includes('shot'))) {
+      return 'Handguns';
+    }
+    
+    if ((desc.includes('rifle') || desc.includes('carbine') || 
+         desc.includes('ar-15') || desc.includes('ar15') || desc.includes('shotgun')) &&
+        !desc.includes('case') && !desc.includes('bag') && !desc.includes('cover') &&
+        (desc.includes('barrel') || desc.includes('trigger') || desc.includes('stock') ||
+         desc.includes('round') || desc.includes('rd') || desc.includes('shot') ||
+         desc.includes('12ga') || desc.includes('20ga') || desc.includes('223') ||
+         desc.includes('308') || desc.includes('5.56'))) {
+      return 'Long Guns';
+    }
+    
+    // Ammunition
+    if (desc.includes('rounds') || desc.includes('cartridge') ||
+        desc.includes('ammo') || desc.includes('ammunition') ||
+        (desc.includes('grain') && (desc.includes('fmj') || desc.includes('jhp') || desc.includes('ball'))) ||
+        desc.includes('brass') && desc.includes('case')) {
+      return 'Ammunition';
+    }
+    
+    // Optics
+    if (desc.includes('scope') || desc.includes('red dot') ||
+        desc.includes('sight') || desc.includes('optic')) {
+      return 'Optics';
+    }
+    
+    // Magazines
+    if (desc.includes('magazine') || desc.includes('mag ') ||
+        (desc.includes('round') && desc.includes('capacity'))) {
+      return 'Magazines';
+    }
+    
+    // Default to Accessories for everything else
+    return 'Accessories';
+  }
+
+  private categorizeAccessory(desc: string): string {
+    if (desc.includes('case') || desc.includes('bag')) {
+      if (desc.includes('hard')) {
+        return 'Hard Gun Cases';
+      } else {
+        return 'Soft Gun Cases, Packs, Bags';
+      }
+    }
+    
+    if (desc.includes('holster') || desc.includes('pouch')) {
+      return 'Holsters & Pouches';
+    }
+    
+    if (desc.includes('cleaning') || desc.includes('kit')) {
+      return 'Cleaning Equipment';
+    }
+    
+    if (desc.includes('grip') || desc.includes('stock') || desc.includes('pad')) {
+      return 'Grips, Pads, Stocks, Bipods';
+    }
+    
+    return 'Accessories';
   }
 
   /**

@@ -54,7 +54,7 @@ import TierPricing from "@/pages/cms/tier-pricing";
 import DeliverySettings from "@/pages/cms/delivery-settings";
 import AtfDirectoryManagement from "@/pages/management/atf-directory";
 import Account from "@/pages/account";
-import AccountOrders from "@/pages/account-orders";
+import AccountOrders from "@/pages/account/orders";
 import OrderDetail from "@/pages/order-detail";
 import ZohoSetup from "@/pages/ZohoSetup";
 import EmailVerificationSimulator from "@/pages/EmailVerificationSimulator";
@@ -72,6 +72,10 @@ import FAPTierTest from "@/pages/FAPTierTest";
 import OrderToZohoTest from "@/pages/OrderToZohoTest";
 import CreateTestUsers from "@/pages/CreateTestUsers";
 import ApiFieldDiscovery from "@/pages/cms/admin/api-field-discovery";
+import OrdersManagement from "@/pages/cms/admin/orders-management";
+import AdminDashboard from "@/pages/admin/admin-dashboard";
+import BackofficeDashboard from "@/pages/backoffice/backoffice-dashboard";
+import SystemDashboard from "@/pages/system/system-dashboard";
 
 // Global scroll-to-top component that monitors route changes
 function ScrollToTop() {
@@ -130,6 +134,9 @@ function Router() {
         <Route path="/payment-test" component={PaymentTest} />
         <Route path="/categories" component={Categories} />
         <Route path="/browse" component={Browse} />
+        <Route path="/admin" component={AdminDashboard} />
+        <Route path="/backoffice" component={BackofficeDashboard} />
+        <Route path="/system" component={SystemDashboard} />
         <Route path="/cms" component={CMSDashboard} />
         <Route path="/cms/dashboard" component={CMSDashboard} />
         <Route path="/cms/support/tickets" component={SupportTickets} />
@@ -143,6 +150,7 @@ function Router() {
         <Route path="/cms/admin/fap-customer-profiles" component={FAPCustomerProfiles} />
         <Route path="/cms/admin/tier-labels" component={TierLabels} />
         <Route path="/cms/admin/api-field-discovery" component={ApiFieldDiscovery} />
+        <Route path="/cms/admin/orders" component={OrdersManagement} />
         <Route path="/cms/subscription-management" component={SubscriptionManagement} />
         <Route path="/cms/role-management" component={RoleManagement} />
         <Route path="/fap-membership" component={FAPMembership} />

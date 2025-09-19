@@ -4,23 +4,43 @@ import { RSRProduct } from './rsr-api';
 export interface AlgoliaProduct {
   objectID: string;
   title: string;
+  name: string;
   description: string;
+  fullDescription: string;
   sku: string;
   upc: string;
   manufacturerName: string;
   categoryName: string;
   subcategoryName: string;
-  inventory: {
-    onHand: number;
-    allocated: boolean;
-    dropShippable: boolean;
+  // Flat pricing structure that matches settings
+  tierPricing: {
+    bronze: number;
+    gold: number;
+    platinum: number;
   };
-  price: {
-    msrp: number;
-    retailMap: number;
-    dealerPrice: number;
-    dealerCasePrice: number;
-  };
+  retailPrice: number;
+  msrp: number;
+  dealerPrice: number;
+  // Inventory fields
+  inStock: boolean;
+  inventoryQuantity: number;
+  dropShippable: boolean;
+  // Product attributes for filtering
+  caliber?: string;
+  actionType?: string;
+  barrelLength?: string;
+  capacity?: string;
+  finish?: string;
+  frameSize?: string;
+  sightType?: string;
+  newItem: boolean;
+  // Ranking fields
+  popularityScore: number;
+  isCompleteFirearm?: boolean;
+  isActive: boolean;
+  // Search enhancement
+  searchableText: string;
+  tags: string[];
   images: Array<{
     image: string;
     id: string;
@@ -178,29 +198,61 @@ class AlgoliaSearchService {
 
     // Determine if this is a complete handgun for ranking boost
     const isCompleteHandgun = this.isCompleteHandgun(rsrProduct.description);
+    
+    // Calculate popularity score for ranking
+    const popularityScore = this.getPopularityScore({
+      name: rsrProduct.description,
+      manufacturer: rsrProduct.manufacturer,
+      category: rsrProduct.categoryDesc
+    });
+
+    // Create flat pricing structure that matches settings expectations
+    const retailPrice = rsrProduct.retailPrice || 0;
+    const dealerPrice = rsrProduct.rsrPrice || 0;
+    const msrp = rsrProduct.retailPrice || 0;
+    
+    // Map RSR prices to tier structure (using best available mapping)
+    const tierPricing = {
+      bronze: retailPrice, // Use retail price for bronze tier
+      gold: Math.max(dealerPrice * 1.15, retailPrice * 0.9), // Gold between dealer and retail
+      platinum: dealerPrice // Use dealer price for platinum (lowest)
+    };
 
     return {
       objectID: rsrProduct.stockNo,
       title: rsrProduct.description,
+      name: rsrProduct.description, // Add name field
       description: rsrProduct.fullDescription || rsrProduct.description,
+      fullDescription: rsrProduct.fullDescription || rsrProduct.description,
       sku: rsrProduct.mfgPartNumber || rsrProduct.stockNo,
       upc: rsrProduct.upc || '',
       manufacturerName: rsrProduct.manufacturer || rsrProduct.mfgName || '',
       categoryName: rsrProduct.categoryDesc || '',
       subcategoryName: rsrProduct.subDepartmentDesc || '',
-      inventory: {
-        onHand: rsrProduct.quantity || 0,
-        allocated: rsrProduct.allocated === 'Y',
-        dropShippable: true
-      },
-      price: {
-        msrp: rsrProduct.retailPrice || 0,
-        retailMap: rsrProduct.retailPrice || 0,
-        dealerPrice: rsrProduct.rsrPrice || 0,
-        dealerCasePrice: rsrProduct.rsrPrice || 0
-      },
+      // FLAT pricing structure that matches settings
+      tierPricing,
+      retailPrice,
+      msrp,
+      dealerPrice,
+      // Inventory fields
+      inStock: (rsrProduct.quantity || 0) > 0,
+      inventoryQuantity: rsrProduct.quantity || 0,
+      dropShippable: true,
+      // Product attributes for filtering
+      caliber,
+      actionType,
+      barrelLength,
+      capacity,
+      newItem: rsrProduct.newItem || false,
+      // Ranking fields
+      popularityScore,
+      isCompleteFirearm: isCompleteHandgun,
+      isActive: true, // RSR products are always active when indexed
+      // Enhanced search
+      searchableText,
+      tags,
       images: rsrProduct.imgName ? [{
-        image: `https://www.rsrgroup.com/images/inventory/${rsrProduct.imgName}`,
+        image: `/api/image/${rsrProduct.stockNo}`, // Use our image API
         id: rsrProduct.imgName
       }] : [],
       createdAt: new Date().toISOString(),
@@ -273,12 +325,21 @@ class AlgoliaSearchService {
         'filterOnly(tierPricing.platinum)',
         'filterOnly(tags)'
       ],
+      // CRITICAL FIX: Add sortableAttributes for price sorting
+      sortableAttributes: [
+        'tierPricing.platinum',
+        'tierPricing.gold', 
+        'tierPricing.bronze',
+        'retailPrice',
+        'msrp',
+        'popularityScore'
+      ],
       customRanking: [
         'desc(popularityScore)', // Boost popular handguns and rifles first
         'desc(isCompleteFirearm)',
         'desc(inStock)',
         'desc(newItem)',
-        'asc(retailPrice)'
+        'asc(tierPricing.platinum)' // Use consistent platinum pricing
       ],
       typoTolerance: true,
       minWordSizefor1Typo: 4,
@@ -333,6 +394,9 @@ class AlgoliaSearchService {
 
     // Build filters
     const filterParts: string[] = [];
+    
+    // Removed isActive filter to show all products
+    
     if (filters?.category) {
       filterParts.push(`category:"${filters.category}"`);
     }
@@ -576,6 +640,7 @@ class AlgoliaSearchService {
       sightType: dbProduct.sightType,
       newItem: dbProduct.newItem || false,
       dropShippable: dbProduct.dropShippable !== false,
+      isActive: dbProduct.isActive !== false, // CRITICAL: Include isActive for filtering
       popularityScore, // Add popularity boost for ranking
       searchableText, // Enhanced searchable text with both SKU and MPN
       tags: this.generateTags(dbProduct)
@@ -612,6 +677,43 @@ class AlgoliaSearchService {
       await this.adminIndex.partialUpdateObject(updates);
     } catch (error) {
       console.error('Error updating product inventory in Algolia:', error);
+      throw error;
+    }
+  }
+
+  // Remove product from Algolia index (for deduplication)
+  async removeProduct(objectID: string): Promise<void> {
+    if (!this.adminIndex) {
+      throw new Error('Admin API key required for deletions');
+    }
+
+    try {
+      await this.adminIndex.deleteObject(objectID);
+      console.log(`Removed product ${objectID} from Algolia index`);
+    } catch (error) {
+      console.error('Error removing product from Algolia:', error);
+      throw error;
+    }
+  }
+
+  // Mark product as inactive in Algolia (alternative to removal)
+  async markProductInactive(objectID: string): Promise<void> {
+    if (!this.adminIndex) {
+      throw new Error('Admin API key required for updates');
+    }
+
+    try {
+      await this.adminIndex.partialUpdateObject({
+        objectID,
+        isActive: false,
+        inStock: false,
+        quantity: 0,
+        searchableText: '', // Clear searchable text to prevent search results
+        _archived: true
+      });
+      console.log(`Marked product ${objectID} as inactive in Algolia index`);
+    } catch (error) {
+      console.error('Error marking product as inactive in Algolia:', error);
       throw error;
     }
   }

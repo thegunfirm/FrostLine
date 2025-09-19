@@ -1,0 +1,64 @@
+{
+  "orderId": "149",
+  "txnId": "120071143468",
+  "status": "processing",
+  "customer": {
+    "email": "ripmagicalbeast@gmail.com",
+    "name": "Rip Ripple",
+    "firstName": "Rip",
+    "lastName": "Ripple",
+    "address": "123 Test St",
+    "city": "Test City",
+    "state": "AZ",
+    "zip": "12345"
+  },
+  "items": [
+    {
+      "upc": "015813504317",
+      "mpn": "",
+      "sku": "50431-1",
+      "name": "MSBRG 500 ATI TAC GRY 12/18.5 5RD",
+      "qty": 1,
+      "price": 772.8,
+      "imageUrl": "/images/015813504317.jpg"
+    },
+    {
+      "upc": "708747544855",
+      "mpn": "",
+      "sku": "SI-LINK-CFG-BK-1",
+      "name": "STRIKE LINK CURVED FOREGRIP BLK",
+      "qty": 1,
+      "price": 41.95,
+      "imageUrl": "/images/708747544855.jpg"
+    },
+    {
+      "upc": "706397967437",
+      "mpn": "",
+      "sku": "SPPC9129LRAOS",
+      "name": "SPRGFLD 1911 9MM TRP 5\" AOS 9RD BLK",
+      "qty": 1,
+      "price": 1999,
+      "imageUrl": "/images/706397967437.jpg"
+    }
+  ],
+  "shippingOutcomes": [
+    "IH>FFL",
+    "IH>Customer"
+  ],
+  "minted": {
+    "main": "100028-Z",
+    "parts": [
+      {
+        "outcome": "IH>FFL",
+        "orderNumber": "100028-ZA"
+      },
+      {
+        "outcome": "IH>Customer",
+        "orderNumber": "100028-ZB"
+      }
+    ]
+  },
+  "allocations": null,
+  "createdAt": "2025-09-16T19:45:00.404Z",
+  "updatedAt": "2025-09-16T19:45:00.404Z"
+}

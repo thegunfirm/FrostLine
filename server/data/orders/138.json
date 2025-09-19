@@ -1,0 +1,49 @@
+{
+  "orderId": "138",
+  "txnId": "120071113092",
+  "status": "processing",
+  "customer": {
+    "email": "ripmagicalbeast@gmail.com",
+    "name": "Rip Ripple"
+  },
+  "items": [
+    {
+      "upc": "UNKNOWN-1",
+      "mpn": "",
+      "sku": "",
+      "name": "Item UNKNOWN-1",
+      "qty": 1,
+      "price": 600,
+      "imageUrl": "/images/placeholder.jpg"
+    },
+    {
+      "upc": "UNKNOWN-2",
+      "mpn": "",
+      "sku": "",
+      "name": "Item UNKNOWN-2",
+      "qty": 1,
+      "price": 38.95,
+      "imageUrl": "/images/placeholder.jpg"
+    },
+    {
+      "upc": "UNKNOWN-3",
+      "mpn": "",
+      "sku": "",
+      "name": "Item UNKNOWN-3",
+      "qty": 1,
+      "price": 19.25,
+      "imageUrl": "/images/placeholder.jpg"
+    }
+  ],
+  "shippingOutcomes": [
+    "IH>Customer"
+  ],
+  "allocations": null,
+  "minted": {
+    "main": "100017-0",
+    "parts": []
+  },
+  "createdAt": "2025-09-16T01:13:58.603Z",
+  "updatedAt": "2025-09-16T02:51:30.719Z",
+  "enrichedAt": "2025-09-16T02:51:30.719Z"
+}

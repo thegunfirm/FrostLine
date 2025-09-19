@@ -1,0 +1,36 @@
+{
+  "orderId": "154",
+  "txnId": "120071254766",
+  "status": "processing",
+  "customer": {
+    "email": "ripmagicalbeast@gmail.com",
+    "name": "Rip Ripple",
+    "firstName": "Rip",
+    "lastName": "Ripple",
+    "address": "123 Test St",
+    "city": "Test City",
+    "state": "AZ",
+    "zip": "12345"
+  },
+  "items": [
+    {
+      "upc": "UNKNOWN-1",
+      "mpn": "",
+      "sku": "RUG46931E",
+      "name": "RUGER AMER PRED G2 308WIN 22\" BZ/GR",
+      "qty": 1,
+      "price": 729,
+      "imageUrl": "/images/placeholder.jpg"
+    }
+  ],
+  "shippingOutcomes": [
+    "IH>Customer"
+  ],
+  "minted": {
+    "main": "100033-0",
+    "parts": []
+  },
+  "allocations": null,
+  "createdAt": "2025-09-18T17:49:44.394Z",
+  "updatedAt": "2025-09-18T17:49:44.394Z"
+}

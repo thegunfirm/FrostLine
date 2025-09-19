@@ -19,6 +19,8 @@ import {
   atfDirectoryFiles,
   fflDataSources,
   orderActivityLogs,
+  rsrSkuAliases,
+  dedupLog,
   type User, 
   type InsertUser,
   type Product,
@@ -55,12 +57,16 @@ import {
   type InsertFflDataSource,
   type OrderActivityLog,
   type InsertOrderActivityLog,
+  type RsrSkuAlias,
+  type InsertRsrSkuAlias,
+  type DedupLog,
+  type InsertDedupLog,
   tierLabelSettings,
   type TierLabelSetting,
   type InsertTierLabelSetting
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, ilike, and, or, desc, asc, ne, sql, gt, gte, lte, inArray } from "drizzle-orm";
+import { eq, like, ilike, and, or, desc, asc, ne, sql, gt, gte, lte, inArray, isNotNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -88,9 +94,17 @@ export interface IStorage {
   }): Promise<Product[]>;
   getProduct(id: number): Promise<Product | undefined>;
   getProductBySku(sku: string): Promise<Product | undefined>;
+  getProductByUpc(upc: string): Promise<Product | undefined>;
+  getProductByMpn(mpn: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, updates: Partial<Product>): Promise<Product>;
   searchProducts(query: string, limit?: number): Promise<Product[]>;
+  
+  // RSR SKU Alias operations
+  upsertSkuAlias(stockNumber: string, upcCode: string, productId: number, isCurrent: boolean): Promise<RsrSkuAlias>;
+  findProductByAlias(stockNumber: string): Promise<Product | undefined>;
+  markCurrentSku(productId: number, stockNumber: string): Promise<void>;
+  checkSkuConflict(sku: string, excludeProductId?: number): Promise<Product | undefined>;
   getProductsByCategory(category: string): Promise<Product[]>;
   getFeaturedProducts(limit?: number): Promise<Product[]>;
   getRelatedProducts(productId: number, category: string, manufacturer: string): Promise<Product[]>;
@@ -322,7 +336,16 @@ export class DatabaseStorage implements IStorage {
   }): Promise<Product[]> {
     // For now, use the same pattern as getFeaturedProducts but apply filters after
     const allProducts = await db.select().from(products)
-      .where(eq(products.isActive, true))
+      .where(
+        and(
+          eq(products.isActive, true),
+          or(
+            isNotNull(products.rsrStockNumber),
+            eq(products.category, 'Ammunition'),
+            eq(products.category, 'Accessories')
+          )
+        )
+      )
       .orderBy(desc(products.createdAt));
     
     // Apply client-side filtering for now to test functionality
@@ -365,6 +388,67 @@ export class DatabaseStorage implements IStorage {
     return product || undefined;
   }
 
+  async getProductByUpc(upc: string): Promise<Product | undefined> {
+    console.log(`🔧 DETERMINISTIC UPC LOOKUP for: ${upc}`);
+    
+    // Get all products with UPC - ensure we select all fields including requiresFFL
+    const allProducts = await db.select().from(products).where(eq(products.upcCode, upc));
+    
+    if (!allProducts.length) {
+      console.log(`❌ No product found for UPC: ${upc}`);
+      return undefined;
+    }
+    
+    console.log(`🔍 Found ${allProducts.length} products for UPC ${upc}`);
+    
+    if (allProducts.length === 1) {
+      console.log(`✅ Single product for UPC: ${allProducts[0].name} (ID: ${allProducts[0].id})`);
+      return allProducts[0];
+    }
+    
+    // COLLISION SAFETY: Multiple products with same UPC - use deterministic selection
+    console.log(`⚠️  COLLISION: Multiple products found for UPC ${upc}, selecting canonical product`);
+    
+    // Get alias information for all products to find the one with current alias
+    const productIds = allProducts.map(p => p.id);
+    const aliases = await db.select()
+      .from(rsrSkuAliases)
+      .where(
+        and(
+          inArray(rsrSkuAliases.productId, productIds),
+          eq(rsrSkuAliases.isCurrent, true)
+        )
+      );
+    
+    // Prefer product with current alias (most recently updated via RSR import)
+    if (aliases.length > 0) {
+      const currentAliasProductId = aliases[0].productId;
+      const canonicalProduct = allProducts.find(p => p.id === currentAliasProductId);
+      if (canonicalProduct) {
+        console.log(`🎯 CANONICAL: Using product with current alias: ${canonicalProduct.name} (ID: ${canonicalProduct.id})`);
+        return canonicalProduct;
+      }
+    }
+    
+    // Fallback: Use most recently created product for consistency (updatedAt may not exist)
+    const sortedProducts = allProducts.sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime; // Most recent first
+    });
+    
+    const canonicalProduct = sortedProducts[0];
+    console.log(`📅 CANONICAL: Using most recently created product: ${canonicalProduct.name} (ID: ${canonicalProduct.id}, Created: ${canonicalProduct.createdAt})`);
+    console.log(`   🗂️  Skipped products: ${sortedProducts.slice(1).map(p => `${p.name} (ID: ${p.id})`).join(', ')}`);
+    
+    return canonicalProduct;
+  }
+
+  async getProductByMpn(mpn: string): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.manufacturerPartNumber, mpn));
+    return product || undefined;
+  }
+
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
     const [product] = await db.insert(products).values(insertProduct).returning();
     return product;
@@ -373,6 +457,69 @@ export class DatabaseStorage implements IStorage {
   async updateProduct(id: number, updates: Partial<Product>): Promise<Product> {
     const [product] = await db.update(products).set(updates).where(eq(products.id, id)).returning();
     return product;
+  }
+
+  // RSR SKU Alias functions
+  async upsertSkuAlias(stockNumber: string, upcCode: string, productId: number, isCurrent: boolean): Promise<RsrSkuAlias> {
+    const [alias] = await db.insert(rsrSkuAliases)
+      .values({
+        stockNumber,
+        upcCode,
+        productId,
+        isCurrent,
+        lastSeenAt: new Date()
+      })
+      .onConflictDoUpdate({
+        target: rsrSkuAliases.stockNumber,
+        set: {
+          upcCode,
+          productId,
+          isCurrent,
+          lastSeenAt: new Date()
+        }
+      })
+      .returning();
+    return alias;
+  }
+
+  async findProductByAlias(stockNumber: string): Promise<Product | undefined> {
+    const [alias] = await db.select()
+      .from(rsrSkuAliases)
+      .innerJoin(products, eq(rsrSkuAliases.productId, products.id))
+      .where(eq(rsrSkuAliases.stockNumber, stockNumber))
+      .limit(1);
+    
+    return alias ? alias.products : undefined;
+  }
+
+  async markCurrentSku(productId: number, stockNumber: string): Promise<void> {
+    // First, mark all aliases for this product as not current
+    await db.update(rsrSkuAliases)
+      .set({ isCurrent: false })
+      .where(eq(rsrSkuAliases.productId, productId));
+    
+    // Then mark the specified SKU as current
+    await db.update(rsrSkuAliases)
+      .set({ isCurrent: true })
+      .where(and(
+        eq(rsrSkuAliases.productId, productId),
+        eq(rsrSkuAliases.stockNumber, stockNumber)
+      ));
+  }
+  
+  async checkSkuConflict(sku: string, excludeProductId?: number): Promise<Product | undefined> {
+    if (excludeProductId) {
+      const conflictingProducts = await db.select().from(products).where(
+        and(
+          eq(products.sku, sku),
+          ne(products.id, excludeProductId)
+        )
+      );
+      return conflictingProducts[0] || undefined;
+    }
+    
+    const [conflictingProduct] = await db.select().from(products).where(eq(products.sku, sku));
+    return conflictingProduct || undefined;
   }
 
   async searchProducts(query: string, limit = 20): Promise<Product[]> {
@@ -384,7 +531,12 @@ export class DatabaseStorage implements IStorage {
             like(products.description, `%${query}%`),
             like(products.manufacturer, `%${query}%`)
           ),
-          eq(products.isActive, true)
+          eq(products.isActive, true),
+          or(
+            isNotNull(products.rsrStockNumber),
+            eq(products.category, 'Ammunition'),
+            eq(products.category, 'Accessories')
+          )
         )
       )
       .limit(limit)
@@ -393,13 +545,32 @@ export class DatabaseStorage implements IStorage {
 
   async getProductsByCategory(category: string): Promise<Product[]> {
     return await db.select().from(products)
-      .where(and(eq(products.category, category), eq(products.isActive, true)))
+      .where(
+        and(
+          eq(products.category, category),
+          eq(products.isActive, true),
+          or(
+            isNotNull(products.rsrStockNumber),
+            eq(products.category, 'Ammunition'),
+            eq(products.category, 'Accessories')
+          )
+        )
+      )
       .orderBy(desc(products.createdAt));
   }
 
   async getFeaturedProducts(limit = 8): Promise<Product[]> {
     return await db.select().from(products)
-      .where(eq(products.isActive, true))
+      .where(
+        and(
+          eq(products.isActive, true),
+          or(
+            isNotNull(products.rsrStockNumber),
+            eq(products.category, 'Ammunition'),
+            eq(products.category, 'Accessories')
+          )
+        )
+      )
       .orderBy(desc(products.createdAt))
       .limit(limit);
   }
@@ -496,7 +667,8 @@ export class DatabaseStorage implements IStorage {
         .where(and(
           eq(products.isActive, true),
           eq(products.category, category),
-          ne(products.id, productId)
+          ne(products.id, productId),
+          isNotNull(products.departmentNumber)
         ))
         .limit(8);
     }
@@ -508,7 +680,12 @@ export class DatabaseStorage implements IStorage {
     manufacturer: string
   ): Promise<any[]> {
     // Get the reference product for caliber/firearm type extraction
-    const referenceProduct = await db.select().from(products).where(eq(products.id, productId)).limit(1);
+    const referenceProduct = await db.select().from(products).where(
+      and(
+        eq(products.id, productId),
+        isNotNull(products.departmentNumber)
+      )
+    ).limit(1);
     if (!referenceProduct.length) return [];
     
     const caliber = this.extractCaliber(referenceProduct[0].name);
@@ -519,7 +696,8 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(products.isActive, true),
         eq(products.category, category),
-        ne(products.id, productId)
+        ne(products.id, productId),
+        isNotNull(products.departmentNumber)
       ))
       .orderBy(sql`RANDOM()`)
       .limit(200);

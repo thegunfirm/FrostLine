@@ -8,7 +8,7 @@
 
 import cron from 'node-cron';
 import { rsrFTPService } from './rsr-ftp-service.js';
-import { RSRFileProcessor } from './rsr-file-processor.js';
+import { rsrFileProcessor } from './distributors/rsr/rsr-file-processor.js';
 import { rsrMonitoringService } from './rsr-monitoring-service.js';
 import fs from 'fs';
 import path from 'path';
@@ -31,7 +31,7 @@ interface SchedulerStatus {
 
 export class RSRSchedulerService {
   private jobs: Map<string, cron.ScheduledTask> = new Map();
-  private processor: RSRFileProcessor;
+  private processor: typeof rsrFileProcessor;
   private stats = {
     totalRuns: 0,
     successfulRuns: 0,
@@ -41,7 +41,7 @@ export class RSRSchedulerService {
   private configPath: string;
 
   constructor() {
-    this.processor = new RSRFileProcessor();
+    this.processor = rsrFileProcessor;
     this.configPath = path.join(process.cwd(), 'server', 'config', 'rsr-scheduler.json');
     this.loadConfiguration();
   }

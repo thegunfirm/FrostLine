@@ -1,6 +1,7 @@
 import ftp from "basic-ftp";
 import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import mime from "mime";
+import { Writable } from "stream";
 
 const {
   RSR_FTP_HOST, RSR_FTP_USER, RSR_FTP_PASS, RSR_FTP_PORT,
@@ -53,7 +54,13 @@ async function syncDir(client, remoteDir, prefix) {
     if (await objectExists(key)) { skipped++; continue; }
 
     const chunks = [];
-    await retry(() => client.downloadTo((c) => chunks.push(c), filename));
+    const stream = new Writable({
+      write(chunk, encoding, callback) {
+        chunks.push(chunk);
+        callback();
+      }
+    });
+    await retry(() => client.downloadTo(stream, filename));
     const buffer = Buffer.concat(chunks);
     await uploadBuffer(buffer, key);
     uploaded++;
@@ -90,7 +97,13 @@ async function syncManufacturerDir(client, remoteDir, prefix) {
             }
             
             const chunks = [];
-            await retry(() => client.downloadTo((c) => chunks.push(c), file.name));
+            const stream = new Writable({
+              write(chunk, encoding, callback) {
+                chunks.push(chunk);
+                callback();
+              }
+            });
+            await retry(() => client.downloadTo(stream, file.name));
             const buffer = Buffer.concat(chunks);
             await uploadBuffer(buffer, key);
             totalUploaded++;
@@ -136,7 +149,13 @@ async function syncRSRNumberDir(client, remoteDir, prefix, maxDirs = 5) {
         }
         
         const chunks = [];
-        await retry(() => client.downloadTo((c) => chunks.push(c), file.name));
+        const stream = new Writable({
+          write(chunk, encoding, callback) {
+            chunks.push(chunk);
+            callback();
+          }
+        });
+        await retry(() => client.downloadTo(stream, file.name));
         const buffer = Buffer.concat(chunks);
         await uploadBuffer(buffer, key);
         totalUploaded++;

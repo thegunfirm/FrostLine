@@ -44,20 +44,30 @@ export function SecurePricing({ product, showUpgradePrompt = true, className = "
       return product.priceBronze ? parseFloat(product.priceBronze) : null;
     }
 
+    // Helper function to safely parse and validate tier prices
+    const getSafePrice = (priceString: string | null): number | null => {
+      if (!priceString) return null;
+      const parsed = parseFloat(priceString);
+      return (isFinite(parsed) && parsed > 0) ? parsed : null;
+    };
+
     // Authenticated users see pricing based on tier
     switch (user.subscriptionTier) {
+      case 'Platinum':
+        // Platinum users see Gold pricing on product pages (Platinum pricing only in cart)
+        return getSafePrice(product.priceGold) || 
+               getSafePrice(product.priceBronze);
       case 'Gold':
         // Check if Gold pricing should be hidden when MSRP equals MAP
         if (shouldHideGoldPricing()) {
-          return product.priceBronze ? parseFloat(product.priceBronze) : null;
+          return getSafePrice(product.priceBronze);
         }
-        // Only show Gold pricing if priceGold is available
-        return product.priceGold ? parseFloat(product.priceGold) : 
-               (product.priceBronze ? parseFloat(product.priceBronze) : null);
+        // Gold users get Gold pricing, fallback to Bronze if Gold unavailable
+        return getSafePrice(product.priceGold) || 
+               getSafePrice(product.priceBronze);
       case 'Bronze':
-        return product.priceBronze ? parseFloat(product.priceBronze) : null;
       default:
-        return product.priceBronze ? parseFloat(product.priceBronze) : null;
+        return getSafePrice(product.priceBronze);
     }
   };
 
@@ -172,15 +182,25 @@ export function CartPricing({ product, userTier }: {
   product: SecurePricingProps['product'], 
   userTier: string 
 }) {
+  // Helper function to safely parse and validate tier prices
+  const getSafePrice = (priceString: string | null): number | null => {
+    if (!priceString) return null;
+    const parsed = parseFloat(priceString);
+    return (isFinite(parsed) && parsed > 0) ? parsed : null;
+  };
+
   const getCartPrice = () => {
     switch (userTier) {
       case 'Platinum':
-        return product.pricePlatinum ? parseFloat(product.pricePlatinum) : null;
+        return getSafePrice(product.pricePlatinum) || 
+               getSafePrice(product.priceGold) || 
+               getSafePrice(product.priceBronze);
       case 'Gold':
-        return product.priceGold ? parseFloat(product.priceGold) : null;
+        return getSafePrice(product.priceGold) || 
+               getSafePrice(product.priceBronze);
       case 'Bronze':
       default:
-        return product.priceBronze ? parseFloat(product.priceBronze) : null;
+        return getSafePrice(product.priceBronze);
     }
   };
 

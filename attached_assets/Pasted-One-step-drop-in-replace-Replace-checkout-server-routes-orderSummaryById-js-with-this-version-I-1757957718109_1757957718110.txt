@@ -1,0 +1,156 @@
+One step (drop-in replace)
+
+Replace /checkout/server/routes/orderSummaryById.js with this version. It:
+
+Returns orderNumber (alias) so your UI stops showing the bare orderId.
+
+Emits lines[] in the shape your UI reads (qty, pricingSnapshot.retail, product.upc/mpn, product.image.url).
+
+Splits shipments by outcome using snap.allocations when present.
+
+Gives each shipment its own orderNumber and totals (Amazon-like).
+
+// /checkout/server/routes/orderSummaryById.js
+// GET /api/orders/:orderId/summary
+
+const express = require('express');
+const { readSnapshot, writeSnapshot } = require('../lib/storage');
+const { splitOutcomes } = require('../lib/shippingSplit');
+const { mintOrderNumber } = require('../lib/orderNumbers');
+
+const router = express.Router();
+
+router.get('/api/orders/:orderId/summary', async (req, res) => {
+  const orderId = String(req.params.orderId || '').trim();
+  if (!orderId) return res.status(400).json({ error: 'orderId required' });
+
+  const snap = readSnapshot(orderId);
+  if (!snap) return res.status(404).json({ error: 'Order snapshot not found for this orderId' });
+
+  // Normalize outcomes & mint once (persist for stability)
+  let outcomes = [];
+  try {
+    outcomes = splitOutcomes(snap.shippingOutcomes || ['DS>Customer']);
+  } catch (e) {
+    return res.status(400).json({ error: e.message || 'Invalid shippingOutcomes' });
+  }
+
+  const minted = snap.minted || mintOrderNumber(outcomes);
+  if (!snap.minted) {
+    snap.minted = minted;
+    snap.updatedAt = new Date().toISOString();
+    writeSnapshot(orderId, snap);
+  }
+
+  const items = Array.isArray(snap.items) ? snap.items.filter(Boolean) : [];
+  const linesAll = items.map(toLine);
+
+  // Build shipments: use allocations if provided, else default to all lines on each shipment
+  // allocations shape (either is accepted):
+  //  A) { "IH>Customer": [0,2], "DS>FFL": [1] }  // indices into items[]
+  //  B) { "IH>Customer": [{sku:"ABC", qty:1}], "DS>FFL":[{upc:"123", qty:2}] }
+  const allocations = (snap.allocations && typeof snap.allocations === 'object') ? snap.allocations : null;
+
+  const shipmentDefs = (minted.parts.length
+    ? minted.parts
+    : [{ outcome: outcomes[0], orderNumber: minted.main }]);
+
+  const shipments = shipmentDefs.map((p, idx) => {
+    const out = p.outcome || outcomes[0];
+    const shipItems = itemsForOutcome(out, items, allocations);
+    const shipLines = shipItems.map(toLine);
+    const totals = computeTotals(shipLines);
+    return {
+      idx,
+      outcome: out,
+      orderNumber: p.orderNumber || minted.main,
+      lines: shipLines,
+      totals
+    };
+  });
+
+  // Top-level totals = sum of shipment totals (so it matches Amazon’s “Order total”)
+  const totals = sumTotals(shipments.map(s => s.totals));
+
+  return res.json({
+    orderId,
+    orderNumber: minted.main,        // <-- alias the parent order number for the frozen UI
+    mainOrderNumber: minted.main,    // keep for any new consumers
+    multiShipment: minted.parts.length > 0,
+    lines: linesAll,                 // full cart (some UIs iterate this)
+    shipments,                       // Amazon-like: per-shipment lines + totals + child orderNumber
+    customer: snap.customer || {},
+    totals,
+    status: snap.status || 'processing',
+    txnId: snap.txnId || ''
+  });
+});
+
+function toLine(it) {
+  const qty = Number(it.qty || 1);
+  const unit = Number(it.price || 0);
+
+  const productImageUrl = String(it.imageUrl || '');
+  return {
+    qty,
+    pricingSnapshot: {
+      retail: unit,
+      member: (it.memberPrice !== undefined && it.memberPrice !== null)
+        ? Number(it.memberPrice)
+        : undefined
+    },
+    unitPrice: unit,
+    extendedPrice: round2(unit * qty),
+    product: {
+      sku: String(it.sku || ''),
+      upc: String(it.upc || ''),
+      mpn: String(it.mpn || ''),
+      name: String(it.name || ''),
+      image: { url: productImageUrl }
+    }
+  };
+}
+
+function itemsForOutcome(outcome, items, allocations) {
+  if (!allocations || !allocations[outcome]) return items;
+  const a = allocations[outcome];
+  if (!Array.isArray(a) || a.length === 0) return [];
+  if (typeof a[0] === 'number') {
+    // index-based allocation
+    return a.map(i => items[i]).filter(Boolean);
+  }
+  // selector-based allocation
+  return a.map(sel => {
+    const found = items.find(it =>
+      (sel.sku && it.sku === sel.sku) ||
+      (sel.upc && it.upc === sel.upc) ||
+      (sel.mpn && it.mpn === sel.mpn)
+    );
+    if (!found) return null;
+    return { ...found, qty: sel.qty ?? found.qty };
+  }).filter(Boolean);
+}
+
+function computeTotals(lines) {
+  const sub = lines.reduce((s, ln) => s + Number(ln.extendedPrice || 0), 0);
+  return {
+    subtotal: round2(sub),
+    tax: 0,
+    shipping: 0,
+    grandTotal: round2(sub)
+  };
+}
+
+function sumTotals(list) {
+  const zero = { subtotal: 0, tax: 0, shipping: 0, grandTotal: 0 };
+  return list.reduce((acc, t) => ({
+    subtotal: round2(acc.subtotal + (t.subtotal || 0)),
+    tax: round2(acc.tax + (t.tax || 0)),
+    shipping: round2(acc.shipping + (t.shipping || 0)),
+    grandTotal: round2(acc.grandTotal + (t.grandTotal || 0))
+  }), zero);
+}
+
+function round2(n) { return Math.round(Number(n) * 100) / 100; }
+
+module.exports = router;

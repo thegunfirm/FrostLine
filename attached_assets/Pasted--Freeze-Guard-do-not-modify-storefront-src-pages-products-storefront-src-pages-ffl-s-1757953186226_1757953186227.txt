@@ -1,0 +1,257 @@
+🚫 Freeze Guard (do not modify)
+
+/storefront/src/pages/products/**
+
+/storefront/src/pages/ffl/**
+
+/storefront/src/lib/inventoryClient.ts (or equivalent)
+
+/checkout/server/ffl/**
+
+Any existing /checkout/server/routes/* not listed below
+
+✅ New & minimal touches (safe to add)
+
+All files below live inside the Checkout app only and are new except for adding two app.use() lines in server/index.*.
+
+1) /checkout/server/lib/orderNumbers.js
+// /checkout/server/lib/orderNumbers.js
+// Mini server logic to mint order numbers.
+// Rule: If exactly one shipping outcome -> ends with "0" (single shipment).
+// If multiple outcomes -> main ends with "Z", and sub-orders get suffixes A,B,C,D (in insertion order).
+
+const fs = require('fs');
+const path = require('path');
+
+const SEQ_FILE = path.join(__dirname, '..', 'data', 'order-seq.json');
+
+// Ensure data dir exists
+function ensureDataFile() {
+  const dataDir = path.dirname(SEQ_FILE);
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  if (!fs.existsSync(SEQ_FILE)) {
+    fs.writeFileSync(SEQ_FILE, JSON.stringify({ last: 100000 }, null, 2)); // start at 100000
+  }
+}
+
+function nextBaseNumber() {
+  ensureDataFile();
+  const raw = JSON.parse(fs.readFileSync(SEQ_FILE, 'utf8'));
+  raw.last = (raw.last || 100000) + 1;
+  fs.writeFileSync(SEQ_FILE, JSON.stringify(raw, null, 2));
+  return String(raw.last);
+}
+
+/**
+ * outcomes: array of normalized shipping outcomes in the order they will be fulfilled.
+ * Example values you already use: "DS>FFL", "DS>Customer", "IH>FFL", "IH>Customer"
+ */
+function mintOrderNumber(outcomes) {
+  if (!Array.isArray(outcomes) || outcomes.length === 0) {
+    throw new Error('outcomes[] is required');
+  }
+  const base = nextBaseNumber();
+
+  if (outcomes.length === 1) {
+    // single-shipment ends with 0
+    return { main: `${base}-0`, parts: [] };
+  }
+
+  // multi-shipment: main ends with Z, parts get A,B,C,D ...
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  const parts = outcomes.map((o, idx) => ({
+    outcome: o,
+    orderNumber: `${base}-Z${letters[idx]}`
+  }));
+  return { main: `${base}-Z`, parts };
+}
+
+module.exports = { mintOrderNumber };
+
+2) /checkout/server/lib/shippingSplit.js
+// /checkout/server/lib/shippingSplit.js
+// Deterministic splitter for your four known outcomes.
+
+const VALID = new Set(['DS>FFL', 'DS>Customer', 'IH>FFL', 'IH>Customer']);
+
+function normalizeOutcome(s) {
+  const v = String(s || '').trim();
+  if (!VALID.has(v)) {
+    throw new Error(`Invalid shipping outcome: ${v}`);
+  }
+  return v;
+}
+
+/**
+ * Accepts an array with possible duplicates or unordered items,
+ * returns a de-duped, stable order for suffix assignment.
+ * Order: DS>FFL, DS>Customer, IH>FFL, IH>Customer (match your prior discussions).
+ */
+function splitOutcomes(arr) {
+  const seen = new Set();
+  const order = ['DS>FFL', 'DS>Customer', 'IH>FFL', 'IH>Customer'];
+  for (const s of arr) seen.add(normalizeOutcome(s));
+  return order.filter(o => seen.has(o));
+}
+
+module.exports = { splitOutcomes };
+
+3) /checkout/server/routes/orderNumber.js
+// /checkout/server/routes/orderNumber.js
+// POST /api/orders/number  -> { outcomes: [...] } => { main, parts: [{outcome, orderNumber}] }
+
+const express = require('express');
+const { splitOutcomes } = require('../lib/shippingSplit');
+const { mintOrderNumber } = require('../lib/orderNumbers');
+
+const router = express.Router();
+
+router.post('/api/orders/number', express.json(), (req, res) => {
+  try {
+    const outcomes = splitOutcomes(req.body?.outcomes || []);
+    if (outcomes.length === 0) {
+      return res.status(400).json({ error: 'Provide at least one valid outcome' });
+    }
+    const minted = mintOrderNumber(outcomes);
+    return res.json(minted);
+  } catch (e) {
+    return res.status(400).json({ error: e.message || 'Bad Request' });
+  }
+});
+
+module.exports = router;
+
+4) /checkout/server/routes/orderSummary.js
+// /checkout/server/routes/orderSummary.js
+// POST /api/order-summary/build
+// Body shape (example):
+// {
+//   "orderId": "temp-or-external-id",
+//   "customer": {...},
+//   "items": [
+//     {"sku":"<RSR#>","upc":"<UPC>","mpn":"<MPN>","name":"...","qty":1,"price":123.45,"imageUrl":"..."},
+//     ...
+//   ],
+//   "shippingOutcomes": ["DS>FFL","IH>Customer"] // any subset
+// }
+//
+// Returns a normalized summary with split outcomes and (if multiple) sub-order numbers.
+// This DOES NOT alter frozen UI; it only builds a payload your customer UI can render.
+
+const express = require('express');
+const { splitOutcomes } = require('../lib/shippingSplit');
+const { mintOrderNumber } = require('../lib/orderNumbers');
+
+const router = express.Router();
+
+router.post('/api/order-summary/build', express.json(), async (req, res) => {
+  try {
+    const body = req.body || {};
+    const items = Array.isArray(body.items) ? body.items : [];
+    // Minimal validation
+    if (items.length === 0) return res.status(400).json({ error: 'items[] required' });
+
+    // Normalize items to ensure UPC/MPN/Image are present (do not fetch Inventory here to avoid auth issues)
+    const normalizedItems = items.map((it) => ({
+      sku: String(it.sku || ''),          // RSR Stock #
+      upc: String(it.upc || ''),          // UPC (search-friendly)
+      mpn: String(it.mpn || ''),          // Manufacturer Part #
+      name: String(it.name || ''),
+      qty: Number(it.qty || 1),
+      price: Number(it.price || 0),
+      imageUrl: String(it.imageUrl || ''), // expected to be passed in from checkout pipeline
+    }));
+
+    const outcomes = splitOutcomes(body.shippingOutcomes || ['DS>Customer']);
+    const minted = mintOrderNumber(outcomes);
+
+    // Build shipments mapping
+    const shipments = (minted.parts.length ? minted.parts : [{ outcome: outcomes[0], orderNumber: minted.main }])
+      .map((p, idx) => ({
+        idx,
+        outcome: p.outcome || outcomes[0],
+        orderNumber: p.orderNumber || minted.main,
+        // naïve split strategy: all items on all sub-orders unless you pass per-line allocations;
+        // you can add "allocations" in request later without touching this route.
+        items: normalizedItems
+      }));
+
+    const summary = {
+      orderId: String(body.orderId || ''),
+      mainOrderNumber: minted.main,
+      multiShipment: minted.parts.length > 0,
+      shipments,
+      customer: body.customer || {},
+      totals: computeTotals(normalizedItems)
+    };
+
+    return res.json(summary);
+  } catch (e) {
+    return res.status(400).json({ error: e.message || 'Bad Request' });
+  }
+});
+
+function computeTotals(items) {
+  const sub = items.reduce((s, it) => s + (Number(it.price || 0) * Number(it.qty || 1)), 0);
+  return {
+    subtotal: round2(sub),
+    tax: 0,               // left to your existing tax engine
+    shipping: 0,          // calculated elsewhere
+    grandTotal: round2(sub) // placeholder until your tax/ship injected
+  };
+}
+
+function round2(n) {
+  return Math.round(Number(n) * 100) / 100;
+}
+
+module.exports = router;
+
+5) /checkout/server/index.js (additions only)
+
+Add two lines where you register routes. No other edits.
+
+// /checkout/server/index.js
+// ...
+const express = require('express');
+const app = express();
+
+// (other existing middleware/routes)
+
+// ⬇️ NEW: mount the two safe routes
+app.use(require('./routes/orderNumber'));
+app.use(require('./routes/orderSummary'));
+
+// (existing error handlers / listen)
+module.exports = app;
+
+
+If your entry is index.ts, import the JS modules or convert the above to TS; the APIs are the same.
+
+6) (Optional) PM2 data dir
+
+Ensure the mini-server can persist the sequence counter:
+
+# Run once on the server (or commit the empty folder to repo):
+mkdir -p /var/www/checkout/server/data
+
+What this gives you
+
+POST /api/orders/number
+Input: { "outcomes": ["DS>FFL","IH>Customer"] }
+Output (example):
+
+{
+  "main": "100321-Z",
+  "parts": [
+    {"outcome":"DS>FFL","orderNumber":"100321-ZA"},
+    {"outcome":"IH>Customer","orderNumber":"100321-ZB"}
+  ]
+}
+
+
+Single outcome => "100322-0".
+
+POST /api/order-summary/build
+Input: order + minimal items (with upc, mpn, imageUrl) and shippingOutcomes.
+Output: fully split shipments + guaranteed UPC/MPN/name/image in each line for your UI to render—without touching product pages or FFL flows.

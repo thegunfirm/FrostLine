@@ -1,364 +1,385 @@
-import { useEffect, useState } from "react";
-import { useLocation, useSearch } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CheckCircle, Home, ShoppingBag, Shield } from "lucide-react";
-import { OrderStatusProgress } from "@/components/OrderStatusProgress";
+/* client/src/pages/order-confirmation.tsx
+Customer-facing Order Confirmation with full item details and tier savings.
+IMPORTANT: This page intentionally DOES NOT read or display SKU anywhere.
 
-const formatPrice = (price: number | string) => {
-  const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-  return `$${numPrice.toFixed(2)}`;
+Safe guarantees:
+
+Does NOT import product or FFL components.
+
+Does NOT call Algolia or Inventory from the browser.
+
+Reads a single order payload from your server summary endpoint(s).
+*/
+
+import React from 'react';
+
+type TierMap = Record<string, number>;
+type TierLabels = Record<string, string>;
+
+type PricingSnapshot = {
+  retail?: number;
+  tiers?: TierMap; // e.g., { guest: 1000, bronze: 980, gold: 950, platinum: 930 }
 };
 
-interface OrderSummaryResponse {
+type ProductSnapshot = {
+  name?: string;
+  imageUrl?: string;
+  // NOTE: No SKU usage in UI. Only keep typed fields used below.
+  upc?: string; // may also arrive as upc_code/UPC; UI normalizes
+  mpn?: string; // manufacturer part number (aka MPN/MNP); UI normalizes
+  manufacturerPart?: string; // tolerant alias
+};
+
+type SummaryLine = {
+  // sku?: string; // present from server is OK, but NOT used in UI
+  qty: number;
+  unitPricePaid?: number; // if available from server
+  lineTotal?: number; // if available from server
+  pricingSnapshot?: PricingSnapshot;
+  productSnapshot?: ProductSnapshot;
+};
+
+type Shipment = {
+  suffix?: 'A'|'B'|'C'|'D';
+  outcome?: 'DS>FFL'|'DS>Customer'|'IH>FFL'|'IH>Customer'|string;
+  lines: SummaryLine[];
+  ffl?: { id?: string; name?: string; address1?: string; city?: string; state?: string; zip?: string; };
+};
+
+type Totals = { items: number; shipping: number; tax: number; grand: number; };
+
+type Savings = {
+  actual: number; // what they DID save at current tier vs Retail
+  potential: number; // what they COULD have saved at a higher tier
+  byTier?: Record<string, number>;
+};
+
+type OrderSummary = {
   orderId: string;
-  baseNumber: string;
-  displayNumber: string;
-  totals: {
-    items: number;
-    shipping: number;
-    tax: number;
-    grand: number;
-  };
-  shipments: Array<{
-    suffix?: 'A' | 'B' | 'C' | 'D';
-    outcome: string;
-    lines: Array<{
-      sku: string;
-      qty: number;
-    }>;
-    ffl?: {
-      id: string;
-    };
-  }>;
-  createdAt: string;
-  customer: {
-    email: string | null;
-    customerId: string | null;
-  };
-  transactionId: string | null;
+  baseNumber?: string;
+  displayNumber?: string; // e.g., "123456-0" or "123456-Z"
+  status?: string; // e.g., "processing"
+  pipeline?: string; // e.g., "Qualification"
+  paymentId?: string; // ANet transaction id; may be "transactionId" in your API
+  membershipTier?: string|null; // "Guest" | "Bronze" | "Gold" | "Platinum" | etc.
+  tierLabels?: TierLabels; // { gold: "Gold", platinum: "Platinum", ... }
+  shipments?: Shipment[]; // present when "-Z"; else may be omitted
+  lines?: SummaryLine[]; // present when "-0"
+  totals: Totals;
+  createdAt?: string;
+  savings?: Savings; // server-computed; UI will compute if missing and possible
+};
+
+function useQueryParam(key: string): string | null {
+  const search = typeof window !== 'undefined' ? window.location.search : '';
+  const params = new URLSearchParams(search);
+  return params.get(key);
 }
 
-export default function OrderConfirmation() {
-  const [, setLocation] = useLocation();
-  const [legacyOrderData, setLegacyOrderData] = useState<any>(null);
-  const searchString = useSearch();
-  
-  // Extract orderId from URL parameters
-  const urlParams = new URLSearchParams(searchString);
-  const orderId = urlParams.get('orderId');
+// Normalize possibly-missing/renamed fields:
+function getUPC(p?: ProductSnapshot): string | undefined {
+  if (!p) return undefined;
+  return p.upc || (p as any).UPC || (p as any).upc_code || undefined;
+}
+function fmtMoney(v?: number): string {
+  if (typeof v !== 'number' || Number.isNaN(v)) return '—';
+  return v.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+}
 
-  // Fetch order summary from new API if orderId is present
-  const { 
-    data: orderSummary, 
-    isLoading, 
-    error 
-  } = useQuery<OrderSummaryResponse>({
-    queryKey: [`/api/orders/${orderId}/summary`],
-    enabled: !!orderId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+// If server didn't compute savings, compute minimally from pricingSnapshot:
+function computeSavingsClient(summary: OrderSummary): Savings | undefined {
+  const tier = summary.membershipTier ?? 'Guest';
+  const lines = summary.shipments?.flatMap(s => s.lines) ?? summary.lines ?? [];
+  let actual = 0;
+  let potential = 0;
 
-  useEffect(() => {
-    // Scroll to top when component mounts
-    window.scrollTo(0, 0);
-    
-    // If no orderId, try to get legacy data from session storage
-    if (!orderId) {
-      const storedOrderData = sessionStorage.getItem('lastOrderData');
-      if (storedOrderData) {
-        setLegacyOrderData(JSON.parse(storedOrderData));
-        // Clear the data after retrieving it
-        sessionStorage.removeItem('lastOrderData');
-      } else {
-        // If no order data at all, redirect to home
-        setTimeout(() => setLocation('/'), 3000);
+  for (const line of lines) {
+    const q = line.qty || 0;
+    const snap = line.pricingSnapshot || {};
+    const retail = snap.retail ?? undefined;
+    const tiers = snap.tiers ?? {};
+
+    // Paid unit: prefer explicit unitPricePaid → else tier price → else retail
+    const paidUnit = (typeof line.unitPricePaid === 'number')
+      ? line.unitPricePaid
+      : (typeof tiers[tier] === 'number' ? tiers[tier] : (retail ?? 0));
+    const tierValues = Object.values(tiers).filter(v => typeof v === 'number');
+    const bestUnit = tierValues.length ? Math.min(...tierValues) : (retail ?? paidUnit);
+
+    if (typeof retail === 'number') {
+      actual += Math.max(0, retail - paidUnit) * q;
+    }
+    potential += Math.max(0, paidUnit - bestUnit) * q;
+  }
+  if (actual === 0 && potential === 0) return undefined;
+  actual = Math.round(actual * 100) / 100;
+  potential = Math.round(potential * 100) / 100;
+  return { actual, potential };
+}
+
+const OrderConfirmationPage: React.FC = () => {
+  const qpOrderId = useQueryParam('orderId');
+  const [loading, setLoading] = React.useState(true);
+  const [err, setErr] = React.useState<string | null>(null);
+  const [summary, setSummary] = React.useState<OrderSummary | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setErr(null);
+      try {
+        const orderId = qpOrderId || window.location.pathname.split('/').filter(Boolean).pop();
+        if (!orderId) throw new Error('Missing orderId');
+
+        // Try summary endpoint first, then fallback to a generic order endpoint
+        const tryUrls = [
+          `/api/orders/${encodeURIComponent(orderId)}/summary`,
+          `/api/orders/${encodeURIComponent(orderId)}`
+        ];
+        let data: OrderSummary | null = null;
+        for (const url of tryUrls) {
+          // Force fresh responses to avoid 304 issues
+          const cacheUrl = `${url}?t=${Date.now()}`;
+          const res = await fetch(cacheUrl, { credentials: 'include', cache: 'no-store' });
+          if ((res.ok || res.status === 304) && res.headers.get('content-type')?.includes('application/json')) {
+            const rawData = await res.json();
+            
+            // Normalize server fields to match frontend expectations
+            if (rawData) {
+              // Map orderNumber to displayNumber if needed
+              if (!rawData.displayNumber && rawData.orderNumber) {
+                rawData.displayNumber = rawData.orderNumber;
+              }
+              
+              // Map totals fields if needed
+              if (rawData.totals?.subtotal !== undefined) {
+                rawData.totals = {
+                  items: rawData.totals.subtotal,
+                  shipping: rawData.totals.shipping ?? 0,
+                  tax: rawData.totals.tax ?? 0,
+                  grand: rawData.totals.grandTotal ?? (rawData.totals.subtotal + (rawData.totals.shipping || 0) + (rawData.totals.tax || 0))
+                };
+              }
+              
+              // Map product fields for lines
+              const mapLines = (lines: any[]) => {
+                return lines?.map(line => {
+                  if (line.product && !line.productSnapshot) {
+                    line.productSnapshot = {
+                      name: line.product.name || line.name,
+                      imageUrl: line.product.imageUrl || line.product.image?.url || line.imageUrl,
+                      upc: line.product.upc || line.upc,
+                      mpn: line.product.mpn || line.mpn
+                    };
+                  }
+                  return line;
+                });
+              };
+              
+              // Apply mapping to both shipments and direct lines
+              if (rawData.shipments) {
+                rawData.shipments = rawData.shipments.map((shipment: any) => ({
+                  ...shipment,
+                  lines: mapLines(shipment.lines)
+                }));
+              }
+              if (rawData.lines) {
+                rawData.lines = mapLines(rawData.lines);
+              }
+            }
+            
+            data = rawData;
+            break;
+          }
+        }
+        if (!data) throw new Error('Order not found or invalid response');
+
+        if (!cancelled) setSummary(data);
+      } catch (e: any) {
+        if (!cancelled) setErr(e?.message || 'Failed to load order');
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
-  }, [orderId, setLocation]);
+    load();
+    return () => { cancelled = true; };
+  }, [qpOrderId]);
 
-  // Handle loading states
-  const isLoadingOrderData = orderId && isLoading;
-  const hasNewOrderData = orderId && orderSummary && !error;
-  const hasLegacyOrderData = !orderId && legacyOrderData;
-  const hasNoOrderData = !isLoadingOrderData && !hasNewOrderData && !hasLegacyOrderData;
+  if (loading) return <div style={{ padding: 24 }}>Loading order…</div>;
+  if (err) return <div style={{ padding: 24, color: 'crimson' }}>Error: {err}</div>;
+  if (!summary) return <div style={{ padding: 24 }}>No order.</div>;
 
-  if (isLoadingOrderData) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md mx-auto text-center">
-          <CardContent className="pt-8">
-            <div className="w-16 h-16 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mx-auto mb-4"></div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Loading Order Details...</h2>
-            <p className="text-gray-600">Please wait while we retrieve your order information.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const displayNumber = summary.displayNumber || summary.baseNumber || summary.orderId;
+  const membershipTier = summary.membershipTier ?? 'Guest';
+  const tierLabels = summary.tierLabels || {};
+  const tierKey = (membershipTier || '').toLowerCase();
+  const serverSavings = summary.savings;
+  const clientSavings = computeSavingsClient(summary);
+  const savings = serverSavings || clientSavings || undefined;
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md mx-auto text-center">
-          <CardContent className="pt-8">
-            <CheckCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Order Not Found</h2>
-            <p className="text-gray-600 mb-4">We couldn't find your order details. Please check your order ID or contact support.</p>
-            <Button onClick={() => setLocation('/')} className="bg-green-600 hover:bg-green-700">
-              <Home className="w-4 h-4 mr-2" />
-              Return to Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (hasNoOrderData) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md mx-auto text-center">
-          <CardContent className="pt-8">
-            <div className="w-16 h-16 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mx-auto mb-4"></div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Loading Order Details...</h2>
-            <p className="text-gray-600">Please wait while we retrieve your order information.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Use new API data if available, otherwise fall back to legacy data
-  const orderData = hasNewOrderData ? transformToLegacyFormat(orderSummary) : legacyOrderData;
-
-  // Transform new API response to legacy format for compatibility
-  function transformToLegacyFormat(summary: OrderSummaryResponse): any {
-    // Safe access to totals with fallback
-    const totalAmount = summary.totals?.grand || 0;
-    const totalsData = summary.totals || { grand: 0, tax: 0, shipping: 0, subtotal: 0 };
-    
-    return {
-      orderNumber: summary.displayNumber,
-      tgfOrderNumber: summary.displayNumber,
-      orderId: summary.orderId,
-      transactionId: summary.transactionId, // Use actual transaction ID from API
-      amount: totalAmount * 100, // Convert to cents for legacy format
-      orderStatus: 'Processing',
-      items: summary.shipments?.flatMap(shipment => 
-        shipment.lines?.map(line => ({
-          description: `${line.name || line.sku || 'Product'} (${shipment.outcome})`,
-          name: line.name || line.sku || 'Product',
-          sku: line.sku || 'N/A',
-          quantity: line.qty,
-          price: line.price || 0,
-          requiresFFL: shipment.outcome.includes('FFL')
-        })) || []
-      ) || [],
-      totals: totalsData,
-      shipments: summary.shipments || [],
-      createdAt: summary.createdAt,
-      hasFirearms: summary.shipments?.some(s => s.outcome.includes('FFL')) || false
-    };
-  }
+  const isSplit = Boolean(summary.shipments && summary.shipments.length);
+  const txnId = summary.paymentId || (summary as any).transactionId || '';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          
-          {/* Success Header */}
-          <Card className="mb-8">
-            <CardContent className="pt-8 text-center">
-              <CheckCircle className="w-20 h-20 text-green-600 mx-auto mb-4" />
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
-              <p className="text-lg text-gray-600 mb-4">
-                Thank you for your purchase. Your payment has been processed successfully.
-              </p>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 inline-block">
-                <p className="text-sm text-green-800 font-medium">
-                  Transaction ID: <span className="font-mono">{orderData.transactionId}</span>
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+    <div style={{ padding: 24, maxWidth: 1000, margin: '0 auto', fontFamily: 'system-ui, Arial, sans-serif' }}>
+      <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>Order Confirmed</h1>
+      <p style={{ marginTop: 6, color: '#2f6f2f' }}>
+        Thank you for your purchase. Your payment has been processed successfully.
+      </p>
 
-          {/* Order Information */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5" />
-                Order Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              
-              {/* Order Numbers and Status */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">TGF Order Number</label>
-                  <p className="text-lg font-bold text-gray-900">{orderData.orderNumber || orderData.tgfOrderNumber}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Order Status</label>
-                  <p className="text-lg font-semibold text-blue-600">{orderData.orderStatus || 'Processing'}</p>
-                </div>
-                {orderData.estimatedShipDate && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Estimated Ship Date</label>
-                    <p className="text-sm font-medium text-gray-900">{orderData.estimatedShipDate}</p>
-                  </div>
-                )}
-                {orderData.fulfillmentType && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Fulfillment Type</label>
-                    <p className="text-sm font-medium text-gray-900">{orderData.fulfillmentType}</p>
-                  </div>
-                )}
-              </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 12, marginTop: 16 }}>
+        <div style={{ border: '1px solid #e3e3e3', borderRadius: 8, padding: 12 }}>
+          <div style={{ color: '#666', fontSize: 12 }}>TGF Order Number</div>
+          <div style={{ fontWeight: 700, fontSize: 18 }}>{displayNumber}</div>
+        </div>
+        <div style={{ border: '1px solid #e3e3e3', borderRadius: 8, padding: 12 }}>
+          <div style={{ color: '#666', fontSize: 12 }}>Order Status</div>
+          <div style={{ fontWeight: 700, fontSize: 18 }}>{summary.status || 'Processing'}</div>
+          {summary.pipeline && <div style={{ color: '#777', fontSize: 12 }}>Pipeline: {summary.pipeline}</div>}
+        </div>
+      </div>
 
-              {/* Compliance Status for Firearms */}
-              {orderData.holdType && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                  <h4 className="font-medium text-amber-800 mb-2">Compliance Status</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-medium text-amber-600 uppercase tracking-wide">Hold Type</label>
-                      <p className="text-sm font-medium text-amber-800">{orderData.holdType}</p>
+
+      {/* Items */}
+      <div style={{ marginTop: 24 }}>
+        <h2 style={{ fontSize: 20, marginBottom: 8 }}>Order Items</h2>
+
+        {isSplit ? (
+          (summary.shipments || []).map((sh, idx) => {
+            const shipmentSuffix = sh.suffix || String.fromCharCode(65 + idx);
+            const fullOrderNumber = `${displayNumber.replace('-0', '')}-${shipmentSuffix}`;
+            
+            // Determine destination based on outcome
+            let destinationText = '';
+            let destinationAddress = null;
+            if (sh.outcome === 'DS>FFL' || sh.outcome === 'IH>FFL') {
+              if (sh.ffl) {
+                destinationAddress = {
+                  name: sh.ffl.name || 'FFL Dealer',
+                  address1: sh.ffl.address1,
+                  city: sh.ffl.city,
+                  state: sh.ffl.state,
+                  zip: sh.ffl.zip
+                };
+                destinationText = sh.outcome === 'IH>FFL' 
+                  ? 'Ships to our warehouse first, then to FFL'
+                  : 'Ships directly to FFL';
+              } else {
+                destinationText = 'Ships to FFL (dealer information pending)';
+              }
+            } else if (sh.outcome === 'DS>Customer' || sh.outcome === 'IH>Customer') {
+              if (summary.customer?.address) {
+                destinationAddress = {
+                  name: `${summary.customer.firstName || ''} ${summary.customer.lastName || ''}`.trim() || 'Customer',
+                  address1: summary.customer.address,
+                  city: summary.customer.city,
+                  state: summary.customer.state,
+                  zip: summary.customer.zip
+                };
+                destinationText = sh.outcome === 'IH>Customer'
+                  ? 'Ships from our warehouse'
+                  : 'Ships directly to you';
+              } else {
+                destinationText = 'Ships to customer address';
+              }
+            }
+            
+            return (
+              <div key={idx} style={{ border: '1px solid #e3e3e3', borderRadius: 8, marginBottom: 16 }}>
+                <div style={{ padding: '10px 12px', background: '#f2f2f2', borderBottom: '1px solid #e3e3e3', borderTopLeftRadius: 8, borderTopRightRadius: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong>Shipment {fullOrderNumber}</strong>
+                    <span style={{ color: '#666', fontSize: 14 }}>{destinationText}</span>
+                  </div>
+                  {destinationAddress && (
+                    <div style={{ marginTop: 8, fontSize: 13, color: '#555' }}>
+                      <strong>Destination:</strong> {destinationAddress.name}<br />
+                      {destinationAddress.address1}<br />
+                      {destinationAddress.city}, {destinationAddress.state} {destinationAddress.zip}
                     </div>
-                    {orderData.holdStartedAt && (
-                      <div>
-                        <label className="text-xs font-medium text-amber-600 uppercase tracking-wide">Hold Started</label>
-                        <p className="text-sm text-amber-700">{orderData.holdStartedAt}</p>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
-              )}
-
-              {/* Order Items */}
-              <div>
-                <h4 className="font-medium text-gray-900 mb-3">Order Items</h4>
-                <div className="space-y-3">
-                  {orderData.items?.map((item: any, index: number) => (
-                    <div key={index} className="flex justify-between items-start space-x-3 pb-3 border-b border-gray-200 last:border-b-0">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">
-                          {item.name || `Item ${index + 1}`}
-                        </p>
-                        <p className="text-xs text-gray-500 font-mono">
-                          SKU: {item.sku || 'N/A'}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Qty: {item.quantity || 1} {item.description?.includes('(') ? `• ${item.description.match(/\(([^)]+)\)/)?.[1] || ''}` : ''}
-                        </p>
-                        {item.requiresFFL && (
-                          <span className="inline-block px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full mt-1">
-                            FFL Required
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm font-medium text-gray-900 flex-shrink-0">
-                        {formatPrice((item.price || 0) * (item.quantity || 1))}
-                      </p>
-                    </div>
-                  ))}
+                <div>
+                  {sh.lines.map((ln, i) => <ItemRow key={i} line={ln} membershipTier={membershipTier} tierLabels={tierLabels} />)}
                 </div>
               </div>
-              
-              <div className="pt-4 border-t">
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-bold text-gray-900">Total Paid</span>
-                  <span className="text-lg font-bold text-green-600">
-                    {formatPrice(orderData.amount / 100)}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            );
+          })
+        ) : (
+          <div style={{ border: '1px solid #e3e3e3', borderRadius: 8 }}>
+            {(summary.lines || []).map((ln, i) => <ItemRow key={i} line={ln} membershipTier={membershipTier} tierLabels={tierLabels} />)}
+          </div>
+        )}
+      </div>
 
-          {/* Order Status Progress */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Order Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <OrderStatusProgress
-                orderStatus={orderData.orderStatus || 'Processing'}
-                pipelineStage={orderData.pipelineStage || 'Qualification'}
-                holdType={orderData.holdType}
-                holdStartedAt={orderData.holdStartedAt}
-                holdClearedAt={orderData.holdClearedAt}
-                estimatedShipDate={orderData.estimatedShipDate}
-                carrier={orderData.carrier}
-                trackingNumber={orderData.trackingNumber}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Next Steps */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>What's Next?</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 text-sm text-gray-600">
-                <p>• You will receive an email confirmation shortly</p>
-                <p>• Your order will be processed within 1-2 business days</p>
-                <p>• For firearms purchases, items will be shipped to your selected FFL dealer</p>
-                <p>• You'll receive tracking information once your order ships</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Firearms Processing Notice */}
-          {orderData.hasFirearms && (
-            <Card className="mb-8 border-amber-200 bg-amber-50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-amber-800">
-                  <Shield className="w-5 h-5" />
-                  Firearms Processing Notice
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-amber-800">
-                  <p className="font-medium">
-                    ✅ Payment has been charged to your card immediately
-                  </p>
-                  <p>
-                    🏪 Your order contains firearms that require FFL verification before processing with our distributor (RSR)
-                  </p>
-                  <p>
-                    📋 Our team will verify your FFL dealer information and then release your order for fulfillment
-                  </p>
-                  <p>
-                    📧 You'll receive email updates as your order progresses through verification and shipping
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Button
-              onClick={() => setLocation('/')}
-              className="flex-1 bg-green-600 hover:bg-green-700"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Continue Shopping
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setLocation('/account/orders')}
-              className="flex-1"
-            >
-              View Order History
-            </Button>
+      {/* Totals */}
+      <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 320px', gap: 12 }}>
+        <div>
+          <h3 style={{ marginTop: 0 }}>What's Next?</h3>
+          <ul style={{ marginTop: 6, color: '#444' }}>
+            <li>You will receive an email confirmation shortly.</li>
+            <li>Your order will be processed within 1–2 business days.</li>
+            <li>For firearms purchases, items will be shipped to your selected FFL dealer.</li>
+            <li>You'll receive tracking information once your order ships.</li>
+          </ul>
+        </div>
+        <div style={{ border: '1px solid #e3e3e3', borderRadius: 8, padding: 12, background: '#fafafa' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', rowGap: 6 }}>
+            <div>Items</div><div>{fmtMoney(summary.totals?.items)}</div>
+            <div>Shipping</div><div>{fmtMoney(summary.totals?.shipping)}</div>
+            <div>Tax</div><div>{fmtMoney(summary.totals?.tax)}</div>
+            {savings && savings.actual > 0 && (
+              <>
+                <div>Membership Savings</div><div>-{fmtMoney(savings.actual)}</div>
+              </>
+            )}
+            <div style={{ borderTop: '1px solid #ddd', marginTop: 6 }} />
+            <div style={{ fontWeight: 700 }}>Total Paid</div><div style={{ fontWeight: 700 }}>{fmtMoney(summary.totals?.grand)}</div>
           </div>
         </div>
       </div>
     </div>
   );
-}
+};
+
+const ItemRow: React.FC<{ line: SummaryLine; membershipTier: string; tierLabels: TierLabels; }> = ({ line, membershipTier }) => {
+  const p = line.productSnapshot || {};
+  const name = p.name || 'Item';
+  const img = p.imageUrl;
+  const upc = getUPC(p) || '—';
+  const qty = line.qty || 0;
+
+  const tiers = line.pricingSnapshot?.tiers || {};
+  const retail = line.pricingSnapshot?.retail;
+  const paidUnit = typeof line.unitPricePaid === 'number'
+    ? line.unitPricePaid
+    : (typeof tiers[membershipTier] === 'number' ? tiers[membershipTier] : (retail ?? undefined));
+
+  const lineTotal = typeof line.lineTotal === 'number'
+    ? line.lineTotal
+    : (typeof paidUnit === 'number' ? paidUnit * qty : undefined);
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '84px 1fr auto', gap: 12, padding: 12, borderBottom: '1px solid #eee' }}>
+      <div style={{ width: 84, height: 84, background: '#f3f3f3', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+        {img ? <img src={img} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /> : <span style={{ color: '#999' }}>No Image</span>}
+      </div>
+      <div>
+        <div style={{ fontWeight: 600 }}>{name}</div>
+        <div style={{ marginTop: 2, color: '#555', fontSize: 13 }}>
+          <div>UPC: {upc}</div>
+        </div>
+        <div style={{ marginTop: 2, color: '#555', fontSize: 13 }}>
+          Qty: {qty}
+        </div>
+      </div>
+      <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+        <div>{typeof paidUnit === 'number' ? fmtMoney(paidUnit) : '—'}</div>
+        <div style={{ color: '#777', fontSize: 12 }}>{typeof lineTotal === 'number' ? fmtMoney(lineTotal) : '—'}</div>
+      </div>
+    </div>
+  );
+};
+
+export default OrderConfirmationPage;

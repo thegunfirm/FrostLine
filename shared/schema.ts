@@ -128,6 +128,17 @@ export const products = pgTable("products", {
   rsrPrice: text("rsr_price"), // RSR wholesale/dealer price
 });
 
+// RSR SKU Aliases table for tracking stock number changes
+export const rsrSkuAliases = pgTable("rsr_sku_aliases", {
+  id: serial("id").primaryKey(),
+  stockNumber: text("stock_number").notNull().unique(),
+  upcCode: text("upc_code").notNull(),
+  productId: integer("product_id").notNull(),
+  isCurrent: boolean("is_current").default(true),
+  lastSeenAt: timestamp("last_seen_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
@@ -778,3 +789,117 @@ export const orderActivityLogs = pgTable('order_activity_logs', {
 export const insertOrderActivityLogSchema = createInsertSchema(orderActivityLogs);
 export type OrderActivityLog = typeof orderActivityLogs.$inferSelect;
 export type InsertOrderActivityLog = z.infer<typeof insertOrderActivityLogSchema>;
+
+// RSR SKU Aliases schemas
+export const insertRsrSkuAliasSchema = createInsertSchema(rsrSkuAliases).omit({
+  id: true,
+  createdAt: true,
+  lastSeenAt: true,
+});
+export type RsrSkuAlias = typeof rsrSkuAliases.$inferSelect;
+export type InsertRsrSkuAlias = z.infer<typeof insertRsrSkuAliasSchema>;
+
+// Deduplication Log - Track archived_product_id → canonical_product_id mapping for rollback capability
+export const dedupLog = pgTable("dedup_log", {
+  id: serial("id").primaryKey(),
+  upcCode: text("upc_code").notNull(), // UPC that was deduplicated
+  canonicalProductId: integer("canonical_product_id").notNull(), // Product that was kept active
+  archivedProductId: integer("archived_product_id").notNull(), // Product that was archived (is_active=false)
+  archivedProductSku: text("archived_product_sku"), // SKU of archived product for reference
+  archivedProductName: text("archived_product_name"), // Name of archived product for reference
+  dedupReason: text("dedup_reason").notNull(), // Why this product was chosen as canonical vs archived
+  batchId: text("batch_id").notNull(), // Batch identifier for grouping dedup operations
+  canRollback: boolean("can_rollback").default(true), // Whether this deduplication can be safely rolled back
+  rollbackNotes: text("rollback_notes"), // Notes about potential rollback complications
+  processedAt: timestamp("processed_at").defaultNow(),
+  processedBy: text("processed_by").notNull().default("system"), // 'system', or user ID who initiated
+});
+
+export const insertDedupLogSchema = createInsertSchema(dedupLog).omit({
+  id: true,
+  processedAt: true,
+});
+export type DedupLog = typeof dedupLog.$inferSelect;
+export type InsertDedupLog = z.infer<typeof insertDedupLogSchema>;
+
+// Category Settings - For category-specific configuration
+export const categorySettings = pgTable("category_settings", {
+  id: serial("id").primaryKey(),
+  category: text("category").notNull().unique(),
+  value: text("value").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  isEditable: boolean("is_editable").default(true),
+});
+
+// Filter Configurations - For search and filter configurations
+export const filterConfigurations = pgTable("filter_configurations", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  category: text("category").notNull(),
+  value: text("value").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  isEditable: boolean("is_editable").default(true),
+});
+
+// Webhook Logs - For tracking webhook activity
+export const webhookLogs = pgTable("webhook_logs", {
+  id: serial("id").primaryKey(),
+  webhookType: text("webhook_type").notNull(),
+  source: text("source").notNull(), // 'authorize_net', 'zoho', 'rsr'
+  requestId: text("request_id"),
+  headers: json("headers"),
+  payload: json("payload"),
+  response: json("response"),
+  status: text("status").notNull(), // 'success', 'failed', 'processed'
+  processingTimeMs: integer("processing_time_ms"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+  processedAt: timestamp("processed_at"),
+});
+
+// Additional insert schemas that were missing
+export const insertHeroCarouselSlideSchema = createInsertSchema(heroCarouselSlides).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPricingRuleSchema = createInsertSchema(tierPricingRules).omit({
+  id: true,
+});
+
+export const insertCategorySettingSchema = createInsertSchema(categorySettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertFilterConfigurationSchema = createInsertSchema(filterConfigurations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWebhookLogSchema = createInsertSchema(webhookLogs).omit({
+  id: true,
+  createdAt: true,
+  processedAt: true,
+});
+
+// Additional type exports
+export type CategorySetting = typeof categorySettings.$inferSelect;
+export type InsertCategorySetting = z.infer<typeof insertCategorySettingSchema>;
+export type FilterConfiguration = typeof filterConfigurations.$inferSelect;
+export type InsertFilterConfiguration = z.infer<typeof insertFilterConfigurationSchema>;
+export type WebhookLog = typeof webhookLogs.$inferSelect;
+export type InsertWebhookLog = z.infer<typeof insertWebhookLogSchema>;
+
+// Add aliases for compatibility with existing route files
+export const orderItems = orderLines; // Alias for backward compatibility  
+export const activityLogs = userActivityLogs; // Alias for backward compatibility
+export const pricingRules = tierPricingRules; // Alias for backward compatibility

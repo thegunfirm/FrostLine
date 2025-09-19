@@ -8,6 +8,8 @@ import { Link } from 'wouter';
 import { useFapAuth } from '@/hooks/use-fap-auth';
 import { useLocation } from 'wouter';
 import { CheckoutButton } from './checkout-button';
+import { getCartTierPrice, formatPrice } from '@/lib/pricing-utils';
+import type { CartItem } from '@/hooks/use-cart';
 
 export function CartSheet() {
   const { user } = useFapAuth();
@@ -24,14 +26,22 @@ export function CartSheet() {
     hasFirearms 
   } = useCart();
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(price);
-  };
+  // Helper function to convert CartItem to ProductPricing for centralized utility
+  const cartItemToProduct = (item: CartItem) => ({
+    priceBronze: item.priceBronze?.toString() || '0',
+    priceGold: item.priceGold?.toString() || '0', 
+    pricePlatinum: item.pricePlatinum?.toString() || '0',
+    priceMSRP: item.priceBronze?.toString() || '0', // Use Bronze as fallback for MSRP
+  });
 
-  const total = getTotalPrice();
+  // Calculate tier-aware total using centralized pricing utility
+  const tierAwareTotal = items.reduce((sum, item) => {
+    const productPricing = cartItemToProduct(item);
+    const tierPrice = getCartTierPrice(productPricing, user || null) || 0;
+    return sum + tierPrice * item.quantity;
+  }, 0);
+  
+  const total = tierAwareTotal; // Use tier-aware total for consistency
   const itemCount = getItemCount();
 
   // Calculate potential savings for membership upsell
@@ -39,25 +49,34 @@ export function CartSheet() {
     if (!user) {
       // For non-logged users: compare Bronze vs Platinum pricing
       const bronzeCost = items.reduce((sum, item) => {
-        const bronzePrice = item.priceBronze || item.price;
+        const productPricing = cartItemToProduct(item);
+        const bronzePrice = getCartTierPrice(productPricing, null) || 0;
         return sum + bronzePrice * item.quantity;
       }, 0);
       
       const platinumCost = items.reduce((sum, item) => {
-        const platinumPrice = item.pricePlatinum || item.price;
+        const productPricing = cartItemToProduct(item);
+        // Create a mock Platinum user to get Platinum pricing
+        const platinumUser = { subscriptionTier: 'Platinum' };
+        const platinumPrice = getCartTierPrice(productPricing, platinumUser as any) || 0;
         return sum + platinumPrice * item.quantity;
       }, 0);
       
       const savings = bronzeCost - platinumCost;
       return { savings: Math.max(0, savings) };
     } else {
-      // For logged users: compare their current price vs Platinum pricing
+      // For logged users: compare their current tier price vs Platinum pricing
       const currentCost = items.reduce((sum, item) => {
-        return sum + item.price * item.quantity;
+        const productPricing = cartItemToProduct(item);
+        const currentPrice = getCartTierPrice(productPricing, user as any) || 0;
+        return sum + currentPrice * item.quantity;
       }, 0);
       
       const platinumCost = items.reduce((sum, item) => {
-        const platinumPrice = item.pricePlatinum || item.price;
+        const productPricing = cartItemToProduct(item);
+        // Create a mock Platinum user to get Platinum pricing
+        const platinumUser = { subscriptionTier: 'Platinum' };
+        const platinumPrice = getCartTierPrice(productPricing, platinumUser as any) || 0;
         return sum + platinumPrice * item.quantity;
       }, 0);
       
@@ -124,9 +143,28 @@ export function CartSheet() {
                     </p>
                     
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-sm font-semibold">
-                        {formatPrice(item.price)}
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold">
+                          {formatPrice(getCartTierPrice(cartItemToProduct(item), user as any) || 0)}
+                        </span>
+                        {/* Show tier pricing indicator */}
+                        {user?.subscriptionTier && (
+                          <span className="text-xs text-green-600 font-medium">
+                            {user.subscriptionTier} Price
+                          </span>
+                        )}
+                        {!user && (
+                          <span className="text-xs text-gray-500">
+                            Bronze Price
+                          </span>
+                        )}
+                        {/* Show savings if available */}
+                        {user && user.subscriptionTier !== 'Bronze' && item.priceBronze && item.priceBronze > item.price && (
+                          <span className="text-xs text-red-600 line-through">
+                            {formatPrice(item.priceBronze)}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-0.5">
                         <Button
                           variant="ghost"

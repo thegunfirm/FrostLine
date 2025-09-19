@@ -1,0 +1,356 @@
+🚫 Freeze Guard (leave untouched)
+
+client/src/pages/** (order-confirmation page is frozen)
+
+Product pages & FFL flows in any app
+
+Storefront/Inventory code
+
+✅ What this patch does
+
+Implements POST /api/orders/:orderId/snapshot (persist a full cart snapshot at payment-success).
+
+Implements GET /api/orders/:orderId/summary (exact JSON shape the frozen page expects).
+
+Mints stable order numbers once and returns them under orderNumber (so you don’t see 128 again).
+
+Supports Amazon-style split shipments via optional allocations.
+
+Fails fast if the snapshot is missing required product fields (so you stop getting blank UPC/MPN/Image).
+
+1) /checkout/server/lib/orderNumbers.js
+// /checkout/server/lib/orderNumbers.js
+// Stable order-number minting: single -> -0; multi -> -Z parent and -ZA, -ZB... children.
+
+const fs = require('fs');
+const path = require('path');
+
+const SEQ_FILE = path.join(__dirname, '..', 'data', 'order-seq.json');
+
+function ensureDataFile() {
+  const dir = path.dirname(SEQ_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(SEQ_FILE)) fs.writeFileSync(SEQ_FILE, JSON.stringify({ last: 100000 }, null, 2));
+}
+
+function nextBaseNumber() {
+  ensureDataFile();
+  const raw = JSON.parse(fs.readFileSync(SEQ_FILE, 'utf8'));
+  raw.last = (raw.last || 100000) + 1;
+  fs.writeFileSync(SEQ_FILE, JSON.stringify(raw, null, 2));
+  return String(raw.last);
+}
+
+function mintOrderNumber(outcomes) {
+  if (!Array.isArray(outcomes) || outcomes.length === 0) throw new Error('outcomes[] is required');
+  const base = nextBaseNumber();
+
+  if (outcomes.length === 1) return { main: `${base}-0`, parts: [] };
+
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  const parts = outcomes.map((o, i) => ({ outcome: o, orderNumber: `${base}-Z${letters[i]}` }));
+  return { main: `${base}-Z`, parts };
+}
+
+module.exports = { mintOrderNumber };
+
+2) /checkout/server/lib/shippingSplit.js
+// /checkout/server/lib/shippingSplit.js
+const VALID = new Set(['DS>FFL','DS>Customer','IH>FFL','IH>Customer']);
+
+function normalizeOutcome(s) {
+  const v = String(s || '').trim();
+  if (!VALID.has(v)) throw new Error(`Invalid shipping outcome: ${v}`);
+  return v;
+}
+
+// Deterministic order for suffix assignment.
+function splitOutcomes(arr) {
+  const order = ['DS>FFL','DS>Customer','IH>FFL','IH>Customer'];
+  const seen = new Set((arr || []).map(normalizeOutcome));
+  return order.filter(o => seen.has(o));
+}
+
+module.exports = { splitOutcomes, normalizeOutcome };
+
+3) /checkout/server/lib/storage.js
+// /checkout/server/lib/storage.js
+const fs = require('fs');
+const path = require('path');
+
+const DATA_DIR = path.join(__dirname, '..', 'data', 'orders');
+
+function ensureDir() {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+function fileFor(orderId) { ensureDir(); return path.join(DATA_DIR, `${orderId}.json`); }
+
+function readSnapshot(orderId) {
+  try {
+    const f = fileFor(orderId);
+    if (!fs.existsSync(f)) return null;
+    return JSON.parse(fs.readFileSync(f, 'utf8'));
+  } catch { return null; }
+}
+
+function writeSnapshot(orderId, obj) {
+  fs.writeFileSync(fileFor(orderId), JSON.stringify(obj, null, 2));
+  return obj;
+}
+
+module.exports = { readSnapshot, writeSnapshot };
+
+4) /checkout/server/routes/orderSnapshot.js
+// /checkout/server/routes/orderSnapshot.js
+// POST /api/orders/:orderId/snapshot
+// Required at payment-success, before redirect to /order-confirmation.
+// Body MUST include items with product metadata (no cross-service enrichment).
+
+const express = require('express');
+const { splitOutcomes } = require('../lib/shippingSplit');
+const { mintOrderNumber } = require('../lib/orderNumbers');
+const { readSnapshot, writeSnapshot } = require('../lib/storage');
+
+const router = express.Router();
+
+router.post('/api/orders/:orderId/snapshot', express.json(), (req, res) => {
+  const orderId = String(req.params.orderId || '').trim();
+  if (!orderId) return res.status(400).json({ error: 'orderId required' });
+
+  const body = req.body || {};
+  const itemsIn = Array.isArray(body.items) ? body.items : [];
+  if (!itemsIn.length) return res.status(422).json({ error: 'items[] required' });
+
+  // Validate required item fields so the UI never renders blanks.
+  const missing = [];
+  itemsIn.forEach((it, i) => {
+    if (!it.name) missing.push(`items[${i}].name`);
+    if (!it.qty && it.qty !== 0) missing.push(`items[${i}].qty`);
+    if (it.price === undefined || it.price === null) missing.push(`items[${i}].price`);
+    if (!it.upc) missing.push(`items[${i}].upc`);
+    if (!it.mpn) missing.push(`items[${i}].mpn`);
+    if (!it.sku) missing.push(`items[${i}].sku`);
+    if (!it.imageUrl) missing.push(`items[${i}].imageUrl`);
+  });
+  if (missing.length) {
+    return res.status(422).json({ error: 'Missing required fields', fields: missing });
+  }
+
+  let outcomes;
+  try { outcomes = splitOutcomes(body.shippingOutcomes || ['IH>Customer']); }
+  catch (e) { return res.status(400).json({ error: e.message }); }
+
+  const existing = readSnapshot(orderId) || {};
+  const minted = existing.minted || mintOrderNumber(outcomes);
+
+  const snapshot = {
+    orderId,
+    txnId: String(body.txnId || existing.txnId || ''),
+    status: String(body.status || existing.status || 'processing'),
+    customer: body.customer || existing.customer || {},
+    items: itemsIn.map((it) => ({
+      sku: String(it.sku), upc: String(it.upc), mpn: String(it.mpn),
+      name: String(it.name), qty: Number(it.qty || 1), price: Number(it.price || 0),
+      imageUrl: String(it.imageUrl)
+    })),
+    shippingOutcomes: outcomes,
+    allocations: body.allocations || existing.allocations || null, // optional
+    minted, // { main, parts[] }
+    createdAt: existing.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  writeSnapshot(orderId, snapshot);
+  return res.json({ ok: true, orderId, orderNumber: minted.main });
+});
+
+module.exports = router;
+
+5) /checkout/server/routes/orderSummaryById.js
+// /checkout/server/routes/orderSummaryById.js
+// GET /api/orders/:orderId/summary  -> exact shape the frozen UI consumes
+
+const express = require('express');
+const { readSnapshot, writeSnapshot } = require('../lib/storage');
+const { splitOutcomes } = require('../lib/shippingSplit');
+const { mintOrderNumber } = require('../lib/orderNumbers');
+
+const router = express.Router();
+
+router.get('/api/orders/:orderId/summary', (req, res) => {
+  const orderId = String(req.params.orderId || '').trim();
+  if (!orderId) return res.status(400).json({ error: 'orderId required' });
+
+  const snap = readSnapshot(orderId);
+  if (!snap) return res.status(404).json({ error: 'Order snapshot not found for this orderId' });
+
+  // Normalize outcomes & mint once
+  let outcomes;
+  try { outcomes = splitOutcomes(snap.shippingOutcomes || ['IH>Customer']); }
+  catch (e) { return res.status(400).json({ error: e.message }); }
+
+  const minted = snap.minted || mintOrderNumber(outcomes);
+  if (!snap.minted) {
+    snap.minted = minted;
+    snap.updatedAt = new Date().toISOString();
+    writeSnapshot(orderId, snap);
+  }
+
+  // Enforce required fields (stop blank UI)
+  const items = Array.isArray(snap.items) ? snap.items.filter(Boolean) : [];
+  const missing = [];
+  items.forEach((it, i) => {
+    if (!it.upc) missing.push(`items[${i}].upc`);
+    if (!it.mpn) missing.push(`items[${i}].mpn`);
+    if (!it.sku) missing.push(`items[${i}].sku`);
+    if (!it.name) missing.push(`items[${i}].name`);
+    if (it.price === undefined || it.price === null) missing.push(`items[${i}].price`);
+    if (!it.imageUrl) missing.push(`items[${i}].imageUrl`);
+    if (!it.qty && it.qty !== 0) missing.push(`items[${i}].qty`);
+  });
+  if (missing.length) {
+    return res.status(422).json({ error: 'Snapshot incomplete for summary', fields: missing });
+  }
+
+  // Full cart lines (what the page iterates)
+  const linesAll = items.map(toLine);
+
+  // Per-shipment splits (Amazon-style)
+  const parts = (minted.parts.length ? minted.parts : [{ outcome: outcomes[0], orderNumber: minted.main }]);
+  const alloc = (snap.allocations && typeof snap.allocations === 'object') ? snap.allocations : null;
+
+  const shipments = parts.map((p, idx) => {
+    const shipItems = itemsForOutcome(p.outcome || outcomes[0], items, alloc);
+    const shipLines = shipItems.map(toLine);
+    return { idx, outcome: p.outcome || outcomes[0], orderNumber: p.orderNumber || minted.main, lines: shipLines, totals: computeTotals(shipLines) };
+  });
+
+  const totals = sumTotals(shipments.map(s => s.totals));
+
+  return res.json({
+    orderId,
+    orderNumber: minted.main,          // << the key your page expects (no more "128")
+    mainOrderNumber: minted.main,      // kept for other consumers
+    multiShipment: minted.parts.length > 0,
+    lines: linesAll,                   // top-level lines some UI reads
+    shipments,                         // Amazon-style details per shipment
+    customer: snap.customer || {},
+    totals,
+    status: snap.status || 'processing',
+    txnId: snap.txnId || ''
+  });
+});
+
+function toLine(it) {
+  const qty = Number(it.qty || 1);
+  const unit = Number(it.price || 0);
+  const imageUrl = String(it.imageUrl || '');
+  return {
+    qty,
+    pricingSnapshot: { retail: unit, /* optional: member */ },
+    unitPrice: unit,
+    extendedPrice: round2(unit * qty),
+    product: {
+      sku: String(it.sku || ''), upc: String(it.upc || ''), mpn: String(it.mpn || ''), name: String(it.name || ''),
+      image: { url: imageUrl }
+    }
+  };
+}
+
+function itemsForOutcome(outcome, items, allocations) {
+  if (!allocations || !allocations[outcome]) return items;
+  const a = allocations[outcome];
+  if (!Array.isArray(a) || !a.length) return [];
+  if (typeof a[0] === 'number') return a.map(i => items[i]).filter(Boolean);
+  // selector objects
+  return a.map(sel => {
+    const found = items.find(it =>
+      (sel.sku && it.sku === sel.sku) || (sel.upc && it.upc === sel.upc) || (sel.mpn && it.mpn === sel.mpn)
+    );
+    if (!found) return null;
+    return { ...found, qty: (sel.qty ?? found.qty) };
+  }).filter(Boolean);
+}
+
+function computeTotals(lines) {
+  const sub = lines.reduce((s, ln) => s + Number(ln.extendedPrice || 0), 0);
+  return { subtotal: round2(sub), tax: 0, shipping: 0, grandTotal: round2(sub) };
+}
+function sumTotals(list) {
+  return list.reduce((acc, t) => ({
+    subtotal: round2((acc.subtotal||0) + (t.subtotal||0)),
+    tax: round2((acc.tax||0) + (t.tax||0)),
+    shipping: round2((acc.shipping||0) + (t.shipping||0)),
+    grandTotal: round2((acc.grandTotal||0) + (t.grandTotal||0)),
+  }), { subtotal:0,tax:0,shipping:0,grandTotal:0 });
+}
+function round2(n) { return Math.round(Number(n) * 100) / 100; }
+
+module.exports = router;
+
+6) Wire the routes (two lines)
+// /checkout/server/index.js
+// ...
+const express = require('express');
+const app = express();
+
+// (existing middleware/routes)
+app.use(require('./routes/orderSnapshot'));
+app.use(require('./routes/orderSummaryById'));
+
+// (existing error handlers / listen)
+module.exports = app;
+
+How Replit must call it (payment-success → snapshot)
+
+Right after payment is approved and before redirecting the buyer to /order-confirmation?orderId=..., Replit must post a complete snapshot (this is what stops the blanks):
+
+POST /api/orders/126/snapshot
+
+{
+  "txnId": "ANET-ABC123",
+  "status": "processing",
+  "customer": { "email": "buyer@example.com", "name": "Buyer Name" },
+  "shippingOutcomes": ["IH>Customer"],  // or multiple, e.g. ["DS>FFL","IH>Customer"]
+  "allocations": null,
+  "items": [
+    {
+      "sku": "ZAFZP19BG",
+      "upc": "658792270011",
+      "mpn": "ZP.19BG",
+      "name": "Zaffirro Slide Gen 3/4 G19",
+      "qty": 1,
+      "price": 585.00,
+      "imageUrl": "https://inventory.thegunfirm.com/images/658792270011.jpg"
+    }
+  ]
+}
+
+
+If any of those required fields are missing, the server returns 422 with a precise fields[] list so you can correct Replit’s payload immediately (no more silent “— / No Image”).
+
+Quick verification (PowerShell-friendly)
+# 1) Seed a known-good snapshot (replace 126 with your orderId)
+$body = @{
+  txnId = "ANET-ABC123"
+  status = "processing"
+  customer = @{ email = "buyer@example.com"; name = "Buyer Name" }
+  shippingOutcomes = @("IH>Customer")
+  items = @(@{
+    sku="ZAFZP19BG"; upc="658792270011"; mpn="ZP.19BG"; name="Zaffirro Slide Gen 3/4 G19"
+    qty=1; price=585.00; imageUrl="https://inventory.thegunfirm.com/images/658792270011.jpg"
+  })
+} | ConvertTo-Json -Depth 6
+curl.exe -X POST "https://<your-checkout-host>/api/orders/126/snapshot" -H "Content-Type: application/json" -d $body
+
+# 2) Confirm the summary returns the exact keys your UI needs:
+curl.exe -s "https://<your-checkout-host>/api/orders/126/summary" | jq
+
+
+Expected UI after this patch:
+
+TGF Order Number: shows something like 100321-0 (or 100321-ZA per shipment).
+
+Order Items: UPC/MPN/Image present.
+
+Shipments: Amazon-style splits when shippingOutcomes.length > 1 (and optional allocations).

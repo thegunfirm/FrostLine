@@ -1,0 +1,1039 @@
+  Commander: 9,
+  Subcompact: 3,
+  Match: 1,
+  Officer: 1
+}
+📊 Facet result for inStock: {}
+📊 Facet result for sightType: { Standard: 181, 'Optics Ready': 18, 'Night Sights': 7, 'Red Dot': 1 }
+📊 Facet result for capacity: {
+  '4': 1,
+  '5': 197,
+  '6': 386,
+  '7': 149,
+  '8': 256,
+  '9': 112,
+  '10': 615,
+  '11': 11,
+  '12': 48,
+  '13': 87,
+  '14': 19,
+  '15': 278,
+  '16': 24,
+  '17': 201,
+  '18': 80,
+  '19': 15,
+  '20': 94,
+  '21': 21,
+  '22': 16,
+  '23': 3,
+  '24': 8,
+  '25': 6,
+  '26': 1,
+  '27': 4,
+  '28': 1,
+  '30': 111,
+  '32': 12,
+  '33': 21,
+  '35': 2,
+  '40': 7,
+  '45': 2,
+  '50': 2
+}
+📊 Facet result for internalSpecial: {}
+📊 Facet result for dropShippable: {}
+📊 Facet result for platformCategory: {}
+📊 Facet result for accessoryType: {}
+📊 Facet result for mountType: {}
+📊 Facet result for newItem: {}
+📊 Facet result for receiverType: {}
+📊 Facet result for nfaItemType: {}
+📊 Facet result for compatibility: {}
+📊 Facet result for material: {}
+📊 Facet result for finishNFA: {}
+🔍 Getting 100 results to apply inventory-based sorting for Handguns...
+🔍 Searching category Parts: {
+  query: '',
+  hitsPerPage: 5,
+  page: 0,
+  filters: 'departmentNumber:"34"',
+  facets: []
+}
+Request body: {
+  category: 'Handguns',
+  query: '',
+  filters: {
+    manufacturer: '',
+    caliber: '',
+    capacity: '',
+    priceRange: '',
+    inStock: null,
+    barrelLength: '',
+    finish: '',
+    frameSize: '',
+    actionType: '',
+    sightType: '',
+    newItem: null,
+    internalSpecial: null,
+    shippingMethod: '',
+    platformCategory: '',
+    partTypeCategory: '',
+    nfaItemType: '',
+    nfaBarrelLength: '',
+    nfaFinish: '',
+    accessoryType: '',
+    compatibility: '',
+    material: '',
+    mountType: '',
+    receiverType: '',
+    productType: 'handgun'
+  }
+}
+Parsed filters: {
+  manufacturer: '',
+  caliber: '',
+  capacity: '',
+  priceRange: '',
+  inStock: null,
+  barrelLength: '',
+  finish: '',
+  frameSize: '',
+  actionType: '',
+  sightType: '',
+  newItem: null,
+  internalSpecial: null,
+  shippingMethod: '',
+  platformCategory: '',
+  partTypeCategory: '',
+  nfaItemType: '',
+  nfaBarrelLength: '',
+  nfaFinish: '',
+  accessoryType: '',
+  compatibility: '',
+  material: '',
+  mountType: '',
+  receiverType: '',
+  productType: 'handgun'
+}
+🔍 Getting facet values for manufacturerName with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'manufacturerName' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for caliber with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'caliber' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for capacity with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'capacity' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for tierPricing.platinum with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'tierPricing.platinum' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for inStock with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'inStock' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for barrelLength with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'barrelLength' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for finish with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'finish' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for frameSize with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'frameSize' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for actionType with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'actionType' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for sightType with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'sightType' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for newItem with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'newItem' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for internalSpecial with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'internalSpecial' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for dropShippable with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'dropShippable' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for platformCategory with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'platformCategory' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for partTypeCategory with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'partTypeCategory' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for nfaItemType with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'nfaItemType' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for barrelLengthNFA with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'barrelLengthNFA' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for finishNFA with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'finishNFA' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for accessoryType with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'accessoryType' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for compatibility with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'compatibility' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for material with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'material' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for mountType with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'mountType' ],
+  filters: 'categoryName:"Handguns"'
+}
+🔍 Getting facet values for receiverType with filters: {
+  query: '',
+  hitsPerPage: 0,
+  facets: [ 'receiverType' ],
+  filters: 'categoryName:"Handguns"'
+}
+Algolia search received: {
+  query: '',
+  filters: {
+    category: 'Handguns',
+    productType: 'handgun',
+    departmentNumber: '01'
+  },
+  sort: 'relevance',
+  page: 0,
+  hitsPerPage: 24
+}
+Applied product type filter: handgun
+Algolia search params: {
+  "query": "",
+  "hitsPerPage": 24,
+  "page": 0,
+  "attributesToRetrieve": [
+    "objectID",
+    "name",
+    "description",
+    "stockNumber",
+    "rsrStockNumber",
+    "manufacturer",
+    "categoryName",
+    "tierPricing",
+    "inventoryQuantity",
+    "inStock",
+    "caliber",
+    "capacity",
+    "barrelLength",
+    "finish",
+    "frameSize",
+    "actionType",
+    "sightType",
+    "tags",
+    "newItem",
+    "internalSpecial",
+    "retailPrice",
+    "retailMap",
+    "msrp",
+    "dealerPrice",
+    "price",
+    "fflRequired",
+    "mpn",
+    "upc",
+    "weight",
+    "dropShippable",
+    "popularityScore"
+  ],
+  "filters": "categoryName:\"Handguns\"",
+  "optionalFilters": [
+    "manufacturer:GLOCK<score=50000>",
+    "manufacturer:SPGFLD<score=45000>",
+    "manufacturer:SIG<score=40000>",
+    "manufacturer:BERSA<score=20000>",
+    "manufacturer:FUSION<score=15000>",
+    "manufacturer:ZENITH<score=-10000>",
+    "manufacturer:MKS<score=-8000>",
+    "caliber:9mm<score=60000>",
+    "caliber:45 ACP<score=4000>",
+    "caliber:40 S&W<score=3000>"
+  ]
+}
+🔍 Searching category Parts: {
+  query: '',
+  hitsPerPage: 5,
+  page: 0,
+  filters: 'departmentNumber:"34"',
+  facets: []
+}
+📊 Facet result for barrelLengthNFA: {}
+🔍 Searching category Accessories: {
+  query: '',
+  hitsPerPage: 5,
+  page: 0,
+  filters: '(departmentNumber:"09" OR departmentNumber:"11" OR departmentNumber:"12" OR departmentNumber:"13" OR departmentNumber:"14" OR departmentNumber:"17" OR departmentNumber:"20" OR departmentNumber:"21" OR departmentNumber:"25" OR departmentNumber:"26" OR departmentNumber:"27" OR departmentNumber:"30" OR departmentNumber:"31" OR departmentNumber:"35")',
+  facets: []
+}
+📈 Got 0 results to filter from
+📊 Found 0 wanted brands before stock-based sorting
+📈 Stock-based sorting complete - top 3: 
+✅ Returning 0 results prioritized by stock levels
+11:07:44 PM [express] POST /api/search/algolia 200 in 305ms :: {"hits":[],"nbHits":0,"page":0,"nbPage…
+📊 Facet result for newItem: {}
+📊 Facet result for capacity: {
+  '4': 1,
+  '5': 197,
+  '6': 386,
+  '7': 149,
+  '8': 256,
+  '9': 112,
+  '10': 615,
+  '11': 11,
+  '12': 48,
+  '13': 87,
+  '14': 19,
+  '15': 278,
+  '16': 24,
+  '17': 201,
+  '18': 80,
+  '19': 15,
+  '20': 94,
+  '21': 21,
+  '22': 16,
+  '23': 3,
+  '24': 8,
+  '25': 6,
+  '26': 1,
+  '27': 4,
+  '28': 1,
+  '30': 111,
+  '32': 12,
+  '33': 21,
+  '35': 2,
+  '40': 7,
+  '45': 2,
+  '50': 2
+}
+📊 Facet result for caliber: {
+  '308': 2,
+  '9mm': 1455,
+  '45 ACP': 324,
+  '22 LR': 274,
+  '357 Magnum': 210,
+  '380 ACP': 115,
+  '10mm': 99,
+  '38 Special': 99,
+  '44 Magnum': 88,
+  '40 S&W': 42,
+  '300 BLK': 26,
+  '7.62x39': 20,
+  '5.56': 12,
+  '357 SIG': 7,
+  '410 Gauge': 1,
+  '6.5 Creedmoor': 1
+}
+📊 Facet result for tierPricing.platinum: {}
+📊 Facet result for manufacturerName: { Unknown: 13 }
+📊 Facet result for finish: {
+  Black: 1126,
+  FDE: 142,
+  'Stainless Steel': 129,
+  Tan: 39,
+  Bronze: 34,
+  Blue: 29,
+  'OD Green': 28,
+  Gray: 21,
+  Nickel: 20,
+  'Two-Tone': 10,
+  Matte: 8,
+  Coyote: 4,
+  Gold: 4,
+  Titanium: 3,
+  GRY: 2,
+  Silver: 2,
+  Cerakote: 1,
+  Parkerized: 1,
+  Red: 1
+}
+📊 Facet result for inStock: {}
+📊 Facet result for partTypeCategory: {}
+📊 Facet result for internalSpecial: {}
+📊 Facet result for sightType: { Standard: 181, 'Optics Ready': 18, 'Night Sights': 7, 'Red Dot': 1 }
+📊 Facet result for frameSize: {
+  Compact: 92,
+  'Full Size': 39,
+  Micro: 39,
+  Carry: 31,
+  Government: 26,
+  Standard: 15,
+  Commander: 9,
+  Subcompact: 3,
+  Match: 1,
+  Officer: 1
+}
+📊 Facet result for dropShippable: {}
+📊 Facet result for actionType: {
+  Revolver: 632,
+  'Single Action': 632,
+  'Striker Fired': 411,
+  'Semi-Automatic': 218,
+  'DA/SA': 53,
+  Striker: 8,
+  Automatic: 6,
+  'Double Action': 5
+}
+📊 Facet result for nfaItemType: {}
+📊 Facet result for platformCategory: {}
+📊 Facet result for barrelLength: {
+  '1': 3,
+  '2': 102,
+  '3': 162,
+  '4': 212,
+  '5': 268,
+  '6': 86,
+  '7': 6,
+  '8': 62,
+  '9': 5,
+  '10': 19,
+  '11': 6,
+  '12': 5,
+  '13': 3,
+  '16': 5,
+  '80': 6,
+  '4.25': 92,
+  '5"': 83,
+  '5.5': 79,
+  '4.5': 78,
+  '6.5': 65,
+  '3.1': 60,
+  '4.6': 57,
+  '4.4': 45,
+  '3.7': 41,
+  '7.5': 39,
+  '3.5': 35,
+  '3.3': 32,
+  '4.7': 30,
+  '3.6': 27,
+  '3.9': 27,
+  '10.5': 26,
+  '3.8': 26,
+  '4.2': 26,
+  '4.75': 26,
+  '3.2': 25,
+  '3.4': 24,
+  '3.5"': 24,
+  '2.5': 23,
+  '4.9': 22,
+  '3"': 20,
+  '3.87': 20,
+  '4.25"': 19,
+  '2.75': 18,
+  '5.2': 17,
+  '1.88': 16,
+  '4.1': 16,
+  '2.8': 14,
+  '3.75': 14,
+  '4.3"': 13,
+  '8.37': 13,
+  '3.18': 12,
+  '3.38': 12,
+  '5.1': 12,
+  '1.875': 11,
+  '3.42': 11,
+  '4"': 10,
+  '4.09': 10,
+  '6"': 10,
+  '2"': 8,
+  '3.37': 8,
+  '4.45': 8,
+  '4.75"': 8,
+  '6.75': 8,
+  '8.5': 8,
+  '2.25': 7,
+  '2.5"': 7,
+  '3.64': 7,
+  '3.85': 7,
+  '4.5"': 7,
+  '4.62': 7,
+  '4.71': 7,
+  '4.87': 7,
+  '5.12': 7,
+  '3.27': 6,
+  '3.86': 6,
+  '4.2"': 6,
+  '4.8': 6,
+  '5.25': 6,
+  '9"': 6,
+  '1.87': 5,
+  '12.9': 5,
+  '2.2': 5,
+  '4.43': 5,
+  '4.46': 5,
+  '5.5"': 5,
+  '6.5"': 5,
+  '8.3': 5,
+  '12.5': 4,
+  '2.2"': 4,
+  '2.7': 4,
+  '3.3"': 4,
+  '3.675': 4,
+  '4.3': 4,
+  '4.33': 4,
+  '4.94': 4,
+  '5.3': 4,
+  '6.8"': 4,
+  '7.25': 4,
+  '8.9': 4,
+  '10.5"': 3
+}
+📊 Facet result for barrelLengthNFA: {}
+📊 Facet result for finishNFA: {}
+📊 Facet result for accessoryType: {}
+🔍 Getting 100 results to apply inventory-based sorting for Handguns...
+🔍 Searching category Magazines: {
+  query: '',
+  hitsPerPage: 5,
+  page: 0,
+  filters: 'departmentNumber:"10"',
+  facets: []
+}
+📈 Got 100 results to filter from
+📊 Found 88 wanted brands before stock-based sorting
+📈 Stock-based sorting complete - top 3: GLOCK (790 in stock), GLOCK (727 in stock), GLOCK (318 in stock)
+✅ Returning 24 results prioritized by stock levels
+11:07:44 PM [express] POST /api/search/algolia 200 in 178ms :: {"hits":[{"objectID":"UX4350201FR","ti…
+🔍 Total suggestions found: 0
+11:07:44 PM [express] POST /api/search/suggestions 200 in 489ms :: {"suggestions":[],"totalSuggestion…
+📊 Facet result for compatibility: {}
+📊 Facet result for material: {}
+📊 Facet result for mountType: {}
+📊 Facet result for receiverType: {}
+🔧 Available receiver types: []
+🔧 Response includes receiverTypes: true
+11:07:44 PM [express] POST /api/search/filter-options 200 in 236ms :: {"manufacturers":[{"value":"Unk…
+🔍 Searching category Accessories: {
+  query: '',
+  hitsPerPage: 5,
+  page: 0,
+  filters: '(departmentNumber:"09" OR departmentNumber:"11" OR departmentNumber:"12" OR departmentNumber:"13" OR departmentNumber:"14" OR departmentNumber:"17" OR departmentNumber:"20" OR departmentNumber:"21" OR departmentNumber:"25" OR departmentNumber:"26" OR departmentNumber:"27" OR departmentNumber:"30" OR departmentNumber:"31" OR departmentNumber:"35")',
+  facets: []
+}
+📊 Facet result for manufacturerName: { Unknown: 13 }
+🔧 Available receiver types: []
+🔧 Response includes receiverTypes: true
+11:07:44 PM [express] POST /api/search/filter-options 200 in 595ms :: {"manufacturers":[{"value":"Unk…
+🔍 Searching category Magazines: {
+  query: '',
+  hitsPerPage: 5,
+  page: 0,
+  filters: 'departmentNumber:"10"',
+  facets: []
+}
+🔍 Total suggestions found: 0
+11:07:44 PM [express] POST /api/search/suggestions 200 in 430ms :: {"suggestions":[],"totalSuggestion…
+[API] GET /api/products/UX4350201FR len=0
+[API] GET /api/admin/fallback-image len=0
+[API] GET /api/products/UX4350204FRNMOO len=0
+[API] GET /api/products/UX4350204FRN-RG len=0
+[API] GET /api/products/UX4350204FRN len=0
+[API] GET /api/products/XDD9801HC-2 len=0
+11:07:44 PM [express] GET /api/products/UX4350204FRN-RG 304 in 299ms :: {"id":134405,"name":"GLOCK 43…
+11:07:44 PM [express] GET /api/products/UX4350204FRNMOO 304 in 317ms :: {"id":134396,"name":"GLOCK 43…
+11:07:44 PM [express] GET /api/admin/fallback-image 304 in 320ms :: {"key":"fallback_image_url","valu…
+11:07:44 PM [express] GET /api/products/UX4350204FRN 304 in 307ms :: {"id":134388,"name":"GLOCK 43X 9…
+11:07:44 PM [express] GET /api/products/UX4350201FR 304 in 371ms :: {"id":134372,"name":"GLOCK 43X 9M…
+[API] GET /api/products/UX4350204FRNFDESKY len=0
+11:07:45 PM [express] GET /api/products/XDD9801HC-2 304 in 291ms :: {"id":148125,"name":"SPRGFLD XD9 …
+[API] GET /api/products/UX4350204FRN-BB len=0
+[API] GET /api/products/UX4350204FRN-4 len=0
+[API] GET /api/products/UX4350204FRN-3 len=0
+[API] GET /api/products/UX4350204FRN-OD len=0
+11:07:45 PM [express] GET /api/products/UX4350204FRNFDESKY 304 in 74ms :: {"id":134393,"name":"GLOCK …
+[API] GET /api/products/UI3430103 len=0
+11:07:45 PM [express] GET /api/products/UX4350204FRN-BB 304 in 73ms :: {"id":134386,"name":"GLOCK 43X…
+11:07:45 PM [express] GET /api/products/UX4350204FRN-4 304 in 73ms :: {"id":134391,"name":"GLOCK 43X …
+11:07:45 PM [express] GET /api/products/UX4350204FRN-3 304 in 75ms :: {"id":134387,"name":"GLOCK 43X …
+11:07:45 PM [express] GET /api/products/UX4350204FRN-OD 304 in 73ms :: {"id":134397,"name":"GLOCK 43X…
+[API] GET /api/products/XDDG9101BOSP len=0
+11:07:45 PM [express] GET /api/products/UI3430103 304 in 77ms :: {"id":134332,"name":"GLOCK 34 GEN3 9…
+[API] GET /api/products/UX4350204FRNHHSKY len=0
+[API] GET /api/products/UA265S201MOS len=0
+[API] GET /api/products/XDD9801HC-2-1 len=0
+[API] GET /api/products/UX4350204FRN-REBCS len=0
+11:07:45 PM [express] GET /api/products/XDDG9101BOSP 304 in 73ms :: {"id":148129,"name":"SPGFLD XD MO…
+[API] GET /api/products/UX4350204FRN-13 len=0
+11:07:45 PM [express] GET /api/products/UX4350204FRNHHSKY 304 in 74ms :: {"id":134394,"name":"GLOCK 4…
+11:07:45 PM [express] GET /api/products/UA265S201MOS 304 in 74ms :: {"id":134319,"name":"GLOCK 26 GEN…
+11:07:45 PM [express] GET /api/products/XDD9801HC-2-1 304 in 72ms :: {"id":148127,"name":"SPRGFLD XD9…
+11:07:45 PM [express] GET /api/products/UX4350204FRN-REBCS 304 in 72ms :: {"id":134402,"name":"GLOCK …
+[API] GET /api/products/UA265S201 len=0
+11:07:45 PM [express] GET /api/products/UX4350204FRN-13 304 in 74ms :: {"id":134378,"name":"GLOCK 43X…
+[API] GET /api/products/UI4350201 len=0
+[API] GET /api/products/UX4350204-RGLAS len=0
+[API] GET /api/products/XDD9801HC2TRUMPSCT len=0
+[API] GET /api/products/UX4350204FRNREBFRPWS-1 len=0
+11:07:45 PM [express] GET /api/products/UA265S201 304 in 74ms :: {"id":134318,"name":"GLOCK 26 GEN5 9…
+[API] GET /api/products/XDD9801HC2FDESCT len=0
+11:07:45 PM [express] GET /api/products/UI4350201 304 in 74ms :: {"id":134337,"name":"GLOCK 43 9MM BL…
+11:07:45 PM [express] GET /api/products/UX4350204-RGLAS 304 in 73ms :: {"id":134404,"name":"GLOCK 43X…
+11:07:45 PM [express] GET /api/products/XDD9801HC2TRUMPSCT 304 in 74ms :: {"id":148128,"name":"SPRGFL…
+11:07:45 PM [express] GET /api/products/UX4350204FRNREBFRPWS-1 304 in 74ms :: {"id":134401,"name":"GL…
+11:07:45 PM [express] GET /api/products/XDD9801HC2FDESCT 304 in 72ms :: {"id":148126,"name":"SPRGFLD …
+[API] GET /api/products/XF-9-C len=0
+[API] GET /api/products/related/134405 len=0
+🧠 Loading RSR product intelligence...
+11:07:45 PM [express] GET /api/products/XF-9-C 304 in 73ms :: {"id":133069,"name":"FUSION XF PRO 9MM …
+[API] POST /api/cart/sync len=426
+🔍 Cart sync - sessionUser: Not logged in
+⚠️ No sessionUser found - cart not persisted to database
+11:07:46 PM [express] POST /api/cart/sync 200 in 1ms :: {"message":"Cart synced successfully","itemCo…
+🔍 Analyzing 57873 products for intelligence patterns...
+✅ RSR Intelligence loaded: 57873 products analyzed
+📊 Caliber compatibility matrix: 48 caliber families
+🎯 Finding related products for: GLOCK 43X 9MM 10RD ROSE GOLD FRTRAIL
+🔍 Extracted: caliber=9MM, type=null, barrel=null
+📈 Top similarities found: 8 products
+1. GLOCK 43XC 9MM 10RD ANIME CER GREEN (Score: 980) - Perfect match (manufacturer + caliber + type), Same manufacturer, Compatible caliber, Same magnification, Same firearm type, Same category, Same department, Similar capacity, Same action type
+2. GLOCK 17 GEN4 9MM 17RD 2 MAGS (Score: 915) - Perfect match (manufacturer + caliber + type), Same manufacturer, Compatible caliber, Same firearm type, Same category, Same department, Same action type, Similar weight
+3. GLOCK 26 9MM 10RD FXD 5LB REBUILT (Score: 860) - Perfect match (manufacturer + caliber + type), Same manufacturer, Compatible caliber, Same firearm type, Similar capacity, Same action type, Similar weight
+4. GLOCK 19 GEN3 9MM 10RD (Score: 860) - Perfect match (manufacturer + caliber + type), Same manufacturer, Compatible caliber, Same firearm type, Similar capacity, Same action type, Similar weight
+5. GLOCK 47 GEN5 MOS 9MM 17RD 3 MAGS FS (Score: 845) - Perfect match (manufacturer + caliber + type), Same manufacturer, Compatible caliber, Same firearm type, Same action type, Similar weight
+6. FN 509 FULLSIZE MRD 9MM 10RD FDE (Score: 480) - Compatible caliber, Same firearm type, Same category, Same department, Similar capacity, Same action type, Similar weight
+7. SPRGFLD HELLCAT RDP 9MM 3.8" 13RD MS (Score: 480) - Compatible caliber, Same firearm type, Same category, Same department, Similar capacity, Same action type, Similar weight
+8. SPRGFLD HELLCAT OSP 9MM 3" FDE 13RD (Score: 470) - Compatible caliber, Same firearm type, Same category, Same department, Similar capacity, Same action type
+11:07:48 PM [express] GET /api/products/related/134405 200 in 2601ms :: [{"id":134385,"name":"GLOCK 4…
+file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:395
+0&&(o=t[0]),o instanceof Error)throw o;var u=new Error("Unhandled error."+(o?" ("+
+                               ^
+
+error: terminating connection due to administrator command
+    at cn.parseErrorMessage (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1182:6)
+    at cn.handlePacket (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1143:13)
+    at cn.parse (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1127:36)
+    at v.<anonymous> (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1190:16)
+    at v.emit (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:397:12)
+    at WebSocket.<anonymous> (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:987:80)
+    at callListener (/home/runner/workspace/node_modules/ws/lib/event-target.js:290:14)
+    at WebSocket.onMessage (/home/runner/workspace/node_modules/ws/lib/event-target.js:209:9)
+    at WebSocket.emit (node:events:524:28)
+    at Receiver.receiverOnMessage (/home/runner/workspace/node_modules/ws/lib/websocket.js:1220:20)
+    at Receiver.emit (node:events:524:28)
+    at Receiver.dataMessage (/home/runner/workspace/node_modules/ws/lib/receiver.js:569:14)
+    at Receiver.getData (/home/runner/workspace/node_modules/ws/lib/receiver.js:496:10)
+    at Receiver.startLoop (/home/runner/workspace/node_modules/ws/lib/receiver.js:167:16)
+    at Receiver._write (/home/runner/workspace/node_modules/ws/lib/receiver.js:94:10)
+    at writeOrBuffer (node:internal/streams/writable:572:12)
+    at _write (node:internal/streams/writable:501:10)
+    at Writable.write (node:internal/streams/writable:510:10)
+    at TLSSocket.socketOnData (/home/runner/workspace/node_modules/ws/lib/websocket.js:1355:35)
+    at TLSSocket.emit (node:events:524:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23) {
+  length: 116,
+  severity: 'FATAL',
+  code: '57P01',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'postgres.c',
+  line: '3289',
+  routine: 'ProcessInterrupts',
+  client: NeonClient {
+    _events: [Object: null prototype] { error: [Function (anonymous)] },
+    _eventsCount: 1,
+    _maxListeners: undefined,
+    connectionParameters: ConnectionParameters {
+      user: 'neondb_owner',
+      database: 'neondb',
+      port: 5432,
+      host: 'ep-red-base-afwcskoa.c-2.us-west-2.aws.neon.tech',
+      binary: false,
+      options: undefined,
+      ssl: {},
+      client_encoding: '',
+      replication: undefined,
+      isDomainSocket: false,
+      application_name: undefined,
+      fallback_application_name: undefined,
+      statement_timeout: false,
+      lock_timeout: false,
+      idle_in_transaction_session_timeout: false,
+      query_timeout: false,
+      connect_timeout: 0
+    },
+    user: 'neondb_owner',
+    database: 'neondb',
+    port: 5432,
+    host: 'ep-red-base-afwcskoa.c-2.us-west-2.aws.neon.tech',
+    replication: undefined,
+    _Promise: [Function: Promise],
+    _types: TypeOverrides {
+      _types: {
+        getTypeParser: [Function: getTypeParser],
+        setTypeParser: [Function: setTypeParser],
+        arrayParser: { create: [Function: create] },
+        builtins: {
+          BOOL: 16,
+          BYTEA: 17,
+          CHAR: 18,
+          INT8: 20,
+          INT2: 21,
+          INT4: 23,
+          REGPROC: 24,
+          TEXT: 25,
+          OID: 26,
+          TID: 27,
+          XID: 28,
+          CID: 29,
+          JSON: 114,
+          XML: 142,
+          PG_NODE_TREE: 194,
+          SMGR: 210,
+          PATH: 602,
+          POLYGON: 604,
+          CIDR: 650,
+          FLOAT4: 700,
+          FLOAT8: 701,
+          ABSTIME: 702,
+          RELTIME: 703,
+          TINTERVAL: 704,
+          CIRCLE: 718,
+          MACADDR8: 774,
+          MONEY: 790,
+          MACADDR: 829,
+          INET: 869,
+          ACLITEM: 1033,
+          BPCHAR: 1042,
+          VARCHAR: 1043,
+          DATE: 1082,
+          TIME: 1083,
+          TIMESTAMP: 1114,
+          TIMESTAMPTZ: 1184,
+          INTERVAL: 1186,
+          TIMETZ: 1266,
+          BIT: 1560,
+          VARBIT: 1562,
+          NUMERIC: 1700,
+          REFCURSOR: 1790,
+          REGPROCEDURE: 2202,
+          REGOPER: 2203,
+          REGOPERATOR: 2204,
+          REGCLASS: 2205,
+          REGTYPE: 2206,
+          UUID: 2950,
+          TXID_SNAPSHOT: 2970,
+          PG_LSN: 3220,
+          PG_NDISTINCT: 3361,
+          PG_DEPENDENCIES: 3402,
+          TSVECTOR: 3614,
+          TSQUERY: 3615,
+          GTSVECTOR: 3642,
+          REGCONFIG: 3734,
+          REGDICTIONARY: 3769,
+          JSONB: 3802,
+          REGNAMESPACE: 4089,
+          REGROLE: 4096
+        }
+      },
+      text: {},
+      binary: {}
+    },
+    _ending: true,
+    _connecting: false,
+    _connected: true,
+    _connectionError: false,
+    _queryable: false,
+    connection: Connection {
+      _events: [Object: null prototype] {
+        newListener: [Function (anonymous)],
+        connect: [ [Function (anonymous)], [Function (anonymous)] ],
+        sslconnect: [Function (anonymous)],
+        authenticationMD5Password: [Function: bound _handleAuthMD5Password],
+        authenticationSASL: [Function: bound _handleAuthSASL],
+        authenticationSASLContinue: [Function: bound _handleAuthSASLContinue] AsyncFunction,
+        authenticationSASLFinal: [Function: bound _handleAuthSASLFinal],
+        backendKeyData: [Function: bound _handleBackendKeyData],
+        error: [Function: bound _handleErrorEvent],
+        errorMessage: [Function: bound _handleErrorMessage],
+        notice: [Function: bound _handleNotice],
+        rowDescription: [Function: bound _handleRowDescription],
+        dataRow: [Function: bound _handleDataRow],
+        portalSuspended: [Function: bound _handlePortalSuspended],
+        emptyQuery: [Function: bound _handleEmptyQuery],
+        commandComplete: [Function: bound _handleCommandComplete],
+        parseComplete: [Function: bound _handleParseComplete],
+        copyInResponse: [Function: bound _handleCopyInResponse],
+        copyData: [Function: bound _handleCopyData],
+        notification: [Function: bound _handleNotification],
+        end: [
+          [Function: bound onceWrapper] {
+            listener: [Function (anonymous)]
+          },
+          [Function: bound onceWrapper] {
+            listener: [Function (anonymous)]
+          }
+        ],
+        readyForQuery: [Function: bound _handleReadyForQuery]
+      },
+      _eventsCount: 22,
+      _maxListeners: undefined,
+      stream: Socket {
+        _events: [Object: null prototype] {
+          error: [Function: reportStreamError],
+          close: [Function (anonymous)],
+          end: [ [Function (anonymous)], [Function (anonymous)] ],
+          data: [Function (anonymous)]
+        },
+        _eventsCount: 4,
+        _maxListeners: undefined,
+        opts: {},
+        connecting: false,
+        pending: false,
+        writable: true,
+        encrypted: false,
+        authorized: false,
+        destroyed: true,
+        ws: <ref *1> WebSocket {
+          _events: [Object: null prototype] {
+            error: [Function],
+            message: [Function],
+            close: [Function],
+            open: [Function]
+          },
+          _eventsCount: 4,
+          _maxListeners: undefined,
+          _binaryType: 'arraybuffer',
+          _closeCode: 1006,
+          _closeFrameReceived: false,
+          _closeFrameSent: false,
+          _closeMessage: Buffer(0) [Uint8Array] [],
+          _closeTimer: Timeout {
+            _idleTimeout: 30000,
+            _idlePrev: [TimersList],
+            _idleNext: [Timeout],
+            _idleStart: 106378,
+            _onTimeout: [Function: bound ],
+            _timerArgs: undefined,
+            _repeat: null,
+            _destroyed: false,
+            [Symbol(refed)]: true,
+            [Symbol(kHasPrimitive)]: false,
+            [Symbol(asyncId)]: 15240,
+            [Symbol(triggerId)]: 13731
+          },
+          _errorEmitted: false,
+          _extensions: {},
+          _paused: false,
+          _protocol: '',
+          _readyState: 2,
+          _receiver: Receiver {
+            _events: [Object],
+            _writableState: [WritableState],
+            _maxListeners: undefined,
+            _allowSynchronousEvents: true,
+            _binaryType: 'arraybuffer',
+            _extensions: {},
+            _isServer: false,
+            _maxPayload: 104857600,
+            _skipUTF8Validation: false,
+            _bufferedBytes: 0,
+            _buffers: [],
+            _compressed: false,
+            _payloadLength: 117,
+            _mask: undefined,
+            _fragmented: 0,
+            _masked: false,
+            _fin: true,
+            _opcode: 2,
+            _totalPayloadLength: 0,
+            _messageLength: 0,
+            _fragments: [],
+            _errored: false,
+            _loop: true,
+            _state: 4,
+            _eventsCount: 6,
+            [Symbol(shapeMode)]: true,
+            [Symbol(kCapture)]: false,
+            [Symbol(websocket)]: [Circular *1]
+          },
+          _sender: Sender {
+            _extensions: {},
+            _socket: [TLSSocket],
+            _firstFragment: true,
+            _compress: false,
+            _bufferedBytes: 0,
+            _queue: [],
+            _state: 0,
+            onerror: [Function: senderOnError],
+            [Symbol(websocket)]: [Circular *1]
+          },
+          _socket: TLSSocket {
+            _tlsOptions: [Object],
+            _secureEstablished: true,
+            _securePending: false,
+            _newSessionPending: false,
+            _controlReleased: true,
+            secureConnecting: false,
+            _SNICallback: null,
+            servername: 'ep-red-base-afwcskoa.c-2.us-west-2.aws.neon.tech',
+            alpnProtocol: false,
+            authorized: true,
+            authorizationError: null,
+            encrypted: true,
+            _events: [Object: null prototype],
+            _eventsCount: 6,
+            connecting: false,
+            _hadError: false,
+            _parent: null,
+            _host: 'ep-red-base-afwcskoa.c-2.us-west-2.aws.neon.tech',
+            _closeAfterHandlingError: false,
+            _readableState: [ReadableState],
+            _writableState: [WritableState],
+            allowHalfOpen: false,
+            _maxListeners: undefined,
+            _sockname: null,
+            _pendingData: null,
+            _pendingEncoding: '',
+            server: undefined,
+            _server: null,
+            ssl: [TLSWrap],
+            _requestCert: true,
+            _rejectUnauthorized: true,
+            parser: null,
+            _httpMessage: null,
+            autoSelectFamilyAttemptedAddresses: [Array],
+            timeout: 0,
+            [Symbol(alpncallback)]: null,
+            [Symbol(res)]: [TLSWrap],
+            [Symbol(verified)]: true,
+            [Symbol(pendingSession)]: null,
+            [Symbol(async_id_symbol)]: 13731,
+            [Symbol(kHandle)]: [TLSWrap],
+            [Symbol(lastWriteQueueSize)]: 6,
+            [Symbol(timeout)]: null,
+            [Symbol(kBuffer)]: null,
+            [Symbol(kBufferCb)]: null,
+            [Symbol(kBufferGen)]: null,
+            [Symbol(shapeMode)]: true,
+            [Symbol(kCapture)]: false,
+            [Symbol(kSetNoDelay)]: true,
+            [Symbol(kSetKeepAlive)]: false,
+            [Symbol(kSetKeepAliveInitialDelay)]: 0,
+            [Symbol(kBytesRead)]: 0,
+            [Symbol(kBytesWritten)]: 0,
+            [Symbol(connect-options)]: [Object],
+            [Symbol(websocket)]: [Circular *1]
+          },
+          _bufferedAmount: 0,
+          _isServer: false,
+          _redirects: 0,
+          _autoPong: true,
+          _url: 'wss://ep-red-base-afwcskoa.c-2.us-west-2.aws.neon.tech/v2',
+          _req: null,
+          [Symbol(shapeMode)]: false,
+          [Symbol(kCapture)]: false
+        },
+        writeBuffer: undefined,
+        tlsState: 0,
+        tlsRead: undefined,
+        tlsWrite: undefined
+      },
+      _keepAlive: false,
+      _keepAliveInitialDelayMillis: 0,
+      lastBuffer: false,
+      parsedStatements: {},
+      ssl: false,
+      _ending: true,
+      _emitMessage: false,
+      _connecting: true
+    },
+    queryQueue: [],
+    binary: false,
+    processID: -596108847,
+    secretKey: 1220217890,
+    ssl: false,
+    _connectionTimeoutMillis: 0,
+    config: {
+      connectionString: 'postgresql://neondb_owner:npg_EVprOjgFLC40@ep-red-base-afwcskoa.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require',
+      max: 10,
+      maxUses: Infinity,
+      allowExitOnIdle: false,
+      maxLifetimeSeconds: 0,
+      idleTimeoutMillis: 10000
+    },
+    _connectionCallback: null,
+    release: [Function (anonymous)],
+    activeQuery: null,
+    readyForQuery: true,
+    hasExecuted: true,
+    _poolUseCount: 6
+  }
+}
+
+Node.js v20.19.3

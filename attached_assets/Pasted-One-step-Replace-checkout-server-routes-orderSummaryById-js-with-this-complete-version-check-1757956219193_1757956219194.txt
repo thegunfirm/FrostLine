@@ -1,0 +1,123 @@
+One step
+
+Replace /checkout/server/routes/orderSummaryById.js with this complete version:
+
+// /checkout/server/routes/orderSummaryById.js
+// GET /api/orders/:orderId/summary  (exact path the confirmation page calls)
+
+const express = require('express');
+const { readSnapshot, writeSnapshot } = require('../lib/storage');
+const { splitOutcomes } = require('../lib/shippingSplit');
+const { mintOrderNumber } = require('../lib/orderNumbers');
+
+const router = express.Router();
+
+router.get('/api/orders/:orderId/summary', async (req, res) => {
+  const orderId = String(req.params.orderId || '').trim();
+  if (!orderId) return res.status(400).json({ error: 'orderId required' });
+
+  const snap = readSnapshot(orderId);
+  if (!snap) {
+    return res.status(404).json({ error: 'Order snapshot not found for this orderId' });
+  }
+
+  // Normalize outcomes & mint once (persist for stability)
+  let outcomes = [];
+  try {
+    outcomes = splitOutcomes(snap.shippingOutcomes || ['DS>Customer']);
+  } catch (e) {
+    return res.status(400).json({ error: e.message || 'Invalid shippingOutcomes' });
+  }
+
+  const minted = snap.minted || mintOrderNumber(outcomes);
+  if (!snap.minted) {
+    snap.minted = minted;
+    snap.updatedAt = new Date().toISOString();
+    writeSnapshot(orderId, snap);
+  }
+
+  // ---- SHAPE COMPATIBILITY FOR /client/src/pages/order-confirmation.tsx ----
+  // Build the exact "lines[]" the UI expects: each line with qty and pricingSnapshot.retail.
+  const items = Array.isArray(snap.items) ? snap.items.filter(Boolean) : [];
+
+  const lines = items.map((it) => {
+    const qty = Number(it.qty || 1);
+    const unit = Number(it.price || 0);
+
+    // Provide pricingSnapshot the page reads: retail (and optional member if you start passing it)
+    const pricingSnapshot = {
+      retail: unit,
+      // If you ever send membership pricing in the snapshot, surface it here:
+      member: (it.memberPrice !== undefined && it.memberPrice !== null)
+        ? Number(it.memberPrice)
+        : undefined
+    };
+
+    // Offer both flat and nested image to satisfy differing client reads
+    const imageUrl = String(it.imageUrl || '');
+    const product = {
+      sku: String(it.sku || ''),     // RSR#
+      upc: String(it.upc || ''),
+      mpn: String(it.mpn || ''),
+      name: String(it.name || ''),
+      imageUrl
+    };
+
+    return {
+      qty,
+      pricingSnapshot,              // <-- UI uses pricingSnapshot.retail
+      unitPrice: unit,
+      extendedPrice: round2(unit * qty),
+      product,
+      image: { url: imageUrl }      // <-- some UIs read image.url
+    };
+  });
+
+  // Keep existing shipments payload for other consumers; attach compatible items per shipment.
+  const shipmentDefs = (minted.parts.length
+    ? minted.parts
+    : [{ outcome: outcomes[0], orderNumber: minted.main }]);
+
+  const shipments = shipmentDefs.map((p, idx) => ({
+    idx,
+    outcome: p.outcome || outcomes[0],
+    orderNumber: p.orderNumber || minted.main,
+    // Provide the same "lines" shape here too to be future-proof.
+    items: lines
+  }));
+
+  const totals = computeTotals(lines);
+
+  return res.json({
+    orderId,
+    mainOrderNumber: minted.main,
+    multiShipment: minted.parts.length > 0,
+    // 👇 Critical: this is what your confirmation page iterates (line.qty, line.pricingSnapshot.retail)
+    lines,
+    // Keep shipments for compatibility
+    shipments,
+    customer: snap.customer || {},
+    totals,
+    status: snap.status || 'processing',
+    txnId: snap.txnId || ''
+  });
+});
+
+function computeTotals(lines) {
+  const sub = lines.reduce((s, ln) => s + Number(ln.extendedPrice || 0), 0);
+  return {
+    subtotal: round2(sub),
+    tax: 0,
+    shipping: 0,
+    grandTotal: round2(sub)
+  };
+}
+
+function round2(n) {
+  return Math.round(Number(n) * 100) / 100;
+}
+
+module.exports = router;
+
+
+This keeps all frozen UI untouched and makes the API return lines[] with qty and pricingSnapshot.retail, eliminating the line.qty crash on /order-confirmation?orderId=126.

@@ -1,0 +1,45 @@
+{
+  "orderId": "134",
+  "txnId": "120071110217",
+  "status": "processing",
+  "customer": {
+    "email": "ripmagicalbeast@gmail.com",
+    "name": "Rip Ripple"
+  },
+  "items": [
+    {
+      "upc": "810100237950",
+      "sku": "UX4350204FRN-BB",
+      "name": "GLOCK 43X 9MM 10RD BB FRONT RAIL",
+      "qty": 1,
+      "price": 585.00,
+      "imageUrl": "/images/UX4350204FRN-BB.jpg"
+    },
+    {
+      "upc": "813628014522",
+      "sku": "XSI-BL-222", 
+      "name": "SME SIGHT RITE BORE SGHTR .223REM",
+      "qty": 1,
+      "price": 42.99,
+      "imageUrl": "/images/XSI-BL-222.jpg"
+    },
+    {
+      "upc": "047700067100",
+      "sku": "REM23712",
+      "name": "REM UMC 30CARB 110GR FMJ 50/500",
+      "qty": 1,
+      "price": 62.99,
+      "imageUrl": "/images/REM23712.jpg"
+    }
+  ],
+  "shippingOutcomes": [
+    "IH>Customer"
+  ],
+  "allocations": null,
+  "minted": {
+    "main": "100012-0",
+    "parts": []
+  },
+  "createdAt": "2025-09-15T23:43:38.153Z",
+  "updatedAt": "2025-09-15T23:52:15.807Z"
+}

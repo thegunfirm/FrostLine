@@ -2,6 +2,7 @@ import { rsrAPI, type RSRProduct } from './rsr-api';
 import { storage } from '../storage';
 import { pricingService, type RSRPricing } from './pricing-service';
 import { imageService } from './image-service';
+import { applyCategoryRules, type ProductData } from '../../scripts/category-rules-engine';
 import type { InsertProduct } from '@shared/schema';
 
 export interface SyncConfiguration {
@@ -86,6 +87,46 @@ class InventorySyncService {
     // Log warning when falling back to RSR stock number
     console.warn(`⚠️  No manufacturer part number found for ${rsrStock} (${manufacturer}) - using RSR stock as SKU`);
     return rsrStock;
+  }
+
+  /**
+   * Extract caliber from product description using common patterns
+   */
+  private extractCaliber(description: string): string | null {
+    if (!description) return null;
+    
+    const desc = description.toLowerCase();
+    
+    // Common caliber patterns
+    const caliberPatterns = [
+      /\b(9mm|9x19|9 mm)\b/,
+      /\b(45 acp|\.45 acp|45acp)\b/,
+      /\b(40 s&w|\.40 s&w|40sw)\b/,
+      /\b(380 acp|\.380 acp|380acp)\b/,
+      /\b(357 mag|\.357 mag|357mag)\b/,
+      /\b(38 special|\.38 special)\b/,
+      /\b(22 lr|\.22 lr|22lr)\b/,
+      /\b(223 rem|\.223|223)\b/,
+      /\b(5\.56|556)\b/,
+      /\b(308 win|\.308|308)\b/,
+      /\b(30-06|\.30-06)\b/,
+      /\b(270 win|\.270)\b/,
+      /\b(7\.62x39)\b/,
+      /\b(300 blk|300blk|\.300 blk)\b/,
+      /\b(6\.5 cm|6\.5cm|6\.5 creedmoor)\b/,
+      /\b(12 ga|12ga|12 gauge)\b/,
+      /\b(20 ga|20ga|20 gauge)\b/,
+      /\b(410|\.410)\b/
+    ];
+    
+    for (const pattern of caliberPatterns) {
+      const match = desc.match(pattern);
+      if (match) {
+        return match[1] || match[0];
+      }
+    }
+    
+    return null;
   }
   private syncConfigurations: SyncConfiguration[] = [];
   private syncResults: SyncResult[] = [];
@@ -523,10 +564,50 @@ class InventorySyncService {
     // Calculate tier pricing using the pricing service
     const tierPricing = await pricingService.calculateTierPricing(rsrPricing);
 
+    // Apply proper categorization rules instead of using RSR's generic categoryDesc
+    // Extract caliber from description if possible
+    const extractedCaliber = this.extractCaliber(rsrProduct.description);
+    
+    // Determine if it's likely a firearm based on RSR category
+    const isLikelyFirearm = ['Handguns', 'Long Guns', 'Rifles', 'Shotguns'].includes(rsrProduct.categoryDesc);
+    
+    const productForCategorization: ProductData = {
+      id: 0, // Temporary - will be set by database
+      name: rsrProduct.description,
+      sku: this.getProperSKU(rsrProduct.stockNo, rsrProduct.manufacturer, rsrProduct.mfgPartNumber),
+      category: rsrProduct.categoryDesc, // Original RSR category (will be corrected)
+      department_number: null, // RSR doesn't provide this in API
+      department_desc: rsrProduct.departmentDesc || null,
+      sub_department_desc: rsrProduct.subDepartmentDesc || null,
+      subcategory_name: rsrProduct.subcategoryName || null,
+      nfa_item_type: null, // Would need to be determined from other data
+      receiver_type: null, // Would need to be determined from other data
+      caliber: extractedCaliber,
+      requires_ffl: isLikelyFirearm,
+      is_firearm: isLikelyFirearm,
+      platform_category: null, // Would need to be determined from other data
+      manufacturer: rsrProduct.manufacturer
+    };
+    
+    // Apply category rules to get proper categorization
+    const correctCategory = applyCategoryRules(productForCategorization);
+    
+    // Determine if this is a firearm that requires FFL based on the correct category
+    const firearmCategories = ['Handguns', 'Rifles', 'Shotguns', 'NFA Products'];
+    const isActualFirearm = firearmCategories.includes(correctCategory);
+    const requiresFFL = isActualFirearm;
+    const mustRouteThroughGunFirm = isActualFirearm;
+    
+    // Build appropriate tags based on actual categorization
+    const productTags = [correctCategory, rsrProduct.manufacturer];
+    if (isActualFirearm) {
+      productTags.push("Firearms");
+    }
+
     return {
       name: rsrProduct.description,
       description: rsrProduct.fullDescription || rsrProduct.description,
-      category: rsrProduct.categoryDesc,
+      category: correctCategory,
       manufacturer: rsrProduct.manufacturer,
       manufacturerPartNumber: this.getManufacturerPartNumber(rsrProduct.stockNo, rsrProduct.manufacturer, rsrProduct.mfgPartNumber), // CRITICAL FIX: Real manufacturer part number
       sku: this.getProperSKU(rsrProduct.stockNo, rsrProduct.manufacturer, rsrProduct.mfgPartNumber), // CRITICAL FIX: Use real manufacturer part number
@@ -540,9 +621,9 @@ class InventorySyncService {
       inStock: rsrProduct.quantity > 0,
       stockQuantity: rsrProduct.quantity,
       distributor: "RSR",
-      requiresFFL: true,
-      mustRouteThroughGunFirm: true,
-      tags: [rsrProduct.categoryDesc, rsrProduct.manufacturer, "Firearms"],
+      requiresFFL: requiresFFL,
+      mustRouteThroughGunFirm: mustRouteThroughGunFirm,
+      tags: productTags,
       images: imageService.processRSRProductImages(rsrProduct),
       returnPolicyDays: 30,
       isActive: true

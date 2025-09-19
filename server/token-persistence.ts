@@ -3,8 +3,8 @@
  * Fixes the "Why do we have to do this everyday!?!?" problem permanently
  */
 
-import fs from 'fs/promises';
-import path from 'path';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 interface TokenData {
   accessToken: string;
