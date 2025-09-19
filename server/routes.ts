@@ -4433,128 +4433,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // RSR Product Image Service - Enhanced with Hetzner Object Storage
+  // RSR Product Image Service - Enhanced with Hetzner Object Storage and Debug Support
   // Enhanced: August 25, 2025 - Added Hetzner Object Storage integration
   // Multi-angle support, proper authentication, RSR domain handling
   app.get("/api/image/:imageName", async (req, res) => {
     try {
       const imageName = req.params.imageName;
-      const { size = 'standard', angle = '1', view } = req.query;
+      const { 
+        size = 'standard', 
+        angle = '1', 
+        view,
+        forceUpstream,
+        debug
+      } = req.query;
       
       // Use 'angle' parameter from frontend, fallback to 'view' for backward compatibility
-      const imageAngle = angle || view || '1';
+      const imageAngle = Number(angle || view || '1');
+      const skipBucket = forceUpstream === '1' || forceUpstream === 'true';
+      const enableDebug = debug === '1' || debug === 'true' || process.env.RSR_IMAGE_DEBUG === '1';
       
-      console.log(`RSR Image Request: ${imageName}, size: ${size}, angle: ${imageAngle}`);
+      console.log(`RSR Image Request: ${imageName}, size: ${size}, angle: ${imageAngle}, forceUpstream: ${skipBucket}`);
       
-      // First check if there's a custom uploaded image for this product and angle
-      try {
-        // Custom image support would go here
-        const customImage: any[] = [];
-        
-        if (customImage.length > 0) {
-          // Serve the custom image
-          const response = await axios.get(customImage[0].imageUrl, {
-            responseType: "arraybuffer",
-            timeout: 10000,
-          });
-          
-          const contentType = response.headers['content-type'] || 'image/jpeg';
-          const imageBuffer = response.data;
-          
-          res.set({
-            'Content-Type': contentType,
-            'Cache-Control': 'public, max-age=86400', // 24 hours
-            'Content-Length': imageBuffer.length.toString(),
-            'X-Image-Source': 'custom-upload'
-          });
-          
-          return res.send(imageBuffer);
-        }
-      } catch (customError) {
-        console.log(`No custom image found for ${imageName} angle ${imageAngle}, checking bucket then RSR`);
-      }
-      
-      // Check if image exists in our Hetzner Object Storage bucket
-      const useBucket = process.env.USE_BUCKET_IMAGES?.trim().toLowerCase().includes('true');
-      console.log(`📦 Bucket check: USE_BUCKET_IMAGES="${process.env.USE_BUCKET_IMAGES}" -> ${useBucket}`);
-      
-      if (useBucket) {
+      // Check bucket unless forceUpstream is set
+      if (!skipBucket) {
+        // First check if there's a custom uploaded image for this product and angle
         try {
-          const originalFilename = `${imageName}_${imageAngle || 1}.jpg`;
-          console.log(`🔍 Checking bucket for: ${originalFilename}`);
+          // Custom image support would go here
+          const customImage: any[] = [];
           
-          // Direct S3 check
-          const bucketKey = `rsr/standard/${originalFilename}`;
-          console.log(`🗂️  Bucket key: ${bucketKey}`);
-          
-          try {
-            await s3.send(new HeadObjectCommand({
-              Bucket: process.env.HETZNER_S3_BUCKET!,
-              Key: bucketKey
-            }));
+          if (customImage.length > 0) {
+            // Serve the custom image
+            const response = await axios.get(customImage[0].imageUrl, {
+              responseType: "arraybuffer",
+              timeout: 10000,
+            });
             
-            const bucketUrl = `https://${process.env.IMAGE_BASE_URL}/${bucketKey}`;
-            console.log(`✅ IMAGE FOUND IN BUCKET! Redirecting to: ${bucketUrl}`);
-            return res.redirect(302, bucketUrl);
-          } catch (s3Error: any) {
-            console.log(`❌ S3 HeadObject failed for ${bucketKey}:`, s3Error.name, s3Error.message);
+            const contentType = response.headers['content-type'] || 'image/jpeg';
+            const imageBuffer = response.data;
+            
+            res.set({
+              'Content-Type': contentType,
+              'Cache-Control': 'public, max-age=86400', // 24 hours
+              'Content-Length': imageBuffer.length.toString(),
+              'X-Image-Source': 'custom-upload'
+            });
+            
+            return res.send(imageBuffer);
           }
-        } catch (bucketError) {
-          console.log(`🚫 Bucket check error:`, bucketError);
+        } catch (customError) {
+          console.log(`No custom image found for ${imageName} angle ${imageAngle}, checking bucket then RSR`);
+        }
+        
+        // Check if image exists in our Hetzner Object Storage bucket
+        const useBucket = process.env.USE_BUCKET_IMAGES?.trim().toLowerCase().includes('true');
+        console.log(`📦 Bucket check: USE_BUCKET_IMAGES="${process.env.USE_BUCKET_IMAGES}" -> ${useBucket}`);
+        
+        if (useBucket) {
+          try {
+            const originalFilename = `${imageName}_${imageAngle}.jpg`;
+            console.log(`🔍 Checking bucket for: ${originalFilename}`);
+            
+            // Direct S3 check
+            const bucketKey = `rsr/standard/${originalFilename}`;
+            console.log(`🗂️  Bucket key: ${bucketKey}`);
+            
+            try {
+              await s3.send(new HeadObjectCommand({
+                Bucket: process.env.HETZNER_S3_BUCKET!,
+                Key: bucketKey
+              }));
+              
+              const bucketUrl = `https://${process.env.IMAGE_BASE_URL}/${bucketKey}`;
+              console.log(`✅ IMAGE FOUND IN BUCKET! Redirecting to: ${bucketUrl}`);
+              return res.redirect(302, bucketUrl);
+            } catch (s3Error: any) {
+              console.log(`❌ S3 HeadObject failed for ${bucketKey}:`, s3Error.name, s3Error.message);
+            }
+          } catch (bucketError) {
+            console.log(`🚫 Bucket check error:`, bucketError);
+          }
+        } else {
+          console.log(`📦 Bucket images disabled (USE_BUCKET_IMAGES: ${process.env.USE_BUCKET_IMAGES})`);
         }
       } else {
-        console.log(`📦 Bucket images disabled (USE_BUCKET_IMAGES: ${process.env.USE_BUCKET_IMAGES})`);
+        console.log(`⏭️  Skipping bucket check due to forceUpstream flag`);
       }
       
-      let rsrImageUrl = '';
+      // Import and use shared RSR image fetcher
+      const { rsrImageFetcher } = await import('./services/rsr-image-fetcher.js');
       
-      // Use RSR's documented naming convention: RSRSKU_imagenumber.jpg
-      // Standard Images: AAC17-22G3_1.jpg, AAC17-22G3_2.jpg, AAC17-22G3_3.jpg
-      // High Resolution: AAC17-22G3_1_HR.jpg, AAC17-22G3_2_HR.jpg, AAC17-22G3_3_HR.jpg
-      const imageNumber = imageAngle || 1;
+      // Fetch from RSR using shared fetcher
+      const result = await rsrImageFetcher.fetch({
+        sku: imageName,
+        angle: imageAngle,
+        size: size as 'thumb' | 'standard' | 'highres',
+        debug: enableDebug
+      });
       
-      switch (size) {
-        case 'thumb':
-        case 'thumbnail':
-          rsrImageUrl = `https://img.rsrgroup.com/images/inventory/thumb/${imageName}_${imageNumber}.jpg`;
-          break;
-        case 'highres':
-        case 'large':
-          rsrImageUrl = `https://img.rsrgroup.com/images/inventory/${imageName}_${imageNumber}_HR.jpg`;
-          break;
-        case 'standard':
-        default:
-          rsrImageUrl = `https://img.rsrgroup.com/pimages/${imageName}_${imageNumber}.jpg`;
-          break;
+      if (result.success && result.buffer) {
+        console.log(`✅ RSR authenticated image loaded: ${imageName}_${imageAngle}.jpg (${result.buffer.length} bytes)`);
+        res.set({
+          'Content-Type': 'image/jpeg',
+          'Cache-Control': 'public, max-age=86400',
+          'Content-Length': result.buffer.length.toString(),
+          'X-Image-Source': 'rsr-authenticated'
+        });
+        return res.send(result.buffer);
       }
       
-      // RSR image fetch with authentication using environment credentials
-      console.log(`Trying RSR image from: ${rsrImageUrl}`);
-      
-      try {
-        // Try authenticated RSR access with proper session handling
-        console.log(`🔐 Attempting authenticated RSR image access for ${imageName}_${imageNumber}.jpg`);
-        
-        // Use RSR session manager with sophisticated age verification bypass
-        console.log(`🔓 Using RSR session manager for authenticated image access`);
-        const imageBuffer = await rsrSessionManager.downloadImage(rsrImageUrl);
-        
-        if (imageBuffer && imageBuffer.length > 1000) {
-          console.log(`✅ RSR authenticated image loaded: ${imageName}_${imageNumber}.jpg (${imageBuffer.length} bytes)`);
-          res.set({
-            'Content-Type': 'image/jpeg',
-            'Cache-Control': 'public, max-age=86400',
-            'Content-Length': imageBuffer.length.toString(),
-            'X-Image-Source': 'rsr-authenticated'
-          });
-          return res.send(imageBuffer);
-        }
-        
-        console.log(`🚫 RSR session manager returned invalid or empty image`);
-        throw new Error('RSR authenticated image download failed');
-      } catch (rsrError: any) {
-        console.log(`❌ RSR image failed for ${imageName}: ${rsrError.message}`);
-      }
+      console.log(`❌ RSR image failed for ${imageName}: ${result.error}`);
       
       // Immediate fallback to placeholder
       throw new Error('RSR image not available, using fallback');

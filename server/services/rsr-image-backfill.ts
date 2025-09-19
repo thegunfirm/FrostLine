@@ -275,7 +275,8 @@ class RSRImageBackfillService {
 
     this.status.attemptedDownloads++;
 
-    // Download from RSR with retries
+    // Download from RSR with retries using shared fetcher
+    const { rsrImageFetcher } = await import('./rsr-image-fetcher.js');
     let imageBuffer: Buffer | null = null;
     let attempts = 0;
     const maxAttempts = 3;
@@ -284,33 +285,40 @@ class RSRImageBackfillService {
       attempts++;
       
       try {
-        // Use existing RSR session manager for authenticated download
-        const rsrImageUrl = `https://img.rsrgroup.com/images/inventory/${sku}_${angle}_HR.jpg`;
+        // Use shared fetcher with timeout wrapper
+        const fetchPromise = rsrImageFetcher.fetch({
+          sku,
+          angle,
+          size: 'highres',
+          debug: process.env.RSR_IMAGE_DEBUG === '1'
+        });
         
-        // Add timeout wrapper
-        const downloadPromise = rsrSessionManager.downloadImage(rsrImageUrl);
         const timeoutPromise = new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error("Download timeout")), 30000)
         );
         
-        imageBuffer = await Promise.race([downloadPromise, timeoutPromise]);
+        const result = await Promise.race([fetchPromise, timeoutPromise]);
         
-        if (!imageBuffer || imageBuffer.length < 1000) {
-          throw new Error("Invalid or empty image");
+        if (result.success && result.buffer && result.buffer.length > 1000) {
+          imageBuffer = result.buffer;
+        } else if (result.status === 404) {
+          this.status.noRemote++;
+          return;
+        } else {
+          throw new Error(result.error || "Invalid or empty image");
         }
         
       } catch (error: any) {
-        if (error.message.includes("404") || error.message.includes("Not Found")) {
-          this.status.noRemote++;
-          console.log(`🚫 No remote image: ${sku}_${angle}`);
-          return;
-        }
-        
-        if (attempts < maxAttempts) {
-          // Exponential backoff with jitter
-          const delay = Math.pow(2, attempts) * 1000 + Math.random() * 1000;
-          console.log(`⏳ Retry ${attempts}/${maxAttempts} for ${sku}_${angle} in ${delay}ms`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+        if (error.message === "Download timeout") {
+          this.incrementError("timeout");
+          if (attempts < maxAttempts) {
+            // Exponential backoff with jitter
+            const delay = Math.pow(2, attempts) * 1000 + Math.random() * 1000;
+            console.log(`⏳ Retry ${attempts}/${maxAttempts} for ${sku}_${angle} in ${delay}ms`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          } else {
+            return;
+          }
         } else {
           throw error;
         }
