@@ -16,8 +16,8 @@ const s3 = new S3Client({
   region: process.env.HETZNER_S3_REGION || "nbg1",
   endpoint: process.env.HETZNER_S3_ENDPOINT || "https://nbg1.your-objectstorage.com",
   credentials: {
-    accessKeyId: process.env.HETZNER_S3_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.HETZNER_S3_SECRET_ACCESS_KEY!,
+    accessKeyId: process.env.HETZNER_S3_ACCESS_KEY!,
+    secretAccessKey: process.env.HETZNER_S3_SECRET_KEY!,
   },
   forcePathStyle: true,
 });

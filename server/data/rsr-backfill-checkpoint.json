@@ -1,9 +1,9 @@
 {
   "startedAt": "2025-09-18T23:56:38.790Z",
-  "lastUpdateAt": "2025-09-19T00:35:52.435Z",
-  "scannedSkus": 3073,
-  "attemptedDownloads": 9203,
-  "uploaded": 0,
+  "lastUpdateAt": "2025-09-19T00:45:00.031Z",
+  "scannedSkus": 3076,
+  "attemptedDownloads": 9206,
+  "uploaded": 3,
   "skippedExists": 0,
   "noRemote": 8989,
   "errorsTotal": 214,
@@ -13,7 +13,7 @@
   "anglesPlanned": "1-3",
   "concurrency": 3,
   "checkpoint": {
-    "lastSku": "YHM-3253",
+    "lastSku": "YHM-4445-MB-24B",
     "completedAngles": []
   },
   "etaSkusRemaining": 0,
